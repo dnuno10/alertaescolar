@@ -29,7 +29,6 @@ class _ProfileViewState extends State<ProfileView> {
           backgroundColor: AppTheme.getBackgroundColor(context),
           body: CustomScrollView(
             slivers: [
-              // Modern Header
               _buildModernHeader(context, l10n, screenSize),
 
               // Settings Sections

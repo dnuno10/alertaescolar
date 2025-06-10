@@ -1,3 +1,4 @@
+import 'package:alertaescolar/components/nav_header.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -41,8 +42,7 @@ class _UsernameChangeViewState extends State<UsernameChangeView> {
           resizeToAvoidBottomInset: true,
           body: CustomScrollView(
             slivers: [
-              // Modern Header
-              _buildModernHeader(l10n, screenSize),
+              NavHeader(title: l10n.changeUsername),
 
               // Content
               SliverToBoxAdapter(
@@ -80,77 +80,6 @@ class _UsernameChangeViewState extends State<UsernameChangeView> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildModernHeader(AppLocalizations l10n, Size screenSize) {
-    return SliverToBoxAdapter(
-      child: Container(
-        padding: EdgeInsets.fromLTRB(
-          AppTheme.getMediumPadding(screenSize),
-          AppTheme.getMediumPadding(screenSize),
-          AppTheme.getMediumPadding(screenSize),
-          AppTheme.getLargePadding(screenSize),
-        ),
-        decoration: BoxDecoration(
-          color: AppTheme.getCardColor(context),
-          borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(AppTheme.getMediumRadius(screenSize)),
-            bottomRight: Radius.circular(AppTheme.getMediumRadius(screenSize)),
-          ),
-        ),
-        child: SafeArea(
-          child: Builder(
-            builder: (context) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: screenSize.width * 0.1,
-                      height: screenSize.width * 0.1,
-                      decoration: BoxDecoration(
-                        color: AppTheme.accentPurple.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(
-                            AppTheme.getSmallRadius(screenSize)),
-                      ),
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.arrow_back,
-                          color: AppTheme.accentPurple,
-                          size: screenSize.width * 0.05,
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ),
-                    SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-                    Expanded(
-                      child: Text(
-                        l10n.changeUsername,
-                        style: AppTheme.getH2(screenSize).copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.getTextPrimaryColor(context),
-                          letterSpacing: -0.5,
-                          height: 1.2,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: screenSize.height * 0.01),
-                Text(
-                  l10n.modifyYourUniqueUsername,
-                  style: AppTheme.getBodyMedium(screenSize).copyWith(
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.getTextSecondaryColor(context),
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 

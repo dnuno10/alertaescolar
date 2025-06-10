@@ -1,4 +1,3 @@
-import 'package:alertaescolar/views/attendance/attendance_view.dart';
 import 'package:alertaescolar/views/students/students_view_new.dart';
 import 'package:flutter/material.dart';
 import '../views/home/home_view.dart';
@@ -44,7 +43,6 @@ class AppRoutes {
         profile: (context) => const ProfileView(),
         students: (context) => const StudentsView(),
         notifications: (context) => const NotificationsView(),
-        attendance: (context) => const AttendanceView(),
         reports: (context) => const ReportsView(),
       };
 
@@ -59,8 +57,7 @@ class AppRoutes {
       case notifications:
         return MaterialPageRoute(
             builder: (context) => const NotificationsView());
-      case attendance:
-        return MaterialPageRoute(builder: (context) => const AttendanceView());
+
       case reports:
         return MaterialPageRoute(builder: (context) => const ReportsView());
       case personalData:
