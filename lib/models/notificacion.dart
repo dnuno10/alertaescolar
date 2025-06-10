@@ -11,7 +11,6 @@ enum TipoNotificacion {
 enum EstadoNotificacion {
   nueva,
   leida,
-  archivada,
 }
 
 class Notificacion {

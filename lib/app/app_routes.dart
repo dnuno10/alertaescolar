@@ -3,16 +3,15 @@ import 'package:flutter/material.dart';
 import '../views/home/home_view.dart';
 import '../views/profile/profile_view.dart';
 import '../views/profile/personal_data_navigation_view.dart';
-import '../views/profile/contact_information_view.dart';
-import '../views/profile/personal_information_view_new.dart' as personal_info;
-import '../views/profile/username_change_view_new.dart' as username_change;
+import '../views/profile/personal_info/contact_information_view.dart';
+import '../views/profile/personal_info/personal_information_view_new.dart'
+    as personal_info;
 import '../views/profile/password_security_view_new.dart' as password_security;
 import '../views/profile/notification_settings_view_new.dart'
     as notification_settings;
 import '../views/profile/family_information_view.dart';
 
 import '../views/notifications/notifications_view.dart';
-import '../views/reports/reports_view.dart';
 
 class AppRoutes {
   static const String home = '/';
@@ -41,7 +40,6 @@ class AppRoutes {
         profile: (context) => const ProfileView(),
         students: (context) => const StudentsView(),
         notifications: (context) => const NotificationsView(),
-        reports: (context) => const ReportsView(),
       };
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
@@ -55,10 +53,6 @@ class AppRoutes {
       case notifications:
         return MaterialPageRoute(
             builder: (context) => const NotificationsView());
-
-      case reports:
-        return MaterialPageRoute(builder: (context) => const ReportsView());
-
       case personalDataNavigation:
         return MaterialPageRoute(
             builder: (context) => const PersonalDataNavigationView());
@@ -69,9 +63,7 @@ class AppRoutes {
         return MaterialPageRoute(
             builder: (context) =>
                 const personal_info.PersonalInformationView());
-      case usernameChange:
-        return MaterialPageRoute(
-            builder: (context) => const username_change.UsernameChangeView());
+
       case passwordSecurity:
         return MaterialPageRoute(
             builder: (context) =>

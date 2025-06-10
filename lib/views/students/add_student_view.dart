@@ -1,7 +1,9 @@
-import 'package:alertaescolar/components/custom_input_field.dart';
-import 'package:alertaescolar/components/nav_header.dart';
-import 'package:alertaescolar/components/solid_button.dart';
+import 'package:alertaescolar/components/headers/nav_header.dart';
+import 'package:alertaescolar/components/buttons/solid_button.dart';
 import 'package:alertaescolar/components/tips_cards/instructions_card.dart';
+import 'package:alertaescolar/components/students/qr_scan_option_card.dart';
+import 'package:alertaescolar/components/students/option_divider.dart';
+import 'package:alertaescolar/components/students/manual_input_card.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -54,11 +56,18 @@ class _AddStudentViewState extends State<AddStudentView> {
                       screenSize: screenSize,
                     ),
                     SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                    _buildQRScanOption(context, l10n, screenSize),
+                    QRScanOptionCard(
+                      onTap: () => _scanQRCode(l10n),
+                      screenSize: screenSize,
+                    ),
                     SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                    _buildDivider(context, l10n, screenSize),
+                    OptionDivider(screenSize: screenSize),
                     SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                    _buildManualInput(context, l10n, screenSize),
+                    ManualInputCard(
+                      formKey: _formKey,
+                      keyController: _keyController,
+                      screenSize: screenSize,
+                    ),
                     SizedBox(height: AppTheme.getLargePadding(screenSize)),
                     SolidButton(
                         width: double.infinity,
@@ -75,156 +84,6 @@ class _AddStudentViewState extends State<AddStudentView> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildQRScanOption(
-      BuildContext context, AppLocalizations l10n, Size screenSize) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        border: Border.all(color: AppTheme.getBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _scanQRCode(l10n),
-          borderRadius:
-              BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-          child: Padding(
-            padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-            child: Column(
-              children: [
-                Container(
-                  width: screenSize.width * 0.2,
-                  height: screenSize.width * 0.2,
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentPurple.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(
-                        AppTheme.getMediumRadius(screenSize)),
-                  ),
-                  child: Icon(
-                    Icons.qr_code_scanner_rounded,
-                    color: AppTheme.accentPurple,
-                    size: screenSize.width * 0.1,
-                  ),
-                ),
-                SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-                Text(
-                  l10n.scanQRCode,
-                  style: AppTheme.getSubtitle1(screenSize).copyWith(
-                    color: AppTheme.getTextPrimaryColor(context),
-                  ),
-                ),
-                SizedBox(height: screenSize.height * 0.01),
-                Text(
-                  l10n.useCameraToScanQR,
-                  style: AppTheme.getBodyMedium(screenSize).copyWith(
-                    color: AppTheme.getTextSecondaryColor(context),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDivider(
-      BuildContext context, AppLocalizations l10n, Size screenSize) {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 1,
-            color: AppTheme.getBorderColor(context),
-          ),
-        ),
-        Padding(
-          padding: EdgeInsets.symmetric(
-              horizontal: AppTheme.getSmallPadding(screenSize)),
-          child: Text(
-            l10n.or,
-            style: AppTheme.getBodyMedium(screenSize).copyWith(
-              color: AppTheme.getTextSecondaryColor(context),
-            ),
-          ),
-        ),
-        Expanded(
-          child: Container(
-            height: 1,
-            color: AppTheme.getBorderColor(context),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildManualInput(
-      BuildContext context, AppLocalizations l10n, Size screenSize) {
-    return Container(
-      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        border: Border.all(color: AppTheme.getBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.manualEntry,
-              style: AppTheme.getSubtitle1(screenSize).copyWith(
-                color: AppTheme.getTextPrimaryColor(context),
-              ),
-            ),
-            SizedBox(height: screenSize.height * 0.01),
-            Text(
-              l10n.enterStudentKeyCode,
-              style: AppTheme.getBodyMedium(screenSize).copyWith(
-                color: AppTheme.getTextSecondaryColor(context),
-              ),
-            ),
-            SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-            CustomInputField(
-              label: l10n.keyCode,
-              controller: _keyController,
-              icon: Icons.key_rounded,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return l10n.pleaseEnterKeyCode;
-                }
-                if (value.trim().length < 6) {
-                  return l10n.keyCodeMinLength;
-                }
-                return null;
-              },
-              screenSize: screenSize,
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -266,6 +125,7 @@ class _AddStudentViewState extends State<AddStudentView> {
         grado: l10n.toConfirm,
         llave: _keyController.text.trim(),
         activo: true,
+        turno: Turno.matutino, // Default to matutino shift
       );
 
       await studentProvider.addStudent(newStudent);

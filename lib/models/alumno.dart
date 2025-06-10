@@ -1,3 +1,8 @@
+enum Turno {
+  matutino,
+  vespertino,
+}
+
 class Alumno {
   final String id;
   final String nombre;
@@ -5,6 +10,7 @@ class Alumno {
   final String llave;
   final String? fotoUrl;
   final bool activo;
+  final Turno turno;
 
   const Alumno({
     required this.id,
@@ -13,6 +19,7 @@ class Alumno {
     required this.llave,
     this.fotoUrl,
     this.activo = true,
+    required this.turno,
   });
 
   factory Alumno.fromJson(Map<String, dynamic> json) {
@@ -23,6 +30,10 @@ class Alumno {
       llave: json['llave'] ?? '',
       fotoUrl: json['fotoUrl'],
       activo: json['activo'] ?? true,
+      turno: Turno.values.firstWhere(
+        (e) => e.name == json['turno'],
+        orElse: () => Turno.matutino,
+      ),
     );
   }
 
@@ -34,6 +45,7 @@ class Alumno {
       'llave': llave,
       'fotoUrl': fotoUrl,
       'activo': activo,
+      'turno': turno.name,
     };
   }
 
@@ -44,6 +56,7 @@ class Alumno {
     String? llave,
     String? fotoUrl,
     bool? activo,
+    Turno? turno,
   }) {
     return Alumno(
       id: id ?? this.id,
@@ -52,12 +65,13 @@ class Alumno {
       llave: llave ?? this.llave,
       fotoUrl: fotoUrl ?? this.fotoUrl,
       activo: activo ?? this.activo,
+      turno: turno ?? this.turno,
     );
   }
 
   @override
   String toString() {
-    return 'Alumno(id: $id, nombre: $nombre, grado: $grado, llave: $llave, activo: $activo)';
+    return 'Alumno(id: $id, nombre: $nombre, grado: $grado, llave: $llave, activo: $activo, turno: $turno)';
   }
 
   @override

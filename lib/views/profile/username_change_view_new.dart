@@ -1,4 +1,4 @@
-import 'package:alertaescolar/components/nav_header.dart';
+import 'package:alertaescolar/components/headers/nav_header.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

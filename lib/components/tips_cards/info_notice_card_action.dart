@@ -1,5 +1,5 @@
 import 'package:alertaescolar/app/app_theme.dart';
-import 'package:alertaescolar/components/solid_button.dart';
+import 'package:alertaescolar/components/buttons/solid_button.dart';
 import 'package:alertaescolar/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 

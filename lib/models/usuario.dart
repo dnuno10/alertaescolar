@@ -1,9 +1,4 @@
-enum TipoUsuario {
-  padre,
-  madre,
-  tutor,
-  familiar,
-}
+enum TipoUsuario { padre, madre, tutor, familiar, admin }
 
 class Usuario {
   final String id;

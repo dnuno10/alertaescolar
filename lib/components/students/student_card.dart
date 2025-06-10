@@ -1,0 +1,148 @@
+import 'package:alertaescolar/l10n/app_localizations.dart';
+import 'package:alertaescolar/views/students/student_detail_view.dart';
+import 'package:flutter/material.dart';
+import '../../models/models.dart';
+import '../../app/app_theme.dart';
+import '../custom_card.dart';
+
+class StudentCard extends StatelessWidget {
+  final Alumno student;
+  final Size screenSize;
+
+  const StudentCard({
+    super.key,
+    required this.student,
+    required this.screenSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final colors = [
+      AppTheme.accentBlue,
+      AppTheme.successColor,
+      AppTheme.accentPurple,
+      AppTheme.warningColor
+    ];
+    final color = colors[student.hashCode % colors.length];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+        border: Border.all(color: AppTheme.getBorderColor(context)),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.getShadowColor(context),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _navigateToStudentDetail(context),
+          borderRadius:
+              BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+          child: Padding(
+            padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+            child: Row(
+              children: [
+                Container(
+                  width: screenSize.width * 0.14,
+                  height: screenSize.width * 0.14,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(
+                        AppTheme.getSmallRadius(screenSize)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      student.nombre.isNotEmpty
+                          ? student.nombre[0].toUpperCase()
+                          : 'A',
+                      style: AppTheme.getBodyMedium(screenSize).copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.onPrimaryColor,
+                        letterSpacing: 0.1,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        student.nombre,
+                        style: AppTheme.getSubtitle1(screenSize).copyWith(
+                          color: AppTheme.getTextPrimaryColor(context),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: screenSize.height * 0.005),
+                      Text(
+                        student.grado,
+                        style: AppTheme.getBodyMedium(screenSize).copyWith(
+                          color: AppTheme.getTextSecondaryColor(context),
+                        ),
+                      ),
+                      SizedBox(height: screenSize.height * 0.01),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenSize.width * 0.02,
+                          vertical: screenSize.height * 0.005,
+                        ),
+                        decoration: BoxDecoration(
+                          color: student.activo
+                              ? AppTheme.successColor.withValues(alpha: 0.1)
+                              : AppTheme.warningColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(
+                              AppTheme.getSmallRadius(screenSize) * 0.7),
+                        ),
+                        child: Text(
+                          student.activo ? l10n.active : l10n.inactive,
+                          style: AppTheme.getCaptionSmall(screenSize).copyWith(
+                            fontWeight: FontWeight.w500,
+                            color: student.activo
+                                ? AppTheme.successColor
+                                : AppTheme.warningColor,
+                            letterSpacing: 0.1,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppTheme.getTextSecondaryColor(context),
+                  size: screenSize.width * 0.06,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _navigateToStudentDetail(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => StudentDetailView(student: student),
+      ),
+    );
+  }
+}

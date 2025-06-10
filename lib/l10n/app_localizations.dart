@@ -86,6 +86,8 @@ abstract class AppLocalizations {
   String get noStudentsTitle => 'No students registered';
   String get noStudentsMessage =>
       'Register your children to start monitoring their school activity';
+  String get noStudents => 'No Students';
+  String get addFirstStudent => 'Add your first student';
 
   // Notifications
   String get noNotifications => 'No notifications';
@@ -569,6 +571,19 @@ abstract class AppLocalizations {
   // Schedule view additional keys
   String get weeklySchedule => 'Weekly Schedule';
   String get selectStudent => 'Select Student';
+
+  // Family relationship types
+  String get father => 'Father';
+  String get mother => 'Mother';
+  String get grandfather => 'Grandfather';
+  String get grandmother => 'Grandmother';
+  String get guardian => 'Guardian';
+  String get guardianFemale => 'Guardian (Female)';
+  String get uncle => 'Uncle';
+  String get aunt => 'Aunt';
+  String get brother => 'Brother';
+  String get sister => 'Sister';
+  String get otherFamily => 'Other Family';
 }
 
 class _AppLocalizationsDelegate
@@ -707,6 +722,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get noStudentsMessage =>
       'Register your children to start monitoring their school activity';
+
+  @override
+  String get noStudents => 'No Students';
+
+  @override
+  String get addFirstStudent => 'Add your first student';
 
   @override
   String get noNotifications => 'No notifications';
@@ -1930,6 +1951,40 @@ class AppLocalizationsEn extends AppLocalizations {
   // Student selection - English
   @override
   String get selectStudent => 'Select Student';
+
+  // Family relationship types - English
+  @override
+  String get father => 'Father';
+
+  @override
+  String get mother => 'Mother';
+
+  @override
+  String get grandfather => 'Grandfather';
+
+  @override
+  String get grandmother => 'Grandmother';
+
+  @override
+  String get guardian => 'Guardian';
+
+  @override
+  String get guardianFemale => 'Guardian';
+
+  @override
+  String get uncle => 'Uncle';
+
+  @override
+  String get aunt => 'Aunt';
+
+  @override
+  String get brother => 'Brother';
+
+  @override
+  String get sister => 'Sister';
+
+  @override
+  String get otherFamily => 'Other Family';
 }
 
 class AppLocalizationsEs extends AppLocalizations {
@@ -2037,6 +2092,12 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get noStudentsMessage =>
       'Registra a tus hijos para comenzar a monitorear su actividad escolar';
+
+  @override
+  String get noStudents => 'Sin Estudiantes';
+
+  @override
+  String get addFirstStudent => 'Agrega tu primer estudiante';
 
   @override
   String get noNotifications => 'Sin notificaciones';
@@ -3279,4 +3340,38 @@ class AppLocalizationsEs extends AppLocalizations {
   // Student selection - Spanish
   @override
   String get selectStudent => 'Seleccionar Estudiante';
+
+  // Family relationship types - Spanish
+  @override
+  String get father => 'Padre';
+
+  @override
+  String get mother => 'Madre';
+
+  @override
+  String get grandfather => 'Abuelo';
+
+  @override
+  String get grandmother => 'Abuela';
+
+  @override
+  String get guardian => 'Tutor';
+
+  @override
+  String get guardianFemale => 'Tutora';
+
+  @override
+  String get uncle => 'Tío';
+
+  @override
+  String get aunt => 'Tía';
+
+  @override
+  String get brother => 'Hermano';
+
+  @override
+  String get sister => 'Hermana';
+
+  @override
+  String get otherFamily => 'Otro Familiar';
 }
