@@ -1,3 +1,4 @@
+import 'package:alertaescolar/components/custom_outline_button.dart';
 import 'package:alertaescolar/components/nav_header.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
@@ -139,32 +140,12 @@ class _NotificationSettingsViewState extends State<NotificationSettingsView> {
           // Test Button
           SizedBox(
             width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => _testNotification(l10n),
-              icon: Icon(
-                Icons.play_arrow,
-                size: screenSize.width * 0.05,
+            child: CustomOutlineButton(
+                onPressed: () => _testNotification(l10n),
+                label: l10n.testNotification,
                 color: AppTheme.accentPurple,
-              ),
-              label: Text(
-                l10n.testNotification,
-                style: AppTheme.getBodyMedium(screenSize).copyWith(
-                    fontWeight: FontWeight.w600, color: AppTheme.accentPurple),
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.accentPurple,
-                side: BorderSide(
-                  color: AppTheme.accentPurple,
-                  width: 2,
-                ),
-                padding: EdgeInsets.symmetric(
-                    vertical: AppTheme.getSmallPadding(screenSize)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getSmallRadius(screenSize)),
-                ),
-              ),
-            ),
+                icon: Icons.play_arrow,
+                screenSize: screenSize),
           ),
         ],
       ),

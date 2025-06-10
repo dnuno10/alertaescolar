@@ -295,7 +295,7 @@ abstract class AppLocalizations {
   String get lastNamesMinLength => 'Last Names Min Length';
   String get currentFullName => 'Current Full Name';
   String get reset => 'Reset';
-  String get saveChanges => 'Save Changes';
+  String get saveChanges => 'Save';
   String get formReset => 'Form Reset';
   String get personalInformationUpdatedSuccessfully =>
       'Personal Information Updated Successfully';
@@ -1211,7 +1211,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reset => 'Reset';
 
   @override
-  String get saveChanges => 'Save Changes';
+  String get saveChanges => 'Save';
 
   @override
   String get formReset => 'Form has been reset';
@@ -2546,7 +2546,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get reset => 'Restablecer';
 
   @override
-  String get saveChanges => 'Guardar Cambios';
+  String get saveChanges => 'Guardar';
 
   @override
   String get formReset => 'El formulario ha sido restablecido';

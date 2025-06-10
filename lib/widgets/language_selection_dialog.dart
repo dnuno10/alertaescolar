@@ -1,3 +1,4 @@
+import 'package:alertaescolar/components/custom_outline_button.dart';
 import 'package:alertaescolar/providers/language_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -127,42 +128,13 @@ class LanguageSelectionDialog extends StatelessWidget {
                       ),
 
                       SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-                      // Close Button
                       SizedBox(
                         width: double.infinity,
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => Navigator.of(context).pop(),
-                            borderRadius: BorderRadius.circular(
-                                AppTheme.getSmallRadius(screenSize)),
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                  vertical:
-                                      AppTheme.getSmallPadding(screenSize)),
-                              decoration: BoxDecoration(
-                                color: AppTheme.getSecondaryBackgroundColor(
-                                    context),
-                                borderRadius: BorderRadius.circular(
-                                    AppTheme.getSmallRadius(screenSize)),
-                                border: Border.all(
-                                  color: AppTheme.getBorderColor(context),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Text(
-                                l10n.cancel,
-                                textAlign: TextAlign.center,
-                                style:
-                                    AppTheme.getBodyMedium(screenSize).copyWith(
-                                  color: AppTheme.getTextPrimaryColor(context),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
+                        child: CustomOutlineButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            label: l10n.cancel,
+                            color: AppTheme.getTextPrimaryColor(context),
+                            screenSize: screenSize),
                       ),
                     ],
                   ),

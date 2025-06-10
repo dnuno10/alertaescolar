@@ -1,5 +1,7 @@
 import 'package:alertaescolar/components/custom_input_field.dart';
+import 'package:alertaescolar/components/custom_outline_button.dart';
 import 'package:alertaescolar/components/nav_header.dart';
+import 'package:alertaescolar/components/solid_button.dart';
 import 'package:alertaescolar/components/tips_cards/info_notice_card.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
@@ -48,6 +50,8 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
       'email': 'carlos.gonzalez@email.com',
     },
   ];
+
+  get width => null;
 
   @override
   void dispose() {
@@ -524,62 +528,20 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
     return Row(
       children: [
         Expanded(
-          child: OutlinedButton(
-            onPressed: _isLoading ? null : _clearForm,
-            style: OutlinedButton.styleFrom(
-              padding: EdgeInsets.symmetric(
-                  vertical: AppTheme.getSmallPadding(screenSize)),
-              side: BorderSide(
-                color: AppTheme.accentPurple.withOpacity(0.3),
-                width: 1,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-              ),
-            ),
-            child: Text(
-              l10n.clear,
-              style: AppTheme.getBodyMedium(screenSize).copyWith(
-                fontWeight: FontWeight.w600,
-                color: AppTheme.accentPurple,
-              ),
-            ),
-          ),
+          child: CustomOutlineButton(
+              onPressed: _isLoading ? () {} : () => _clearForm(),
+              label: l10n.clear,
+              color: AppTheme.accentPurple,
+              screenSize: screenSize),
         ),
         SizedBox(width: AppTheme.getSmallPadding(screenSize)),
         Expanded(
-          child: ElevatedButton(
-            onPressed: _isLoading ? null : () => _addContact(l10n),
-            style: ElevatedButton.styleFrom(
+          child: SolidButton(
               backgroundColor: AppTheme.accentPurple,
-              foregroundColor: AppTheme.onPrimaryColor,
-              padding: EdgeInsets.symmetric(
-                  vertical: AppTheme.getSmallPadding(screenSize)),
-              shape: RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-              ),
-              elevation: 2,
-            ),
-            child: _isLoading
-                ? SizedBox(
-                    height: screenSize.height * 0.025,
-                    width: screenSize.height * 0.025,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                          AppTheme.onPrimaryColor),
-                    ),
-                  )
-                : Text(
-                    l10n.addContact,
-                    style: AppTheme.getBodyMedium(screenSize).copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.onPrimaryColor,
-                    ),
-                  ),
-          ),
+              onPressed: _isLoading ? () {} : () => _addContact(l10n),
+              label: l10n.addContact,
+              screenSize: screenSize,
+              width: double.infinity),
         ),
       ],
     );

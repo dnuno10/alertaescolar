@@ -1,3 +1,4 @@
+import 'package:alertaescolar/components/solid_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../l10n/app_localizations.dart';
@@ -93,7 +94,12 @@ class StudentsView extends StatelessWidget {
                   _buildStudentsList(
                       context, studentProvider.students, isWide, screenSize),
                 SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                _buildAddStudentButton(context, l10n, screenSize),
+                SolidButton(
+                    width: double.infinity,
+                    icon: Icons.person_add_rounded,
+                    onPressed: () => _navigateToAddStudent(context),
+                    label: l10n.addStudent,
+                    screenSize: screenSize),
                 SizedBox(height: AppTheme.getLargePadding(screenSize)),
               ],
             );
@@ -158,41 +164,6 @@ class StudentsView extends StatelessWidget {
       itemBuilder: (context, index) => StudentCard(
         student: students[index],
         screenSize: screenSize,
-      ),
-    );
-  }
-
-  Widget _buildAddStudentButton(
-      BuildContext context, AppLocalizations l10n, Size screenSize) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: () => _navigateToAddStudent(context),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.accentPurple,
-          foregroundColor: AppTheme.onPrimaryColor,
-          padding: EdgeInsets.symmetric(
-              vertical: AppTheme.getSmallPadding(screenSize)),
-          shape: RoundedRectangleBorder(
-            borderRadius:
-                BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-          ),
-          elevation: 0,
-          shadowColor: AppTheme.accentPurple.withValues(alpha: 0.2),
-        ),
-        icon: Icon(
-          Icons.person_add_rounded,
-          size: screenSize.height * 0.025,
-          color: AppTheme.onPrimaryColor,
-        ),
-        label: Text(
-          l10n.addStudent,
-          style: AppTheme.getBodyMedium(screenSize).copyWith(
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.1,
-            color: AppTheme.onPrimaryColor,
-          ),
-        ),
       ),
     );
   }

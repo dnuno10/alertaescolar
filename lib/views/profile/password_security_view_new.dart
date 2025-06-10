@@ -1,5 +1,7 @@
 import 'package:alertaescolar/components/custom_input_field.dart';
+import 'package:alertaescolar/components/danger_zone_card.dart';
 import 'package:alertaescolar/components/nav_header.dart';
+import 'package:alertaescolar/components/solid_button.dart';
 import 'package:alertaescolar/components/tips_cards/security_tips_card.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
@@ -72,7 +74,7 @@ class _PasswordSecurityViewState extends State<PasswordSecurityView> {
                       _buildSectionTitle(l10n.dangerZone, screenSize),
                       SizedBox(height: AppTheme.getSmallPadding(screenSize)),
 
-                      _buildDangerZoneCard(l10n, screenSize),
+                      DangerZoneCard(l10n: l10n, screenSize: screenSize),
 
                       SizedBox(height: AppTheme.getLargePadding(screenSize)),
                     ],
@@ -174,307 +176,16 @@ class _PasswordSecurityViewState extends State<PasswordSecurityView> {
             SizedBox(height: AppTheme.getLargePadding(screenSize)),
 
             // Save Button
-            SizedBox(
+            SolidButton(
+              backgroundColor: AppTheme.accentPurple,
               width: double.infinity,
-              child: ElevatedButton(
-                onPressed:
-                    () {}, //_isLoading ? null : () => _changePassword(l10n),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.accentPurple,
-                  foregroundColor: AppTheme.onPrimaryColor,
-                  padding: EdgeInsets.symmetric(
-                      vertical: AppTheme.getSmallPadding(screenSize)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                        AppTheme.getSmallRadius(screenSize)),
-                  ),
-                  elevation: 0,
-                ),
-                child: _isLoading
-                    ? SizedBox(
-                        height: screenSize.height * 0.025,
-                        width: screenSize.height * 0.025,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                              AppTheme.onPrimaryColor),
-                        ),
-                      )
-                    : Text(
-                        l10n.changePassword,
-                        style: AppTheme.getBodyMedium(screenSize).copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.onPrimaryColor,
-                        ),
-                      ),
-              ),
+              onPressed: () {},
+              label: l10n.changePassword,
+              screenSize: screenSize,
             ),
           ],
         ),
       ),
     );
-  }
-
-  Widget _buildDangerZoneCard(AppLocalizations l10n, Size screenSize) {
-    return Container(
-      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        border: Border.all(
-          color: AppTheme.errorColor.withValues(alpha: 0.3),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.warning_outlined,
-                color: AppTheme.errorColor,
-                size: screenSize.width * 0.06,
-              ),
-              SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-              Text(
-                l10n.dangerZone,
-                style: AppTheme.getBodyMedium(screenSize).copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.errorColor,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-          Text(
-            l10n.dangerZoneDesc,
-            style: AppTheme.getCaption(screenSize).copyWith(
-              color: AppTheme.getTextSecondaryColor(context),
-              height: 1.4,
-            ),
-          ),
-          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-          Container(
-            padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
-            decoration: BoxDecoration(
-              color: AppTheme.errorColor.withValues(alpha: 0.1),
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.delete_forever_outlined,
-                  color: AppTheme.errorColor,
-                  size: screenSize.width * 0.05,
-                ),
-                SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.deleteAccount,
-                        style: AppTheme.getSubtitle2(screenSize).copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.getTextPrimaryColor(context),
-                        ),
-                      ),
-                      SizedBox(height: screenSize.height * 0.003),
-                      Text(
-                        l10n.deleteAccountDesc,
-                        style: AppTheme.getCaption(screenSize).copyWith(
-                          color: AppTheme.getTextSecondaryColor(context),
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-                ElevatedButton(
-                  onPressed: _isLoading
-                      ? null
-                      : () => _showDeleteAccountDialog(l10n, screenSize),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.errorColor,
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppTheme.getSmallPadding(screenSize),
-                      vertical: AppTheme.getSmallPadding(screenSize) * 0.75,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                          AppTheme.getSmallRadius(screenSize)),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    l10n.delete,
-                    style: AppTheme.getCaption(screenSize).copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showDeleteAccountDialog(AppLocalizations l10n, Size screenSize) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.getCardColor(context),
-        shape: RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        ),
-        title: Row(
-          children: [
-            Icon(
-              Icons.warning_rounded,
-              color: AppTheme.errorColor,
-              size: screenSize.width * 0.06,
-            ),
-            SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-            Text(
-              l10n.deleteAccount,
-              style: AppTheme.getSubtitle1(screenSize).copyWith(
-                fontWeight: FontWeight.w600,
-                color: AppTheme.errorColor,
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.deleteAccountWarning,
-              style: AppTheme.getBodyMedium(screenSize).copyWith(
-                color: AppTheme.getTextPrimaryColor(context),
-                fontWeight: FontWeight.w600,
-                height: 1.4,
-              ),
-            ),
-            SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-            Container(
-              padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
-              decoration: BoxDecoration(
-                color: AppTheme.errorColor.withValues(alpha: 0.1),
-                borderRadius:
-                    BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-              ),
-              child: Text(
-                l10n.deleteAccountDesc,
-                style: AppTheme.getCaption(screenSize).copyWith(
-                  color: AppTheme.getTextSecondaryColor(context),
-                  height: 1.4,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppTheme.getMediumPadding(screenSize),
-                vertical: AppTheme.getSmallPadding(screenSize),
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-              ),
-            ),
-            child: Text(
-              l10n.cancel,
-              style: AppTheme.getCaption(screenSize).copyWith(
-                fontWeight: FontWeight.w600,
-                color: AppTheme.getTextSecondaryColor(context),
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _deleteAccount(l10n);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.errorColor,
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(
-                horizontal: AppTheme.getMediumPadding(screenSize),
-                vertical: AppTheme.getSmallPadding(screenSize),
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-              ),
-              elevation: 0,
-            ),
-            child: Text(
-              l10n.deleteAccount,
-              style: AppTheme.getCaption(screenSize).copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _deleteAccount(AppLocalizations l10n) async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    // Simulate API call for account deletion
-    await Future.delayed(const Duration(seconds: 3));
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    // Show success message
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            l10n.accountDeletionStarted,
-            style: AppTheme.getCaption(MediaQuery.of(context).size).copyWith(
-              fontWeight: FontWeight.w500,
-              color: AppTheme.onPrimaryColor,
-            ),
-          ),
-          backgroundColor: AppTheme.errorColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(
-                AppTheme.getSmallRadius(MediaQuery.of(context).size)),
-          ),
-        ),
-      );
-
-      // Navigate back to main screen (simulate logout)
-      Navigator.of(context).popUntil((route) => route.isFirst);
-    }
   }
 }

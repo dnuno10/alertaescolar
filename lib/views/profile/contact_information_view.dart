@@ -1,4 +1,6 @@
 import 'package:alertaescolar/components/nav_header.dart';
+import 'package:alertaescolar/components/solid_button.dart';
+import 'package:alertaescolar/components/tips_cards/info_notice_card_action.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -98,7 +100,10 @@ class ContactInformationView extends StatelessWidget {
                       SizedBox(height: AppTheme.getLargePadding(screenSize)),
 
                       // Info Notice
-                      _buildInfoNotice(context, l10n, screenSize),
+                      InfoNoticeCardAction(
+                        l10n: l10n,
+                        screenSize: screenSize,
+                      ),
                     ],
                   ),
                 ),
@@ -305,103 +310,6 @@ class ContactInformationView extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoNotice(
-      BuildContext context, AppLocalizations l10n, Size screenSize) {
-    return Container(
-      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-      decoration: BoxDecoration(
-        color: AppTheme.accentPurple.withValues(alpha: 0.05),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-        border: Border.all(
-          color: AppTheme.accentPurple.withValues(alpha: 0.2),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.info_outline,
-                color: AppTheme.accentPurple,
-                size: screenSize.width * 0.06,
-              ),
-              SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-              Expanded(
-                child: Text(
-                  l10n.importantInformation,
-                  style: AppTheme.getCaption(screenSize).copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.accentPurple,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-          Text(
-            l10n.contactAdminModifyInfo,
-            style: AppTheme.getCaptionSmall(screenSize).copyWith(
-              color: AppTheme.getTextSecondaryColor(context),
-              height: 1.4,
-            ),
-          ),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-          SizedBox(
-            width: double.infinity,
-            child: Builder(
-              builder: (context) => ElevatedButton.icon(
-                onPressed: () {
-                  // Handle contact admin action
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        l10n.functionInDevelopment,
-                        style: AppTheme.getCaption(screenSize).copyWith(
-                          color: AppTheme.onPrimaryColor,
-                        ),
-                      ),
-                      backgroundColor: AppTheme.accentPurple,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                            AppTheme.getSmallRadius(screenSize)),
-                      ),
-                    ),
-                  );
-                },
-                icon: Icon(
-                  Icons.contact_support_outlined,
-                  size: screenSize.width * 0.045,
-                  color: AppTheme.onPrimaryColor,
-                ),
-                label: Text(
-                  l10n.contactAdmin,
-                  style: AppTheme.getCaption(screenSize).copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.onPrimaryColor,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.accentPurple,
-                  foregroundColor: AppTheme.onPrimaryColor,
-                  padding: EdgeInsets.symmetric(
-                      vertical: AppTheme.getSmallPadding(screenSize)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                        AppTheme.getSmallRadius(screenSize)),
-                  ),
-                ),
-              ),
             ),
           ),
         ],

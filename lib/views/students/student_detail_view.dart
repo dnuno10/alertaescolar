@@ -1,4 +1,6 @@
+import 'package:alertaescolar/components/custom_outline_button.dart';
 import 'package:alertaescolar/components/nav_header.dart';
+import 'package:alertaescolar/components/solid_button.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -47,7 +49,13 @@ class StudentDetailView extends StatelessWidget {
                       SizedBox(height: AppTheme.getLargePadding(screenSize)),
                       _buildStudentProfile(context, color, l10n, screenSize),
                       SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                      _buildScheduleButton(context, l10n, screenSize),
+                      SolidButton(
+                          backgroundColor: AppTheme.accentPurple,
+                          onPressed: () => _viewSchedule(context),
+                          label: l10n.viewSchedule,
+                          width: double.infinity,
+                          icon: Icons.schedule_rounded,
+                          screenSize: screenSize),
                       SizedBox(height: AppTheme.getMediumPadding(screenSize)),
                       _buildStudentInfo(context, l10n, screenSize),
                       SizedBox(height: AppTheme.getMediumPadding(screenSize)),
@@ -62,40 +70,6 @@ class StudentDetailView extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildScheduleButton(
-      BuildContext context, AppLocalizations l10n, Size screenSize) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: () => _viewSchedule(context),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.accentPurple,
-          foregroundColor: AppTheme.onPrimaryColor,
-          padding: EdgeInsets.symmetric(
-              vertical: AppTheme.getSmallPadding(screenSize)),
-          shape: RoundedRectangleBorder(
-            borderRadius:
-                BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-          ),
-          elevation: 0,
-        ),
-        icon: Icon(
-          Icons.schedule_rounded,
-          color: AppTheme.onPrimaryColor,
-          size: screenSize.width * 0.06,
-        ),
-        label: Text(
-          l10n.viewSchedule,
-          style: AppTheme.getBodyLarge(screenSize).copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppTheme.onPrimaryColor,
-            letterSpacing: 0.1,
-          ),
-        ),
-      ),
     );
   }
 
@@ -297,93 +271,33 @@ class StudentDetailView extends StatelessWidget {
       BuildContext context, AppLocalizations l10n, Size screenSize) {
     return Column(
       children: [
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () => _downloadCredential(context, l10n),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
-              foregroundColor: AppTheme.onPrimaryColor,
-              padding: EdgeInsets.symmetric(
-                  vertical: AppTheme.getSmallPadding(screenSize)),
-              shape: RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-              ),
-              elevation: 0,
-            ),
-            icon: Icon(
-              Icons.download_rounded,
-              color: AppTheme.onPrimaryColor,
-              size: screenSize.width * 0.06,
-            ),
-            label: Text(
-              l10n.downloadDigitalCredential,
-              style: AppTheme.getBodyLarge(screenSize).copyWith(
-                fontWeight: FontWeight.w600,
-                color: AppTheme.onPrimaryColor,
-                letterSpacing: 0.1,
-              ),
-            ),
-          ),
-        ),
+        SolidButton(
+            icon: Icons.download_rounded,
+            width: double.infinity,
+            onPressed: () {
+              _downloadCredential(context, l10n);
+            },
+            label: l10n.downloadDigitalCredential,
+            screenSize: screenSize),
         SizedBox(height: AppTheme.getSmallPadding(screenSize)),
         Row(
           children: [
             Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _editStudent(context, l10n),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppTheme.accentPurple,
-                  side: BorderSide(color: AppTheme.accentPurple),
-                  padding: EdgeInsets.symmetric(
-                      vertical: AppTheme.getSmallPadding(screenSize)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                        AppTheme.getSmallRadius(screenSize)),
-                  ),
-                ),
-                icon: Icon(
-                  Icons.edit_rounded,
-                  size: screenSize.width * 0.05,
+              child: CustomOutlineButton(
+                  onPressed: () {},
+                  label: l10n.cancel,
+                  icon: Icons.edit_rounded,
                   color: AppTheme.accentPurple,
-                ),
-                label: Text(
-                  l10n.edit,
-                  style: AppTheme.getBodyMedium(screenSize).copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.accentPurple,
-                  ),
-                ),
-              ),
+                  screenSize: screenSize),
             ),
             SizedBox(width: AppTheme.getSmallPadding(screenSize)),
             Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _deleteStudent(context, l10n),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppTheme.errorColor,
-                  side: BorderSide(color: AppTheme.errorColor),
-                  padding: EdgeInsets.symmetric(
-                      vertical: AppTheme.getSmallPadding(screenSize)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                        AppTheme.getSmallRadius(screenSize)),
-                  ),
-                ),
-                icon: Icon(
-                  Icons.delete_rounded,
-                  size: screenSize.width * 0.05,
+              child: CustomOutlineButton(
+                  onPressed: () {},
+                  label: l10n.cancel,
+                  icon: Icons.delete,
                   color: AppTheme.errorColor,
-                ),
-                label: Text(
-                  l10n.delete,
-                  style: AppTheme.getBodyMedium(screenSize).copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.errorColor,
-                  ),
-                ),
-              ),
+                  screenSize: screenSize),
             ),
           ],
         ),

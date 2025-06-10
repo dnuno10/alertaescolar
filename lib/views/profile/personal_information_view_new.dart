@@ -1,5 +1,7 @@
 import 'package:alertaescolar/components/custom_input_field.dart';
+import 'package:alertaescolar/components/custom_outline_button.dart';
 import 'package:alertaescolar/components/nav_header.dart';
+import 'package:alertaescolar/components/solid_button.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -247,60 +249,20 @@ class _PersonalInformationViewState extends State<PersonalInformationView> {
     return Row(
       children: [
         Expanded(
-          child: OutlinedButton(
-            onPressed: _isLoading ? null : () => _resetForm(l10n),
-            style: OutlinedButton.styleFrom(
-              padding: EdgeInsets.symmetric(
-                  vertical: AppTheme.getSmallPadding(screenSize)),
-              side: BorderSide(
-                color: AppTheme.getBorderColor(context),
-                width: 1,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-              ),
-            ),
-            child: Text(
-              l10n.reset,
-              style: AppTheme.getBodyMedium(screenSize).copyWith(
-                fontWeight: FontWeight.w600,
-                color: AppTheme.getTextSecondaryColor(context),
-              ),
-            ),
-          ),
+          child: CustomOutlineButton(
+              onPressed: _isLoading ? () {} : () => _resetForm(l10n),
+              label: l10n.reset,
+              color: AppTheme.accentPurple,
+              screenSize: screenSize),
         ),
         SizedBox(width: AppTheme.getSmallPadding(screenSize)),
         Expanded(
-          child: ElevatedButton(
-            onPressed: _isLoading ? null : () => _saveChanges(l10n),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.accentPurple,
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(
-                  vertical: AppTheme.getSmallPadding(screenSize)),
-              shape: RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-              ),
-              elevation: 0,
-            ),
-            child: _isLoading
-                ? SizedBox(
-                    height: screenSize.height * 0.025,
-                    width: screenSize.height * 0.025,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : Text(
-                    l10n.saveChanges,
-                    style: AppTheme.getBodyMedium(screenSize).copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
+          child: SolidButton(
+            backgroundColor: AppTheme.accentPurple,
+            width: double.infinity,
+            onPressed: _isLoading ? () {} : () => _saveChanges(l10n),
+            label: l10n.saveChanges,
+            screenSize: screenSize,
           ),
         ),
       ],

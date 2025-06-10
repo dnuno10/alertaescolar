@@ -1,4 +1,7 @@
+import 'package:alertaescolar/components/custom_input_field.dart';
 import 'package:alertaescolar/components/nav_header.dart';
+import 'package:alertaescolar/components/solid_button.dart';
+import 'package:alertaescolar/components/tips_cards/instructions_card.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -46,7 +49,10 @@ class _AddStudentViewState extends State<AddStudentView> {
                 child: Column(
                   children: [
                     SizedBox(height: AppTheme.getLargePadding(screenSize)),
-                    _buildInstructions(context, l10n, screenSize),
+                    InstructionsCard(
+                      l10n: l10n,
+                      screenSize: screenSize,
+                    ),
                     SizedBox(height: AppTheme.getMediumPadding(screenSize)),
                     _buildQRScanOption(context, l10n, screenSize),
                     SizedBox(height: AppTheme.getMediumPadding(screenSize)),
@@ -54,7 +60,14 @@ class _AddStudentViewState extends State<AddStudentView> {
                     SizedBox(height: AppTheme.getMediumPadding(screenSize)),
                     _buildManualInput(context, l10n, screenSize),
                     SizedBox(height: AppTheme.getLargePadding(screenSize)),
-                    _buildLinkButton(context, l10n, screenSize),
+                    SolidButton(
+                        width: double.infinity,
+                        icon: Icons.link_rounded,
+                        onPressed: () {
+                          _isLoading ? null : () => _linkStudent(l10n);
+                        },
+                        label: _isLoading ? l10n.linking : l10n.linkStudent,
+                        screenSize: screenSize),
                   ],
                 ),
               ))
@@ -62,47 +75,6 @@ class _AddStudentViewState extends State<AddStudentView> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildInstructions(
-      BuildContext context, AppLocalizations l10n, Size screenSize) {
-    return Container(
-      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-      decoration: BoxDecoration(
-        color: AppTheme.accentBlue.withValues(alpha: 0.1),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        border: Border.all(color: AppTheme.accentBlue.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.info_outline,
-                color: AppTheme.accentBlue,
-                size: screenSize.width * 0.06,
-              ),
-              SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-              Text(
-                l10n.instructions,
-                style: AppTheme.getSubtitle1(screenSize).copyWith(
-                  color: AppTheme.accentBlue,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-          Text(
-            l10n.linkStudentInstructions,
-            style: AppTheme.getBodyMedium(screenSize).copyWith(
-              color: AppTheme.getTextPrimaryColor(context),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -235,55 +207,10 @@ class _AddStudentViewState extends State<AddStudentView> {
               ),
             ),
             SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-            TextFormField(
+            CustomInputField(
+              label: l10n.keyCode,
               controller: _keyController,
-              style: AppTheme.getBodyMedium(screenSize).copyWith(
-                color: AppTheme.getTextPrimaryColor(context),
-              ),
-              decoration: InputDecoration(
-                labelText: l10n.keyCode,
-                labelStyle: AppTheme.getCaption(screenSize).copyWith(
-                  color: AppTheme.getTextSecondaryColor(context),
-                ),
-                hintText: l10n.keyCodeExample,
-                hintStyle: AppTheme.getCaption(screenSize).copyWith(
-                  color: AppTheme.getTextSecondaryColor(context),
-                ),
-                prefixIcon: Icon(
-                  Icons.key_rounded,
-                  color: AppTheme.accentPurple,
-                  size: screenSize.width * 0.06,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getSmallRadius(screenSize)),
-                  borderSide:
-                      BorderSide(color: AppTheme.getBorderColor(context)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getSmallRadius(screenSize)),
-                  borderSide:
-                      BorderSide(color: AppTheme.getBorderColor(context)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getSmallRadius(screenSize)),
-                  borderSide:
-                      BorderSide(color: AppTheme.accentPurple, width: 2),
-                ),
-                errorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getSmallRadius(screenSize)),
-                  borderSide: BorderSide(color: AppTheme.errorColor, width: 1),
-                ),
-                filled: true,
-                fillColor: AppTheme.getInputFillColor(context),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: AppTheme.getSmallPadding(screenSize),
-                  vertical: AppTheme.getSmallPadding(screenSize),
-                ),
-              ),
+              icon: Icons.key_rounded,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return l10n.pleaseEnterKeyCode;
@@ -293,52 +220,9 @@ class _AddStudentViewState extends State<AddStudentView> {
                 }
                 return null;
               },
+              screenSize: screenSize,
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLinkButton(
-      BuildContext context, AppLocalizations l10n, Size screenSize) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: _isLoading ? null : () => _linkStudent(l10n),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.accentPurple,
-          foregroundColor: AppTheme.onPrimaryColor,
-          disabledBackgroundColor: AppTheme.getBorderColor(context),
-          padding: EdgeInsets.symmetric(
-              vertical: AppTheme.getSmallPadding(screenSize)),
-          shape: RoundedRectangleBorder(
-            borderRadius:
-                BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-          ),
-          elevation: 0,
-        ),
-        icon: _isLoading
-            ? SizedBox(
-                width: screenSize.width * 0.05,
-                height: screenSize.width * 0.05,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: AppTheme.onPrimaryColor,
-                ),
-              )
-            : Icon(
-                Icons.link_rounded,
-                color: AppTheme.onPrimaryColor,
-                size: screenSize.width * 0.06,
-              ),
-        label: Text(
-          _isLoading ? l10n.linking : l10n.linkStudent,
-          style: AppTheme.getBodyLarge(screenSize).copyWith(
-            color: AppTheme.onPrimaryColor,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.1,
-          ),
         ),
       ),
     );
