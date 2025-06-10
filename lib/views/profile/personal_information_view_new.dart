@@ -1,3 +1,4 @@
+import 'package:alertaescolar/components/custom_input_field.dart';
 import 'package:alertaescolar/components/nav_header.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
@@ -199,8 +200,8 @@ class _PersonalInformationViewState extends State<PersonalInformationView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Name Field
-            _buildTextField(
+            // First Name Field
+            CustomInputField(
               controller: _nameController,
               label: l10n.firstName,
               screenSize: screenSize,
@@ -217,7 +218,7 @@ class _PersonalInformationViewState extends State<PersonalInformationView> {
             SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
             // Last Name Field
-            _buildTextField(
+            CustomInputField(
               controller: _lastNameController,
               label: l10n.lastNames,
               screenSize: screenSize,
@@ -239,68 +240,6 @@ class _PersonalInformationViewState extends State<PersonalInformationView> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required Size screenSize,
-    String? Function(String?)? validator,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTheme.getCaption(screenSize).copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppTheme.getTextPrimaryColor(context),
-          ),
-        ),
-        SizedBox(height: screenSize.height * 0.01),
-        TextFormField(
-          controller: controller,
-          validator: validator,
-          style: AppTheme.getBodyMedium(screenSize).copyWith(
-            fontWeight: FontWeight.w500,
-            color: AppTheme.getTextPrimaryColor(context),
-          ),
-          decoration: InputDecoration(
-            hintText: 'Ingresa tu $label',
-            hintStyle: AppTheme.getBodyMedium(screenSize).copyWith(
-              color: AppTheme.getTextSecondaryColor(context),
-            ),
-            filled: true,
-            fillColor: AppTheme.getInputFillColor(context),
-            border: OutlineInputBorder(
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-              borderSide: BorderSide(
-                color: AppTheme.accentPurple,
-                width: 2,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-              borderSide: BorderSide(
-                color: AppTheme.errorColor,
-                width: 2,
-              ),
-            ),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: AppTheme.getSmallPadding(screenSize),
-              vertical: AppTheme.getSmallPadding(screenSize),
-            ),
-          ),
-        ),
-      ],
     );
   }
 

@@ -2,7 +2,6 @@ import 'package:alertaescolar/views/students/students_view_new.dart';
 import 'package:flutter/material.dart';
 import '../views/home/home_view.dart';
 import '../views/profile/profile_view.dart';
-import '../views/profile/personal_data_view.dart';
 import '../views/profile/personal_data_navigation_view.dart';
 import '../views/profile/contact_information_view.dart';
 import '../views/profile/personal_information_view_new.dart' as personal_info;
@@ -11,8 +10,7 @@ import '../views/profile/password_security_view_new.dart' as password_security;
 import '../views/profile/notification_settings_view_new.dart'
     as notification_settings;
 import '../views/profile/family_information_view.dart';
-import '../views/profile/account_control_view.dart';
-import '../views/profile/app_settings_view.dart';
+
 import '../views/notifications/notifications_view.dart';
 import '../views/reports/reports_view.dart';
 
@@ -60,9 +58,7 @@ class AppRoutes {
 
       case reports:
         return MaterialPageRoute(builder: (context) => const ReportsView());
-      case personalData:
-        return MaterialPageRoute(
-            builder: (context) => const PersonalDataView());
+
       case personalDataNavigation:
         return MaterialPageRoute(
             builder: (context) => const PersonalDataNavigationView());
@@ -87,11 +83,6 @@ class AppRoutes {
       case familyInformation:
         return MaterialPageRoute(
             builder: (context) => const FamilyInformationView());
-      case accountControl:
-        return MaterialPageRoute(
-            builder: (context) => const AccountControlView());
-      case appSettings:
-        return MaterialPageRoute(builder: (context) => const AppSettingsView());
       default:
         return MaterialPageRoute(
           builder: (context) => const Scaffold(

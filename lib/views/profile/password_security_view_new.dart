@@ -1,4 +1,6 @@
+import 'package:alertaescolar/components/custom_input_field.dart';
 import 'package:alertaescolar/components/nav_header.dart';
+import 'package:alertaescolar/components/tips_cards/security_tips_card.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -18,9 +20,6 @@ class _PasswordSecurityViewState extends State<PasswordSecurityView> {
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  bool _obscureCurrentPassword = true;
-  bool _obscureNewPassword = true;
-  bool _obscureConfirmPassword = true;
   bool _isLoading = false;
 
   @override
@@ -65,7 +64,7 @@ class _PasswordSecurityViewState extends State<PasswordSecurityView> {
                       _buildSectionTitle(l10n.securityTips, screenSize),
                       SizedBox(height: AppTheme.getSmallPadding(screenSize)),
 
-                      _buildSecurityTipsCard(l10n, screenSize),
+                      SecurityTipsCard(l10n: l10n, screenSize: screenSize),
 
                       SizedBox(height: AppTheme.getLargePadding(screenSize)),
 
@@ -119,17 +118,12 @@ class _PasswordSecurityViewState extends State<PasswordSecurityView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Current Password
-            _buildPasswordField(
+            CustomInputField(
               controller: _currentPasswordController,
               label: l10n.currentPassword,
-              obscure: _obscureCurrentPassword,
-              l10n: l10n,
+              icon: Icons.lock_outline,
+              isPassword: true,
               screenSize: screenSize,
-              onToggleVisibility: () {
-                setState(() {
-                  _obscureCurrentPassword = !_obscureCurrentPassword;
-                });
-              },
               validator: (value) {
                 if (value?.isEmpty ?? true) {
                   return l10n.enterCurrentPassword;
@@ -141,17 +135,12 @@ class _PasswordSecurityViewState extends State<PasswordSecurityView> {
             SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
             // New Password
-            _buildPasswordField(
+            CustomInputField(
               controller: _newPasswordController,
               label: l10n.newPassword,
-              obscure: _obscureNewPassword,
-              l10n: l10n,
+              icon: Icons.lock_outline,
+              isPassword: true,
               screenSize: screenSize,
-              onToggleVisibility: () {
-                setState(() {
-                  _obscureNewPassword = !_obscureNewPassword;
-                });
-              },
               validator: (value) {
                 if (value?.isEmpty ?? true) {
                   return l10n.enterNewPassword;
@@ -165,17 +154,12 @@ class _PasswordSecurityViewState extends State<PasswordSecurityView> {
 
             SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-            _buildPasswordField(
+            CustomInputField(
               controller: _confirmPasswordController,
               label: l10n.confirmNewPassword,
-              obscure: _obscureConfirmPassword,
-              l10n: l10n,
+              icon: Icons.lock_outline,
+              isPassword: true,
               screenSize: screenSize,
-              onToggleVisibility: () {
-                setState(() {
-                  _obscureConfirmPassword = !_obscureConfirmPassword;
-                });
-              },
               validator: (value) {
                 if (value?.isEmpty ?? true) {
                   return l10n.confirmPassword;
@@ -227,160 +211,6 @@ class _PasswordSecurityViewState extends State<PasswordSecurityView> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildPasswordField({
-    required TextEditingController controller,
-    required String label,
-    required bool obscure,
-    required VoidCallback onToggleVisibility,
-    required String? Function(String?) validator,
-    required AppLocalizations l10n,
-    required Size screenSize,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTheme.getCaption(screenSize).copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppTheme.getTextPrimaryColor(context),
-          ),
-        ),
-        SizedBox(height: screenSize.height * 0.01),
-        TextFormField(
-          controller: controller,
-          obscureText: obscure,
-          validator: validator,
-          style: AppTheme.getBodyMedium(screenSize).copyWith(
-            fontWeight: FontWeight.w500,
-            color: AppTheme.getTextPrimaryColor(context),
-          ),
-          decoration: InputDecoration(
-            hintText: '${l10n.enter} $label',
-            hintStyle: AppTheme.getBodyMedium(screenSize).copyWith(
-              color: AppTheme.getTextSecondaryColor(context),
-            ),
-            prefixIcon: Icon(
-              Icons.lock_outline,
-              color: AppTheme.getTextSecondaryColor(context),
-              size: screenSize.width * 0.05,
-            ),
-            suffixIcon: IconButton(
-              icon: Icon(
-                obscure ? Icons.visibility_off : Icons.visibility,
-                color: AppTheme.getTextSecondaryColor(context),
-                size: screenSize.width * 0.05,
-              ),
-              onPressed: onToggleVisibility,
-            ),
-            filled: true,
-            fillColor: AppTheme.getInputFillColor(context),
-            border: OutlineInputBorder(
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-              borderSide: BorderSide(
-                color: AppTheme.accentPurple,
-                width: 2,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-              borderSide: BorderSide(
-                color: AppTheme.errorColor,
-                width: 2,
-              ),
-            ),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: AppTheme.getSmallPadding(screenSize),
-              vertical: AppTheme.getSmallPadding(screenSize),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSecurityTipsCard(AppLocalizations l10n, Size screenSize) {
-    return Container(
-      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.tips_and_updates_outlined,
-                color: AppTheme.accentPurple,
-                size: screenSize.width * 0.06,
-              ),
-              SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-              Text(
-                l10n.securityTips,
-                style: AppTheme.getBodyMedium(screenSize).copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.getTextPrimaryColor(context),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-          _buildSecurityTip(l10n.securityTip1, screenSize),
-          _buildSecurityTip(l10n.securityTip2, screenSize),
-          _buildSecurityTip(l10n.securityTip3, screenSize),
-          _buildSecurityTip(l10n.securityTip4, screenSize),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSecurityTip(String tip, Size screenSize) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: AppTheme.getSmallPadding(screenSize)),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: screenSize.width * 0.015,
-            height: screenSize.width * 0.015,
-            margin: EdgeInsets.only(top: screenSize.height * 0.01),
-            decoration: const BoxDecoration(
-              color: AppTheme.accentPurple,
-              shape: BoxShape.circle,
-            ),
-          ),
-          SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-          Expanded(
-            child: Text(
-              tip,
-              style: AppTheme.getCaption(screenSize).copyWith(
-                color: AppTheme.getTextSecondaryColor(context),
-                height: 1.4,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -551,7 +381,7 @@ class _PasswordSecurityViewState extends State<PasswordSecurityView> {
                     BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
               ),
               child: Text(
-                '• ${l10n.deleteAccountDesc}\n• Se perderán todos tus datos de estudiantes\n• No podrás recuperar tu cuenta',
+                l10n.deleteAccountDesc,
                 style: AppTheme.getCaption(screenSize).copyWith(
                   color: AppTheme.getTextSecondaryColor(context),
                   height: 1.4,

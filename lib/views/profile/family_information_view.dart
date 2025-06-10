@@ -1,4 +1,6 @@
+import 'package:alertaescolar/components/custom_input_field.dart';
 import 'package:alertaescolar/components/nav_header.dart';
+import 'package:alertaescolar/components/tips_cards/info_notice_card.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -101,7 +103,10 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
                       SizedBox(height: AppTheme.getLargePadding(screenSize)),
 
                       // Information Notice
-                      _buildInfoNotice(l10n, screenSize),
+                      InfoNoticeCard(
+                        l10n: l10n,
+                        screenSize: screenSize,
+                      ),
                     ],
                   ),
                 ),
@@ -389,11 +394,10 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Name Field
-            _buildTextField(
+            CustomInputField(
               controller: _contactNameController,
               label: l10n.fullName,
               icon: Icons.person_outline,
-              l10n: l10n,
               screenSize: screenSize,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
@@ -402,6 +406,7 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
                 return null;
               },
             ),
+
             SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
             // Relation Dropdown
@@ -409,12 +414,10 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
             SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
             // Phone Field
-            _buildTextField(
+            CustomInputField(
               controller: _contactPhoneController,
               label: l10n.phone,
               icon: Icons.phone_outlined,
-              keyboardType: TextInputType.phone,
-              l10n: l10n,
               screenSize: screenSize,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
@@ -423,15 +426,15 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
                 return null;
               },
             ),
+
             SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
             // Email Field
-            _buildTextField(
+            CustomInputField(
               controller: _contactEmailController,
               label: l10n.emailOptional,
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
-              l10n: l10n,
               screenSize: screenSize,
               validator: (value) {
                 if (value != null && value.isNotEmpty) {
@@ -446,77 +449,6 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    required AppLocalizations l10n,
-    required Size screenSize,
-    String? Function(String?)? validator,
-    TextInputType? keyboardType,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTheme.getCaption(screenSize).copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppTheme.getTextPrimaryColor(context),
-          ),
-        ),
-        SizedBox(height: screenSize.height * 0.01),
-        TextFormField(
-          controller: controller,
-          validator: validator,
-          keyboardType: keyboardType,
-          style: AppTheme.getBodyMedium(screenSize).copyWith(
-            fontWeight: FontWeight.w500,
-            color: AppTheme.getTextPrimaryColor(context),
-          ),
-          decoration: InputDecoration(
-            hintText: '${l10n.enter} $label',
-            hintStyle: AppTheme.getBodyMedium(screenSize).copyWith(
-              color: AppTheme.getTextSecondaryColor(context),
-            ),
-            prefixIcon: Icon(
-              icon,
-              color: AppTheme.accentPurple,
-              size: screenSize.width * 0.05,
-            ),
-            filled: true,
-            fillColor: AppTheme.getInputFillColor(context),
-            border: OutlineInputBorder(
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-              borderSide: BorderSide(
-                color: AppTheme.accentPurple,
-                width: 2,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-              borderSide: BorderSide(
-                color: AppTheme.errorColor,
-                width: 2,
-              ),
-            ),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: AppTheme.getSmallPadding(screenSize),
-              vertical: AppTheme.getSmallPadding(screenSize),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -650,53 +582,6 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildInfoNotice(AppLocalizations l10n, Size screenSize) {
-    return Container(
-      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-      decoration: BoxDecoration(
-        color: AppTheme.accentPurple.withOpacity(0.05),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-        border: Border.all(
-          color: AppTheme.accentPurple.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.info_outline,
-            color: AppTheme.accentPurple,
-            size: screenSize.width * 0.06,
-          ),
-          SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.importantInformation,
-                  style: AppTheme.getCaption(screenSize).copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.accentPurple,
-                  ),
-                ),
-                SizedBox(height: screenSize.height * 0.005),
-                Text(
-                  l10n.familyContactsUsedBySchool,
-                  style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                    color: AppTheme.getTextSecondaryColor(context),
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
