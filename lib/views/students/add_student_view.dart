@@ -125,7 +125,10 @@ class _AddStudentViewState extends State<AddStudentView> {
         grado: l10n.toConfirm,
         llave: _keyController.text.trim(),
         activo: true,
-        turno: Turno.matutino, // Default to matutino shift
+        turno: Turno.matutino,
+        grupo: '1A',
+        escuelaId: '',
+        fechaRegistro: DateTime.now(),
       );
 
       await studentProvider.addStudent(newStudent);

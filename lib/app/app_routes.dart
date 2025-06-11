@@ -1,3 +1,13 @@
+import 'package:alertaescolar/models/alumno.dart';
+import 'package:alertaescolar/views/admin/admin_dashboard_view.dart';
+import 'package:alertaescolar/views/admin/admin_profile_view.dart';
+import 'package:alertaescolar/views/admin/announcements_view.dart';
+import 'package:alertaescolar/views/admin/attendance_control_view.dart';
+import 'package:alertaescolar/views/admin/reports_view.dart';
+import 'package:alertaescolar/views/admin/schedule_management_view.dart';
+import 'package:alertaescolar/views/admin/school_settings_view.dart';
+import 'package:alertaescolar/views/admin/student_profile_admin_view.dart';
+import 'package:alertaescolar/views/admin/students_directory_view.dart';
 import 'package:alertaescolar/views/students/students_view_new.dart';
 import 'package:flutter/material.dart';
 import '../views/home/home_view.dart';
@@ -34,6 +44,17 @@ class AppRoutes {
   static const String familyInformation = '/profile/family-information';
   static const String accountControl = '/profile/account-control';
   static const String appSettings = '/profile/app-settings';
+
+  // Admin section routes
+  static const String adminDashboard = '/admin';
+  static const String adminAttendanceControl = '/admin/attendance-control';
+  static const String adminAnnouncements = '/admin/announcements';
+  static const String adminStudentsDirectory = '/admin/students-directory';
+  static const String adminStudentProfile = '/admin/student-profile';
+  static const String adminScheduleManagement = '/admin/schedule-management';
+  static const String adminSchoolSettings = '/admin/school-settings';
+  static const String adminReports = '/admin/reports';
+  static const String adminProfile = '/admin/profile';
 
   static Map<String, WidgetBuilder> get routes => {
         home: (context) => const HomeView(),
@@ -75,6 +96,45 @@ class AppRoutes {
       case familyInformation:
         return MaterialPageRoute(
             builder: (context) => const FamilyInformationView());
+
+      // Admin routes
+      case adminDashboard:
+        return MaterialPageRoute(
+            builder: (context) => const AdminDashboardView());
+      case adminProfile:
+        return MaterialPageRoute(
+            builder: (context) => const AdminProfileView());
+      case adminAttendanceControl:
+        return MaterialPageRoute(
+            builder: (context) => const AttendanceControlView());
+      case adminAnnouncements:
+        return MaterialPageRoute(
+            builder: (context) => const AnnouncementsView());
+      case adminStudentsDirectory:
+        return MaterialPageRoute(
+            builder: (context) => const StudentsDirectoryView());
+      case adminStudentProfile:
+        final student = settings.arguments as Alumno?;
+        if (student == null) {
+          return MaterialPageRoute(
+            builder: (context) => const Scaffold(
+              body: Center(
+                child: Text('Error: Student data required'),
+              ),
+            ),
+          );
+        }
+        return MaterialPageRoute(
+            builder: (context) => StudentProfileAdminView(student: student));
+      case adminScheduleManagement:
+        return MaterialPageRoute(
+            builder: (context) => const ScheduleManagementView());
+      case adminSchoolSettings:
+        return MaterialPageRoute(
+            builder: (context) => const SchoolSettingsView());
+      case adminReports:
+        return MaterialPageRoute(builder: (context) => const ReportsView());
+
       default:
         return MaterialPageRoute(
           builder: (context) => const Scaffold(

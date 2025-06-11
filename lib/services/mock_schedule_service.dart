@@ -77,7 +77,7 @@ class MockScheduleService {
         dia: DiaSemana.lunes,
         horaInicio: '08:00',
         horaFin: '09:00',
-        materia: _materias.firstWhere((m) => m.id == 'mat_001'),
+        aula: 'Aula 101',
       ),
       ClaseHorario(
         id: 'clase_002',
@@ -86,7 +86,7 @@ class MockScheduleService {
         dia: DiaSemana.lunes,
         horaInicio: '09:00',
         horaFin: '10:00',
-        materia: _materias.firstWhere((m) => m.id == 'mat_002'),
+        aula: 'Aula 102',
       ),
       ClaseHorario(
         id: 'clase_003',
@@ -95,7 +95,7 @@ class MockScheduleService {
         dia: DiaSemana.lunes,
         horaInicio: '10:00',
         horaFin: '10:30',
-        materia: _materias.firstWhere((m) => m.id == 'mat_008'),
+        aula: 'Patio',
       ),
       ClaseHorario(
         id: 'clase_004',
@@ -104,7 +104,7 @@ class MockScheduleService {
         dia: DiaSemana.lunes,
         horaInicio: '10:30',
         horaFin: '11:30',
-        materia: _materias.firstWhere((m) => m.id == 'mat_003'),
+        aula: 'Laboratorio',
       ),
       ClaseHorario(
         id: 'clase_005',
@@ -113,7 +113,7 @@ class MockScheduleService {
         dia: DiaSemana.lunes,
         horaInicio: '11:30',
         horaFin: '12:30',
-        materia: _materias.firstWhere((m) => m.id == 'mat_004'),
+        aula: 'Aula 103',
       ),
 
       // Martes
@@ -124,7 +124,7 @@ class MockScheduleService {
         dia: DiaSemana.martes,
         horaInicio: '08:00',
         horaFin: '09:00',
-        materia: _materias.firstWhere((m) => m.id == 'mat_002'),
+        aula: 'Aula 102',
       ),
       ClaseHorario(
         id: 'clase_007',
@@ -133,7 +133,7 @@ class MockScheduleService {
         dia: DiaSemana.martes,
         horaInicio: '09:00',
         horaFin: '10:00',
-        materia: _materias.firstWhere((m) => m.id == 'mat_001'),
+        aula: 'Aula 101',
       ),
       ClaseHorario(
         id: 'clase_008',
@@ -142,7 +142,7 @@ class MockScheduleService {
         dia: DiaSemana.martes,
         horaInicio: '10:00',
         horaFin: '10:30',
-        materia: _materias.firstWhere((m) => m.id == 'mat_008'),
+        aula: 'Patio',
       ),
       ClaseHorario(
         id: 'clase_009',
@@ -151,7 +151,7 @@ class MockScheduleService {
         dia: DiaSemana.martes,
         horaInicio: '10:30',
         horaFin: '11:30',
-        materia: _materias.firstWhere((m) => m.id == 'mat_006'),
+        aula: 'Aula 104',
       ),
       ClaseHorario(
         id: 'clase_010',
@@ -160,7 +160,7 @@ class MockScheduleService {
         dia: DiaSemana.martes,
         horaInicio: '11:30',
         horaFin: '12:30',
-        materia: _materias.firstWhere((m) => m.id == 'mat_005'),
+        aula: 'Gimnasio',
       ),
 
       // Miércoles
@@ -171,7 +171,7 @@ class MockScheduleService {
         dia: DiaSemana.miercoles,
         horaInicio: '08:00',
         horaFin: '09:00',
-        materia: _materias.firstWhere((m) => m.id == 'mat_003'),
+        aula: 'Laboratorio',
       ),
       ClaseHorario(
         id: 'clase_012',
@@ -180,7 +180,7 @@ class MockScheduleService {
         dia: DiaSemana.miercoles,
         horaInicio: '09:00',
         horaFin: '10:00',
-        materia: _materias.firstWhere((m) => m.id == 'mat_001'),
+        aula: 'Aula 101',
       ),
       ClaseHorario(
         id: 'clase_013',
@@ -189,7 +189,7 @@ class MockScheduleService {
         dia: DiaSemana.miercoles,
         horaInicio: '10:00',
         horaFin: '10:30',
-        materia: _materias.firstWhere((m) => m.id == 'mat_008'),
+        aula: 'Patio',
       ),
       ClaseHorario(
         id: 'clase_014',
@@ -198,7 +198,7 @@ class MockScheduleService {
         dia: DiaSemana.miercoles,
         horaInicio: '10:30',
         horaFin: '11:30',
-        materia: _materias.firstWhere((m) => m.id == 'mat_007'),
+        aula: 'Taller de Arte',
       ),
       ClaseHorario(
         id: 'clase_015',
@@ -207,7 +207,7 @@ class MockScheduleService {
         dia: DiaSemana.miercoles,
         horaInicio: '11:30',
         horaFin: '12:30',
-        materia: _materias.firstWhere((m) => m.id == 'mat_002'),
+        aula: 'Aula 102',
       ),
 
       // Jueves
@@ -218,7 +218,7 @@ class MockScheduleService {
         dia: DiaSemana.jueves,
         horaInicio: '08:00',
         horaFin: '09:00',
-        materia: _materias.firstWhere((m) => m.id == 'mat_004'),
+        aula: 'Aula 103',
       ),
       ClaseHorario(
         id: 'clase_017',
@@ -227,7 +227,7 @@ class MockScheduleService {
         dia: DiaSemana.jueves,
         horaInicio: '09:00',
         horaFin: '10:00',
-        materia: _materias.firstWhere((m) => m.id == 'mat_006'),
+        aula: 'Aula 104',
       ),
       ClaseHorario(
         id: 'clase_018',
@@ -236,7 +236,7 @@ class MockScheduleService {
         dia: DiaSemana.jueves,
         horaInicio: '10:00',
         horaFin: '10:30',
-        materia: _materias.firstWhere((m) => m.id == 'mat_008'),
+        aula: 'Patio',
       ),
       ClaseHorario(
         id: 'clase_019',
@@ -245,7 +245,7 @@ class MockScheduleService {
         dia: DiaSemana.jueves,
         horaInicio: '10:30',
         horaFin: '11:30',
-        materia: _materias.firstWhere((m) => m.id == 'mat_001'),
+        aula: 'Aula 101',
       ),
       ClaseHorario(
         id: 'clase_020',
@@ -254,7 +254,7 @@ class MockScheduleService {
         dia: DiaSemana.jueves,
         horaInicio: '11:30',
         horaFin: '12:30',
-        materia: _materias.firstWhere((m) => m.id == 'mat_003'),
+        aula: 'Laboratorio',
       ),
 
       // Viernes
@@ -265,7 +265,7 @@ class MockScheduleService {
         dia: DiaSemana.viernes,
         horaInicio: '08:00',
         horaFin: '09:00',
-        materia: _materias.firstWhere((m) => m.id == 'mat_005'),
+        aula: 'Gimnasio',
       ),
       ClaseHorario(
         id: 'clase_022',
@@ -274,7 +274,7 @@ class MockScheduleService {
         dia: DiaSemana.viernes,
         horaInicio: '09:00',
         horaFin: '10:00',
-        materia: _materias.firstWhere((m) => m.id == 'mat_007'),
+        aula: 'Taller de Arte',
       ),
       ClaseHorario(
         id: 'clase_023',
@@ -283,7 +283,7 @@ class MockScheduleService {
         dia: DiaSemana.viernes,
         horaInicio: '10:00',
         horaFin: '10:30',
-        materia: _materias.firstWhere((m) => m.id == 'mat_008'),
+        aula: 'Patio',
       ),
       ClaseHorario(
         id: 'clase_024',
@@ -292,7 +292,7 @@ class MockScheduleService {
         dia: DiaSemana.viernes,
         horaInicio: '10:30',
         horaFin: '11:30',
-        materia: _materias.firstWhere((m) => m.id == 'mat_002'),
+        aula: 'Aula 102',
       ),
       ClaseHorario(
         id: 'clase_025',
@@ -301,7 +301,7 @@ class MockScheduleService {
         dia: DiaSemana.viernes,
         horaInicio: '11:30',
         horaFin: '12:30',
-        materia: _materias.firstWhere((m) => m.id == 'mat_006'),
+        aula: 'Aula 104',
       ),
     ],
     'alumno_002': [
@@ -314,7 +314,7 @@ class MockScheduleService {
         dia: DiaSemana.lunes,
         horaInicio: '07:00',
         horaFin: '08:00',
-        materia: _materias.firstWhere((m) => m.id == 'mat_001'),
+        aula: 'Aula 101',
       ),
       ClaseHorario(
         id: 'clase_102',
@@ -323,7 +323,7 @@ class MockScheduleService {
         dia: DiaSemana.lunes,
         horaInicio: '08:00',
         horaFin: '09:00',
-        materia: _materias.firstWhere((m) => m.id == 'mat_002'),
+        aula: 'Aula 102',
       ),
       ClaseHorario(
         id: 'clase_103',
@@ -332,7 +332,7 @@ class MockScheduleService {
         dia: DiaSemana.lunes,
         horaInicio: '09:00',
         horaFin: '10:00',
-        materia: _materias.firstWhere((m) => m.id == 'mat_006'),
+        aula: 'Aula 104',
       ),
       ClaseHorario(
         id: 'clase_104',
@@ -341,7 +341,7 @@ class MockScheduleService {
         dia: DiaSemana.lunes,
         horaInicio: '10:00',
         horaFin: '10:30',
-        materia: _materias.firstWhere((m) => m.id == 'mat_008'),
+        aula: 'Patio',
       ),
       ClaseHorario(
         id: 'clase_105',
@@ -350,7 +350,7 @@ class MockScheduleService {
         dia: DiaSemana.lunes,
         horaInicio: '10:30',
         horaFin: '11:30',
-        materia: _materias.firstWhere((m) => m.id == 'mat_003'),
+        aula: 'Laboratorio',
       ),
       ClaseHorario(
         id: 'clase_106',
@@ -359,7 +359,7 @@ class MockScheduleService {
         dia: DiaSemana.lunes,
         horaInicio: '11:30',
         horaFin: '12:30',
-        materia: _materias.firstWhere((m) => m.id == 'mat_004'),
+        aula: 'Aula 103',
       ),
       ClaseHorario(
         id: 'clase_107',
@@ -368,7 +368,7 @@ class MockScheduleService {
         dia: DiaSemana.lunes,
         horaInicio: '12:30',
         horaFin: '13:30',
-        materia: _materias.firstWhere((m) => m.id == 'mat_005'),
+        aula: 'Gimnasio',
       ),
     ],
   };

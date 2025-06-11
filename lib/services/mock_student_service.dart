@@ -9,19 +9,29 @@ class MockStudentService {
   // Lista de alumnos mock
   static final List<Alumno> _students = [
     Alumno(
-        id: 'alumno_001',
-        nombre: 'Carlos Alberto González',
-        grado: '5° Primaria',
-        llave: 'ESC001-2024',
-        activo: true,
-        turno: Turno.matutino),
+      id: 'alumno_001',
+      nombre: 'Carlos Alberto González',
+      grado: '5°',
+      grupo: 'A',
+      escuelaId: 'escuela_001',
+      llave: 'ESC001-2024',
+      activo: true,
+      fechaRegistro: DateTime.now().subtract(const Duration(days: 30)),
+      turno: Turno.matutino,
+      tutoresIds: ['tutor_001', 'tutor_002'],
+    ),
     Alumno(
-        id: 'alumno_002',
-        nombre: 'Ana Sofía González',
-        grado: '2° Secundaria',
-        llave: 'ESC002-2024',
-        activo: true,
-        turno: Turno.vespertino),
+      id: 'alumno_002',
+      nombre: 'Ana Sofía González',
+      grado: '2°',
+      grupo: 'B',
+      escuelaId: 'escuela_001',
+      llave: 'ESC002-2024',
+      activo: true,
+      fechaRegistro: DateTime.now().subtract(const Duration(days: 45)),
+      turno: Turno.vespertino,
+      tutoresIds: ['tutor_003'],
+    ),
   ];
 
   Future<List<Alumno>> getStudents() async {
@@ -48,6 +58,7 @@ class MockStudentService {
     final newStudent = student.copyWith(
       id: newId,
       llave: 'ESC${newId.substring(7)}-2024',
+      fechaRegistro: DateTime.now(),
     );
 
     _students.add(newStudent);

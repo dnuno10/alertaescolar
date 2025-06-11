@@ -11,6 +11,7 @@ class NavHeader extends StatelessWidget {
 
     return SliverAppBar(
       floating: false,
+      toolbarHeight: screenSize.width * 0.2,
       pinned: true,
       elevation: 0,
       backgroundColor: Colors.transparent,
@@ -36,6 +37,7 @@ class NavHeader extends StatelessWidget {
             child: SafeArea(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Row(
                     children: [

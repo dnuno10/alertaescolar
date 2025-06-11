@@ -16,6 +16,7 @@ enum EstadoNotificacion {
 class Notificacion {
   final String id;
   final String alumnoId;
+  final String? adminId;
   final String titulo;
   final String mensaje;
   final TipoNotificacion tipo;
@@ -26,6 +27,7 @@ class Notificacion {
   const Notificacion({
     required this.id,
     required this.alumnoId,
+    this.adminId,
     required this.titulo,
     required this.mensaje,
     required this.tipo,
@@ -38,6 +40,7 @@ class Notificacion {
     return Notificacion(
       id: json['id'] ?? '',
       alumnoId: json['alumnoId'] ?? '',
+      adminId: json['adminId'],
       titulo: json['titulo'] ?? '',
       mensaje: json['mensaje'] ?? '',
       tipo: TipoNotificacion.values.firstWhere(
@@ -57,6 +60,7 @@ class Notificacion {
     return {
       'id': id,
       'alumnoId': alumnoId,
+      'adminId': adminId,
       'titulo': titulo,
       'mensaje': mensaje,
       'tipo': tipo.name,
@@ -69,6 +73,7 @@ class Notificacion {
   Notificacion copyWith({
     String? id,
     String? alumnoId,
+    String? adminId,
     String? titulo,
     String? mensaje,
     TipoNotificacion? tipo,
@@ -79,6 +84,7 @@ class Notificacion {
     return Notificacion(
       id: id ?? this.id,
       alumnoId: alumnoId ?? this.alumnoId,
+      adminId: adminId ?? this.adminId,
       titulo: titulo ?? this.titulo,
       mensaje: mensaje ?? this.mensaje,
       tipo: tipo ?? this.tipo,

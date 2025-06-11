@@ -16,11 +16,9 @@ class ClassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final materia = clase.materia;
-    if (materia == null) return const SizedBox.shrink();
-
-    final Color cardColor = _getColorFromHex(materia.color);
-    final bool isReceso = materia.nombre.toLowerCase().contains('recreo');
+    final String subjectName = _getSubjectNameFromId(clase.materiaId);
+    final Color cardColor = _getSubjectColor(clase.materiaId);
+    final bool isReceso = subjectName.toLowerCase().contains('recreo');
 
     return TweenAnimationBuilder<double>(
       duration: Duration(milliseconds: 300 + (index * 100)),
@@ -57,7 +55,7 @@ class ClassCard extends StatelessWidget {
                         EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
                     child: Column(
                       children: [
-                        // Header con icono, nombre y profesor
+                        // Header con icono y nombre
                         Row(
                           children: [
                             Container(
@@ -71,7 +69,7 @@ class ClassCard extends StatelessWidget {
                               child: Icon(
                                 isReceso
                                     ? Icons.free_breakfast_outlined
-                                    : _getSubjectIcon(materia.nombre),
+                                    : _getSubjectIcon(subjectName),
                                 color: cardColor,
                                 size: screenSize.width * 0.06,
                               ),
@@ -83,7 +81,7 @@ class ClassCard extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    materia.nombre,
+                                    subjectName,
                                     style: AppTheme.getSubtitle1(screenSize)
                                         .copyWith(
                                       fontWeight: FontWeight.w600,
@@ -94,20 +92,18 @@ class ClassCard extends StatelessWidget {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  if (materia.profesor.isNotEmpty) ...[
-                                    SizedBox(height: screenSize.height * 0.003),
-                                    Text(
-                                      materia.profesor,
-                                      style: AppTheme.getBodyMedium(screenSize)
-                                          .copyWith(
-                                        color: AppTheme.getTextSecondaryColor(
-                                            context),
-                                        height: 1.3,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                  SizedBox(height: screenSize.height * 0.003),
+                                  Text(
+                                    _getProfessorFromId(clase.materiaId),
+                                    style: AppTheme.getBodyMedium(screenSize)
+                                        .copyWith(
+                                      color: AppTheme.getTextSecondaryColor(
+                                          context),
+                                      height: 1.3,
                                     ),
-                                  ],
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ],
                               ),
                             ),
@@ -121,7 +117,7 @@ class ClassCard extends StatelessWidget {
                         Row(
                           children: [
                             Expanded(
-                              flex: materia.aula.isNotEmpty ? 1 : 2,
+                              flex: clase.aula.isNotEmpty ? 1 : 2,
                               child: _buildInfoChip(
                                 icon: Icons.access_time_rounded,
                                 text: clase.horarioTexto,
@@ -129,7 +125,7 @@ class ClassCard extends StatelessWidget {
                                 screenSize: screenSize,
                               ),
                             ),
-                            if (materia.aula.isNotEmpty) ...[
+                            if (clase.aula.isNotEmpty) ...[
                               SizedBox(
                                   width: AppTheme.getSmallPadding(screenSize) *
                                       0.5),
@@ -137,7 +133,7 @@ class ClassCard extends StatelessWidget {
                                 flex: 1,
                                 child: _buildInfoChip(
                                   icon: Icons.location_on_outlined,
-                                  text: materia.aula,
+                                  text: clase.aula,
                                   color:
                                       AppTheme.getTextSecondaryColor(context),
                                   screenSize: screenSize,
@@ -193,6 +189,48 @@ class ClassCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _getSubjectNameFromId(String materiaId) {
+    final Map<String, String> subjects = {
+      'mat_001': 'Matemáticas',
+      'mat_002': 'Español',
+      'mat_003': 'Ciencias Naturales',
+      'mat_004': 'Historia',
+      'mat_005': 'Educación Física',
+      'mat_006': 'Inglés',
+      'mat_007': 'Arte',
+      'mat_008': 'Recreo',
+    };
+    return subjects[materiaId] ?? 'Materia';
+  }
+
+  String _getProfessorFromId(String materiaId) {
+    final Map<String, String> professors = {
+      'mat_001': 'Prof. María González',
+      'mat_002': 'Prof. Luis Rodríguez',
+      'mat_003': 'Prof. Ana Martínez',
+      'mat_004': 'Prof. Carlos López',
+      'mat_005': 'Prof. Roberto Silva',
+      'mat_006': 'Prof. Sandra Torres',
+      'mat_007': 'Prof. Elena Vega',
+      'mat_008': '',
+    };
+    return professors[materiaId] ?? 'Profesor';
+  }
+
+  Color _getSubjectColor(String materiaId) {
+    final Map<String, String> colors = {
+      'mat_001': '#3A86FF',
+      'mat_002': '#00C896',
+      'mat_003': '#9B5DE5',
+      'mat_004': '#FF6B35',
+      'mat_005': '#FDCB5A',
+      'mat_006': '#F72585',
+      'mat_007': '#4CC9F0',
+      'mat_008': '#90E0EF',
+    };
+    return _getColorFromHex(colors[materiaId] ?? '#9B5DE5');
   }
 
   Color _getColorFromHex(String hexColor) {

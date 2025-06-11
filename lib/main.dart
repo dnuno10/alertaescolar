@@ -24,32 +24,48 @@ class AlertaEscolarApp extends StatelessWidget {
   }
 }
 
-class _AppContent extends StatelessWidget {
+class _AppContent extends StatefulWidget {
+  @override
+  State<_AppContent> createState() => _AppContentState();
+}
+
+class _AppContentState extends State<_AppContent> {
+  bool _providersInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeProvidersOnce();
+  }
+
+  Future<void> _initializeProvidersOnce() async {
+    if (!_providersInitialized && mounted) {
+      await Future.delayed(const Duration(milliseconds: 50));
+      if (mounted) {
+        await ProviderManager.initializeProviders(context);
+        if (mounted) {
+          setState(() {
+            _providersInitialized = true;
+          });
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer2<LocaleProvider, ThemeProvider>(
       builder: (context, localeProvider, themeProvider, child) {
-        // Initialize providers when the app starts
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          ProviderManager.initializeProviders(context);
-        });
-
         return MaterialApp(
           title: 'Alerta Escolar',
           debugShowCheckedModeBanner: false,
-
-          // Localization
           locale: localeProvider.locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-
-          // Theme
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeProvider.themeMode,
-
-          // Routes
-          initialRoute: AppRoutes.home,
+          initialRoute: AppRoutes.adminDashboard,
           routes: AppRoutes.routes,
           onGenerateRoute: AppRoutes.onGenerateRoute,
         );

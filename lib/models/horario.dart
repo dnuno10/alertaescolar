@@ -51,7 +51,7 @@ class ClaseHorario {
   final DiaSemana dia;
   final String horaInicio;
   final String horaFin;
-  final Materia? materia;
+  final String aula;
 
   const ClaseHorario({
     required this.id,
@@ -60,7 +60,7 @@ class ClaseHorario {
     required this.dia,
     required this.horaInicio,
     required this.horaFin,
-    this.materia,
+    required this.aula,
   });
 
   factory ClaseHorario.fromJson(Map<String, dynamic> json) {
@@ -74,7 +74,7 @@ class ClaseHorario {
       ),
       horaInicio: json['horaInicio'] ?? '',
       horaFin: json['horaFin'] ?? '',
-      materia: json['materia'] != null ? Materia.fromJson(json['materia']) : null,
+      aula: json['aula'] ?? '',
     );
   }
 
@@ -86,7 +86,7 @@ class ClaseHorario {
       'dia': dia.name,
       'horaInicio': horaInicio,
       'horaFin': horaFin,
-      'materia': materia?.toJson(),
+      'aula': aula,
     };
   }
 
@@ -97,7 +97,7 @@ class ClaseHorario {
     DiaSemana? dia,
     String? horaInicio,
     String? horaFin,
-    Materia? materia,
+    String? aula,
   }) {
     return ClaseHorario(
       id: id ?? this.id,
@@ -106,7 +106,7 @@ class ClaseHorario {
       dia: dia ?? this.dia,
       horaInicio: horaInicio ?? this.horaInicio,
       horaFin: horaFin ?? this.horaFin,
-      materia: materia ?? this.materia,
+      aula: aula ?? this.aula,
     );
   }
 
@@ -133,7 +133,7 @@ class ClaseHorario {
 
   @override
   String toString() {
-    return 'ClaseHorario(id: $id, materia: ${materia?.nombre}, dia: $diaNombre, horario: $horarioTexto)';
+    return 'ClaseHorario(id: $id, materiaId: $materiaId, dia: $diaNombre, horario: $horarioTexto, aula: $aula)';
   }
 
   @override

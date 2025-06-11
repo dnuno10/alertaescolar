@@ -20,11 +20,11 @@ abstract class AppLocalizations {
     }
 
     // Fallback to English if localizations are not found
-    if (kDebugMode) {
-      print(
-          'Warning: No AppLocalizations found in context. Using English fallback. '
-          'Make sure to include AppLocalizations.delegate in your app\'s localizationsDelegates.');
-    }
+    // if (kDebugMode) {
+    //   print(
+    //       'Warning: No AppLocalizations found in context. Using English fallback. '
+    //       'Make sure to include AppLocalizations.delegate in your app\'s localizationsDelegates.');
+    // }
     return AppLocalizationsEn();
   }
 
@@ -578,12 +578,239 @@ abstract class AppLocalizations {
   String get grandfather => 'Grandfather';
   String get grandmother => 'Grandmother';
   String get guardian => 'Guardian';
-  String get guardianFemale => 'Guardian (Female)';
+  String get guardianFemale => 'Guardian';
   String get uncle => 'Uncle';
   String get aunt => 'Aunt';
   String get brother => 'Brother';
   String get sister => 'Sister';
   String get otherFamily => 'Other Family';
+
+  // Admin module keys
+  String get adminDashboard => 'Admin Dashboard';
+  String get attendanceControl => 'Attendance Control';
+  String get studentsDirectory => 'Students Directory';
+  String get scheduleManagement => 'Schedule Management';
+  String get schoolSettings => 'School Settings';
+  String get reports => 'Reports';
+  String get scanQR => 'Scan QR';
+  String get attendanceRegistered => 'Attendance Registered';
+  String get createAnnouncement => 'Create Announcement';
+  String get sendToGroup => 'Send to Group';
+  String get sendToStudent => 'Send to Student';
+  String get messageTitle => 'Message Title';
+  String get messageContent => 'Message Content';
+  String get selectGrade => 'Select Grade';
+  String get selectGroup => 'Select Group';
+  String get priority => 'Priority';
+  String get urgent => 'Urgent';
+  String get send => 'Send';
+  String get announcementSent => 'Announcement Sent';
+  String get todayAttendance => 'Today\'s Attendance';
+  String get totalScanned => 'Total Scanned';
+  String get presentStudents => 'Present Students';
+  String get lateStudents => 'Late Students';
+  String get scannedBy => 'Scanned by';
+  String get scanTime => 'Scan Time';
+  String get entryTime => 'Entry Time';
+  String get searchStudents => 'Search Students';
+  String get filterBy => 'Filter by';
+  String get allGrades => 'All Grades';
+  String get allGroups => 'All Groups';
+  String get activeStudents => 'Active Students';
+  String get inactiveStudents => 'Inactive Students';
+  String get studentsFound => 'Students Found';
+  String get noStudentsFound => 'No Students Found';
+  String get studentProfile => 'Student Profile';
+  String get familyContacts => 'Family Contacts';
+  String get attendanceHistory => 'Attendance History';
+  String get academicRecord => 'Academic Record';
+  String get contactParents => 'Contact Parents';
+  String get editStudent => 'Edit Student';
+  String get turn => 'Turn';
+  String get morningShift => 'Morning Shift';
+  String get afternoonShift => 'Afternoon Shift';
+  String get activated => 'Activated';
+  String get deactivated => 'Deactivated';
+  String get timeRemaining => 'Time Remaining';
+  String get days => 'Days';
+  String get entryTolerance => 'Entry Tolerance';
+  String get lateTolerance => 'Late Tolerance';
+  String get exitTime => 'Exit Time';
+  String get configureSchedules => 'Configure Schedules';
+  String get schoolInfo => 'School Information';
+  String get schoolName => 'School Name';
+  String get schoolAddress => 'School Address';
+  String get schoolPhone => 'School Phone';
+  String get schoolEmail => 'School Email';
+  String get principalName => 'Principal Name';
+  String get schoolLogo => 'School Logo';
+  String get schoolColors => 'School Colors';
+  String get primaryColor => 'Primary Color';
+  String get secondaryColor => 'Secondary Color';
+  String get accentColor => 'Accent Color';
+  String get updateSettings => 'Update Settings';
+  String get settingsUpdated => 'Settings Updated';
+  String get selectDateRange => 'Select Date Range';
+  String get startDate => 'Start Date';
+  String get endDate => 'End Date';
+  String get generateReport => 'Generate Report';
+  String get exportReport => 'Export Report';
+  String get attendanceRate => 'Attendance Rate';
+  String get punctualityRate => 'Punctuality Rate';
+  String get absenceRate => 'Absence Rate';
+  String get totalDays => 'Total Days';
+  String get presentDays => 'Present Days';
+  String get lateDays => 'Late Days';
+  String get absentDays => 'Absent Days';
+  String get monthlyReport => 'Monthly Report';
+  String get weeklyReport => 'Weekly Report';
+  String get dailyReport => 'Daily Report';
+  String get byGrade => 'By Grade';
+  String get byGroup => 'By Group';
+  String get byStudent => 'By Student';
+  String get attendanceCalendar => 'Attendance Calendar';
+  String get viewDetails => 'View Details';
+  String get scannedStudents => 'Scanned Students';
+
+  // Additional missing keys for admin components
+  String get selectRecipient => 'Select Recipient';
+  String get enterMessageTitle => 'Enter message title';
+  String get titleRequired => 'Title is required';
+  String get enterMessageContent => 'Enter message content';
+  String get contentRequired => 'Content is required';
+  String get sending => 'Sending';
+  String get attendanceFor => 'Attendance for';
+  String get totalStudents => 'Total Students';
+  String get absentStudents => 'Absent Students';
+  String get calendarLegend => 'Calendar Legend';
+  String get fullAttendance => 'Full Attendance';
+  String get partialAttendance => 'Partial Attendance';
+  String get lowAttendance => 'Low Attendance';
+  String get noClasses => 'No Classes';
+  String get stopScanning => 'Stop Scanning';
+  String get scanningActive => 'Scanning Active';
+  String get readyToScan => 'Ready to Scan';
+  String get lastStudentScanned => 'Last Student Scanned';
+  String get unknown => 'Unknown';
+  String get now => 'Now';
+  String get startScanningToSeeRecords => 'Start scanning to see records';
+  String get noStudentsScanned => 'No students scanned';
+  String get noAttendanceThisDate => 'No attendance for this date';
+  String get totalAnnouncementsSent => 'Total announcements sent';
+  String get read => 'Read';
+  String get delivered => 'Delivered';
+  String get pending => 'Pending';
+  String get failed => 'Failed';
+  String get noAnnouncementsSent => 'No announcements sent';
+  String get createFirstAnnouncement => 'Create your first announcement';
+
+  // Additional admin localization keys
+  String get contacts => 'Contacts';
+  String get primaryContact => 'Primary Contact';
+  String get occupation => 'Occupation';
+  String get emergencyContact => 'Emergency Contact';
+  String get recentRecords => 'Recent Records';
+  String get last30Days => 'Last 30 Days';
+  String get viewAllRecords => 'View All Records';
+  String get adminActions => 'Admin Actions';
+  String get primaryActions => 'Primary Actions';
+  String get communicationActions => 'Communication Actions';
+  String get administrativeActions => 'Administrative Actions';
+  String get emergencyActions => 'Emergency Actions';
+  String get sendMessage => 'Send Message';
+  String get sendEmail => 'Send Email';
+  String get addNote => 'Add Note';
+  String get scheduleCall => 'Schedule Call';
+  String get printProfile => 'Print Profile';
+  String get contact => 'Contact';
+  String get schedule => 'Schedule';
+  String get generate => 'Generate';
+  String get print => 'Print';
+  String get emergency => 'Emergency';
+  String get completedSuccessfully => 'Completed Successfully';
+  String get emergencyContactInitiated => 'Emergency Contact Initiated';
+  String get contactParentsConfirm => 'Contact parents?';
+  String get sendMessageConfirm => 'Send message to parents?';
+  String get sendEmailConfirm => 'Send email to parents?';
+  String get addNoteConfirm => 'Add note to student record?';
+  String get scheduleCallConfirm => 'Schedule call with parents?';
+  String get generateReportConfirm => 'Generate student report?';
+  String get printProfileConfirm => 'Print student profile?';
+  String get emergencyContactConfirm => 'Initiate emergency contact protocol?';
+  String get editStudentConfirm => 'Edit student information?';
+  String get directoryStats => 'Directory Statistics';
+  String get newThisMonth => 'New This Month';
+  String get grades => 'Grades';
+  String get groups => 'Groups';
+  String get searchByNameOrId => 'Search by name or ID';
+  String get searchTip => 'Search tip';
+  String get searchByName => 'Search by name';
+  String get searchById => 'Search by ID';
+  String get searchByGrade => 'Combine with filters';
+  String get clearFilters => 'Clear Filters';
+  String get allStatus => 'All Status';
+  String get activeFilters => 'Active Filters';
+  String get tryDifferentFilters => 'Try different filters or search terms';
+  String get registeredOn => 'Registered on';
+  String get timeSettings => 'Time Settings';
+  String get toleranceSettings => 'Tolerance Settings';
+  String get minutes => 'Minutes';
+  String get selectGradeAndGroup => 'Select Grade and Group';
+  String get editingScheduleFor => 'Editing schedule for';
+  String get subject => 'Subject';
+  String get editSubject => 'Edit Subject';
+  String get scheduleReset => 'Schedule Reset';
+  String get scheduleSaved => 'Schedule Saved';
+  String get contactInfo => 'Contact Information';
+  String get emergencyPhone => 'Emergency Phone';
+  String get website => 'Website';
+  String get socialMedia => 'Social Media';
+  String get invalidEmail => 'Invalid Email';
+  String get fieldRequired => 'This field is required';
+  String get saving => 'Saving';
+  String get schoolBranding => 'School Branding';
+  String get schoolCode => 'School Code';
+  String get foundedYear => 'Founded Year';
+  String get description => 'Description';
+  String get changeLogo => 'Change Logo';
+  String get uploadLogo => 'Upload Logo';
+  String get logoUploaded => 'Logo Uploaded';
+  String get noLogoUploaded => 'No Logo Uploaded';
+  String get preview => 'Preview';
+
+  // Report-related keys
+  String get selectReportType => 'Select Report Type';
+  String get attendanceReportDesc => 'Detailed attendance report by period';
+  String get punctualityReport => 'Punctuality Report';
+  String get punctualityReportDesc => 'Analysis of tardiness and punctuality';
+  String get absenceReport => 'Absence Report';
+  String get absenceReportDesc => 'Statistics of school absenteeism';
+  String get summaryReport => 'Summary Report';
+  String get summaryReportDesc => 'Overview of all metrics';
+  String get reportFilters => 'Report Filters';
+  String get reportPeriod => 'Report Period';
+  String get customPeriod => 'Custom Period';
+  String get exportAs => 'Export as';
+  String get exportConfirm => 'The report will be exported in format';
+  String get export => 'Export';
+  String get exporting => 'Exporting';
+  String get generating => 'Generating';
+  String get exportedSuccessfully => 'Exported successfully in format';
+  String get pdfExportDesc => 'PDF document for printing';
+  String get excelExportDesc => 'Excel spreadsheet';
+  String get imageExportDesc => 'Image for presentations';
+  String get shareReportDesc => 'Share report directly';
+  String get reportGenerationConfirm =>
+      'Generate report with selected filters?';
+  String get reportGenerated => 'Report generated successfully';
+  String get share => 'Share';
+
+  // Missing getters
+  String get attendanceList => 'Attendance List';
+  String get time => 'Time';
+  String get group => 'Group';
+  String get status => 'Status';
+  String get selectExportFormat => 'Select Export Format';
 }
 
 class _AppLocalizationsDelegate
@@ -808,9 +1035,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String attendanceRecordsCount(int count) => '$count attendance records';
-
-  @override
-  String noRecordsForDate(String date) => 'No records for $date';
 
   @override
   String attendanceForDate(String date) => 'Attendance for $date';
@@ -1985,6 +2209,660 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get otherFamily => 'Other Family';
+
+  // Admin module keys
+  @override
+  String get adminDashboard => 'Admin Dashboard';
+
+  @override
+  String get attendanceControl => 'Attendance Control';
+
+  @override
+  String get studentsDirectory => 'Students Directory';
+
+  @override
+  String get scheduleManagement => 'Schedule Management';
+
+  @override
+  String get schoolSettings => 'School Settings';
+
+  @override
+  String get reports => 'Reports';
+
+  @override
+  String get scanQR => 'Scan QR';
+
+  @override
+  String get attendanceRegistered => 'Attendance Registered';
+
+  @override
+  String get createAnnouncement => 'Create Announcement';
+
+  @override
+  String get sendToGroup => 'Send to Group';
+
+  @override
+  String get sendToStudent => 'Send to Student';
+
+  @override
+  String get messageTitle => 'Message Title';
+
+  @override
+  String get messageContent => 'Message Content';
+
+  @override
+  String get selectGrade => 'Select Grade';
+
+  @override
+  String get selectGroup => 'Select Group';
+
+  @override
+  String get priority => 'Priority';
+
+  @override
+  String get urgent => 'Urgent';
+
+  @override
+  String get send => 'Send';
+
+  @override
+  String get announcementSent => 'Announcement Sent';
+
+  @override
+  String get todayAttendance => 'Today\'s Attendance';
+
+  @override
+  String get totalScanned => 'Total Scanned';
+
+  @override
+  String get presentStudents => 'Present Students';
+
+  @override
+  String get lateStudents => 'Late Students';
+
+  @override
+  String get scannedBy => 'Scanned by';
+
+  @override
+  String get scanTime => 'Scan Time';
+
+  @override
+  String get entryTime => 'Entry Time';
+
+  @override
+  String get searchStudents => 'Search Students';
+
+  @override
+  String get filterBy => 'Filter by';
+
+  @override
+  String get allGrades => 'All Grades';
+
+  @override
+  String get allGroups => 'All Groups';
+
+  @override
+  String get activeStudents => 'Active Students';
+
+  @override
+  String get inactiveStudents => 'Inactive Students';
+
+  @override
+  String get studentsFound => 'Students Found';
+
+  @override
+  String get noStudentsFound => 'No Students Found';
+
+  @override
+  String get studentProfile => 'Student Profile';
+
+  @override
+  String get familyContacts => 'Family Contacts';
+
+  @override
+  String get attendanceHistory => 'Attendance History';
+
+  @override
+  String get academicRecord => 'Academic Record';
+
+  @override
+  String get contactParents => 'Contact Parents';
+
+  @override
+  String get editStudent => 'Edit Student';
+
+  @override
+  String get turn => 'Turn';
+
+  @override
+  String get morningShift => 'Morning Shift';
+
+  @override
+  String get afternoonShift => 'Afternoon Shift';
+
+  @override
+  String get activated => 'Activated';
+
+  @override
+  String get deactivated => 'Deactivated';
+
+  @override
+  String get timeRemaining => 'Time Remaining';
+
+  @override
+  String get days => 'Days';
+
+  @override
+  String get entryTolerance => 'Entry Tolerance';
+
+  @override
+  String get lateTolerance => 'Late Tolerance';
+
+  @override
+  String get exitTime => 'Exit Time';
+
+  @override
+  String get configureSchedules => 'Configure Schedules';
+
+  @override
+  String get schoolInfo => 'School Information';
+
+  @override
+  String get schoolName => 'School Name';
+
+  @override
+  String get schoolAddress => 'School Address';
+
+  @override
+  String get schoolPhone => 'School Phone';
+
+  @override
+  String get schoolEmail => 'School Email';
+
+  @override
+  String get principalName => 'Principal Name';
+
+  @override
+  String get schoolLogo => 'School Logo';
+
+  @override
+  String get schoolColors => 'School Colors';
+
+  @override
+  String get primaryColor => 'Primary Color';
+
+  @override
+  String get secondaryColor => 'Secondary Color';
+
+  @override
+  String get accentColor => 'Accent Color';
+
+  @override
+  String get updateSettings => 'Update Settings';
+
+  @override
+  String get settingsUpdated => 'Settings Updated';
+
+  @override
+  String get selectDateRange => 'Select Date Range';
+
+  @override
+  String get startDate => 'Start Date';
+
+  @override
+  String get endDate => 'End Date';
+
+  @override
+  String get generateReport => 'Generate Report';
+
+  @override
+  String get exportReport => 'Export Report';
+
+  @override
+  String get attendanceRate => 'Attendance Rate';
+
+  @override
+  String get punctualityRate => 'Punctuality Rate';
+
+  @override
+  String get absenceRate => 'Absence Rate';
+
+  @override
+  String get totalDays => 'Total Days';
+
+  @override
+  String get presentDays => 'Present Days';
+
+  @override
+  String get lateDays => 'Late Days';
+
+  @override
+  String get absentDays => 'Absent Days';
+
+  @override
+  String get monthlyReport => 'Monthly Report';
+
+  @override
+  String get weeklyReport => 'Weekly Report';
+
+  @override
+  String get dailyReport => 'Daily Report';
+
+  @override
+  String get byGrade => 'By Grade';
+
+  @override
+  String get byGroup => 'By Group';
+
+  @override
+  String get byStudent => 'By Student';
+
+  @override
+  String get attendanceCalendar => 'Attendance Calendar';
+
+  @override
+  String get viewDetails => 'View Details';
+
+  @override
+  String get scannedStudents => 'Scanned Students';
+
+  // Additional missing keys for admin components
+  @override
+  String get selectRecipient => 'Select Recipient';
+
+  @override
+  String get enterMessageTitle => 'Enter message title';
+
+  @override
+  String get titleRequired => 'Title is required';
+
+  @override
+  String get enterMessageContent => 'Enter message content';
+
+  @override
+  String get contentRequired => 'Content is required';
+
+  @override
+  String get sending => 'Sending';
+
+  @override
+  String get attendanceFor => 'Attendance for';
+
+  @override
+  String get totalStudents => 'Total Students';
+
+  @override
+  String get absentStudents => 'Absent Students';
+
+  @override
+  String get calendarLegend => 'Calendar Legend';
+
+  @override
+  String get fullAttendance => 'Full Attendance';
+
+  @override
+  String get partialAttendance => 'Partial Attendance';
+
+  @override
+  String get lowAttendance => 'Low Attendance';
+
+  @override
+  String get noClasses => 'No Classes';
+
+  @override
+  String get stopScanning => 'Stop Scanning';
+
+  @override
+  String get scanningActive => 'Scanning Active';
+
+  @override
+  String get readyToScan => 'Ready to Scan';
+
+  @override
+  String get lastStudentScanned => 'Last Student Scanned';
+
+  @override
+  String get unknown => 'Unknown';
+
+  @override
+  String get now => 'Now';
+
+  @override
+  String get startScanningToSeeRecords => 'Start scanning to see records';
+
+  @override
+  String get noStudentsScanned => 'No students scanned';
+
+  @override
+  String get noAttendanceThisDate => 'No attendance for this date';
+
+  @override
+  String get totalAnnouncementsSent => 'Total announcements sent';
+
+  @override
+  String get read => 'Read';
+
+  @override
+  String get delivered => 'Delivered';
+
+  @override
+  String get pending => 'Pending';
+
+  @override
+  String get failed => 'Failed';
+
+  @override
+  String get noAnnouncementsSent => 'No announcements sent';
+
+  @override
+  String get createFirstAnnouncement => 'Create your first announcement';
+
+  // Additional admin localization keys
+  @override
+  String get contacts => 'Contacts';
+
+  @override
+  String get primaryContact => 'Primary Contact';
+
+  @override
+  String get occupation => 'Occupation';
+
+  @override
+  String get emergencyContact => 'Emergency Contact';
+
+  @override
+  String get recentRecords => 'Recent Records';
+
+  @override
+  String get last30Days => 'Last 30 Days';
+
+  @override
+  String get viewAllRecords => 'View All Records';
+
+  @override
+  String get adminActions => 'Admin Actions';
+
+  @override
+  String get primaryActions => 'Primary Actions';
+
+  @override
+  String get communicationActions => 'Communication Actions';
+
+  @override
+  String get administrativeActions => 'Administrative Actions';
+
+  @override
+  String get emergencyActions => 'Emergency Actions';
+
+  @override
+  String get sendMessage => 'Send Message';
+
+  @override
+  String get sendEmail => 'Send Email';
+
+  @override
+  String get addNote => 'Add Note';
+
+  @override
+  String get scheduleCall => 'Schedule Call';
+
+  @override
+  String get printProfile => 'Print Profile';
+
+  @override
+  String get contact => 'Contact';
+
+  @override
+  String get schedule => 'Schedule';
+
+  @override
+  String get generate => 'Generate';
+
+  @override
+  String get print => 'Print';
+
+  @override
+  String get emergency => 'Emergency';
+
+  @override
+  String get completedSuccessfully => 'Completed Successfully';
+
+  @override
+  String get emergencyContactInitiated => 'Emergency Contact Initiated';
+
+  @override
+  String get contactParentsConfirm => 'Contact parents?';
+
+  @override
+  String get sendMessageConfirm => 'Send message to parents?';
+
+  @override
+  String get sendEmailConfirm => 'Send email to parents?';
+
+  @override
+  String get addNoteConfirm => 'Add note to student record?';
+
+  @override
+  String get scheduleCallConfirm => 'Schedule call with parents?';
+
+  @override
+  String get generateReportConfirm => 'Generate student report?';
+
+  @override
+  String get printProfileConfirm => 'Print student profile?';
+
+  @override
+  String get emergencyContactConfirm => 'Initiate emergency contact protocol?';
+
+  @override
+  String get editStudentConfirm => 'Edit student information?';
+
+  @override
+  String get directoryStats => 'Directory Statistics';
+
+  @override
+  String get newThisMonth => 'New This Month';
+
+  @override
+  String get grades => 'Grades';
+
+  @override
+  String get groups => 'Groups';
+
+  @override
+  String get searchByNameOrId => 'Search by name or ID';
+
+  @override
+  String get searchTip => 'Search tip';
+
+  @override
+  String get searchByName => 'Search by name';
+
+  @override
+  String get searchById => 'Search by ID';
+
+  @override
+  String get searchByGrade => 'Combine with filters';
+
+  @override
+  String get clearFilters => 'Clear Filters';
+
+  @override
+  String get allStatus => 'All Status';
+
+  @override
+  String get activeFilters => 'Active Filters';
+
+  @override
+  String get tryDifferentFilters => 'Try different filters or search terms';
+
+  @override
+  String get registeredOn => 'Registered on';
+
+  @override
+  String get timeSettings => 'Time Settings';
+
+  @override
+  String get toleranceSettings => 'Tolerance Settings';
+
+  @override
+  String get minutes => 'Minutes';
+
+  @override
+  String get selectGradeAndGroup => 'Select Grade and Group';
+
+  @override
+  String get editingScheduleFor => 'Editing schedule for';
+
+  @override
+  String get subject => 'Subject';
+
+  @override
+  String get editSubject => 'Edit Subject';
+
+  @override
+  String get scheduleReset => 'Schedule Reset';
+
+  @override
+  String get scheduleSaved => 'Schedule Saved';
+
+  @override
+  String get contactInfo => 'Contact Information';
+
+  @override
+  String get emergencyPhone => 'Emergency Phone';
+
+  @override
+  String get website => 'Website';
+
+  @override
+  String get socialMedia => 'Social Media';
+
+  @override
+  String get invalidEmail => 'Invalid Email';
+
+  @override
+  String get fieldRequired => 'This field is required';
+
+  @override
+  String get saving => 'Saving';
+
+  @override
+  String get schoolBranding => 'School Branding';
+
+  @override
+  String get schoolCode => 'School Code';
+
+  @override
+  String get foundedYear => 'Founded Year';
+
+  @override
+  String get description => 'Description';
+
+  @override
+  String get changeLogo => 'Change Logo';
+
+  @override
+  String get uploadLogo => 'Upload Logo';
+
+  @override
+  String get logoUploaded => 'Logo Uploaded';
+
+  @override
+  String get noLogoUploaded => 'No Logo Uploaded';
+
+  @override
+  String get preview => 'Preview';
+
+  // Report-related keys
+  @override
+  String get selectReportType => 'Select Report Type';
+
+  @override
+  String get attendanceReportDesc => 'Detailed attendance report by period';
+
+  @override
+  String get punctualityReport => 'Punctuality Report';
+
+  @override
+  String get punctualityReportDesc => 'Analysis of tardiness and punctuality';
+
+  @override
+  String get absenceReport => 'Absence Report';
+
+  @override
+  String get absenceReportDesc => 'Statistics of school absenteeism';
+
+  @override
+  String get summaryReport => 'Summary Report';
+
+  @override
+  String get summaryReportDesc => 'Overview of all metrics';
+
+  @override
+  String get reportFilters => 'Report Filters';
+
+  @override
+  String get reportPeriod => 'Report Period';
+
+  @override
+  String get customPeriod => 'Custom Period';
+
+  @override
+  String get exportAs => 'Export as';
+
+  @override
+  String get exportConfirm => 'The report will be exported in format';
+
+  @override
+  String get export => 'Export';
+
+  @override
+  String get exporting => 'Exporting';
+
+  @override
+  String get generating => 'Generating';
+
+  @override
+  String get exportedSuccessfully => 'Exported successfully in format';
+
+  @override
+  String get pdfExportDesc => 'PDF document for printing';
+
+  @override
+  String get excelExportDesc => 'Excel spreadsheet';
+
+  @override
+  String get imageExportDesc => 'Image for presentations';
+
+  @override
+  String get shareReportDesc => 'Share report directly';
+
+  @override
+  String get reportGenerationConfirm =>
+      'Generate report with selected filters?';
+
+  @override
+  String get reportGenerated => 'Report generated successfully';
+
+  @override
+  String get share => 'Share';
+
+  // Missing getters
+  @override
+  String get attendanceList => 'Attendance List';
+
+  @override
+  String get time => 'Time';
+
+  @override
+  String get group => 'Group';
+
+  @override
+  String get status => 'Status';
+
+  @override
+  String get selectExportFormat => 'Select Export Format';
 }
 
 class AppLocalizationsEs extends AppLocalizations {
@@ -3374,4 +4252,571 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get otherFamily => 'Otro Familiar';
+
+  // Admin module keys - Spanish
+  @override
+  String get adminDashboard => 'Panel Administrativo';
+
+  @override
+  String get attendanceControl => 'Control de Asistencia';
+
+  @override
+  String get studentsDirectory => 'Directorio de Estudiantes';
+
+  @override
+  String get scheduleManagement => 'Gestión de Horarios';
+
+  @override
+  String get schoolSettings => 'Configuración Escolar';
+
+  @override
+  String get reports => 'Reportes';
+
+  @override
+  String get scanQR => 'Escanear QR';
+
+  @override
+  String get attendanceRegistered => 'Asistencia Registrada';
+
+  @override
+  String get createAnnouncement => 'Crear Comunicado';
+
+  @override
+  String get sendToGroup => 'Enviar a Grupo';
+
+  @override
+  String get sendToStudent => 'Enviar a Estudiante';
+
+  @override
+  String get messageTitle => 'Título del Mensaje';
+
+  @override
+  String get messageContent => 'Contenido del Mensaje';
+
+  @override
+  String get selectGrade => 'Seleccionar Grado';
+
+  @override
+  String get selectGroup => 'Seleccionar Grupo';
+
+  @override
+  String get priority => 'Prioridad';
+
+  @override
+  String get urgent => 'Urgente';
+
+  @override
+  String get send => 'Enviar';
+
+  @override
+  String get announcementSent => 'Comunicado Enviado';
+
+  @override
+  String get todayAttendance => 'Asistencia de Hoy';
+
+  @override
+  String get totalScanned => 'Total Escaneados';
+
+  @override
+  String get presentStudents => 'Estudiantes Presentes';
+
+  @override
+  String get lateStudents => 'Estudiantes Tarde';
+
+  @override
+  String get scannedBy => 'Escaneado por';
+
+  @override
+  String get scanTime => 'Hora de Escaneo';
+
+  @override
+  String get entryTime => 'Hora de Entrada';
+
+  @override
+  String get searchStudents => 'Buscar Estudiantes';
+
+  @override
+  String get filterBy => 'Filtrar por';
+
+  @override
+  String get allGrades => 'Todos los Grados';
+
+  @override
+  String get allGroups => 'Todos los Grupos';
+
+  @override
+  String get activeStudents => 'Estudiantes Activos';
+
+  @override
+  String get inactiveStudents => 'Estudiantes Inactivos';
+
+  @override
+  String get studentsFound => 'Estudiantes Encontrados';
+
+  @override
+  String get noStudentsFound => 'No se Encontraron Estudiantes';
+
+  @override
+  String get studentProfile => 'Perfil del Estudiante';
+
+  @override
+  String get familyContacts => 'Contactos Familiares';
+
+  @override
+  String get attendanceHistory => 'Historial de Asistencia';
+
+  @override
+  String get academicRecord => 'Registro Académico';
+
+  @override
+  String get contactParents => 'Contactar Padres';
+
+  @override
+  String get editStudent => 'Editar Estudiante';
+
+  @override
+  String get turn => 'Turno';
+
+  @override
+  String get morningShift => 'Turno Matutino';
+
+  @override
+  String get afternoonShift => 'Turno Vespertino';
+
+  @override
+  String get activated => 'Activado';
+
+  @override
+  String get deactivated => 'Desactivado';
+
+  @override
+  String get timeRemaining => 'Tiempo Restante';
+
+  @override
+  String get days => 'Días';
+
+  @override
+  String get entryTolerance => 'Tolerancia de Entrada';
+
+  @override
+  String get lateTolerance => 'Tolerancia de Tardanza';
+
+  @override
+  String get exitTime => 'Hora de Salida';
+
+  @override
+  String get configureSchedules => 'Configurar Horarios';
+
+  @override
+  String get schoolInfo => 'Información Escolar';
+
+  @override
+  String get schoolName => 'Nombre de la Escuela';
+
+  @override
+  String get schoolAddress => 'Dirección de la Escuela';
+
+  @override
+  String get schoolPhone => 'Teléfono de la Escuela';
+
+  @override
+  String get schoolEmail => 'Email de la Escuela';
+
+  @override
+  String get principalName => 'Nombre del Director';
+
+  @override
+  String get schoolLogo => 'Logo de la Escuela';
+
+  @override
+  String get schoolColors => 'Colores de la Escuela';
+
+  @override
+  String get primaryColor => 'Color Primario';
+
+  @override
+  String get secondaryColor => 'Color Secundario';
+
+  @override
+  String get accentColor => 'Color de Acento';
+
+  @override
+  String get updateSettings => 'Actualizar Configuración';
+
+  @override
+  String get settingsUpdated => 'Configuración Actualizada';
+
+  @override
+  String get selectDateRange => 'Seleccionar Rango de Fechas';
+
+  @override
+  String get startDate => 'Fecha de Inicio';
+
+  @override
+  String get endDate => 'Fecha de Fin';
+
+  @override
+  String get generateReport => 'Generar Reporte';
+
+  @override
+  String get exportReport => 'Exportar Reporte';
+
+  @override
+  String get attendanceRate => 'Tasa de Asistencia';
+
+  @override
+  String get punctualityRate => 'Tasa de Puntualidad';
+
+  @override
+  String get absenceRate => 'Tasa de Ausencias';
+
+  @override
+  String get totalDays => 'Días Totales';
+
+  @override
+  String get presentDays => 'Días Presentes';
+
+  @override
+  String get lateDays => 'Días Tarde';
+
+  @override
+  String get absentDays => 'Días Ausentes';
+
+  @override
+  String get monthlyReport => 'Reporte Mensual';
+
+  @override
+  String get weeklyReport => 'Reporte Semanal';
+
+  @override
+  String get dailyReport => 'Reporte Diario';
+
+  @override
+  String get byGrade => 'Por Grado';
+
+  @override
+  String get byGroup => 'Por Grupo';
+
+  @override
+  String get byStudent => 'Por Estudiante';
+
+  @override
+  String get attendanceCalendar => 'Calendario de Asistencia';
+
+  @override
+  String get viewDetails => 'Ver Detalles';
+
+  @override
+  String get scannedStudents => 'Estudiantes Escaneados';
+
+  // Additional missing keys for admin components
+  @override
+  String get selectRecipient => 'Seleccionar Destinatario';
+
+  @override
+  String get enterMessageTitle => 'Ingrese el título del mensaje';
+
+  @override
+  String get titleRequired => 'El título es obligatorio';
+
+  @override
+  String get enterMessageContent => 'Ingrese el contenido del mensaje';
+
+  @override
+  String get contentRequired => 'El contenido es obligatorio';
+
+  @override
+  String get sending => 'Enviando';
+
+  @override
+  String get attendanceFor => 'Asistencia para';
+
+  @override
+  String get totalStudents => 'Total de Estudiantes';
+
+  @override
+  String get absentStudents => 'Estudiantes Ausentes';
+
+  @override
+  String get calendarLegend => 'Leyenda del Calendario';
+
+  @override
+  String get fullAttendance => 'Asistencia Completa';
+
+  @override
+  String get partialAttendance => 'Asistencia Parcial';
+
+  @override
+  String get lowAttendance => 'Baja Asistencia';
+
+  @override
+  String get noClasses => 'Sin Clases';
+
+  @override
+  String get stopScanning => 'Detener Escaneo';
+
+  @override
+  String get scanningActive => 'Escaneo Activo';
+
+  @override
+  String get readyToScan => 'Listo para Escanear';
+
+  @override
+  String get lastStudentScanned => 'Último Estudiante Escaneado';
+
+  @override
+  String get unknown => 'Desconocido';
+
+  @override
+  String get now => 'Ahora';
+
+  @override
+  String get startScanningToSeeRecords =>
+      'Comience a escanear para ver registros';
+
+  @override
+  String get noStudentsScanned => 'No hay estudiantes escaneados';
+
+  @override
+  String get noAttendanceThisDate => 'No hay asistencia para esta fecha';
+
+  @override
+  String get totalAnnouncementsSent => 'Total de comunicados enviados';
+
+  @override
+  String get read => 'Leído';
+
+  @override
+  String get delivered => 'Entregado';
+
+  @override
+  String get pending => 'Pendiente';
+
+  @override
+  String get failed => 'Fallido';
+
+  @override
+  String get noAnnouncementsSent => 'No hay comunicados enviados';
+
+  @override
+  String get createFirstAnnouncement => 'Crea tu primer comunicado';
+
+  // Additional admin localization keys - Spanish
+  @override
+  String get contacts => 'Contactos';
+
+  @override
+  String get primaryContact => 'Contacto Principal';
+
+  @override
+  String get occupation => 'Ocupación';
+
+  @override
+  String get emergencyContact => 'Contacto de Emergencia';
+
+  @override
+  String get recentRecords => 'Registros Recientes';
+
+  @override
+  String get last30Days => 'Últimos 30 Días';
+
+  @override
+  String get viewAllRecords => 'Ver Todos los Registros';
+
+  @override
+  String get adminActions => 'Acciones Administrativas';
+
+  @override
+  String get primaryActions => 'Acciones Principales';
+
+  @override
+  String get communicationActions => 'Acciones de Comunicación';
+
+  @override
+  String get administrativeActions => 'Acciones Administrativas';
+
+  @override
+  String get emergencyActions => 'Acciones de Emergencia';
+
+  @override
+  String get sendMessage => 'Enviar Mensaje';
+
+  @override
+  String get sendEmail => 'Enviar Email';
+
+  @override
+  String get addNote => 'Agregar Nota';
+
+  @override
+  String get scheduleCall => 'Programar Llamada';
+
+  @override
+  String get printProfile => 'Imprimir Perfil';
+
+  @override
+  String get contact => 'Contactar';
+
+  @override
+  String get schedule => 'Programar';
+
+  @override
+  String get generate => 'Generar';
+
+  @override
+  String get print => 'Imprimir';
+
+  @override
+  String get emergency => 'Emergencia';
+
+  @override
+  String get completedSuccessfully => 'Completado Exitosamente';
+
+  @override
+  String get emergencyContactInitiated => 'Contacto de Emergencia Iniciado';
+
+  @override
+  String get contactParentsConfirm => '¿Contactar a los padres?';
+
+  @override
+  String get sendMessageConfirm => '¿Enviar mensaje a los padres?';
+
+  @override
+  String get sendEmailConfirm => '¿Enviar email a los padres?';
+
+  @override
+  String get addNoteConfirm => '¿Agregar nota al expediente del estudiante?';
+
+  @override
+  String get scheduleCallConfirm => '¿Programar llamada con los padres?';
+
+  @override
+  String get generateReportConfirm => '¿Generar reporte del estudiante?';
+
+  @override
+  String get printProfileConfirm => '¿Imprimir perfil del estudiante?';
+
+  @override
+  String get emergencyContactConfirm =>
+      '¿Iniciar protocolo de contacto de emergencia?';
+
+  @override
+  String get editStudentConfirm => '¿Editar información del estudiante?';
+
+  @override
+  String get directoryStats => 'Estadísticas del Directorio';
+
+  @override
+  String get newThisMonth => 'Nuevos Este Mes';
+
+  @override
+  String get grades => 'Grados';
+
+  @override
+  String get groups => 'Grupos';
+
+  @override
+  String get searchByNameOrId => 'Buscar por nombre o ID';
+
+  @override
+  String get searchTip => 'Consejo de búsqueda';
+
+  @override
+  String get searchByName => 'Buscar por nombre';
+
+  @override
+  String get searchById => 'Buscar por ID';
+
+  @override
+  String get searchByGrade => 'Combinar con filtros';
+
+  @override
+  String get clearFilters => 'Limpiar Filtros';
+
+  @override
+  String get allStatus => 'Todos los Estados';
+
+  @override
+  String get activeFilters => 'Filtros Activos';
+
+  @override
+  String get tryDifferentFilters =>
+      'Intente con diferentes filtros o términos de búsqueda';
+
+  @override
+  String get registeredOn => 'Registrado el';
+
+  @override
+  String get timeSettings => 'Configuración de Horarios';
+
+  @override
+  String get toleranceSettings => 'Configuración de Tolerancias';
+
+  @override
+  String get minutes => 'Minutos';
+
+  @override
+  String get selectGradeAndGroup => 'Seleccionar Grado y Grupo';
+
+  @override
+  String get editingScheduleFor => 'Editando horario para';
+
+  @override
+  String get subject => 'Materia';
+
+  @override
+  String get editSubject => 'Editar Materia';
+
+  @override
+  String get scheduleReset => 'Horario Restablecido';
+
+  @override
+  String get scheduleSaved => 'Horario Guardado Exitosamente';
+
+  @override
+  String get contactInfo => 'Información de Contacto';
+
+  @override
+  String get emergencyPhone => 'Teléfono de Emergencia';
+
+  @override
+  String get website => 'Sitio Web';
+
+  @override
+  String get socialMedia => 'Redes Sociales';
+
+  @override
+  String get invalidEmail => 'Email Inválido';
+
+  @override
+  String get fieldRequired => 'Este campo es requerido';
+
+  @override
+  String get saving => 'Guardando';
+
+  @override
+  String get schoolBranding => 'Imagen Corporativa';
+
+  @override
+  String get schoolCode => 'Código de Escuela';
+
+  @override
+  String get foundedYear => 'Año de Fundación';
+
+  @override
+  String get description => 'Descripción';
+
+  @override
+  String get changeLogo => 'Cambiar Logo';
+
+  @override
+  String get uploadLogo => 'Subir Logo';
+
+  @override
+  String get logoUploaded => 'Logo Cargado';
+
+  @override
+  String get noLogoUploaded => 'Sin Logo';
+
+  @override
+  String get preview => 'Vista Previa';
 }

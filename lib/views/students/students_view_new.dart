@@ -1,5 +1,5 @@
 import 'package:alertaescolar/components/buttons/solid_button.dart';
-import 'package:alertaescolar/components/headers/students_header.dart';
+import 'package:alertaescolar/components/headers/nav_header.dart';
 import 'package:alertaescolar/components/students/students_section_title.dart';
 import 'package:alertaescolar/components/students/students_list.dart';
 import 'package:alertaescolar/components/students/students_loading_state.dart';
@@ -32,7 +32,7 @@ class StudentsView extends StatelessWidget {
               return CustomScrollView(
                 physics: const BouncingScrollPhysics(),
                 slivers: [
-                  StudentsHeader(screenSize: screenSize),
+                  NavHeader(title: l10n.myStudents),
                   _buildStudentsSection(context, isWide, l10n, screenSize),
                 ],
               );

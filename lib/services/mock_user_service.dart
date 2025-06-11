@@ -14,7 +14,6 @@ class MockUserService {
     email: 'maria.gonzalez@email.com',
     telefono: '+52 55 1234 5678',
     tipo: TipoUsuario.madre,
-    alumnosIds: ['alumno_001', 'alumno_002'],
     fechaRegistro: DateTime.now().subtract(const Duration(days: 180)),
   );
 

@@ -1,4 +1,13 @@
-enum TipoUsuario { padre, madre, tutor, familiar, admin }
+enum TipoUsuario { padre, madre, tutor, familiar, administrador }
+
+enum TipoAdministrador {
+  director,
+  subdirector,
+  secretario,
+  personalSeguridad,
+  maestro,
+  administrativo
+}
 
 class Usuario {
   final String id;
@@ -7,10 +16,12 @@ class Usuario {
   final String email;
   final String? telefono;
   final TipoUsuario tipo;
-  final List<String> alumnosIds;
+  final TipoAdministrador? tipoAdministrador;
+  final String? escuelaId;
   final String? fotoUrl;
   final bool activo;
   final DateTime fechaRegistro;
+  final DateTime? fechaUltimaConexion;
 
   const Usuario({
     required this.id,
@@ -19,10 +30,12 @@ class Usuario {
     required this.email,
     this.telefono,
     this.tipo = TipoUsuario.padre,
-    this.alumnosIds = const [],
+    this.tipoAdministrador,
+    this.escuelaId,
     this.fotoUrl,
     this.activo = true,
     required this.fechaRegistro,
+    this.fechaUltimaConexion,
   });
 
   factory Usuario.fromJson(Map<String, dynamic> json) {
@@ -36,10 +49,19 @@ class Usuario {
         (e) => e.name == json['tipo'],
         orElse: () => TipoUsuario.padre,
       ),
-      alumnosIds: List<String>.from(json['alumnosIds'] ?? []),
+      tipoAdministrador: json['tipoAdministrador'] != null
+          ? TipoAdministrador.values.firstWhere(
+              (e) => e.name == json['tipoAdministrador'],
+              orElse: () => TipoAdministrador.administrativo,
+            )
+          : null,
+      escuelaId: json['escuelaId'],
       fotoUrl: json['fotoUrl'],
       activo: json['activo'] ?? true,
       fechaRegistro: DateTime.parse(json['fechaRegistro']),
+      fechaUltimaConexion: json['fechaUltimaConexion'] != null
+          ? DateTime.parse(json['fechaUltimaConexion'])
+          : null,
     );
   }
 
@@ -51,10 +73,12 @@ class Usuario {
       'email': email,
       'telefono': telefono,
       'tipo': tipo.name,
-      'alumnosIds': alumnosIds,
+      'tipoAdministrador': tipoAdministrador?.name,
+      'escuelaId': escuelaId,
       'fotoUrl': fotoUrl,
       'activo': activo,
       'fechaRegistro': fechaRegistro.toIso8601String(),
+      'fechaUltimaConexion': fechaUltimaConexion?.toIso8601String(),
     };
   }
 
@@ -65,10 +89,12 @@ class Usuario {
     String? email,
     String? telefono,
     TipoUsuario? tipo,
-    List<String>? alumnosIds,
+    TipoAdministrador? tipoAdministrador,
+    String? escuelaId,
     String? fotoUrl,
     bool? activo,
     DateTime? fechaRegistro,
+    DateTime? fechaUltimaConexion,
   }) {
     return Usuario(
       id: id ?? this.id,
@@ -77,15 +103,20 @@ class Usuario {
       email: email ?? this.email,
       telefono: telefono ?? this.telefono,
       tipo: tipo ?? this.tipo,
-      alumnosIds: alumnosIds ?? this.alumnosIds,
+      tipoAdministrador: tipoAdministrador ?? this.tipoAdministrador,
+      escuelaId: escuelaId ?? this.escuelaId,
       fotoUrl: fotoUrl ?? this.fotoUrl,
       activo: activo ?? this.activo,
       fechaRegistro: fechaRegistro ?? this.fechaRegistro,
+      fechaUltimaConexion: fechaUltimaConexion ?? this.fechaUltimaConexion,
     );
   }
 
   String get nombreCompleto => '$nombre $apellido';
-  bool get tieneAlumnos => alumnosIds.isNotEmpty;
+  bool get esAdministrador => tipo == TipoUsuario.administrador;
+  bool get esFamiliar => tipo != TipoUsuario.administrador;
+  bool get tieneUltimaConexion => fechaUltimaConexion != null;
+  bool get perteneceAEscuela => escuelaId != null;
 
   @override
   String toString() {

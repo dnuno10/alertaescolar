@@ -51,6 +51,7 @@ dependencies:
 
   # Calendar widget
   table_calendar: ^3.0.9
+  fl_chart: ^0.71.0
 
 dev_dependencies:
   flutter_test:

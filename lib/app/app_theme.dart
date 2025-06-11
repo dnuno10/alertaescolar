@@ -14,6 +14,7 @@ class AppTheme {
   static const Color accentYellow =
       Color(0xFFFDCB5A); // Yellow accent (updated)
   static const Color accentBlue = Color(0xFF3A86FF); // Blue accent
+  static const Color accentOrange = Color(0xFFFF6B35); // Orange accent
   static const Color accentGold =
       Color(0xFFFDCB5A); // Gold accent (alias to yellow)
 
