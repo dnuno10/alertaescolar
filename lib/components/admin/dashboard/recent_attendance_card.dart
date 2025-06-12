@@ -83,12 +83,14 @@ class RecentAttendanceCard extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AttendanceCalendarView(),
-                ),
-              ),
+              onPressed: () {
+                // Use Navigator.push instead of direct construction to ensure proper context setup
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const AttendanceCalendarView(),
+                  ),
+                );
+              },
               child: Text(
                 l10n.viewAll,
                 style: AppTheme.getBodyMedium(screenSize).copyWith(

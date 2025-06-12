@@ -27,44 +27,42 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
   String _selectedStatus = 'all';
   List<Notificacion> _allNotifications = [];
   List<Notificacion> _filteredNotifications = [];
+  bool _isDataLoaded = false;
 
   @override
   void initState() {
     super.initState();
-    _loadAttendanceData();
     _searchController.addListener(_filterNotifications);
-  }
-
-  void _loadAttendanceData() {
-    _allNotifications = _generateMockData();
-    _filterNotifications();
-  }
-
-  List<Notificacion> _generateMockData() {
-    // Only show records for past dates or today
-    if (widget.selectedDate.isAfter(DateTime.now())) {
-      return [];
-    }
-
-    final random = DateTime.now().millisecond;
-    final studentCount =
-        50 + (random % 200); // Random between 50-250 for better performance
-
-    final notifications = <Notificacion>[];
-
-    // We'll populate this in build or didChangeDependencies when context is fully available
-    return notifications;
+    // We no longer call _loadAttendanceData() here to avoid localization issues
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Safe to access localizations here
+    // Only load data once to avoid unnecessary rebuilds
+    if (!_isDataLoaded) {
+      _loadAttendanceData();
+      _isDataLoaded = true;
+    }
+  }
+
+  void _loadAttendanceData() {
+    // Now we're safely in didChangeDependencies where it's ok to access localizations
     _allNotifications = _generateCompleteData();
     _filterNotifications();
   }
 
+  // This empty mock method is fine since it doesn't use localizations
+  List<Notificacion> _generateMockData() {
+    // Only show records for past dates or today
+    if (widget.selectedDate.isAfter(DateTime.now())) {
+      return [];
+    }
+    return <Notificacion>[]; // Return empty list, real data comes from _generateCompleteData
+  }
+
   List<Notificacion> _generateCompleteData() {
+    // This is safe now since we're calling it from didChangeDependencies
     // Only show records for past dates or today
     if (widget.selectedDate.isAfter(DateTime.now())) {
       return [];
@@ -173,7 +171,10 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
   }
 
   void _filterNotifications() {
+    if (!mounted || _allNotifications.isEmpty) return;
+
     final query = _searchController.text.toLowerCase().trim();
+    // We can safely access localizations here as this will be called after build
     final l10n = AppLocalizations.of(context)!;
 
     setState(() {

@@ -59,6 +59,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                       SizedBox(height: AppTheme.getLargePadding(screenSize)),
 
                       // Enhanced Date Details with filters
+                      // This component is now safe as it handles localization properly
                       EnhancedDateDetails(
                         screenSize: screenSize,
                         selectedDate: selectedDate,
