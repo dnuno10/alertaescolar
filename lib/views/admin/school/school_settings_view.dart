@@ -6,6 +6,9 @@ import '../../../l10n/app_localizations.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../components/buttons/solid_button.dart';
 import '../../../models/models.dart';
+import '../../../components/admin/school/information_tab.dart';
+import '../../../components/admin/school/contact_tab.dart';
+import '../../../components/admin/school/color_picker_bottom_sheet.dart';
 
 class SchoolSettingsView extends StatefulWidget {
   const SchoolSettingsView({super.key});
@@ -124,7 +127,7 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
                                         AppTheme.getSmallPadding(screenSize) *
                                             0.5),
                                 Text(
-                                  'Gestiona y busca estudiantes de la escuela',
+                                  l10n.manageAndSearchStudents,
                                   style: AppTheme.getBodyMedium(screenSize)
                                       .copyWith(
                                     color:
@@ -167,12 +170,12 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
                             Tab(
                               icon: Icon(Icons.info_rounded,
                                   size: screenSize.height * 0.022),
-                              text: 'Información',
+                              text: l10n.information,
                             ),
                             Tab(
                               icon: Icon(Icons.contact_phone_rounded,
                                   size: screenSize.height * 0.022),
-                              text: 'Contacto',
+                              text: l10n.contact,
                             ),
                           ],
                         ),
@@ -184,8 +187,32 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
                         child: TabBarView(
                           controller: _tabController,
                           children: [
-                            _buildInformationTab(screenSize, context, l10n),
-                            _buildContactTab(screenSize, context, l10n),
+                            InformationTab(
+                              formKey: _formKey,
+                              nombreController: _nombreController,
+                              codigoController: _codigoController,
+                              descripcionController: _descripcionController,
+                              directorController: _directorController,
+                              yearFoundedController: _yearFoundedController,
+                              selectedTipo: _selectedTipo,
+                              selectedNiveles: _selectedNiveles,
+                              onTipoChanged: (tipo) =>
+                                  setState(() => _selectedTipo = tipo),
+                              onNivelesChanged: (niveles) =>
+                                  setState(() => _selectedNiveles = niveles),
+                              isLoading: _isLoading,
+                              onSave: _saveSettings,
+                              getTipoLabel: _getTipoLabel,
+                              getNivelLabel: _getNivelLabel,
+                            ),
+                            ContactTab(
+                              direccionController: _direccionController,
+                              telefonoController: _telefonoController,
+                              emailController: _emailController,
+                              sitioWebController: _sitioWebController,
+                              isLoading: _isLoading,
+                              onSave: _saveSettings,
+                            ),
                           ],
                         ),
                       ),
@@ -200,670 +227,38 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
     );
   }
 
-  Widget _buildInformationTab(
-      Size screenSize, BuildContext context, AppLocalizations l10n) {
-    return SingleChildScrollView(
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionCard(
-              title: 'Información Básica',
-              icon: Icons.school_rounded,
-              color: AppTheme.accentBlue,
-              children: [
-                CustomInputField(
-                  controller: _nombreController,
-                  label: l10n.schoolName,
-                  screenSize: screenSize,
-                  icon: Icons.business_rounded,
-                  validator: (value) =>
-                      value?.isEmpty == true ? l10n.fieldRequired : null,
-                ),
-                SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                Row(
-                  children: [
-                    Expanded(
-                      child: CustomInputField(
-                        controller: _codigoController,
-                        label: l10n.schoolCode,
-                        screenSize: screenSize,
-                        icon: Icons.tag_rounded,
-                        validator: (value) =>
-                            value?.isEmpty == true ? l10n.fieldRequired : null,
-                      ),
-                    ),
-                    SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-                    Expanded(
-                      child: CustomInputField(
-                        controller: _yearFoundedController,
-                        label: l10n.foundedYear,
-                        screenSize: screenSize,
-                        icon: Icons.calendar_today_rounded,
-                        keyboardType: TextInputType.number,
-                        validator: (value) =>
-                            value?.isEmpty == true ? l10n.fieldRequired : null,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                CustomInputField(
-                  controller: _directorController,
-                  label: 'Director/a',
-                  screenSize: screenSize,
-                  icon: Icons.person_rounded,
-                ),
-                SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                _buildTextAreaField(
-                  label: l10n.description,
-                  controller: _descripcionController,
-                  icon: Icons.description_rounded,
-                  maxLines: 3,
-                ),
-              ],
-            ),
-            SizedBox(height: AppTheme.getLargePadding(screenSize)),
-            _buildSectionCard(
-              title: 'Configuración Institucional',
-              icon: Icons.settings_rounded,
-              color: AppTheme.successColor,
-              children: [
-                _buildDropdownField(
-                  label: 'Tipo de Escuela',
-                  value: _selectedTipo,
-                  items: TipoEscuela.values,
-                  onChanged: (value) => setState(() => _selectedTipo = value!),
-                  getLabel: (tipo) => _getTipoLabel(tipo),
-                ),
-                SizedBox(height: AppTheme.getLargePadding(screenSize)),
-                _buildImprovedMultiSelectField(
-                  label: 'Niveles Educativos',
-                  selectedItems: _selectedNiveles,
-                  allItems: NivelEducativo.values,
-                  onChanged: (niveles) =>
-                      setState(() => _selectedNiveles = niveles),
-                  getLabel: (nivel) => _getNivelLabel(nivel),
-                ),
-              ],
-            ),
-            SizedBox(height: AppTheme.getLargePadding(screenSize)),
-            _buildSaveButton(screenSize, l10n),
-            SizedBox(height: AppTheme.getLargePadding(screenSize) * 6),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildContactTab(
-      Size screenSize, BuildContext context, AppLocalizations l10n) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionCard(
-            title: l10n.contactInfo,
-            icon: Icons.contact_phone_rounded,
-            color: AppTheme.successColor,
-            children: [
-              _buildTextAreaField(
-                label: l10n.schoolAddress,
-                controller: _direccionController,
-                icon: Icons.location_on_rounded,
-                maxLines: 2,
-                validator: (value) =>
-                    value?.isEmpty == true ? l10n.fieldRequired : null,
-              ),
-              SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-              Row(
-                children: [
-                  Expanded(
-                    child: CustomInputField(
-                      controller: _telefonoController,
-                      label: l10n.schoolPhone,
-                      screenSize: screenSize,
-                      icon: Icons.phone_rounded,
-                      keyboardType: TextInputType.phone,
-                      validator: (value) =>
-                          value?.isEmpty == true ? l10n.fieldRequired : null,
-                    ),
-                  ),
-                  SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-                  Expanded(
-                    child: CustomInputField(
-                      controller: _emailController,
-                      label: l10n.schoolEmail,
-                      screenSize: screenSize,
-                      icon: Icons.email_rounded,
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        if (value?.isEmpty == true) return l10n.fieldRequired;
-                        if (value != null && !value.contains('@'))
-                          return l10n.invalidEmail;
-                        return null;
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-              CustomInputField(
-                controller: _sitioWebController,
-                label: l10n.website,
-                screenSize: screenSize,
-                icon: Icons.language_rounded,
-                keyboardType: TextInputType.url,
-              ),
-            ],
-          ),
-          SizedBox(height: AppTheme.getLargePadding(screenSize)),
-          _buildSaveButton(screenSize, l10n),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionCard({
-    required String title,
-    required IconData icon,
-    required Color color,
-    required List<Widget> children,
-  }) {
-    final screenSize = MediaQuery.of(context).size;
-
-    return Container(
-      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
-        border: Border.all(color: AppTheme.getBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: screenSize.height * 0.015,
-            offset: Offset(0, screenSize.height * 0.005),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding:
-                    EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.5),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getSmallRadius(screenSize)),
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: screenSize.height * 0.025,
-                ),
-              ),
-              SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-              Text(
-                title,
-                style: AppTheme.getSubtitle1(screenSize).copyWith(
-                  color: AppTheme.getTextPrimaryColor(context),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-          ...children,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTextAreaField({
-    required String label,
-    required TextEditingController controller,
-    required IconData icon,
-    int maxLines = 1,
-    String? Function(String?)? validator,
-  }) {
-    final screenSize = MediaQuery.of(context).size;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTheme.getCaption(screenSize).copyWith(
-            color: AppTheme.getTextPrimaryColor(context),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        SizedBox(height: screenSize.height * 0.01),
-        TextFormField(
-          controller: controller,
-          maxLines: maxLines,
-          validator: validator,
-          style: AppTheme.getBodyMedium(screenSize).copyWith(
-            fontWeight: FontWeight.w500,
-            color: AppTheme.getTextPrimaryColor(context),
-          ),
-          decoration: InputDecoration(
-            hintText: label,
-            hintStyle: AppTheme.getBodyMedium(screenSize).copyWith(
-              color: AppTheme.getTextSecondaryColor(context),
-            ),
-            prefixIcon: Icon(
-              icon,
-              color: AppTheme.accentPurple,
-              size: screenSize.width * 0.05,
-            ),
-            filled: true,
-            fillColor: AppTheme.getInputFillColor(context),
-            border: OutlineInputBorder(
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-              borderSide: BorderSide(
-                color: AppTheme.accentPurple.withOpacity(0.0),
-                width: 1,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-              borderSide: const BorderSide(
-                color: AppTheme.accentPurple,
-                width: 2,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-              borderSide: const BorderSide(
-                color: AppTheme.errorColor,
-                width: 1,
-              ),
-            ),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: AppTheme.getSmallPadding(screenSize),
-              vertical: AppTheme.getSmallPadding(screenSize),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDropdownField<T>({
-    required String label,
-    required T value,
-    required List<T> items,
-    required ValueChanged<T?> onChanged,
-    required String Function(T) getLabel,
-  }) {
-    final screenSize = MediaQuery.of(context).size;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTheme.getCaption(screenSize).copyWith(
-            color: AppTheme.getTextPrimaryColor(context),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        SizedBox(height: screenSize.height * 0.01),
-        Container(
-          width: double.infinity,
-          padding: EdgeInsets.symmetric(
-            horizontal: AppTheme.getSmallPadding(screenSize),
-            vertical: AppTheme.getSmallPadding(screenSize) * 0.3,
-          ),
-          decoration: BoxDecoration(
-            color: AppTheme.getInputFillColor(context),
-            borderRadius:
-                BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-            border: Border.all(
-              color: AppTheme.accentPurple.withOpacity(0.0),
-              width: 1,
-            ),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<T>(
-              value: value,
-              onChanged: onChanged,
-              isExpanded: true,
-              icon: Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: AppTheme.accentPurple,
-                size: screenSize.width * 0.05,
-              ),
-              style: AppTheme.getBodyMedium(screenSize).copyWith(
-                fontWeight: FontWeight.w500,
-                color: AppTheme.getTextPrimaryColor(context),
-              ),
-              items: items
-                  .map((item) => DropdownMenuItem(
-                        value: item,
-                        child: Text(getLabel(item)),
-                      ))
-                  .toList(),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildImprovedMultiSelectField<T>({
-    required String label,
-    required List<T> selectedItems,
-    required List<T> allItems,
-    required ValueChanged<List<T>> onChanged,
-    required String Function(T) getLabel,
-  }) {
-    final screenSize = MediaQuery.of(context).size;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTheme.getCaption(screenSize).copyWith(
-            color: AppTheme.getTextPrimaryColor(context),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        SizedBox(height: screenSize.height * 0.01),
-        Container(
-          width: double.infinity,
-          padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-          decoration: BoxDecoration(
-            color: AppTheme.getInputFillColor(context),
-            borderRadius:
-                BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-            border: Border.all(
-              color: AppTheme.getBorderColor(context).withOpacity(0.1),
-              width: 1,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Selecciona los niveles educativos que ofrece la escuela:',
-                style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                  color: AppTheme.getTextSecondaryColor(context),
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-              SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-              Wrap(
-                spacing: AppTheme.getSmallPadding(screenSize),
-                runSpacing: AppTheme.getSmallPadding(screenSize) * 0.5,
-                children: allItems.map((item) {
-                  final isSelected = selectedItems.contains(item);
-                  return InkWell(
-                    onTap: () {
-                      final newList = List<T>.from(selectedItems);
-                      if (isSelected) {
-                        if (newList.length > 1) {
-                          // Mantener al menos uno seleccionado
-                          newList.remove(item);
-                        }
-                      } else {
-                        newList.add(item);
-                      }
-                      onChanged(newList);
-                    },
-                    borderRadius: BorderRadius.circular(
-                        AppTheme.getSmallRadius(screenSize)),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppTheme.getSmallPadding(screenSize),
-                        vertical: AppTheme.getSmallPadding(screenSize) * 0.7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppTheme.accentPurple
-                            : AppTheme.getCardColor(context),
-                        borderRadius: BorderRadius.circular(
-                            AppTheme.getSmallRadius(screenSize)),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppTheme.accentPurple
-                              : AppTheme.getBorderColor(context),
-                          width: 1.5,
-                        ),
-                        boxShadow: isSelected
-                            ? [
-                                BoxShadow(
-                                  color: AppTheme.accentPurple.withOpacity(0.3),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            width: screenSize.width * 0.04,
-                            height: screenSize.width * 0.04,
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? Colors.white
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(2),
-                              border: isSelected
-                                  ? null
-                                  : Border.all(
-                                      color: AppTheme.getBorderColor(context),
-                                      width: 1,
-                                    ),
-                            ),
-                            child: isSelected
-                                ? Icon(
-                                    Icons.check_rounded,
-                                    color: AppTheme.accentPurple,
-                                    size: screenSize.width * 0.03,
-                                  )
-                                : null,
-                          ),
-                          SizedBox(
-                              width:
-                                  AppTheme.getSmallPadding(screenSize) * 0.7),
-                          Text(
-                            getLabel(item),
-                            style: AppTheme.getCaption(screenSize).copyWith(
-                              color: isSelected
-                                  ? Colors.white
-                                  : AppTheme.getTextPrimaryColor(context),
-                              fontWeight: isSelected
-                                  ? FontWeight.w600
-                                  : FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              if (selectedItems.isEmpty) ...[
-                SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-                Container(
-                  padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
-                  decoration: BoxDecoration(
-                    color: AppTheme.warningColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(
-                        AppTheme.getSmallRadius(screenSize)),
-                    border: Border.all(
-                      color: AppTheme.warningColor.withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.warning_rounded,
-                        color: AppTheme.warningColor,
-                        size: screenSize.width * 0.04,
-                      ),
-                      SizedBox(
-                          width: AppTheme.getSmallPadding(screenSize) * 0.5),
-                      Expanded(
-                        child: Text(
-                          'Debe seleccionar al menos un nivel educativo',
-                          style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                            color: AppTheme.warningColor,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSaveButton(Size screenSize, AppLocalizations l10n) {
-    return SolidButton(
-      onPressed: _isLoading ? () {} : _saveSettings,
-      label: _isLoading ? l10n.saving : l10n.updateSettings,
-      icon: _isLoading ? null : Icons.save_rounded,
-      backgroundColor: AppTheme.accentPurple,
-      screenSize: screenSize,
-      width: double.infinity,
-    );
-  }
-
   String _getTipoLabel(TipoEscuela tipo) {
+    final l10n = AppLocalizations.of(context);
     switch (tipo) {
       case TipoEscuela.publica:
-        return 'Pública';
+        return l10n.public;
       case TipoEscuela.privada:
-        return 'Privada';
+        return l10n.private;
       case TipoEscuela.mixta:
-        return 'Mixta';
+        return l10n.mixed;
     }
   }
 
   String _getNivelLabel(NivelEducativo nivel) {
+    final l10n = AppLocalizations.of(context);
     switch (nivel) {
       case NivelEducativo.preescolar:
-        return 'Preescolar';
+        return l10n.preschool;
       case NivelEducativo.primaria:
-        return 'Primaria';
+        return l10n.primary;
       case NivelEducativo.secundaria:
-        return 'Secundaria';
+        return l10n.secondary;
       case NivelEducativo.bachillerato:
-        return 'Bachillerato';
+        return l10n.highSchool;
       case NivelEducativo.mixto:
-        return 'Mixto';
+        return l10n.mixed;
     }
-  }
-
-  void _showColorPicker(Color currentColor, ValueChanged<Color> onChanged) {
-    final colors = [
-      AppTheme.accentBlue,
-      AppTheme.accentPurple,
-      AppTheme.successColor,
-      AppTheme.warningColor,
-      AppTheme.errorColor,
-      Colors.orange,
-      Colors.pink,
-      Colors.teal,
-      Colors.indigo,
-      Colors.green,
-    ];
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: AppTheme.getCardColor(context),
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(
-                AppTheme.getLargeRadius(MediaQuery.of(context).size)),
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.all(
-                AppTheme.getMediumPadding(MediaQuery.of(context).size)),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Seleccionar Color',
-                  style: AppTheme.getH2(MediaQuery.of(context).size).copyWith(
-                    color: AppTheme.getTextPrimaryColor(context),
-                  ),
-                ),
-                SizedBox(
-                    height:
-                        AppTheme.getMediumPadding(MediaQuery.of(context).size)),
-                GridView.builder(
-                  shrinkWrap: true,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 5,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                  ),
-                  itemCount: colors.length,
-                  itemBuilder: (context, index) {
-                    final color = colors[index];
-                    return GestureDetector(
-                      onTap: () {
-                        onChanged(color);
-                        Navigator.pop(context);
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: color,
-                          borderRadius: BorderRadius.circular(
-                              AppTheme.getSmallRadius(
-                                  MediaQuery.of(context).size)),
-                          border: currentColor == color
-                              ? Border.all(color: Colors.white, width: 3)
-                              : null,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   void _showImagePicker(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Función de carga de imagen próximamente'),
+        content: Text(AppLocalizations.of(context).imageUploadSoonAvailable),
         backgroundColor: AppTheme.accentPurple,
       ),
     );
@@ -904,7 +299,8 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al guardar: $e'),
+            content:
+                Text(AppLocalizations.of(context).errorSaving(e.toString())),
             backgroundColor: AppTheme.errorColor,
           ),
         );

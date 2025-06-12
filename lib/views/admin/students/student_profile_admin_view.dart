@@ -10,6 +10,7 @@ import '../../../components/students/student_academic_info_card.dart';
 import '../../../components/students/student_key_info_card.dart';
 import '../../../components/admin/students/student_family_info_card.dart';
 import '../../../components/admin/students/student_attendance_history_card.dart';
+import '../../../utils/student_color_selector.dart';
 
 class StudentProfileAdminView extends StatelessWidget {
   final Alumno student;
@@ -23,13 +24,7 @@ class StudentProfileAdminView extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final screenSize = MediaQuery.of(context).size;
-    final colors = [
-      AppTheme.accentBlue,
-      AppTheme.successColor,
-      AppTheme.accentPurple,
-      AppTheme.warningColor,
-    ];
-    final color = colors[student.hashCode % colors.length];
+    final color = StudentColorSelector.getStudentColor(student);
 
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {

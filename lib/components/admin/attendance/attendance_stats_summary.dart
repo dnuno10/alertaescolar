@@ -14,7 +14,7 @@ class AttendanceStatsSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
 
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -67,7 +67,9 @@ class AttendanceStatsSummary extends StatelessWidget {
                   context,
                   l10n.presentStudents,
                   attendanceRecords
-                      .where((r) => r['status'] == 'present')
+                      .where((r) =>
+                          r['status'] ==
+                          l10n.presentStatusKey) // Use localization key
                       .length
                       .toString(),
                   Icons.check_circle_rounded,
@@ -80,7 +82,9 @@ class AttendanceStatsSummary extends StatelessWidget {
                   context,
                   l10n.lateStudents,
                   attendanceRecords
-                      .where((r) => r['status'] == 'late')
+                      .where((r) =>
+                          r['status'] ==
+                          l10n.lateStatusKey) // Use localization key
                       .length
                       .toString(),
                   Icons.schedule_rounded,

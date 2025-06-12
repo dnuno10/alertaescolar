@@ -16,7 +16,7 @@ class StudentAcademicInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
 
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -53,8 +53,10 @@ class StudentAcademicInfoCard extends StatelessWidget {
           SizedBox(height: AppTheme.getSmallPadding(screenSize)),
           StudentDetailRow(
             icon: Icons.access_time_rounded,
-            label: 'Turno', // TODO: Add to l10n
-            value: student.turno.name == 'matutino' ? 'Matutino' : 'Vespertino',
+            label: l10n.shift, // Replaced hardcoded 'Turno'
+            value: student.turno.name == 'matutino'
+                ? l10n.morning
+                : l10n.afternoon, // Replaced hardcoded values
             iconColor: AppTheme.accentYellow,
             screenSize: screenSize,
           ),

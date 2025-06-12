@@ -50,7 +50,7 @@ class StudentEditInfoCard extends StatelessWidget {
           ),
           SizedBox(height: AppTheme.getSmallPadding(screenSize)),
           Text(
-            'Para editar la información del estudiante, por favor contacta a la escuela. Ellos podrán actualizar los datos académicos y personales del estudiante.',
+            l10n.editStudentInfoInstructions,
             style: AppTheme.getCaptionSmall(screenSize).copyWith(
               color: AppTheme.getTextSecondaryColor(context),
               height: 1.4,
@@ -64,7 +64,7 @@ class StudentEditInfoCard extends StatelessWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    'Función de contacto con la escuela próximamente',
+                    l10n.contactSchoolFeatureComingSoon,
                     style: AppTheme.getCaption(screenSize).copyWith(
                       color: AppTheme.onPrimaryColor,
                     ),
@@ -79,7 +79,7 @@ class StudentEditInfoCard extends StatelessWidget {
               );
             },
             icon: Icons.contact_support_outlined,
-            label: 'Contactar Escuela',
+            label: l10n.contactSchool,
             screenSize: screenSize,
           ),
         ],

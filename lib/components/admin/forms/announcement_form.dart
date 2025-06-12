@@ -49,7 +49,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
           children: [
             // Recipient Type Selector
             Text(
-              l10n.selectRecipient ?? 'Seleccionar destinatario',
+              l10n.selectRecipient,
               style: AppTheme.getSubtitle1(widget.screenSize).copyWith(
                 color: AppTheme.getTextPrimaryColor(context),
                 fontWeight: FontWeight.w600,
@@ -116,8 +116,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
             TextFormField(
               controller: _titleController,
               decoration: InputDecoration(
-                hintText:
-                    l10n.enterMessageTitle ?? 'Ingrese el título del mensaje',
+                hintText: l10n.enterMessageTitle,
                 filled: true,
                 fillColor: AppTheme.getInputFillColor(context),
                 border: OutlineInputBorder(
@@ -131,7 +130,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
               style: AppTheme.getBodyMedium(widget.screenSize),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return l10n.titleRequired ?? 'El título es requerido';
+                  return l10n.titleRequired;
                 }
                 return null;
               },
@@ -152,8 +151,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
               controller: _contentController,
               maxLines: 5,
               decoration: InputDecoration(
-                hintText: l10n.enterMessageContent ??
-                    'Escriba el contenido del mensaje...',
+                hintText: l10n.enterMessageContent,
                 filled: true,
                 fillColor: AppTheme.getInputFillColor(context),
                 border: OutlineInputBorder(
@@ -167,7 +165,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
               style: AppTheme.getBodyMedium(widget.screenSize),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return l10n.contentRequired ?? 'El contenido es requerido';
+                  return l10n.contentRequired;
                 }
                 return null;
               },
@@ -189,7 +187,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
             SolidButton(
               backgroundColor: AppTheme.accentPurple,
               onPressed: _isLoading ? () {} : _sendAnnouncement,
-              label: _isLoading ? (l10n.sending ?? 'Enviando...') : l10n.send,
+              label: _isLoading ? (l10n.sending) : l10n.send,
               icon: _isLoading ? null : Icons.send_rounded,
               screenSize: widget.screenSize,
               width: double.infinity,

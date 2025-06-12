@@ -16,7 +16,7 @@ class StudentKeyInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
 
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -53,10 +53,10 @@ class StudentKeyInfoCard extends StatelessWidget {
           SizedBox(height: AppTheme.getSmallPadding(screenSize)),
           StudentDetailRow(
             icon: Icons.power_settings_new_rounded,
-            label: 'Status', // TODO: Add to l10n
+            label: l10n.status, // Replaced hardcoded 'Status'
             value: student.activo
-                ? 'Activada'
-                : 'Desactivada', // TODO: Add to l10n
+                ? l10n.activated
+                : l10n.deactivated, // Replaced hardcoded status values
             iconColor:
                 student.activo ? AppTheme.successColor : AppTheme.errorColor,
             screenSize: screenSize,
@@ -64,8 +64,8 @@ class StudentKeyInfoCard extends StatelessWidget {
           SizedBox(height: AppTheme.getSmallPadding(screenSize)),
           StudentDetailRow(
             icon: Icons.schedule_rounded,
-            label: 'Tiempo restante', // TODO: Add to l10n
-            value: '30 días', // TODO: Calculate actual remaining time
+            label: l10n.remainingTime, // Replaced hardcoded 'Tiempo restante'
+            value: l10n.thirtyDays, // Replaced hardcoded '30 días'
             iconColor: AppTheme.accentBlue,
             screenSize: screenSize,
           ),

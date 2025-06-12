@@ -5,6 +5,7 @@ import 'package:alertaescolar/components/tips_cards/info_notice_card.dart';
 import 'package:alertaescolar/components/profile/family_section_title.dart';
 import 'package:alertaescolar/components/profile/family_contacts_list.dart';
 import 'package:alertaescolar/components/profile/new_contact_form.dart';
+import 'package:alertaescolar/components/buttons/action_buttons_row.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -121,8 +122,13 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
 
                       SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-                      // Action Buttons
-                      _buildActionButtons(l10n, screenSize),
+                      // Action Buttons - Using the new component
+                      ActionButtonsRow(
+                        onClearPressed: _clearForm,
+                        onAddPressed: () => _addContact(l10n),
+                        isLoading: _isLoading,
+                        screenSize: screenSize,
+                      ),
 
                       SizedBox(height: AppTheme.getLargePadding(screenSize)),
 
@@ -139,29 +145,6 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildActionButtons(AppLocalizations l10n, Size screenSize) {
-    return Row(
-      children: [
-        Expanded(
-          child: CustomOutlineButton(
-              onPressed: _isLoading ? () {} : () => _clearForm(),
-              label: l10n.clear,
-              color: AppTheme.accentPurple,
-              screenSize: screenSize),
-        ),
-        SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-        Expanded(
-          child: SolidButton(
-              backgroundColor: AppTheme.accentPurple,
-              onPressed: _isLoading ? () {} : () => _addContact(l10n),
-              label: l10n.addContact,
-              screenSize: screenSize,
-              width: double.infinity),
-        ),
-      ],
     );
   }
 

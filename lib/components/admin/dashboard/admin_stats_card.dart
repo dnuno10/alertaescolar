@@ -12,7 +12,7 @@ class AdminStatsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
 
     return Container(
       padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
@@ -42,7 +42,7 @@ class AdminStatsCard extends StatelessWidget {
                       AppTheme.getSmallRadius(screenSize)),
                 ),
                 child: Text(
-                  '31',
+                  '31', // This should ideally be a dynamic value from a controller
                   style: AppTheme.getBodyMedium(screenSize).copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
@@ -53,6 +53,7 @@ class AdminStatsCard extends StatelessWidget {
               Text(
                 l10n.todayAttendance,
                 style: AppTheme.getH2(screenSize).copyWith(
+                  fontSize: MediaQuery.of(context).size.height * 0.023,
                   color: AppTheme.getTextPrimaryColor(context),
                   fontWeight: FontWeight.w700,
                 ),
@@ -69,8 +70,8 @@ class AdminStatsCard extends StatelessWidget {
                 child: _ModernStatItem(
                   icon: Icons.qr_code_2_rounded,
                   color: AppTheme.accentBlue,
-                  value: '245',
-                  label: 'Total Escaneados',
+                  value: '245', // This should ideally be a dynamic value
+                  label: l10n.totalScanned,
                   screenSize: screenSize,
                 ),
               ),
@@ -79,8 +80,8 @@ class AdminStatsCard extends StatelessWidget {
                 child: _ModernStatItem(
                   icon: Icons.check_circle_rounded,
                   color: AppTheme.successColor,
-                  value: '230',
-                  label: 'Estudiantes Presentes',
+                  value: '230', // This should ideally be a dynamic value
+                  label: l10n.presentStudents,
                   screenSize: screenSize,
                 ),
               ),
@@ -89,8 +90,8 @@ class AdminStatsCard extends StatelessWidget {
                 child: _ModernStatItem(
                   icon: Icons.schedule_rounded,
                   color: AppTheme.warningColor,
-                  value: '15',
-                  label: 'Estudiantes Tarde',
+                  value: '15', // This should ideally be a dynamic value
+                  label: l10n.lateStudents,
                   screenSize: screenSize,
                 ),
               ),

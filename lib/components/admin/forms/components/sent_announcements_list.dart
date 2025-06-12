@@ -79,8 +79,7 @@ class SentAnnouncementsList extends StatelessWidget {
                 SizedBox(width: AppTheme.getSmallPadding(screenSize)),
                 Expanded(
                   child: Text(
-                    l10n.totalAnnouncementsSent ??
-                        '${announcements.length} comunicados enviados',
+                    l10n.totalAnnouncementsSent,
                     style: AppTheme.getCaption(screenSize).copyWith(
                       color: AppTheme.accentBlue,
                       fontWeight: FontWeight.w600,
@@ -263,7 +262,7 @@ class _AnnouncementItem extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                '${announcement['readCount']}/${announcement['totalRecipients']} ${l10n.read ?? 'leído'}',
+                '${announcement['readCount']}/${announcement['totalRecipients']} ${l10n.read}',
                 style: AppTheme.getCaptionSmall(screenSize).copyWith(
                   color: AppTheme.getTextSecondaryColor(context),
                 ),
@@ -349,15 +348,15 @@ class _AnnouncementItem extends StatelessWidget {
   String _getStatusText(String status, AppLocalizations l10n) {
     switch (status) {
       case 'delivered':
-        return l10n.delivered ?? 'Entregado';
+        return l10n.delivered;
       case 'read':
-        return l10n.read ?? 'Leído';
+        return l10n.read;
       case 'pending':
-        return l10n.pending ?? 'Pendiente';
+        return l10n.pending;
       case 'failed':
-        return l10n.failed ?? 'Falló';
+        return l10n.failed;
       default:
-        return l10n.unknown ?? 'Desconocido';
+        return l10n.unknown;
     }
   }
 
@@ -366,7 +365,7 @@ class _AnnouncementItem extends StatelessWidget {
     final difference = now.difference(dateTime);
 
     if (difference.inMinutes < 1) {
-      return l10n.now ?? 'Ahora';
+      return l10n.now;
     } else if (difference.inMinutes < 60) {
       return '${difference.inMinutes} min';
     } else if (difference.inHours < 24) {
@@ -399,15 +398,14 @@ class _EmptyState extends StatelessWidget {
           ),
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
           Text(
-            l10n.noAnnouncementsSent ?? 'No hay comunicados enviados',
+            l10n.noAnnouncementsSent,
             style: AppTheme.getSubtitle1(screenSize).copyWith(
               color: AppTheme.getTextSecondaryColor(context),
             ),
           ),
           SizedBox(height: screenSize.height * 0.01),
           Text(
-            l10n.createFirstAnnouncement ??
-                'Cree su primer comunicado usando la pestaña anterior',
+            l10n.createFirstAnnouncement,
             style: AppTheme.getCaption(screenSize).copyWith(
               color: AppTheme.getTextSecondaryColor(context),
             ),

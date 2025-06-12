@@ -21,7 +21,7 @@ class FamilyContactTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
 
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),

@@ -1,0 +1,73 @@
+import 'package:flutter/material.dart';
+import '../../../app/app_theme.dart';
+import '../../../models/models.dart';
+
+class StudentInfoCard extends StatelessWidget {
+  final Alumno student;
+  final Size screenSize;
+
+  const StudentInfoCard({
+    super.key,
+    required this.student,
+    required this.screenSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
+        border: Border.all(color: AppTheme.getBorderColor(context)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: screenSize.width * 0.15,
+            height: screenSize.width * 0.15,
+            decoration: BoxDecoration(
+              color: AppTheme.successColor,
+              borderRadius:
+                  BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+            ),
+            child: Center(
+              child: Text(
+                student.nombre.isNotEmpty
+                    ? student.nombre[0].toUpperCase()
+                    : 'A',
+                style: AppTheme.getH1(screenSize).copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: AppTheme.getMediumPadding(screenSize)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  student.nombre,
+                  style: AppTheme.getH2(screenSize).copyWith(
+                    color: AppTheme.getTextPrimaryColor(context),
+                    fontWeight: FontWeight.w700,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  '${student.grado}${student.grupo}',
+                  style: AppTheme.getBodyMedium(screenSize).copyWith(
+                    color: AppTheme.getTextSecondaryColor(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -21,7 +21,7 @@ class QRScannerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
 
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -129,7 +129,7 @@ class QRScannerCard extends StatelessWidget {
           if (isScanning) ...[
             SizedBox(height: AppTheme.getSmallPadding(screenSize)),
             Text(
-              'Toca el área del scanner para simular escaneo',
+              l10n.tapScanAreaToSimulate, // Replaced hardcoded text
               style: AppTheme.getCaptionSmall(screenSize).copyWith(
                 color: AppTheme.getTextSecondaryColor(context),
               ),
@@ -142,28 +142,27 @@ class QRScannerCard extends StatelessWidget {
   }
 
   void _simulateStudentScan() {
-    // Mock student data for simulation
     final mockStudents = [
       {
         'studentName': 'Ana García López',
         'studentId': 'EST001',
         'grade': '6° A',
         'status': 'present',
-        'scanTime': 'Ahora',
+        'scanTime': 'now', // Changed from Spanish to a locale-independent key
       },
       {
         'studentName': 'Carlos Mendoza',
         'studentId': 'EST002',
         'grade': '5° B',
         'status': 'late',
-        'scanTime': 'Ahora',
+        'scanTime': 'now', // Changed from Spanish to a locale-independent key
       },
       {
         'studentName': 'María Fernández',
         'studentId': 'EST003',
         'grade': '4° C',
         'status': 'present',
-        'scanTime': 'Ahora',
+        'scanTime': 'now', // Changed from Spanish to a locale-independent key
       },
     ];
 

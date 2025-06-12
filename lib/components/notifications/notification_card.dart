@@ -19,7 +19,7 @@ class NotificationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
     final colors = [
       AppTheme.accentBlue,
       AppTheme.successColor,
@@ -145,7 +145,7 @@ class NotificationCard extends StatelessWidget {
                         ),
                         SizedBox(height: screenSize.height * 0.003),
                         Text(
-                          _formatTime(notification.fechaHora),
+                          _formatTime(notification.fechaHora, context),
                           style: AppTheme.getCaptionSmall(screenSize).copyWith(
                             color: AppTheme.getTextSecondaryColor(context),
                             fontWeight: FontWeight.w500,
@@ -204,15 +204,17 @@ class NotificationCard extends StatelessWidget {
     );
   }
 
-  String _formatTime(DateTime dateTime) {
+  String _formatTime(DateTime dateTime, BuildContext context) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
+    final l10n = AppLocalizations.of(context); // Added l10n instance
+
     if (difference.inMinutes < 60) {
-      return 'Hace ${difference.inMinutes}m';
+      return l10n.minutesAgo(difference.inMinutes); // Replaced hardcoded text
     } else if (difference.inHours < 24) {
-      return 'Hace ${difference.inHours}h';
+      return l10n.hoursAgo(difference.inHours); // Replaced hardcoded text
     } else {
-      return 'Hace ${difference.inDays}d';
+      return l10n.daysAgo(difference.inDays); // Replaced hardcoded text
     }
   }
 }

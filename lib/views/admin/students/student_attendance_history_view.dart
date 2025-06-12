@@ -4,6 +4,11 @@ import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/models.dart';
+import '../../../components/admin/students/empty_records_state.dart';
+import '../../../components/admin/students/attendance_record_item.dart';
+import '../../../components/admin/students/student_info_card.dart';
+import '../../../components/admin/students/filters_section.dart';
+import '../../../components/admin/students/records_header.dart';
 
 class StudentAttendanceHistoryView extends StatefulWidget {
   final Alumno student;
@@ -121,7 +126,7 @@ class _StudentAttendanceHistoryViewState
       body: CustomScrollView(
         slivers: [
           NavHeader(
-            title: 'Historial',
+            title: l10n.attendanceHistory,
           ),
           SliverToBoxAdapter(
               child: Padding(
@@ -130,152 +135,24 @@ class _StudentAttendanceHistoryViewState
                   child: Column(
                     children: [
                       // Student Info Card
-                      Container(
-                        padding: EdgeInsets.all(
-                            AppTheme.getMediumPadding(screenSize)),
-                        decoration: BoxDecoration(
-                          color: AppTheme.getCardColor(context),
-                          borderRadius: BorderRadius.circular(
-                              AppTheme.getLargeRadius(screenSize)),
-                          border: Border.all(
-                              color: AppTheme.getBorderColor(context)),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: screenSize.width * 0.15,
-                              height: screenSize.width * 0.15,
-                              decoration: BoxDecoration(
-                                color: AppTheme.successColor,
-                                borderRadius: BorderRadius.circular(
-                                    AppTheme.getMediumRadius(screenSize)),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  widget.student.nombre[0].toUpperCase(),
-                                  style: AppTheme.getH1(screenSize).copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(
-                                width: AppTheme.getMediumPadding(screenSize)),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    widget.student.nombre,
-                                    style: AppTheme.getH2(screenSize).copyWith(
-                                      color:
-                                          AppTheme.getTextPrimaryColor(context),
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  Text(
-                                    '${widget.student.grado}${widget.student.grupo}',
-                                    style: AppTheme.getBodyMedium(screenSize)
-                                        .copyWith(
-                                      color: AppTheme.getTextSecondaryColor(
-                                          context),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                      StudentInfoCard(
+                        student: widget.student,
+                        screenSize: screenSize,
                       ),
 
                       SizedBox(height: AppTheme.getLargePadding(screenSize)),
 
                       // Filters Section
-                      Container(
-                        padding: EdgeInsets.all(
-                            AppTheme.getMediumPadding(screenSize)),
-                        decoration: BoxDecoration(
-                          color: AppTheme.getCardColor(context),
-                          borderRadius: BorderRadius.circular(
-                              AppTheme.getLargeRadius(screenSize)),
-                          border: Border.all(
-                              color: AppTheme.getBorderColor(context)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Filtros de Búsqueda',
-                              style: AppTheme.getH2(screenSize).copyWith(
-                                color: AppTheme.getTextPrimaryColor(context),
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            SizedBox(
-                                height: AppTheme.getMediumPadding(screenSize)),
-
-                            // Search Field
-                            CustomInputField(
-                              controller: _searchController,
-                              label:
-                                  'Buscar por fecha, responsable o ubicación',
-                              screenSize: screenSize,
-                              icon: Icons.search_rounded,
-                              keyboardType: TextInputType.text,
-                            ),
-
-                            SizedBox(
-                                height: AppTheme.getMediumPadding(screenSize)),
-
-                            // Status Filter
-                            Text(
-                              'Estado',
-                              style: AppTheme.getCaption(screenSize).copyWith(
-                                color: AppTheme.getTextPrimaryColor(context),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(
-                                height:
-                                    AppTheme.getSmallPadding(screenSize) * 0.5),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal:
-                                      AppTheme.getSmallPadding(screenSize)),
-                              decoration: BoxDecoration(
-                                color: AppTheme.getBackgroundColor(context),
-                                borderRadius: BorderRadius.circular(
-                                    AppTheme.getSmallRadius(screenSize)),
-                                border: Border.all(
-                                    color: AppTheme.getBorderColor(context)),
-                              ),
-                              child: DropdownButton<String>(
-                                value: _selectedStatus,
-                                isExpanded: true,
-                                underline: const SizedBox(),
-                                onChanged: (newValue) {
-                                  setState(() {
-                                    _selectedStatus = newValue!;
-                                    _filterRecords();
-                                  });
-                                },
-                                items: [
-                                  DropdownMenuItem(
-                                      value: 'all', child: Text('Todos')),
-                                  DropdownMenuItem(
-                                      value: 'present',
-                                      child: Text('Presente')),
-                                  DropdownMenuItem(
-                                      value: 'late', child: Text('Tarde')),
-                                  DropdownMenuItem(
-                                      value: 'absent', child: Text('Ausente')),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                      FiltersSection(
+                        searchController: _searchController,
+                        selectedStatus: _selectedStatus,
+                        onStatusChanged: (newValue) {
+                          setState(() {
+                            _selectedStatus = newValue!;
+                            _filterRecords();
+                          });
+                        },
+                        screenSize: screenSize,
                       ),
 
                       SizedBox(height: AppTheme.getLargePadding(screenSize)),
@@ -294,36 +171,14 @@ class _StudentAttendanceHistoryViewState
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    'Registros Detallados',
-                                    style: AppTheme.getH2(screenSize).copyWith(
-                                      color:
-                                          AppTheme.getTextPrimaryColor(context),
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                SizedBox(
-                                    width:
-                                        AppTheme.getSmallPadding(screenSize)),
-                                Text(
-                                  '${_filteredRecords.length} registros',
-                                  style:
-                                      AppTheme.getCaption(screenSize).copyWith(
-                                    color:
-                                        AppTheme.getTextSecondaryColor(context),
-                                  ),
-                                ),
-                              ],
+                            RecordsHeader(
+                              recordCount: _filteredRecords.length,
+                              screenSize: screenSize,
                             ),
                             SizedBox(
                                 height: AppTheme.getMediumPadding(screenSize)),
                             if (_filteredRecords.isEmpty)
-                              _buildEmptyState(screenSize)
+                              EmptyRecordsState(screenSize: screenSize)
                             else
                               ListView.builder(
                                 shrinkWrap: true,
@@ -331,10 +186,11 @@ class _StudentAttendanceHistoryViewState
                                 physics: const NeverScrollableScrollPhysics(),
                                 itemCount: _filteredRecords.length,
                                 itemBuilder: (context, index) {
-                                  return _buildRecordItem(
-                                    _filteredRecords[index],
-                                    screenSize,
-                                    index == _filteredRecords.length - 1,
+                                  return AttendanceRecordItem(
+                                    record: _filteredRecords[index],
+                                    screenSize: screenSize,
+                                    isLast:
+                                        index == _filteredRecords.length - 1,
                                   );
                                 },
                               ),
@@ -348,242 +204,5 @@ class _StudentAttendanceHistoryViewState
         ],
       ),
     );
-  }
-
-  Widget _buildRecordItem(
-      Map<String, dynamic> record, Size screenSize, bool isLast) {
-    final date = record['date'] as DateTime;
-    final status = record['status'] as String;
-    final time = record['time'] as TimeOfDay?;
-    final scannedBy = record['scannedBy'] as String;
-    final location = record['location'] as String;
-    final notes = record['notes'] as String?;
-
-    final statusColor = _getStatusColor(status);
-    final statusIcon = _getStatusIcon(status);
-    final statusText = _getStatusText(status);
-
-    return Container(
-      margin: EdgeInsets.only(
-        bottom: isLast ? 0 : AppTheme.getSmallPadding(screenSize),
-      ),
-      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-      decoration: BoxDecoration(
-        color: AppTheme.getBackgroundColor(context),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        border: Border.all(color: statusColor.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: screenSize.height * 0.04,
-                height: screenSize.height * 0.04,
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  statusIcon,
-                  color: Colors.white,
-                  size: screenSize.height * 0.02,
-                ),
-              ),
-              SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${date.day}/${date.month}/${date.year}',
-                            style: AppTheme.getBodyMedium(screenSize).copyWith(
-                              color: AppTheme.getTextPrimaryColor(context),
-                              fontWeight: FontWeight.w600,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (time != null)
-                          Text(
-                            time.format(context),
-                            style: AppTheme.getCaption(screenSize).copyWith(
-                              color: AppTheme.getTextSecondaryColor(context),
-                            ),
-                          ),
-                      ],
-                    ),
-                    SizedBox(
-                        height: AppTheme.getSmallPadding(screenSize) * 0.25),
-                    Row(
-                      children: [
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal:
-                                AppTheme.getSmallPadding(screenSize) * 0.5,
-                            vertical:
-                                AppTheme.getSmallPadding(screenSize) * 0.25,
-                          ),
-                          decoration: BoxDecoration(
-                            color: statusColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(
-                                AppTheme.getSmallRadius(screenSize) * 0.5),
-                          ),
-                          child: Text(
-                            statusText,
-                            style:
-                                AppTheme.getCaptionSmall(screenSize).copyWith(
-                              color: statusColor,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                            width: AppTheme.getSmallPadding(screenSize) * 0.5),
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            location,
-                            style:
-                                AppTheme.getCaptionSmall(screenSize).copyWith(
-                              color: AppTheme.getTextSecondaryColor(context),
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        SizedBox(
-                            width: AppTheme.getSmallPadding(screenSize) * 0.5),
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            scannedBy,
-                            style:
-                                AppTheme.getCaptionSmall(screenSize).copyWith(
-                              color: AppTheme.getTextSecondaryColor(context),
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.end,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (notes != null) ...[
-            SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-            Container(
-              padding:
-                  EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.75),
-              decoration: BoxDecoration(
-                color: AppTheme.warningColor.withValues(alpha: 0.1),
-                borderRadius:
-                    BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-                border: Border.all(
-                    color: AppTheme.warningColor.withValues(alpha: 0.2)),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.note_rounded,
-                    color: AppTheme.warningColor,
-                    size: screenSize.height * 0.018,
-                  ),
-                  SizedBox(width: AppTheme.getSmallPadding(screenSize) * 0.5),
-                  Expanded(
-                    child: Text(
-                      notes,
-                      style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                        color: AppTheme.warningColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(Size screenSize) {
-    return Container(
-      padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
-      child: Column(
-        children: [
-          Icon(
-            Icons.search_off_rounded,
-            size: screenSize.width * 0.15,
-            color:
-                AppTheme.getTextSecondaryColor(context).withValues(alpha: 0.5),
-          ),
-          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-          Text(
-            'No se encontraron registros',
-            style: AppTheme.getBodyMedium(screenSize).copyWith(
-              color: AppTheme.getTextSecondaryColor(context),
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-          Text(
-            'Intenta ajustar los filtros de búsqueda',
-            style: AppTheme.getCaption(screenSize).copyWith(
-              color: AppTheme.getTextSecondaryColor(context),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'present':
-        return AppTheme.successColor;
-      case 'late':
-        return AppTheme.warningColor;
-      case 'absent':
-        return AppTheme.errorColor;
-      default:
-        return AppTheme.accentBlue;
-    }
-  }
-
-  IconData _getStatusIcon(String status) {
-    switch (status) {
-      case 'present':
-        return Icons.check_rounded;
-      case 'late':
-        return Icons.schedule_rounded;
-      case 'absent':
-        return Icons.close_rounded;
-      default:
-        return Icons.help_rounded;
-    }
-  }
-
-  String _getStatusText(String status) {
-    switch (status) {
-      case 'present':
-        return 'Presente';
-      case 'late':
-        return 'Tarde';
-      case 'absent':
-        return 'Ausente';
-      default:
-        return 'Desconocido';
-    }
   }
 }

@@ -223,7 +223,7 @@ class _StudentSelector extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          l10n.selectStudent ?? 'Seleccionar estudiante',
+          l10n.selectStudent,
           style: AppTheme.getSubtitle1(screenSize).copyWith(
             color: AppTheme.getTextPrimaryColor(context),
             fontWeight: FontWeight.w600,

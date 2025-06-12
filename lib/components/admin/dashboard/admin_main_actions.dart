@@ -15,7 +15,7 @@ class AdminMainActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!; // Non-null assertion added
 
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -57,14 +57,14 @@ class AdminMainActions extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Acciones Principales',
+                      l10n.mainActions, // Replaced with localization key
                       style: AppTheme.getH2(screenSize).copyWith(
                         color: AppTheme.getTextPrimaryColor(context),
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     Text(
-                      'Gestiona comunicados y horarios',
+                      l10n.manageAnnouncementsAndSchedules, // Replaced with localization key
                       style: AppTheme.getCaptionSmall(screenSize).copyWith(
                         color: AppTheme.getTextSecondaryColor(context),
                       ),
@@ -85,8 +85,10 @@ class AdminMainActions extends StatelessWidget {
                   children: [
                     Expanded(
                       child: AdminActionCard(
-                        title: 'Enviar Comunicado',
-                        description: 'Envía notificaciones a estudiantes',
+                        title: l10n
+                            .sendAnnouncement, // Replaced with localization key
+                        description: l10n
+                            .sendNotificationsToStudents, // Replaced with localization key
                         icon: Icons.send_rounded,
                         color: AppTheme.accentOrange,
                         onTap: () => _navigateToNotificationSend(context),
@@ -96,8 +98,10 @@ class AdminMainActions extends StatelessWidget {
                     SizedBox(width: AppTheme.getMediumPadding(screenSize)),
                     Expanded(
                       child: AdminActionCard(
-                        title: 'Ver Horarios',
-                        description: 'Gestiona horarios de clases',
+                        title: l10n
+                            .viewSchedules, // Replaced with localization key
+                        description: l10n
+                            .manageClassSchedules, // Replaced with localization key
                         icon: Icons.schedule_rounded,
                         color: AppTheme.accentBlue,
                         onTap: () => _navigateToScheduleManagement(context),
@@ -111,8 +115,10 @@ class AdminMainActions extends StatelessWidget {
                 return Column(
                   children: [
                     AdminActionCard(
-                      title: 'Enviar Comunicado',
-                      description: 'Envía notificaciones a estudiantes',
+                      title: l10n
+                          .sendAnnouncement, // Replaced with localization key
+                      description: l10n
+                          .sendNotificationsToStudents, // Replaced with localization key
                       icon: Icons.send_rounded,
                       color: AppTheme.accentOrange,
                       onTap: () => _navigateToNotificationSend(context),
@@ -120,8 +126,10 @@ class AdminMainActions extends StatelessWidget {
                     ),
                     SizedBox(height: AppTheme.getMediumPadding(screenSize)),
                     AdminActionCard(
-                      title: 'Ver Horarios',
-                      description: 'Gestiona horarios de clases',
+                      title:
+                          l10n.viewSchedules, // Replaced with localization key
+                      description: l10n
+                          .manageClassSchedules, // Replaced with localization key
                       icon: Icons.schedule_rounded,
                       color: AppTheme.accentBlue,
                       onTap: () => _navigateToScheduleManagement(context),

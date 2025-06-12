@@ -21,8 +21,9 @@ class RecentAttendanceCard extends StatelessWidget {
       Notificacion(
         id: 'notif_001',
         alumnoId: 'std_001',
-        titulo: 'Entrada registrada',
-        mensaje: 'Ana García Martínez ha llegado a la escuela a las 7:45 AM',
+        titulo: l10n.entryRegistered,
+        mensaje:
+            '${l10n.studentName} Ana García Martínez ${l10n.arrivedAt} 8:00 AM',
         tipo: TipoNotificacion.entrada,
         estado: EstadoNotificacion.nueva,
         fechaHora: DateTime.now().subtract(const Duration(minutes: 15)),
@@ -31,7 +32,7 @@ class RecentAttendanceCard extends StatelessWidget {
           'alumnoGrado': '3°A',
           'alumnoGrupo': 'A',
           'escaneadoPor': 'María López',
-          'ubicacion': 'Entrada Principal',
+          'ubicacion': l10n.mainEntrance,
         },
       ),
       Notificacion(
@@ -144,7 +145,7 @@ class _AttendanceItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
     final statusColor = _getStatusColor(notification.tipo);
     final statusIcon = _getStatusIcon(notification.tipo);
     final timeAgo = _getTimeAgo(notification.fechaHora, l10n);
@@ -227,7 +228,7 @@ class _AttendanceItem extends StatelessWidget {
                     SizedBox(width: AppTheme.getSmallPadding(screenSize)),
                     Expanded(
                       child: Text(
-                        'Escaneado por: $escaneadoPor',
+                        '${l10n.scannedBy}: Amira', // Replaced hardcoded text
                         style: AppTheme.getCaptionSmall(screenSize).copyWith(
                           color: AppTheme.getTextSecondaryColor(context),
                         ),
@@ -284,13 +285,14 @@ class _AttendanceItem extends StatelessWidget {
     final difference = now.difference(timestamp);
 
     if (difference.inMinutes < 1) {
-      return 'Ahora';
+      return l10n.timeAgoNow; // Replaced hardcoded text
     } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m';
+      return l10n
+          .timeAgoMinutes(difference.inMinutes); // Replaced hardcoded text
     } else if (difference.inHours < 24) {
-      return '${difference.inHours}h';
+      return l10n.timeAgoHours(difference.inHours); // Replaced hardcoded text
     } else {
-      return '${difference.inDays}d';
+      return l10n.timeAgoDays(difference.inDays); // Replaced hardcoded text
     }
   }
 }
@@ -324,7 +326,7 @@ class _EmptyState extends StatelessWidget {
           SizedBox(height: screenSize.height * 0.01),
           Text(
             l10n.startScanningToSeeRecords ??
-                'Comience a escanear para ver registros',
+                l10n.startScanningDefaultMessage, // Provided fallback with localization
             style: AppTheme.getCaption(screenSize).copyWith(
               color: AppTheme.getTextSecondaryColor(context),
             ),

@@ -1,6 +1,8 @@
 import 'package:alertaescolar/components/admin/directory/directory_filters_card.dart';
+import 'package:alertaescolar/components/admin/directory/directory_header.dart';
 import 'package:alertaescolar/components/textfield/custom_input_field.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
+import 'package:alertaescolar/utils/mock_student_generator.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
@@ -40,8 +42,8 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
   Future<void> _loadStudents() async {
     setState(() => _isLoading = true);
     try {
-      // Mock students data
-      final students = _getMockStudents();
+      // Get mock students using the utility class
+      final students = MockStudentGenerator.getMockStudents();
       setState(() {
         _allStudents = students;
         _filteredStudents = students;
@@ -50,61 +52,6 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
     } catch (e) {
       setState(() => _isLoading = false);
     }
-  }
-
-  List<Alumno> _getMockStudents() {
-    return [
-      Alumno(
-        id: '1',
-        nombre: 'Ana García López',
-        grado: '6° A',
-        grupo: 'A',
-        escuelaId: 'ESC001',
-        llave: 'STU001',
-        activo: true,
-        fechaRegistro: DateTime.now().subtract(const Duration(days: 30)),
-      ),
-      Alumno(
-        id: '2',
-        nombre: 'Carlos Mendoza Ruiz',
-        grado: '5° B',
-        grupo: 'B',
-        escuelaId: 'ESC001',
-        llave: 'STU002',
-        activo: true,
-        fechaRegistro: DateTime.now().subtract(const Duration(days: 45)),
-      ),
-      Alumno(
-        id: '3',
-        nombre: 'María Fernández Castro',
-        grado: '4° C',
-        grupo: 'C',
-        escuelaId: 'ESC001',
-        llave: 'STU003',
-        activo: false,
-        fechaRegistro: DateTime.now().subtract(const Duration(days: 60)),
-      ),
-      Alumno(
-        id: '4',
-        nombre: 'José Luis Herrera',
-        grado: '6° A',
-        grupo: 'A',
-        escuelaId: 'ESC001',
-        llave: 'STU004',
-        activo: true,
-        fechaRegistro: DateTime.now().subtract(const Duration(days: 20)),
-      ),
-      Alumno(
-        id: '5',
-        nombre: 'Sofia Rodriguez',
-        grado: '3° B',
-        grupo: 'B',
-        escuelaId: 'ESC001',
-        llave: 'STU005',
-        activo: true,
-        fechaRegistro: DateTime.now().subtract(const Duration(days: 10)),
-      ),
-    ];
   }
 
   void _filterStudents() {
@@ -141,57 +88,11 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
           body: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // Custom Directory Header
+              // Use new DirectoryHeader component
               SliverToBoxAdapter(
-                child: Container(
-                  padding: EdgeInsets.only(
-                    top: MediaQuery.of(context).padding.top +
-                        AppTheme.getSmallPadding(screenSize),
-                    left: AppTheme.getMediumPadding(screenSize),
-                    right: AppTheme.getMediumPadding(screenSize),
-                    bottom: AppTheme.getLargePadding(screenSize),
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.getCardColor(context),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Title and Actions Row
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  l10n.studentsDirectory,
-                                  style: AppTheme.getH1(screenSize).copyWith(
-                                    color:
-                                        AppTheme.getTextPrimaryColor(context),
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                SizedBox(
-                                    height:
-                                        AppTheme.getSmallPadding(screenSize) *
-                                            0.5),
-                                Text(
-                                  'Gestiona y busca estudiantes de la escuela',
-                                  style: AppTheme.getBodyMedium(screenSize)
-                                      .copyWith(
-                                    color:
-                                        AppTheme.getTextSecondaryColor(context),
-                                    height: 1.3,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                child: DirectoryHeader(
+                  title: l10n.studentsDirectory,
+                  subtitle: l10n.manageAndSearchStudents,
                 ),
               ),
 
@@ -242,48 +143,6 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildQuickStat(
-      String title, String value, IconData icon, Color color, Size screenSize) {
-    return Container(
-      padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        border: Border.all(color: AppTheme.getBorderColor(context)),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            color: color,
-            size: screenSize.height * 0.025,
-          ),
-          SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: AppTheme.getBodyMedium(screenSize).copyWith(
-                  color: AppTheme.getTextSecondaryColor(context),
-                  height: 1.2,
-                ),
-              ),
-              Text(
-                value,
-                style: AppTheme.getH2(screenSize).copyWith(
-                  color: AppTheme.getTextPrimaryColor(context),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }

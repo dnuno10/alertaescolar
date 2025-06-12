@@ -1,6 +1,7 @@
 import 'package:alertaescolar/components/textfield/custom_input_field.dart';
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../models/models.dart';
 import '../../../views/admin/students/student_profile_admin_view.dart';
 
@@ -34,20 +35,6 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
     _searchController.addListener(_filterNotifications);
   }
 
-  @override
-  void didUpdateWidget(EnhancedDateDetails oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.selectedDate != oldWidget.selectedDate) {
-      _loadAttendanceData();
-    }
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
   void _loadAttendanceData() {
     _allNotifications = _generateMockData();
     _filterNotifications();
@@ -59,6 +46,31 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
       return [];
     }
 
+    final random = DateTime.now().millisecond;
+    final studentCount =
+        50 + (random % 200); // Random between 50-250 for better performance
+
+    final notifications = <Notificacion>[];
+
+    // We'll populate this in build or didChangeDependencies when context is fully available
+    return notifications;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Safe to access localizations here
+    _allNotifications = _generateCompleteData();
+    _filterNotifications();
+  }
+
+  List<Notificacion> _generateCompleteData() {
+    // Only show records for past dates or today
+    if (widget.selectedDate.isAfter(DateTime.now())) {
+      return [];
+    }
+
+    final l10n = AppLocalizations.of(context);
     final random = DateTime.now().millisecond;
     final studentCount =
         50 + (random % 200); // Random between 50-250 for better performance
@@ -121,7 +133,7 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
           'turno': shifts[index % shifts.length],
           'tipoAcceso': accessTypes[index % accessTypes.length],
           'ubicacion':
-              index % 2 == 0 ? 'Entrada Principal' : 'Entrada Secundaria',
+              index % 2 == 0 ? l10n.mainEntrance : l10n.secondaryEntrance,
           'telefono': '555-${(1000 + index).toString().substring(1)}',
           'email':
               '${studentName.toLowerCase().replaceAll(' ', '.')}@escuela.edu',
@@ -131,33 +143,39 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
   }
 
   String _getTipoTitle(TipoNotificacion tipo) {
+    final l10n = AppLocalizations.of(context)!;
+
     switch (tipo) {
       case TipoNotificacion.entrada:
-        return 'Entrada registrada';
+        return l10n.entryRegistered;
       case TipoNotificacion.salida:
-        return 'Salida registrada';
+        return l10n.exitRegistered;
       case TipoNotificacion.retraso:
-        return 'Llegada tardía';
+        return l10n.lateArrival;
       default:
-        return 'Notificación';
+        return l10n.notification;
     }
   }
 
   String _getTipoMessage(TipoNotificacion tipo, String studentName) {
+    final l10n = AppLocalizations.of(context)!;
+
     switch (tipo) {
       case TipoNotificacion.entrada:
-        return '$studentName ha llegado a la escuela';
+        return l10n.studentArrivalMessage(studentName);
       case TipoNotificacion.salida:
-        return '$studentName ha salido de la escuela';
+        return l10n.studentExitMessage(studentName);
       case TipoNotificacion.retraso:
-        return '$studentName llegó tarde';
+        return l10n.studentLateMessage(studentName);
       default:
-        return 'Notificación para $studentName';
+        return l10n.notificationForStudent(studentName);
     }
   }
 
   void _filterNotifications() {
     final query = _searchController.text.toLowerCase().trim();
+    final l10n = AppLocalizations.of(context)!;
+
     setState(() {
       _filteredNotifications = _allNotifications.where((notification) {
         final studentName =
@@ -236,6 +254,7 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final presentCount = _filteredNotifications
         .where((n) => n.tipo == TipoNotificacion.entrada)
         .length;
@@ -279,7 +298,7 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
                   SizedBox(width: AppTheme.getMediumPadding(widget.screenSize)),
                   Expanded(
                     child: Text(
-                      'Filtros de Búsqueda',
+                      l10n.searchFilters,
                       style: AppTheme.getH2(widget.screenSize).copyWith(
                         color: AppTheme.getTextPrimaryColor(context),
                         fontWeight: FontWeight.w700,
@@ -301,7 +320,7 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
                             AppTheme.getSmallRadius(widget.screenSize)),
                       ),
                       child: Text(
-                        'Filtros activos',
+                        l10n.activeFilters,
                         style: AppTheme.getCaptionSmall(widget.screenSize)
                             .copyWith(
                           color: AppTheme.warningColor,
@@ -313,7 +332,7 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
                   TextButton(
                     onPressed: _clearFilters,
                     child: Text(
-                      'Limpiar',
+                      l10n.clear,
                       style: AppTheme.getCaption(widget.screenSize).copyWith(
                         color: AppTheme.accentPurple,
                         fontWeight: FontWeight.w600,
@@ -328,7 +347,7 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
               // Enhanced Search Bar using CustomInputField
               CustomInputField(
                 controller: _searchController,
-                label: 'Buscar estudiante',
+                label: l10n.searchStudent,
                 screenSize: widget.screenSize,
                 icon: Icons.search_rounded,
                 keyboardType: TextInputType.text,
@@ -344,25 +363,27 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
                     return Row(
                       children: [
                         Expanded(
-                            child: _buildFilterDropdown('Grupo', _selectedGroup,
-                                ['all', 'A', 'B', 'C', 'D'])),
-                        SizedBox(
-                            width: AppTheme.getSmallPadding(widget.screenSize)),
-                        Expanded(
-                            child: _buildFilterDropdown('Turno', _selectedShift,
-                                ['all', 'Matutino', 'Vespertino'])),
+                            child: _buildFilterDropdown(l10n.group,
+                                _selectedGroup, ['all', 'A', 'B', 'C', 'D'])),
                         SizedBox(
                             width: AppTheme.getSmallPadding(widget.screenSize)),
                         Expanded(
                             child: _buildFilterDropdown(
-                                'Acceso',
+                                l10n.shift,
+                                _selectedShift,
+                                ['all', l10n.morning, l10n.afternoon])),
+                        SizedBox(
+                            width: AppTheme.getSmallPadding(widget.screenSize)),
+                        Expanded(
+                            child: _buildFilterDropdown(
+                                l10n.access,
                                 _selectedAccessType,
-                                ['all', 'Entrada', 'Salida'])),
+                                ['all', l10n.entry, l10n.exit])),
                         SizedBox(
                             width: AppTheme.getSmallPadding(widget.screenSize)),
                         Expanded(
                             child: _buildFilterDropdown(
-                                'Estado', _selectedStatus, [
+                                l10n.status, _selectedStatus, [
                           'all',
                           'presente',
                           'tarde',
@@ -379,7 +400,7 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
                           children: [
                             Expanded(
                                 child: _buildFilterDropdown(
-                                    'Grupo',
+                                    l10n.group,
                                     _selectedGroup,
                                     ['all', 'A', 'B', 'C', 'D'])),
                             SizedBox(
@@ -387,9 +408,9 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
                                     widget.screenSize)),
                             Expanded(
                                 child: _buildFilterDropdown(
-                                    'Turno',
+                                    l10n.shift,
                                     _selectedShift,
-                                    ['all', 'Matutino', 'Vespertino'])),
+                                    ['all', l10n.morning, l10n.afternoon])),
                           ],
                         ),
                         SizedBox(
@@ -399,15 +420,15 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
                           children: [
                             Expanded(
                                 child: _buildFilterDropdown(
-                                    'Acceso',
+                                    l10n.access,
                                     _selectedAccessType,
-                                    ['all', 'Entrada', 'Salida'])),
+                                    ['all', l10n.entry, l10n.exit])),
                             SizedBox(
                                 width: AppTheme.getSmallPadding(
                                     widget.screenSize)),
                             Expanded(
                                 child: _buildFilterDropdown(
-                                    'Estado', _selectedStatus, [
+                                    l10n.status, _selectedStatus, [
                               'all',
                               'presente',
                               'tarde',
@@ -438,7 +459,7 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              '${widget.selectedDate.day}/${widget.selectedDate.month}/${widget.selectedDate.year}',
+                              l10n.dateFormatFull(widget.selectedDate),
                               style: AppTheme.getBodyLarge(widget.screenSize)
                                   .copyWith(
                                 color: AppTheme.getTextPrimaryColor(context),
@@ -446,7 +467,7 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
                               ),
                             ),
                             Text(
-                              '$totalScanned estudiantes',
+                              l10n.studentCount(totalScanned),
                               style: AppTheme.getCaptionSmall(widget.screenSize)
                                   .copyWith(
                                 color: AppTheme.getTextSecondaryColor(context),
@@ -463,15 +484,15 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         _buildCompactStat(
-                            'Presente', presentCount, AppTheme.successColor),
+                            l10n.present, presentCount, AppTheme.successColor),
                         SizedBox(
                             width: AppTheme.getSmallPadding(widget.screenSize)),
                         _buildCompactStat(
-                            'Tarde', lateCount, AppTheme.warningColor),
+                            l10n.late, lateCount, AppTheme.warningColor),
                         SizedBox(
                             width: AppTheme.getSmallPadding(widget.screenSize)),
                         _buildCompactStat(
-                            'Salida', exitCount, AppTheme.accentBlue),
+                            l10n.exit, exitCount, AppTheme.accentBlue),
                       ],
                     ),
                   ],
@@ -616,27 +637,20 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
   }
 
   String _getDropdownLabel(String value, String filterType) {
-    if (value == 'all') {
-      switch (filterType) {
-        case 'Grupo':
-        case 'Turno':
-          return 'Todos';
-        case 'Acceso':
-          return 'Ambos';
-        case 'Estado':
-          return 'Todos';
-        default:
-          return 'Todos';
-      }
+    final l10n = AppLocalizations.of(context);
+
+    switch (filterType) {
+      case 'group':
+        return l10n.group;
+      case 'shift':
+        return l10n.shift;
+      case 'access':
+        return l10n.access;
+      case 'status':
+        return l10n.status;
+      default:
+        return filterType;
     }
-
-    // Capitalize first letter for better presentation
-    if (value == 'presente') return 'Presente';
-    if (value == 'tarde') return 'Tarde';
-    if (value == 'salida') return 'Salida';
-    if (value == 'ausente') return 'Ausente';
-
-    return value;
   }
 
   Widget _buildStudentItem(Notificacion notification, bool isLast) {
@@ -763,6 +777,8 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
   }
 
   Widget _buildEmptyState() {
+    final l10n = AppLocalizations.of(context)!;
+
     return Container(
       padding: EdgeInsets.all(AppTheme.getLargePadding(widget.screenSize)),
       child: Column(
@@ -777,10 +793,10 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
           SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
           Text(
             _hasActiveFilters()
-                ? 'No se encontraron estudiantes con los filtros aplicados'
+                ? l10n.noStudentsFoundWithFilters
                 : widget.selectedDate.isAfter(DateTime.now())
-                    ? 'No hay datos disponibles para fechas futuras'
-                    : 'No hay registros de escaneo para esta fecha',
+                    ? l10n.noDataForFutureDates
+                    : l10n.noScanRecordsForDate,
             style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
               color: AppTheme.getTextSecondaryColor(context),
               fontWeight: FontWeight.w500,
@@ -790,8 +806,8 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
           SizedBox(height: AppTheme.getSmallPadding(widget.screenSize)),
           Text(
             _hasActiveFilters()
-                ? 'Intenta ajustar los filtros de búsqueda'
-                : 'Los estudiantes aparecerán aquí cuando sean escaneados',
+                ? l10n.tryAdjustingFilters
+                : l10n.studentsWillAppearWhenScanned,
             style: AppTheme.getCaption(widget.screenSize).copyWith(
               color: AppTheme.getTextSecondaryColor(context),
             ),
@@ -807,7 +823,7 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
                 size: widget.screenSize.height * 0.02,
               ),
               label: Text(
-                'Limpiar filtros',
+                l10n.clearFilters,
                 style: AppTheme.getCaption(widget.screenSize).copyWith(
                   color: AppTheme.accentPurple,
                   fontWeight: FontWeight.w600,
@@ -889,19 +905,21 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
   }
 
   String _getStatusText(TipoNotificacion tipo) {
+    final l10n = AppLocalizations.of(context)!;
+
     switch (tipo) {
       case TipoNotificacion.entrada:
-        return 'Presente';
+        return l10n.present;
       case TipoNotificacion.salida:
-        return 'Salida';
+        return l10n.exit;
       case TipoNotificacion.retraso:
-        return 'Tarde';
+        return l10n.late;
       case TipoNotificacion.ausencia:
-        return 'Ausente';
+        return l10n.absent;
       case TipoNotificacion.permisoEspecial:
-        return 'Justificado';
+        return l10n.justified;
       default:
-        return 'N/A';
+        return l10n.notAvailable;
     }
   }
 }

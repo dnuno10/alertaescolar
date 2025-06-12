@@ -24,7 +24,7 @@ class AttendanceStatisticsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
 
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -133,7 +133,7 @@ class AttendanceStatisticsCard extends StatelessWidget {
                       SizedBox(
                           width: AppTheme.getSmallPadding(screenSize) * 0.5),
                       Text(
-                        '${l10n.statistics} de: ',
+                        l10n.statisticsFor, // Replaced hardcoded text '${l10n.statistics} de: '
                         style: AppTheme.getCaption(screenSize).copyWith(
                           color: AppTheme.getTextSecondaryColor(context),
                           fontWeight: FontWeight.w500,

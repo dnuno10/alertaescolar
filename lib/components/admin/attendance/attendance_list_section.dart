@@ -25,7 +25,7 @@ class _AttendanceListSectionState extends State<AttendanceListSection> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
     final notifications = _generateMockNotifications();
     final filteredNotifications = _filterNotifications(notifications);
 
@@ -140,12 +140,14 @@ class _AttendanceListSectionState extends State<AttendanceListSection> {
       return [];
     }
 
+    final l10n = AppLocalizations.of(context)!;
+
     return [
       Notificacion(
         id: 'notif_001',
         alumnoId: 'std_001',
-        titulo: 'Entrada registrada',
-        mensaje: 'Ana García Martínez ha llegado a la escuela',
+        titulo: l10n.entryRegistered,
+        mensaje: l10n.studentArrivalMessage('Ana García Martínez'),
         tipo: TipoNotificacion.entrada,
         fechaHora:
             widget.selectedDate.add(const Duration(hours: 7, minutes: 30)),
@@ -154,14 +156,15 @@ class _AttendanceListSectionState extends State<AttendanceListSection> {
           'alumnoGrado': '3°A',
           'alumnoGrupo': 'A',
           'escaneadoPor': 'María López',
-          'ubicacion': 'Entrada Principal',
+          'ubicacion': l10n.mainEntrance,
         },
       ),
       Notificacion(
         id: 'notif_002',
         alumnoId: 'std_002',
-        titulo: 'Llegada tardía',
-        mensaje: 'Carlos Rodríguez Silva llegó tarde a las 8:15 AM',
+        titulo: l10n.lateArrival,
+        mensaje:
+            '${l10n.studentName} Carlos Rodríguez Silva ${l10n.arrivedAt} 8:00 AM',
         tipo: TipoNotificacion.retraso,
         fechaHora:
             widget.selectedDate.add(const Duration(hours: 8, minutes: 15)),
@@ -170,15 +173,15 @@ class _AttendanceListSectionState extends State<AttendanceListSection> {
           'alumnoGrado': '2°B',
           'alumnoGrupo': 'B',
           'escaneadoPor': 'Juan Hernández',
-          'ubicacion': 'Entrada Principal',
+          'ubicacion': l10n.mainEntrance,
           'retraso_minutos': 15,
         },
       ),
       Notificacion(
         id: 'notif_003',
         alumnoId: 'std_003',
-        titulo: 'Entrada registrada',
-        mensaje: 'Sofía González Pérez ha llegado a la escuela',
+        titulo: l10n.entryRegistered,
+        mensaje: l10n.studentArrivalMessage('Sofía González Pérez'),
         tipo: TipoNotificacion.entrada,
         fechaHora:
             widget.selectedDate.add(const Duration(hours: 7, minutes: 25)),
@@ -187,14 +190,14 @@ class _AttendanceListSectionState extends State<AttendanceListSection> {
           'alumnoGrado': '1°A',
           'alumnoGrupo': 'A',
           'escaneadoPor': 'María López',
-          'ubicacion': 'Entrada Principal',
+          'ubicacion': l10n.mainEntrance,
         },
       ),
       Notificacion(
         id: 'notif_004',
         alumnoId: 'std_004',
-        titulo: 'Llegada tardía',
-        mensaje: 'Miguel Torres López llegó tarde a las 8:10 AM',
+        titulo: l10n.lateArrival,
+        mensaje: l10n.studentLateArrivalMessage('Miguel Torres López'),
         tipo: TipoNotificacion.retraso,
         fechaHora:
             widget.selectedDate.add(const Duration(hours: 8, minutes: 10)),
@@ -203,15 +206,15 @@ class _AttendanceListSectionState extends State<AttendanceListSection> {
           'alumnoGrado': '3°A',
           'alumnoGrupo': 'A',
           'escaneadoPor': 'Juan Hernández',
-          'ubicacion': 'Entrada Secundaria',
+          'ubicacion': l10n.secondaryEntrance,
           'retraso_minutos': 10,
         },
       ),
       Notificacion(
         id: 'notif_005',
         alumnoId: 'std_005',
-        titulo: 'Entrada registrada',
-        mensaje: 'Isabella Hernández Cruz ha llegado a la escuela',
+        titulo: l10n.entryRegistered,
+        mensaje: l10n.studentArrivalMessage('Isabella Hernández Cruz'),
         tipo: TipoNotificacion.entrada,
         fechaHora:
             widget.selectedDate.add(const Duration(hours: 7, minutes: 35)),
@@ -220,7 +223,7 @@ class _AttendanceListSectionState extends State<AttendanceListSection> {
           'alumnoGrado': '2°B',
           'alumnoGrupo': 'B',
           'escaneadoPor': 'María López',
-          'ubicacion': 'Entrada Principal',
+          'ubicacion': l10n.mainEntrance,
         },
       ),
     ];
@@ -260,7 +263,7 @@ class _DatePickerButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
 
     return GestureDetector(
       onTap: () => _showDatePicker(context, l10n),
@@ -288,7 +291,7 @@ class _DatePickerButton extends StatelessWidget {
             ),
             SizedBox(width: AppTheme.getSmallPadding(screenSize) * 0.5),
             Text(
-              '${selectedDate.day}/${selectedDate.month}',
+              l10n.dateFormat(selectedDate), // Provide the full DateTime object
               style: AppTheme.getCaption(screenSize).copyWith(
                 color: AppTheme.accentBlue,
                 fontWeight: FontWeight.w600,
@@ -409,9 +412,9 @@ class _AttendanceListItem extends StatelessWidget {
     final statusColor = _getStatusColor(notification.tipo);
     final statusIcon = _getStatusIcon(notification.tipo);
     final timeString =
-        '${notification.fechaHora.hour.toString().padLeft(2, '0')}:${notification.fechaHora.minute.toString().padLeft(2, '0')}';
-    final alumnoNombre =
-        notification.datosAdicionales?['alumnoNombre'] ?? 'Estudiante';
+        l10n.timeFormat(notification.fechaHora); // Replaced time format
+    final alumnoNombre = notification.datosAdicionales?['alumnoNombre'] ??
+        l10n.student; // Replaced 'Estudiante'
     final alumnoGrado = notification.datosAdicionales?['alumnoGrado'] ?? '';
     final escaneadoPor =
         notification.datosAdicionales?['escaneadoPor'] ?? l10n.unknown;

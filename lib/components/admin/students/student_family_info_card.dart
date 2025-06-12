@@ -78,7 +78,7 @@ class StudentFamilyInfoCard extends StatelessWidget {
                       AppTheme.getSmallRadius(screenSize) * 0.5),
                 ),
                 child: Text(
-                  '${familyMembers.length} ${l10n.contacts ?? 'contactos'}',
+                  '${familyMembers.length} ${l10n.contacts}',
                   style: AppTheme.getCaptionSmall(screenSize).copyWith(
                     color: AppTheme.accentPurple,
                     fontWeight: FontWeight.w600,
@@ -198,7 +198,7 @@ class _FamilyMemberItem extends StatelessWidget {
                         AppTheme.getSmallRadius(screenSize) * 0.5),
                   ),
                   child: Text(
-                    l10n.primaryContact ?? 'Principal',
+                    l10n.primaryContact,
                     style: AppTheme.getCaptionSmall(screenSize).copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -235,7 +235,7 @@ class _FamilyMemberItem extends StatelessWidget {
           // Contact Information
           _ContactRow(
             icon: Icons.phone_rounded,
-            label: l10n.phone ?? 'Teléfono',
+            label: l10n.phone,
             value: member['phone']!,
             screenSize: screenSize,
             color: AppTheme.successColor,

@@ -14,7 +14,7 @@ class AttendanceListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
 
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -135,7 +135,7 @@ class AttendanceListCard extends StatelessWidget {
 
   Widget _buildAttendanceItem(
       BuildContext context, Map<String, dynamic> record, int index) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
     final isLast = index == attendanceRecords.length - 1;
 
     // Determine status color and icon
@@ -211,7 +211,7 @@ class AttendanceListCard extends StatelessWidget {
                 ),
                 SizedBox(height: screenSize.height * 0.003),
                 Text(
-                  '${record['studentId'] ?? 'N/A'} • ${record['grade'] ?? 'N/A'}',
+                  '${record['studentId'] ?? l10n.notAvailable} • ${record['grade'] ?? l10n.notAvailable}',
                   style: AppTheme.getCaption(screenSize).copyWith(
                     color: AppTheme.getTextSecondaryColor(context),
                   ),

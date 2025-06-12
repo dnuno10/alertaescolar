@@ -73,7 +73,7 @@ class StudentAttendanceHistoryCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      l10n.last30Days ?? 'Últimos 30 días',
+                      l10n.last30Days,
                       style: AppTheme.getCaptionSmall(screenSize).copyWith(
                         color: AppTheme.getTextSecondaryColor(context),
                         height: 1.2,
@@ -175,7 +175,7 @@ class StudentAttendanceHistoryCard extends StatelessWidget {
           Row(
             children: [
               Text(
-                l10n.recentRecords ?? 'Registros recientes',
+                l10n.recentRecords,
                 style: AppTheme.getSubtitle1(screenSize).copyWith(
                   color: AppTheme.getTextPrimaryColor(context),
                   fontWeight: FontWeight.w600,
@@ -254,7 +254,7 @@ class StudentAttendanceHistoryCard extends StatelessWidget {
                       ),
                       SizedBox(width: AppTheme.getSmallPadding(screenSize)),
                       Text(
-                        l10n.viewAllRecords ?? 'Ver historial completo',
+                        l10n.viewAllRecords,
                         style: AppTheme.getBodyMedium(screenSize).copyWith(
                           color: AppTheme.successColor,
                           fontWeight: FontWeight.w600,
@@ -582,7 +582,7 @@ class _ModernAttendanceRecordItem extends StatelessWidget {
       case 'absent':
         return l10n.absent;
       default:
-        return l10n.unknown ?? 'Desconocido';
+        return l10n.unknown;
     }
   }
 }

@@ -1,5 +1,6 @@
 import 'package:alertaescolar/components/attendance/attendance_statics_card.dart';
 import 'package:alertaescolar/components/headers/home_header.dart';
+import 'package:alertaescolar/components/navigation/custom_bottom_navigation_bar.dart';
 import 'package:alertaescolar/components/notifications/recent_notifications_section.dart';
 import 'package:alertaescolar/components/quick_actions_section.dart';
 import 'package:alertaescolar/components/schedule/today_schedule_section.dart';
@@ -67,7 +68,11 @@ class _HomeViewState extends State<HomeView> {
           const ProfileView(),
         ],
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(l10n, screenSize),
+      bottomNavigationBar: CustomBottomNavigationBar(
+        selectedIndex: _selectedIndex,
+        onItemSelected: (index) => setState(() => _selectedIndex = index),
+        screenSize: screenSize,
+      ),
     );
   }
 
@@ -139,228 +144,6 @@ class _HomeViewState extends State<HomeView> {
                 height:
                     screenSize.height * 0.12), // Bottom padding for navigation
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomNavigationBar(AppLocalizations l10n, Size screenSize) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius: BorderRadius.vertical(
-            top: Radius.circular(AppTheme.getLargeRadius(screenSize))),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context).withValues(alpha: 0.06),
-            blurRadius: screenSize.height * 0.02,
-            offset: Offset(0, -screenSize.height * 0.008),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Container(
-          padding: EdgeInsets.only(
-            left: screenSize.width * 0.03,
-            right: screenSize.width * 0.03,
-            top: screenSize.height * 0.008,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(
-                icon: Icons.dashboard_rounded,
-                label: l10n.homeTitle,
-                index: 0,
-                isSelected: _selectedIndex == 0,
-                context: context,
-                screenSize: screenSize,
-              ),
-              _buildNavItem(
-                icon: Icons.people_rounded,
-                label: l10n.students,
-                index: 1,
-                isSelected: _selectedIndex == 1,
-                context: context,
-                screenSize: screenSize,
-              ),
-              _buildNavItemWithBadge(
-                icon: Icons.notifications_rounded,
-                label: l10n.notifications,
-                index: 2,
-                isSelected: _selectedIndex == 2,
-                context: context,
-                screenSize: screenSize,
-              ),
-              _buildNavItem(
-                icon: Icons.person_rounded,
-                label: l10n.profile,
-                index: 3,
-                isSelected: _selectedIndex == 3,
-                context: context,
-                screenSize: screenSize,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required int index,
-    required bool isSelected,
-    required BuildContext context,
-    required Size screenSize,
-  }) {
-    return Flexible(
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedIndex = index),
-        child: Container(
-          padding: EdgeInsets.symmetric(
-              horizontal: screenSize.width * 0.02,
-              vertical: screenSize.height * 0.01),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? AppTheme.accentPurple.withValues(alpha: 0.1)
-                : Colors.transparent,
-            borderRadius:
-                BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: EdgeInsets.all(screenSize.height * 0.006),
-                decoration: BoxDecoration(
-                  color:
-                      isSelected ? AppTheme.accentPurple : Colors.transparent,
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getSmallRadius(screenSize) * 0.8),
-                ),
-                child: Icon(
-                  icon,
-                  size: screenSize.height * 0.025,
-                  color: isSelected
-                      ? Colors.white
-                      : AppTheme.getTextSecondaryColor(context),
-                ),
-              ),
-              SizedBox(height: screenSize.height * 0.003),
-              Text(
-                label,
-                style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                  color: isSelected
-                      ? AppTheme.accentPurple
-                      : AppTheme.getTextSecondaryColor(context),
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItemWithBadge({
-    required IconData icon,
-    required String label,
-    required int index,
-    required bool isSelected,
-    required BuildContext context,
-    required Size screenSize,
-  }) {
-    return Flexible(
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedIndex = index),
-        child: Container(
-          padding: EdgeInsets.symmetric(
-              horizontal: screenSize.width * 0.02,
-              vertical: screenSize.height * 0.01),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? AppTheme.accentPurple.withValues(alpha: 0.1)
-                : Colors.transparent,
-            borderRadius:
-                BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Stack(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(screenSize.height * 0.006),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppTheme.accentPurple
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(
-                          AppTheme.getSmallRadius(screenSize) * 0.8),
-                    ),
-                    child: Icon(
-                      icon,
-                      size: screenSize.height * 0.025,
-                      color: isSelected
-                          ? Colors.white
-                          : AppTheme.getTextSecondaryColor(context),
-                    ),
-                  ),
-                  Consumer<NotificationProvider>(
-                    builder: (context, notificationProvider, child) {
-                      final unreadCount = notificationProvider.unreadCount;
-                      if (unreadCount > 0) {
-                        return Positioned(
-                          right: 0,
-                          top: 0,
-                          child: Container(
-                            padding: EdgeInsets.all(screenSize.height * 0.003),
-                            decoration: const BoxDecoration(
-                              color: AppTheme.errorColor,
-                              shape: BoxShape.circle,
-                            ),
-                            constraints: BoxConstraints(
-                              minWidth: screenSize.height * 0.018,
-                              minHeight: screenSize.height * 0.018,
-                            ),
-                            child: Text(
-                              unreadCount > 99 ? '99+' : unreadCount.toString(),
-                              style:
-                                  AppTheme.getCaptionSmall(screenSize).copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                ],
-              ),
-              SizedBox(height: screenSize.height * 0.003),
-              Text(
-                label,
-                style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                  color: isSelected
-                      ? AppTheme.accentPurple
-                      : AppTheme.getTextSecondaryColor(context),
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
         ),
       ),
     );

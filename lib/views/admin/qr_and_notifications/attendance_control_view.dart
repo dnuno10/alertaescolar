@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../app/app_theme.dart';
 import '../../../components/admin/qr_and_notifications/qr_scanner_card.dart';
+import '../../../components/admin/qr_and_notifications/attendance_control_header.dart';
 import 'notification_send_view.dart';
 import 'scanner_configuration_view.dart';
 
@@ -48,7 +49,6 @@ class _AttendanceControlViewState extends State<AttendanceControlView>
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     final screenSize = MediaQuery.of(context).size;
 
     return Consumer<ThemeProvider>(
@@ -60,196 +60,11 @@ class _AttendanceControlViewState extends State<AttendanceControlView>
             slivers: [
               // Custom Header
               SliverToBoxAdapter(
-                child: Container(
-                  padding: EdgeInsets.only(
-                    top: MediaQuery.of(context).padding.top +
-                        AppTheme.getSmallPadding(screenSize),
-                    left: AppTheme.getMediumPadding(screenSize),
-                    right: AppTheme.getMediumPadding(screenSize),
-                    bottom: AppTheme.getLargePadding(screenSize),
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.getCardColor(context),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Title and Actions Row
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  l10n.attendanceControl,
-                                  style: AppTheme.getH1(screenSize).copyWith(
-                                    color:
-                                        AppTheme.getTextPrimaryColor(context),
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                SizedBox(
-                                    height:
-                                        AppTheme.getSmallPadding(screenSize) *
-                                            0.5),
-                                Text(
-                                  'Escanea códigos QR para registrar asistencia',
-                                  style: AppTheme.getBodyMedium(screenSize)
-                                      .copyWith(
-                                    color:
-                                        AppTheme.getTextSecondaryColor(context),
-                                    height: 1.3,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          // Action buttons
-                          Row(
-                            children: [
-                              SizedBox(
-                                  width: AppTheme.getSmallPadding(screenSize)),
-                              // Status indicator
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal:
-                                      AppTheme.getSmallPadding(screenSize),
-                                  vertical:
-                                      AppTheme.getSmallPadding(screenSize) *
-                                          0.5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: _isScanning
-                                      ? AppTheme.successColor
-                                          .withValues(alpha: 0.1)
-                                      : AppTheme.getBackgroundColor(context),
-                                  borderRadius: BorderRadius.circular(
-                                      AppTheme.getMediumRadius(screenSize)),
-                                  border: Border.all(
-                                    color: _isScanning
-                                        ? AppTheme.successColor
-                                            .withValues(alpha: 0.3)
-                                        : AppTheme.getBorderColor(context),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Container(
-                                      width: screenSize.height * 0.012,
-                                      height: screenSize.height * 0.012,
-                                      decoration: BoxDecoration(
-                                        color: _isScanning
-                                            ? AppTheme.successColor
-                                            : AppTheme.getTextSecondaryColor(
-                                                context),
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                        width: AppTheme.getSmallPadding(
-                                                screenSize) *
-                                            0.5),
-                                    Text(
-                                      _isScanning ? 'Escaneando' : 'Inactivo',
-                                      style: AppTheme.getCaption(screenSize)
-                                          .copyWith(
-                                        color: _isScanning
-                                            ? AppTheme.successColor
-                                            : AppTheme.getTextSecondaryColor(
-                                                context),
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-
-                      SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-                      Row(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              color: AppTheme.accentBlue.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(
-                                  AppTheme.getMediumRadius(screenSize)),
-                              border: Border.all(
-                                color:
-                                    AppTheme.accentBlue.withValues(alpha: 0.3),
-                              ),
-                            ),
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: _showConfigurationDialog,
-                                borderRadius: BorderRadius.circular(
-                                    AppTheme.getMediumRadius(screenSize)),
-                                child: Padding(
-                                  padding: EdgeInsets.all(
-                                      AppTheme.getSmallPadding(screenSize)),
-                                  child: Icon(
-                                    Icons.settings_rounded,
-                                    color: AppTheme.accentBlue,
-                                    size: screenSize.height * 0.025,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-                          // Notification button
-                          Container(
-                            decoration: BoxDecoration(
-                              color:
-                                  AppTheme.accentOrange.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(
-                                  AppTheme.getMediumRadius(screenSize)),
-                              border: Border.all(
-                                color: AppTheme.accentOrange
-                                    .withValues(alpha: 0.3),
-                              ),
-                            ),
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: _showNotificationDialog,
-                                borderRadius: BorderRadius.circular(
-                                    AppTheme.getMediumRadius(screenSize)),
-                                child: Padding(
-                                  padding: EdgeInsets.all(
-                                      AppTheme.getSmallPadding(screenSize)),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.notifications_rounded,
-                                        color: AppTheme.accentOrange,
-                                        size: screenSize.height * 0.025,
-                                      ),
-                                      Text(
-                                        'Enviar Notificación',
-                                        style:
-                                            AppTheme.getBodyMedium(screenSize)
-                                                .copyWith(
-                                          color: AppTheme.accentOrange,
-                                          height: 1.3,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      )
-                    ],
-                  ),
+                child: AttendanceControlHeader(
+                  isScanning: _isScanning,
+                  screenSize: screenSize,
+                  onConfigurationTap: _showConfigurationDialog,
+                  onNotificationTap: _showNotificationDialog,
                 ),
               ),
               SliverToBoxAdapter(
@@ -326,7 +141,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const NotificationSendView(),
+        builder: (context) => NotificationSendView(),
       ),
     );
   }

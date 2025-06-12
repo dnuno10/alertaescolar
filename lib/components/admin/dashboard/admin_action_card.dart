@@ -1,5 +1,6 @@
 import 'package:alertaescolar/app/app_theme.dart';
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 
 class AdminActionCard extends StatelessWidget {
   final String title;
@@ -21,6 +22,8 @@ class AdminActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -119,7 +122,7 @@ class AdminActionCard extends StatelessWidget {
                     ),
                     SizedBox(width: AppTheme.getSmallPadding(screenSize) * 0.5),
                     Text(
-                      'Acceder',
+                      l10n.access,
                       style: AppTheme.getCaption(screenSize).copyWith(
                         color: color,
                         fontWeight: FontWeight.w600,

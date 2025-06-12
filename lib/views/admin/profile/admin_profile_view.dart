@@ -6,12 +6,14 @@ import 'package:alertaescolar/components/profile/settings_tile.dart';
 import 'package:alertaescolar/components/profile/theme_settings_tile.dart';
 import 'package:alertaescolar/components/profile/language_settings_tile.dart';
 import 'package:alertaescolar/components/profile/logout_button.dart';
+import 'package:alertaescolar/components/dialogs/theme_dialog_handler.dart';
+import 'package:alertaescolar/components/dialogs/language_dialog_handler.dart';
+import 'package:alertaescolar/components/dialogs/coming_soon_dialog.dart';
+import 'package:alertaescolar/components/dialogs/about_app_dialog.dart';
 import 'package:flutter/material.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../app/app_theme.dart';
 import '../../../app/app_routes.dart';
-import '../../../widgets/language_selection_dialog.dart';
-import '../../../widgets/theme_selection_dialog.dart';
 
 class AdminProfileView extends StatefulWidget {
   const AdminProfileView({super.key});
@@ -84,12 +86,14 @@ class _AdminProfileViewState extends State<AdminProfileView> {
                     children: [
                       ThemeSettingsTile(
                         screenSize: screenSize,
-                        onTap: () => _showThemeDialog(context),
+                        onTap: () =>
+                            ThemeDialogHandler.showThemeDialog(context),
                       ),
                       const Divider(height: 1),
                       LanguageSettingsTile(
                         screenSize: screenSize,
-                        onTap: () => _showLanguageDialog(context),
+                        onTap: () =>
+                            LanguageDialogHandler.showLanguageDialog(context),
                       ),
                     ],
                   ),
@@ -109,7 +113,7 @@ class _AdminProfileViewState extends State<AdminProfileView> {
                         icon: Icons.help_outline,
                         title: l10n.helpCenter,
                         subtitle: l10n.faqAndGuides,
-                        onTap: () => _showComingSoonDialog(
+                        onTap: () => ComingSoonDialog.show(
                             context, l10n.helpCenterAndDocumentationComingSoon),
                         screenSize: screenSize,
                       ),
@@ -118,7 +122,7 @@ class _AdminProfileViewState extends State<AdminProfileView> {
                         icon: Icons.feedback_outlined,
                         title: l10n.sendFeedback,
                         subtitle: l10n.shareYourExperienceWithUs,
-                        onTap: () => _showComingSoonDialog(
+                        onTap: () => ComingSoonDialog.show(
                             context, l10n.feedbackSystemComingSoon),
                         screenSize: screenSize,
                       ),
@@ -127,7 +131,7 @@ class _AdminProfileViewState extends State<AdminProfileView> {
                         icon: Icons.info_outline,
                         title: l10n.aboutAlertaEscolar,
                         subtitle: l10n.versionTermsAndPrivacy,
-                        onTap: () => _showAboutDialog(context, l10n),
+                        onTap: () => AboutAppDialog.show(context),
                         screenSize: screenSize,
                       ),
                     ],
@@ -143,102 +147,6 @@ class _AdminProfileViewState extends State<AdminProfileView> {
 
                   SizedBox(height: AppTheme.getLargePadding(screenSize) * 2),
                 ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showThemeDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => const ThemeSelectionDialog(),
-    );
-  }
-
-  void _showLanguageDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => const LanguageSelectionDialog(),
-    );
-  }
-
-  void _showComingSoonDialog(BuildContext context, String message) {
-    final l10n = AppLocalizations.of(context);
-    final screenSize = MediaQuery.of(context).size;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.getSurfaceColor(context),
-        shape: RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-        ),
-        title: Text(
-          l10n.functionInDevelopment,
-          style: AppTheme.getSubtitle1(screenSize).copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppTheme.getTextPrimaryColor(context),
-          ),
-        ),
-        content: Text(
-          message,
-          style: AppTheme.getCaption(screenSize).copyWith(
-            color: AppTheme.getTextSecondaryColor(context),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              l10n.understood,
-              style: AppTheme.getCaption(screenSize).copyWith(
-                color: AppTheme.accentPurple,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAboutDialog(BuildContext context, AppLocalizations l10n) {
-    final screenSize = MediaQuery.of(context).size;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.getSurfaceColor(context),
-        shape: RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-        ),
-        title: Text(
-          l10n.aboutAlertaEscolar,
-          style: AppTheme.getSubtitle1(screenSize).copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppTheme.getTextPrimaryColor(context),
-          ),
-        ),
-        content: Text(
-          l10n.aboutDescription,
-          style: AppTheme.getCaption(screenSize).copyWith(
-            color: AppTheme.getTextSecondaryColor(context),
-            height: 1.4,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              l10n.understood,
-              style: AppTheme.getCaption(screenSize).copyWith(
-                color: AppTheme.accentPurple,
-                fontWeight: FontWeight.w600,
               ),
             ),
           ),

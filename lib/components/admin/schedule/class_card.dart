@@ -1,0 +1,205 @@
+import 'package:flutter/material.dart';
+import '../../../app/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../models/models.dart';
+import 'info_chip.dart';
+
+class ClassCard extends StatelessWidget {
+  final ClaseHorario clase;
+  final int index;
+  final Size screenSize;
+  final Materia? subject;
+
+  const ClassCard({
+    super.key,
+    required this.clase,
+    required this.index,
+    required this.screenSize,
+    required this.subject,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (subject == null) return const SizedBox();
+
+    final Color cardColor = _getColorFromHex(subject!.color);
+
+    return TweenAnimationBuilder<double>(
+      duration: Duration(milliseconds: 300 + (index * 100)),
+      tween: Tween(begin: 0.0, end: 1.0),
+      builder: (context, value, child) {
+        return Transform.translate(
+          offset: Offset(0, 50 * (1 - value)),
+          child: Opacity(
+            opacity: value,
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppTheme.getCardColor(context),
+                borderRadius:
+                    BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+                border: Border.all(
+                  color: AppTheme.getBorderColor(context),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.getShadowColor(context),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: Padding(
+                  padding:
+                      EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+                  child: Column(
+                    children: [
+                      // Header con icono y nombre
+                      Row(
+                        children: [
+                          Container(
+                            width: screenSize.width * 0.12,
+                            height: screenSize.width * 0.12,
+                            decoration: BoxDecoration(
+                              color: cardColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(
+                                  AppTheme.getSmallRadius(screenSize)),
+                            ),
+                            child: Icon(
+                              _getSubjectIcon(subject!.nombre),
+                              color: cardColor,
+                              size: screenSize.width * 0.06,
+                            ),
+                          ),
+                          SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  subject!.nombre,
+                                  style: AppTheme.getSubtitle1(screenSize)
+                                      .copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color:
+                                        AppTheme.getTextPrimaryColor(context),
+                                    height: 1.2,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                SizedBox(height: screenSize.height * 0.003),
+                                Text(
+                                  subject!.profesor,
+                                  style: AppTheme.getBodyMedium(screenSize)
+                                      .copyWith(
+                                    color:
+                                        AppTheme.getTextSecondaryColor(context),
+                                    height: 1.3,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Day indicator
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal:
+                                  AppTheme.getSmallPadding(screenSize) * 0.75,
+                              vertical:
+                                  AppTheme.getSmallPadding(screenSize) * 0.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: cardColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(
+                                  AppTheme.getSmallRadius(screenSize)),
+                            ),
+                            child: Text(
+                              clase.diaNombre.substring(0, 3),
+                              style:
+                                  AppTheme.getCaptionSmall(screenSize).copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: cardColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // Separador
+                      SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+
+                      // Información de tiempo y lugar
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: clase.aula.isNotEmpty ? 1 : 2,
+                            child: InfoChip(
+                              icon: Icons.access_time_rounded,
+                              text: clase.horarioTexto,
+                              color: cardColor,
+                              screenSize: screenSize,
+                            ),
+                          ),
+                          if (clase.aula.isNotEmpty) ...[
+                            SizedBox(
+                                width:
+                                    AppTheme.getSmallPadding(screenSize) * 0.5),
+                            Expanded(
+                              flex: 1,
+                              child: InfoChip(
+                                icon: Icons.location_on_outlined,
+                                text: clase.aula,
+                                color: AppTheme.getTextSecondaryColor(context),
+                                screenSize: screenSize,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Color _getColorFromHex(String hexColor) {
+    try {
+      final hex = hexColor.replaceAll('#', '');
+      return Color(int.parse('FF$hex', radix: 16));
+    } catch (e) {
+      return AppTheme.accentPurple;
+    }
+  }
+
+  IconData _getSubjectIcon(String subject) {
+    final subjectLower = subject.toLowerCase();
+    if (subjectLower.contains('matemá')) return Icons.calculate_outlined;
+    if (subjectLower.contains('español') || subjectLower.contains('lengua'))
+      return Icons.menu_book_outlined;
+    if (subjectLower.contains('ciencia')) return Icons.science_outlined;
+    if (subjectLower.contains('historia')) return Icons.history_edu_outlined;
+    if (subjectLower.contains('física') || subjectLower.contains('deporte'))
+      return Icons.sports_soccer_outlined;
+    if (subjectLower.contains('inglés') || subjectLower.contains('idioma'))
+      return Icons.language_outlined;
+    if (subjectLower.contains('arte') || subjectLower.contains('dibujo'))
+      return Icons.palette_outlined;
+    if (subjectLower.contains('música')) return Icons.music_note_outlined;
+    if (subjectLower.contains('geografía')) return Icons.public_outlined;
+    if (subjectLower.contains('química')) return Icons.biotech_outlined;
+    if (subjectLower.contains('biología')) return Icons.eco_outlined;
+    if (subjectLower.contains('tecnología') ||
+        subjectLower.contains('informática')) return Icons.computer_outlined;
+    return Icons.school_outlined;
+  }
+}

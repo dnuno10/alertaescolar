@@ -21,6 +21,7 @@ class AttendanceCalendar extends StatelessWidget {
   Widget build(BuildContext context) {
     // Mock attendance data for calendar
     final attendanceData = _generateMockAttendanceData();
+    final l10n = AppLocalizations.of(context)!;
 
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -85,8 +86,16 @@ class AttendanceCalendar extends StatelessWidget {
             fontSize: screenSize.height * 0.014,
           ),
           dowTextFormatter: (date, locale) {
-            // Use abbreviated day names to prevent cutoff
-            const dayNames = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+            // Use abbreviated day names with localization
+            final dayNames = [
+              l10n.mondayShort,
+              l10n.tuesdayShort,
+              l10n.wednesdayShort,
+              l10n.thursdayShort,
+              l10n.fridayShort,
+              l10n.saturdayShort,
+              l10n.sundayShort,
+            ];
             return dayNames[date.weekday - 1];
           },
         ),
@@ -185,6 +194,7 @@ class AttendanceCalendar extends StatelessWidget {
     if (rate >= 0.9) return AppTheme.successColor;
     if (rate >= 0.7) return AppTheme.warningColor;
     if (rate >= 0.5) return AppTheme.errorColor;
-    return AppTheme.getTextSecondaryColor(null!);
+    return Colors
+        .grey; // Use a default color instead of trying to access context
   }
 }

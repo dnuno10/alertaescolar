@@ -58,7 +58,7 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
 
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(widget.screenSize)),
@@ -88,7 +88,7 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
               SizedBox(width: AppTheme.getMediumPadding(widget.screenSize)),
               Expanded(
                 child: Text(
-                  'Filtros de Búsqueda',
+                  l10n.searchFilters, // Replaced hardcoded text
                   style: AppTheme.getH2(widget.screenSize).copyWith(
                     color: AppTheme.getTextPrimaryColor(context),
                     fontWeight: FontWeight.w700,
@@ -110,7 +110,7 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
                         AppTheme.getSmallRadius(widget.screenSize)),
                   ),
                   child: Text(
-                    'Filtros activos',
+                    l10n.activeFilters, // Replaced hardcoded text
                     style: AppTheme.getCaptionSmall(widget.screenSize).copyWith(
                       color: AppTheme.warningColor,
                       fontWeight: FontWeight.w600,
@@ -121,7 +121,7 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
               TextButton(
                 onPressed: widget.onClearFilters,
                 child: Text(
-                  'Limpiar',
+                  l10n.clear, // Replaced hardcoded text
                   style: AppTheme.getCaption(widget.screenSize).copyWith(
                     color: AppTheme.accentPurple,
                     fontWeight: FontWeight.w600,
@@ -136,7 +136,7 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
           // Enhanced Search Bar using CustomInputField
           CustomInputField(
             controller: widget.searchController,
-            label: 'Buscar por nombre',
+            label: l10n.searchByName, // Replaced hardcoded text
             screenSize: widget.screenSize,
             icon: Icons.search_rounded,
             keyboardType: TextInputType.text,
@@ -153,19 +153,21 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
                   children: [
                     Expanded(
                         child: _buildFilterDropdown(
-                            'Grado',
+                            l10n.grade, // Replaced hardcoded text
                             widget.selectedGrade,
                             ['all', '1°', '2°', '3°', '4°', '5°', '6°'])),
                     SizedBox(
                         width: AppTheme.getSmallPadding(widget.screenSize)),
                     Expanded(
-                        child: _buildFilterDropdown('Grupo',
-                            widget.selectedGroup, ['all', 'A', 'B', 'C', 'D'])),
+                        child: _buildFilterDropdown(
+                            l10n.group, // Replaced hardcoded text
+                            widget.selectedGroup,
+                            ['all', 'A', 'B', 'C', 'D'])),
                     SizedBox(
                         width: AppTheme.getSmallPadding(widget.screenSize)),
                     Expanded(
                         child: _buildFilterDropdown(
-                            'Estado',
+                            l10n.status, // Replaced hardcoded text
                             widget.selectedStatus,
                             ['all', 'active', 'inactive'])),
                   ],
@@ -178,21 +180,23 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
                       children: [
                         Expanded(
                             child: _buildFilterDropdown(
-                                'Grado',
+                                l10n.grade, // Replaced hardcoded text
                                 widget.selectedGrade,
                                 ['all', '1°', '2°', '3°', '4°', '5°', '6°'])),
                         SizedBox(
                             width: AppTheme.getSmallPadding(widget.screenSize)),
                         Expanded(
                             child: _buildFilterDropdown(
-                                'Grupo',
+                                l10n.group, // Replaced hardcoded text
                                 widget.selectedGroup,
                                 ['all', 'A', 'B', 'C', 'D'])),
                       ],
                     ),
                     SizedBox(
                         height: AppTheme.getSmallPadding(widget.screenSize)),
-                    _buildFilterDropdown('Estado', widget.selectedStatus,
+                    _buildFilterDropdown(
+                        l10n.status, // Replaced hardcoded text
+                        widget.selectedStatus,
                         ['all', 'active', 'inactive']),
                   ],
                 );
@@ -222,7 +226,7 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Directorio de Estudiantes',
+                          l10n.studentDirectory, // Replaced hardcoded text
                           style:
                               AppTheme.getBodyLarge(widget.screenSize).copyWith(
                             color: AppTheme.getTextPrimaryColor(context),
@@ -230,7 +234,10 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
                           ),
                         ),
                         Text(
-                          '${widget.filteredStudents} de ${widget.totalStudents} estudiantes',
+                          l10n.studentsCountOf(
+                              widget.totalStudents,
+                              widget.filteredStudents
+                                  .toString()), // Replaced hardcoded text
                           style: AppTheme.getCaptionSmall(widget.screenSize)
                               .copyWith(
                             color: AppTheme.getTextSecondaryColor(context),
@@ -266,18 +273,18 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    _buildCompactStat(
-                        'Total', widget.totalStudents, AppTheme.accentBlue),
+                    _buildCompactStat(l10n.total, widget.totalStudents,
+                        AppTheme.accentBlue), // Replaced hardcoded text
                     SizedBox(
                         width: AppTheme.getSmallPadding(widget.screenSize)),
                     _buildCompactStat(
-                        'Activos',
+                        l10n.active, // Replaced hardcoded text
                         widget.students.where((s) => s.activo).length,
                         AppTheme.successColor),
                     SizedBox(
                         width: AppTheme.getSmallPadding(widget.screenSize)),
                     _buildCompactStat(
-                        'Inactivos',
+                        l10n.inactive, // Replaced hardcoded text
                         widget.students.where((s) => !s.activo).length,
                         AppTheme.errorColor),
                   ],
@@ -315,6 +322,7 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
   }
 
   Widget _buildStudentItem(Alumno student, bool isLast) {
+    final l10n = AppLocalizations.of(context)!;
     final statusColor =
         student.activo ? AppTheme.successColor : AppTheme.errorColor;
     final gradeGroup = '${student.grado}${student.grupo}';
@@ -402,7 +410,10 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
                             AppTheme.getSmallPadding(widget.screenSize) * 0.25,
                         children: [
                           _buildChip(gradeGroup, AppTheme.accentBlue),
-                          _buildChip(student.activo ? 'Activo' : 'Inactivo',
+                          _buildChip(
+                              student.activo
+                                  ? l10n.active
+                                  : l10n.inactive, // Replaced hardcoded text
                               statusColor),
                           _buildChip(student.llave,
                               AppTheme.getTextSecondaryColor(context)),
@@ -429,6 +440,8 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
   }
 
   Widget _buildEmptyState() {
+    final l10n = AppLocalizations.of(context)!;
+
     return Container(
       padding: EdgeInsets.all(AppTheme.getLargePadding(widget.screenSize)),
       child: Column(
@@ -443,8 +456,8 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
           SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
           Text(
             _hasActiveFilters()
-                ? 'No se encontraron estudiantes con los filtros aplicados'
-                : 'No hay estudiantes registrados',
+                ? l10n.noStudentsFoundWithFilters // Replaced hardcoded text
+                : l10n.noRegisteredStudents, // Replaced hardcoded text
             style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
               color: AppTheme.getTextSecondaryColor(context),
               fontWeight: FontWeight.w500,
@@ -454,8 +467,9 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
           SizedBox(height: AppTheme.getSmallPadding(widget.screenSize)),
           Text(
             _hasActiveFilters()
-                ? 'Intenta ajustar los filtros de búsqueda'
-                : 'Los estudiantes aparecerán aquí cuando se registren',
+                ? l10n.tryAdjustingFilters // Replaced hardcoded text
+                : l10n
+                    .studentsWillAppearWhenRegistered, // Replaced hardcoded text
             style: AppTheme.getCaption(widget.screenSize).copyWith(
               color: AppTheme.getTextSecondaryColor(context),
             ),
@@ -471,7 +485,7 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
                 size: widget.screenSize.height * 0.02,
               ),
               label: Text(
-                'Limpiar filtros',
+                l10n.clearFilters, // Replaced hardcoded text
                 style: AppTheme.getCaption(widget.screenSize).copyWith(
                   color: AppTheme.accentPurple,
                   fontWeight: FontWeight.w600,
@@ -565,16 +579,18 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
   }
 
   String _getDropdownLabel(String value, String filterType) {
+    final l10n = AppLocalizations.of(context)!;
+
     if (value == 'all') {
       switch (filterType) {
         case 'Grado':
-          return 'Todos los grados';
+          return l10n.allGrades; // Replaced hardcoded text
         case 'Grupo':
-          return 'Todos los grupos';
+          return l10n.allGroups; // Replaced hardcoded text
         case 'Estado':
-          return 'Todos los estados';
+          return l10n.allStatuses; // Replaced hardcoded text
         default:
-          return 'Todos';
+          return l10n.all; // Replaced hardcoded text
       }
     }
 
@@ -582,9 +598,9 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
     if (filterType == 'Estado') {
       switch (value) {
         case 'active':
-          return 'Activos';
+          return l10n.activeStudents; // Replaced hardcoded text
         case 'inactive':
-          return 'Inactivos';
+          return l10n.inactiveStudents; // Replaced hardcoded text
         default:
           return value;
       }

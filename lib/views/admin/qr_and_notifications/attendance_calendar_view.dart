@@ -6,6 +6,7 @@ import '../../../providers/theme_provider.dart';
 import '../../../components/headers/nav_header.dart';
 import '../../../components/admin/attendance/attendance_calendar.dart';
 import '../../../components/admin/attendance/enhanced_date_details.dart';
+import '../../../components/admin/attendance/calendar_explanation_header.dart';
 
 class AttendanceCalendarView extends StatefulWidget {
   const AttendanceCalendarView({super.key});
@@ -38,37 +39,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Calendar Header with explanation
-                      Container(
-                        padding: EdgeInsets.all(
-                            AppTheme.getMediumPadding(screenSize)),
-                        decoration: BoxDecoration(
-                          color: AppTheme.accentBlue.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(
-                              AppTheme.getMediumRadius(screenSize)),
-                          border: Border.all(
-                              color: AppTheme.accentBlue.withOpacity(0.2)),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.info_outline_rounded,
-                              color: AppTheme.accentBlue,
-                              size: screenSize.width * 0.06,
-                            ),
-                            SizedBox(
-                                width: AppTheme.getMediumPadding(screenSize)),
-                            Expanded(
-                              child: Text(
-                                'Selecciona un día en el calendario para ver los estudiantes escaneados con sus respectivos tipos de notificación',
-                                style: AppTheme.getCaption(screenSize).copyWith(
-                                  color: AppTheme.accentBlue,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      CalendarExplanationHeader(screenSize: screenSize),
 
                       SizedBox(height: AppTheme.getLargePadding(screenSize)),
 

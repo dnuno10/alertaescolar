@@ -16,7 +16,7 @@ class DaySelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final dayNames = [
       l10n.monday,
       l10n.tuesday,
@@ -36,7 +36,7 @@ class DaySelector extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Días de la semana', // TODO: Add to l10n
+            l10n.daysOfWeek,
             style: AppTheme.getSubtitle1(screenSize).copyWith(
               fontWeight: FontWeight.w600,
               color: AppTheme.getTextPrimaryColor(context),
