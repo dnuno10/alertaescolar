@@ -1,13 +1,12 @@
 import 'package:alertaescolar/models/alumno.dart';
-import 'package:alertaescolar/views/admin/admin_dashboard_view.dart';
-import 'package:alertaescolar/views/admin/admin_profile_view.dart';
-import 'package:alertaescolar/views/admin/announcements_view.dart';
-import 'package:alertaescolar/views/admin/attendance_control_view.dart';
-import 'package:alertaescolar/views/admin/reports_view.dart';
-import 'package:alertaescolar/views/admin/schedule_management_view.dart';
-import 'package:alertaescolar/views/admin/school_settings_view.dart';
-import 'package:alertaescolar/views/admin/student_profile_admin_view.dart';
-import 'package:alertaescolar/views/admin/students_directory_view.dart';
+import 'package:alertaescolar/views/admin/home/admin_dashboard_view.dart';
+import 'package:alertaescolar/views/admin/profile/admin_profile_view.dart';
+import 'package:alertaescolar/views/admin/qr_and_notifications/announcements_view.dart';
+import 'package:alertaescolar/views/admin/qr_and_notifications/attendance_control_view.dart';
+import 'package:alertaescolar/views/admin/schedule/schedule_management_view.dart';
+import 'package:alertaescolar/views/admin/school/school_settings_view.dart';
+import 'package:alertaescolar/views/admin/students/student_profile_admin_view.dart';
+import 'package:alertaescolar/views/admin/students/students_directory_view.dart';
 import 'package:alertaescolar/views/students/students_view_new.dart';
 import 'package:flutter/material.dart';
 import '../views/home/home_view.dart';
@@ -132,8 +131,6 @@ class AppRoutes {
       case adminSchoolSettings:
         return MaterialPageRoute(
             builder: (context) => const SchoolSettingsView());
-      case adminReports:
-        return MaterialPageRoute(builder: (context) => const ReportsView());
 
       default:
         return MaterialPageRoute(

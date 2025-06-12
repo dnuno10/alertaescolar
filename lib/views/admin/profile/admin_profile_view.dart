@@ -1,0 +1,249 @@
+import 'package:alertaescolar/views/profile/password_security_view_new.dart';
+import 'package:alertaescolar/components/profile/profile_header.dart';
+import 'package:alertaescolar/components/profile/settings_section_title.dart';
+import 'package:alertaescolar/components/profile/settings_card.dart';
+import 'package:alertaescolar/components/profile/settings_tile.dart';
+import 'package:alertaescolar/components/profile/theme_settings_tile.dart';
+import 'package:alertaescolar/components/profile/language_settings_tile.dart';
+import 'package:alertaescolar/components/profile/logout_button.dart';
+import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../app/app_theme.dart';
+import '../../../app/app_routes.dart';
+import '../../../widgets/language_selection_dialog.dart';
+import '../../../widgets/theme_selection_dialog.dart';
+
+class AdminProfileView extends StatefulWidget {
+  const AdminProfileView({super.key});
+
+  @override
+  State<AdminProfileView> createState() => _AdminProfileViewState();
+}
+
+class _AdminProfileViewState extends State<AdminProfileView> {
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final screenSize = MediaQuery.of(context).size;
+
+    return Scaffold(
+      backgroundColor: AppTheme.getBackgroundColor(context),
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          ProfileHeader(screenSize: screenSize),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Account Section
+                  SettingsSectionTitle(
+                    title: l10n.account,
+                    screenSize: screenSize,
+                  ),
+                  SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+                  SettingsCard(
+                    screenSize: screenSize,
+                    children: [
+                      SettingsTile(
+                        icon: Icons.person_outline,
+                        title: l10n.personalData,
+                        subtitle: l10n.editProfileAndContactData,
+                        onTap: () => Navigator.pushNamed(
+                            context, AppRoutes.personalDataNavigation),
+                        screenSize: screenSize,
+                      ),
+                      const Divider(height: 1),
+                      SettingsTile(
+                        icon: Icons.lock_outline,
+                        title: l10n.security,
+                        subtitle: l10n.changePasswordAndAuthentication,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PasswordSecurityView(),
+                          ),
+                        ),
+                        screenSize: screenSize,
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: AppTheme.getLargePadding(screenSize)),
+
+                  // Preferences Section
+                  SettingsSectionTitle(
+                    title: l10n.preferences,
+                    screenSize: screenSize,
+                  ),
+                  SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+                  SettingsCard(
+                    screenSize: screenSize,
+                    children: [
+                      ThemeSettingsTile(
+                        screenSize: screenSize,
+                        onTap: () => _showThemeDialog(context),
+                      ),
+                      const Divider(height: 1),
+                      LanguageSettingsTile(
+                        screenSize: screenSize,
+                        onTap: () => _showLanguageDialog(context),
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: AppTheme.getLargePadding(screenSize)),
+
+                  // Help Section
+                  SettingsSectionTitle(
+                    title: l10n.helpCenter,
+                    screenSize: screenSize,
+                  ),
+                  SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+                  SettingsCard(
+                    screenSize: screenSize,
+                    children: [
+                      SettingsTile(
+                        icon: Icons.help_outline,
+                        title: l10n.helpCenter,
+                        subtitle: l10n.faqAndGuides,
+                        onTap: () => _showComingSoonDialog(
+                            context, l10n.helpCenterAndDocumentationComingSoon),
+                        screenSize: screenSize,
+                      ),
+                      const Divider(height: 1),
+                      SettingsTile(
+                        icon: Icons.feedback_outlined,
+                        title: l10n.sendFeedback,
+                        subtitle: l10n.shareYourExperienceWithUs,
+                        onTap: () => _showComingSoonDialog(
+                            context, l10n.feedbackSystemComingSoon),
+                        screenSize: screenSize,
+                      ),
+                      const Divider(height: 1),
+                      SettingsTile(
+                        icon: Icons.info_outline,
+                        title: l10n.aboutAlertaEscolar,
+                        subtitle: l10n.versionTermsAndPrivacy,
+                        onTap: () => _showAboutDialog(context, l10n),
+                        screenSize: screenSize,
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: AppTheme.getLargePadding(screenSize)),
+
+                  // Logout Button
+                  LogoutButton(
+                    screenSize: screenSize,
+                    onTap: () {},
+                  ),
+
+                  SizedBox(height: AppTheme.getLargePadding(screenSize) * 2),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showThemeDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => const ThemeSelectionDialog(),
+    );
+  }
+
+  void _showLanguageDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => const LanguageSelectionDialog(),
+    );
+  }
+
+  void _showComingSoonDialog(BuildContext context, String message) {
+    final l10n = AppLocalizations.of(context);
+    final screenSize = MediaQuery.of(context).size;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.getSurfaceColor(context),
+        shape: RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
+        ),
+        title: Text(
+          l10n.functionInDevelopment,
+          style: AppTheme.getSubtitle1(screenSize).copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppTheme.getTextPrimaryColor(context),
+          ),
+        ),
+        content: Text(
+          message,
+          style: AppTheme.getCaption(screenSize).copyWith(
+            color: AppTheme.getTextSecondaryColor(context),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              l10n.understood,
+              style: AppTheme.getCaption(screenSize).copyWith(
+                color: AppTheme.accentPurple,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAboutDialog(BuildContext context, AppLocalizations l10n) {
+    final screenSize = MediaQuery.of(context).size;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.getSurfaceColor(context),
+        shape: RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
+        ),
+        title: Text(
+          l10n.aboutAlertaEscolar,
+          style: AppTheme.getSubtitle1(screenSize).copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppTheme.getTextPrimaryColor(context),
+          ),
+        ),
+        content: Text(
+          l10n.aboutDescription,
+          style: AppTheme.getCaption(screenSize).copyWith(
+            color: AppTheme.getTextSecondaryColor(context),
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              l10n.understood,
+              style: AppTheme.getCaption(screenSize).copyWith(
+                color: AppTheme.accentPurple,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

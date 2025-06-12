@@ -1,5 +1,6 @@
 enum TipoComunicado {
   emergencia,
+  paseo,
   evento,
   recordatorioPago,
   citatorio,
