@@ -1,4 +1,5 @@
 import 'package:alertaescolar/components/buttons/custom_outline_button.dart';
+import 'package:alertaescolar/components/buttons/solid_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../app/app_theme.dart';
@@ -145,10 +146,10 @@ class ThemeSelectionDialog extends StatelessWidget {
                       SizedBox(height: AppTheme.getMediumPadding(screenSize)),
                       SizedBox(
                         width: double.infinity,
-                        child: CustomOutlineButton(
+                        child: SolidButton(
                             onPressed: () => Navigator.of(context).pop(),
-                            label: l10n.close,
-                            color: AppTheme.getTextPrimaryColor(context),
+                            label: l10n.cancel,
+                            backgroundColor: AppTheme.accentPurple,
                             screenSize: screenSize),
                       ),
                     ],

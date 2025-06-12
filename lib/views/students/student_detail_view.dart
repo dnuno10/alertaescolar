@@ -12,6 +12,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/models.dart';
 import '../../app/app_theme.dart';
 import '../schedule/schedule_view.dart';
+import '../school/school_info_view.dart';
 
 class StudentDetailView extends StatelessWidget {
   final Alumno student;
@@ -57,6 +58,14 @@ class StudentDetailView extends StatelessWidget {
                       ),
                       SizedBox(height: AppTheme.getMediumPadding(screenSize)),
                       SolidButton(
+                          backgroundColor: AppTheme.accentBlue,
+                          onPressed: () => _viewSchoolInfo(context),
+                          label: l10n.schoolInfo,
+                          width: double.infinity,
+                          icon: Icons.school_rounded,
+                          screenSize: screenSize),
+                      SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+                      SolidButton(
                           backgroundColor: AppTheme.accentPurple,
                           onPressed: () => _viewSchedule(context),
                           label: l10n.viewSchedule,
@@ -99,6 +108,15 @@ class StudentDetailView extends StatelessWidget {
       context,
       MaterialPageRoute(
         builder: (context) => ScheduleView(student: student),
+      ),
+    );
+  }
+
+  void _viewSchoolInfo(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SchoolInfoView(),
       ),
     );
   }

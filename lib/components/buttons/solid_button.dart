@@ -6,6 +6,7 @@ class SolidButton extends StatelessWidget {
   final String label;
   final IconData? icon;
   final Color? backgroundColor;
+  final Color? fontColor;
   final Size screenSize;
   final double? width;
 
@@ -15,6 +16,7 @@ class SolidButton extends StatelessWidget {
     required this.label,
     required this.screenSize,
     this.width,
+    this.fontColor,
     this.icon,
     this.backgroundColor,
   });
@@ -37,13 +39,13 @@ class SolidButton extends StatelessWidget {
     final textStyle = DefaultTextStyle.merge(
       style: AppTheme.getCaptionSmall(screenSize).copyWith(
         fontWeight: FontWeight.w600,
-        color: AppTheme.onPrimaryColor,
+        color: fontColor ?? AppTheme.onPrimaryColor,
       ),
       child: Text(
         label,
         style: AppTheme.getBodyMedium(screenSize).copyWith(
           fontWeight: FontWeight.w600,
-          color: AppTheme.onPrimaryColor,
+          color: fontColor ?? AppTheme.onPrimaryColor,
           letterSpacing: 0.1,
         ),
       ),

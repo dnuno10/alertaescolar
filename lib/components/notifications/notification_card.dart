@@ -60,11 +60,7 @@ class NotificationCard extends StatelessWidget {
         status = l10n.specialPermission;
         statusColor = AppTheme.accentPurple;
         break;
-      case TipoNotificacion.alerta:
-        icon = Icons.warning_rounded;
-        status = l10n.alert;
-        statusColor = AppTheme.errorColor;
-        break;
+
       case TipoNotificacion.comunicado:
         icon = Icons.announcement_rounded;
         status = l10n.announcement;

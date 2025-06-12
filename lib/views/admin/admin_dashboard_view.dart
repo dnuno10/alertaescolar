@@ -7,11 +7,13 @@ import '../../providers/theme_provider.dart';
 import '../../components/admin/admin_stats_card.dart';
 import '../../components/admin/admin_quick_actions.dart';
 import '../../components/admin/recent_attendance_card.dart';
+import '../../components/admin/admin_main_actions.dart';
 import '../../components/headers/admin_header.dart';
 import 'attendance_control_view.dart';
 import 'students_directory_view.dart';
 import 'reports_view.dart';
 import 'admin_profile_view.dart';
+import 'school_settings_view.dart';
 
 class AdminDashboardView extends StatefulWidget {
   const AdminDashboardView({super.key});
@@ -38,7 +40,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               _buildDashboardContent(context, screenSize),
               const AttendanceControlView(),
               const StudentsDirectoryView(),
-              const ReportsView(),
+              const SchoolSettingsView(),
               const AdminProfileView(),
             ],
           ),
@@ -62,13 +64,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 // Recent Attendance
                 RecentAttendanceCard(screenSize: screenSize),
 
-                SizedBox(
-                    height: AppTheme.getLargePadding(
-                        screenSize)), // Today's Statistics
-                // Quick Actions
-                AdminQuickActions(screenSize: screenSize),
+                SizedBox(height: AppTheme.getLargePadding(screenSize)),
+                // Main Actions
+                AdminMainActions(screenSize: screenSize),
 
                 SizedBox(height: AppTheme.getLargePadding(screenSize)),
+                // Today's Statistics
                 AdminStatsCard(screenSize: screenSize),
 
                 SizedBox(height: AppTheme.getLargePadding(screenSize)),
@@ -129,8 +130,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 screenSize: screenSize,
               ),
               _buildNavItem(
-                icon: Icons.analytics_rounded,
-                label: l10n.reports,
+                icon: Icons.school_rounded,
+                label: l10n.schoolSettings,
                 index: 3,
                 isSelected: _selectedIndex == 3,
                 context: context,

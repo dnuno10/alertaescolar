@@ -4,7 +4,6 @@ enum TipoNotificacion {
   retraso,
   ausencia,
   permisoEspecial,
-  alerta,
   comunicado,
 }
 
@@ -45,7 +44,7 @@ class Notificacion {
       mensaje: json['mensaje'] ?? '',
       tipo: TipoNotificacion.values.firstWhere(
         (e) => e.name == json['tipo'],
-        orElse: () => TipoNotificacion.alerta,
+        orElse: () => TipoNotificacion.entrada,
       ),
       estado: EstadoNotificacion.values.firstWhere(
         (e) => e.name == json['estado'],

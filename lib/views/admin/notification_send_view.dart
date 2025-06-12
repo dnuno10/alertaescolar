@@ -6,9 +6,16 @@ import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
+import '../../models/comunicado.dart';
+import 'selectable_students_directory_view.dart';
 
 class NotificationSendView extends StatefulWidget {
-  const NotificationSendView({super.key});
+  final String? preselectedType;
+
+  const NotificationSendView({
+    super.key,
+    this.preselectedType,
+  });
 
   @override
   State<NotificationSendView> createState() => _NotificationSendViewState();
@@ -20,7 +27,12 @@ class _NotificationSendViewState extends State<NotificationSendView>
   final _titleController = TextEditingController();
   String _selectedRecipient = 'individual';
   String _selectedType = 'permiso';
-  bool _sendPushNotification = true; // Already set to true by default
+  bool _sendPushNotification = true;
+
+  // Comunicado specific fields
+  TipoComunicado _selectedComunicadoType = TipoComunicado.informativo;
+  PrioridadComunicado _selectedPriority = PrioridadComunicado.media;
+  DateTime? _scheduledDate;
 
   // Selection variables
   Map<String, dynamic>? _selectedStudent;
@@ -33,6 +45,12 @@ class _NotificationSendViewState extends State<NotificationSendView>
   @override
   void initState() {
     super.initState();
+
+    // Handle preselected type
+    if (widget.preselectedType != null && widget.preselectedType!.isNotEmpty) {
+      _selectedType = widget.preselectedType!;
+    }
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -94,11 +112,11 @@ class _NotificationSendViewState extends State<NotificationSendView>
                                   height:
                                       AppTheme.getMediumPadding(screenSize)),
                               _buildTypeOption(
-                                'Alerta',
-                                'alerta',
-                                Icons.warning_rounded,
+                                'Comunicado',
+                                'comunicado',
+                                Icons.campaign_rounded,
                                 AppTheme.warningColor,
-                                'Enviar alertas importantes a los destinatarios',
+                                'Enviar comunicados oficiales a los destinatarios',
                                 screenSize,
                               ),
                             ],
@@ -107,6 +125,26 @@ class _NotificationSendViewState extends State<NotificationSendView>
                         ),
 
                         SizedBox(height: AppTheme.getLargePadding(screenSize)),
+
+                        // Comunicado Type Section (only show when comunicado is selected)
+                        if (_selectedType == 'comunicado') ...[
+                          _buildSection(
+                            title: 'Tipo de Comunicado',
+                            child: _buildComunicadoTypeSelector(screenSize),
+                            screenSize: screenSize,
+                          ),
+                          SizedBox(
+                              height: AppTheme.getLargePadding(screenSize)),
+
+                          // Priority Section
+                          _buildSection(
+                            title: 'Prioridad',
+                            child: _buildPrioritySelector(screenSize),
+                            screenSize: screenSize,
+                          ),
+                          SizedBox(
+                              height: AppTheme.getLargePadding(screenSize)),
+                        ],
 
                         // Recipients Section
                         _buildSection(
@@ -177,82 +215,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                         // Message Content Section
                         _buildSection(
                           title: 'Contenido del Mensaje',
-                          child: Column(
-                            children: [
-                              // Title field
-                              TextField(
-                                controller: _titleController,
-                                decoration: InputDecoration(
-                                  labelText: 'Título del mensaje',
-                                  hintText: 'Ej: Reunión de padres programada',
-                                  prefixIcon: Icon(
-                                    Icons.title_rounded,
-                                    color: AppTheme.accentOrange,
-                                  ),
-                                  filled: true,
-                                  fillColor:
-                                      AppTheme.getBackgroundColor(context),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(
-                                        AppTheme.getMediumRadius(screenSize)),
-                                    borderSide: BorderSide(
-                                        color:
-                                            AppTheme.getBorderColor(context)),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(
-                                        AppTheme.getMediumRadius(screenSize)),
-                                    borderSide: BorderSide(
-                                        color:
-                                            AppTheme.getBorderColor(context)),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(
-                                        AppTheme.getMediumRadius(screenSize)),
-                                    borderSide: BorderSide(
-                                        color: AppTheme.accentOrange),
-                                  ),
-                                ),
-                              ),
-                              SizedBox(
-                                  height:
-                                      AppTheme.getMediumPadding(screenSize)),
-                              // Message field
-                              TextField(
-                                controller: _messageController,
-                                maxLines: 5,
-                                decoration: InputDecoration(
-                                  labelText: 'Mensaje',
-                                  hintText:
-                                      'Escribe el contenido completo de tu mensaje aquí...',
-                                  alignLabelWithHint: true,
-                                  filled: true,
-                                  fillColor:
-                                      AppTheme.getBackgroundColor(context),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(
-                                        AppTheme.getMediumRadius(screenSize)),
-                                    borderSide: BorderSide(
-                                        color:
-                                            AppTheme.getBorderColor(context)),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(
-                                        AppTheme.getMediumRadius(screenSize)),
-                                    borderSide: BorderSide(
-                                        color:
-                                            AppTheme.getBorderColor(context)),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(
-                                        AppTheme.getMediumRadius(screenSize)),
-                                    borderSide: BorderSide(
-                                        color: AppTheme.accentOrange),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                          child: _buildMessageContent(screenSize),
                           screenSize: screenSize,
                         ),
 
@@ -261,15 +224,19 @@ class _NotificationSendViewState extends State<NotificationSendView>
                         // Delivery Options Section
                         _buildSection(
                           title: 'Opciones de Entrega',
-                          child: _buildSwitchOption(
-                            'Notificación Push',
-                            'Enviar notificación inmediata al dispositivo',
-                            Icons.notifications_active_rounded,
-                            _sendPushNotification,
-                            (value) =>
-                                setState(() => _sendPushNotification = value),
-                            AppTheme.accentOrange,
-                            screenSize,
+                          child: Column(
+                            children: [
+                              _buildSwitchOption(
+                                'Notificación Push',
+                                'Enviar notificación inmediata al dispositivo',
+                                Icons.notifications_active_rounded,
+                                _sendPushNotification,
+                                (value) => setState(
+                                    () => _sendPushNotification = value),
+                                AppTheme.accentOrange,
+                                screenSize,
+                              ),
+                            ],
                           ),
                           screenSize: screenSize,
                         ),
@@ -311,9 +278,10 @@ class _NotificationSendViewState extends State<NotificationSendView>
                   Expanded(
                     flex: 2,
                     child: SolidButton(
-                      label: 'Enviar Ahora',
-                      onPressed:
-                          _canSendMessage() ? () => _sendNotification() : () {},
+                      label: _selectedType == 'comunicado'
+                          ? 'Enviar Comunicado'
+                          : 'Enviar Ahora',
+                      onPressed: _sendNotification,
                       screenSize: screenSize,
                       icon: Icons.send_rounded,
                       backgroundColor: _canSendMessage()
@@ -624,9 +592,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
               SizedBox(width: AppTheme.getSmallPadding(screenSize)),
               Expanded(
                 child: Text(
-                  _selectedStudent != null
-                      ? 'Estudiante seleccionado del directorio'
-                      : 'Selecciona un estudiante del directorio',
+                  'Selecciona un estudiante del directorio',
                   style: AppTheme.getCaptionSmall(screenSize).copyWith(
                     color: AppTheme.accentOrange,
                     fontWeight: FontWeight.w600,
@@ -637,33 +603,50 @@ class _NotificationSendViewState extends State<NotificationSendView>
           ),
         ),
         SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-
-        // Show selected student info if available
-        if (_selectedStudent != null) ...[
-          Container(
-            width: double.infinity,
+        // Student selector button
+        GestureDetector(
+          onTap: () => _navigateToStudentDirectory(),
+          child: Container(
             padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
             decoration: BoxDecoration(
-              color: AppTheme.successColor.withValues(alpha: 0.1),
+              color: _selectedStudent != null
+                  ? AppTheme.accentOrange.withValues(alpha: 0.1)
+                  : AppTheme.getCardColor(context),
               borderRadius:
                   BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
               border: Border.all(
-                color: AppTheme.successColor.withValues(alpha: 0.3),
-                width: 2,
+                color: _selectedStudent != null
+                    ? AppTheme.accentOrange
+                    : AppTheme.getBorderColor(context),
+                width: _selectedStudent != null ? 2 : 1,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.getShadowColor(context),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               children: [
                 Container(
                   padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
                   decoration: BoxDecoration(
-                    color: AppTheme.successColor.withValues(alpha: 0.15),
+                    color: (_selectedStudent != null
+                            ? AppTheme.accentOrange
+                            : AppTheme.getBorderColor(context))
+                        .withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(
                         AppTheme.getSmallRadius(screenSize)),
                   ),
                   child: Icon(
-                    Icons.person_rounded,
-                    color: AppTheme.successColor,
+                    _selectedStudent != null
+                        ? Icons.person_rounded
+                        : Icons.search_rounded,
+                    color: _selectedStudent != null
+                        ? AppTheme.accentOrange
+                        : AppTheme.getTextSecondaryColor(context),
                     size: screenSize.height * 0.025,
                   ),
                 ),
@@ -673,27 +656,28 @@ class _NotificationSendViewState extends State<NotificationSendView>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _selectedStudent!['name'] ?? 'Estudiante',
+                        _selectedStudent != null
+                            ? _selectedStudent!['name']
+                            : 'Buscar en Directorio',
                         style: AppTheme.getBodyMedium(screenSize).copyWith(
-                          color: AppTheme.getTextPrimaryColor(context),
-                          fontWeight: FontWeight.w700,
+                          color: _selectedStudent != null
+                              ? AppTheme.getTextPrimaryColor(context)
+                              : AppTheme.getTextSecondaryColor(context),
+                          fontWeight: _selectedStudent != null
+                              ? FontWeight.w700
+                              : FontWeight.w600,
                         ),
                       ),
                       SizedBox(
                           height: AppTheme.getSmallPadding(screenSize) * 0.3),
                       Text(
-                        'Grado: ${_selectedStudent!['grade']} - Sección: ${_selectedStudent!['section']}',
+                        _selectedStudent != null
+                            ? 'Grado: ${_selectedStudent!['grade']} - ${_selectedStudent!['section']}'
+                            : 'Navegar al directorio de estudiantes',
                         style: AppTheme.getCaptionSmall(screenSize).copyWith(
                           color: AppTheme.getTextSecondaryColor(context),
                         ),
                       ),
-                      if (_selectedStudent!['id'] != null)
-                        Text(
-                          'ID: ${_selectedStudent!['id']}',
-                          style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                            color: AppTheme.getTextSecondaryColor(context),
-                          ),
-                        ),
                     ],
                   ),
                 ),
@@ -701,140 +685,27 @@ class _NotificationSendViewState extends State<NotificationSendView>
                   padding: EdgeInsets.all(
                       AppTheme.getSmallPadding(screenSize) * 0.6),
                   decoration: BoxDecoration(
-                    color: AppTheme.successColor.withValues(alpha: 0.15),
+                    color: _selectedStudent != null
+                        ? AppTheme.accentOrange.withValues(alpha: 0.15)
+                        : AppTheme.getBorderColor(context)
+                            .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(
                         AppTheme.getSmallRadius(screenSize)),
                   ),
                   child: Icon(
-                    Icons.check_circle_rounded,
-                    color: AppTheme.successColor,
+                    _selectedStudent != null
+                        ? Icons.check_circle_rounded
+                        : Icons.arrow_forward_rounded,
+                    color: _selectedStudent != null
+                        ? AppTheme.accentOrange
+                        : AppTheme.getTextSecondaryColor(context),
                     size: screenSize.height * 0.022,
                   ),
                 ),
               ],
             ),
           ),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-
-          // Change selection button
-          GestureDetector(
-            onTap: () => _navigateToStudentDirectory(),
-            child: Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(
-                vertical: AppTheme.getSmallPadding(screenSize),
-                horizontal: AppTheme.getMediumPadding(screenSize),
-              ),
-              decoration: BoxDecoration(
-                color: AppTheme.getBackgroundColor(context),
-                borderRadius:
-                    BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-                border: Border.all(
-                  color: AppTheme.getBorderColor(context),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.swap_horiz_rounded,
-                    color: AppTheme.getTextSecondaryColor(context),
-                    size: screenSize.height * 0.02,
-                  ),
-                  SizedBox(width: AppTheme.getSmallPadding(screenSize) * 0.5),
-                  Text(
-                    'Cambiar estudiante',
-                    style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                      color: AppTheme.getTextSecondaryColor(context),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ] else ...[
-          // Student selector button when no student is selected
-          GestureDetector(
-            onTap: () => _navigateToStudentDirectory(),
-            child: Container(
-              padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-              decoration: BoxDecoration(
-                color: AppTheme.getCardColor(context),
-                borderRadius:
-                    BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-                border: Border.all(
-                  color: AppTheme.getBorderColor(context),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.getShadowColor(context),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding:
-                        EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
-                    decoration: BoxDecoration(
-                      color: AppTheme.getBorderColor(context)
-                          .withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(
-                          AppTheme.getSmallRadius(screenSize)),
-                    ),
-                    child: Icon(
-                      Icons.search_rounded,
-                      color: AppTheme.getTextSecondaryColor(context),
-                      size: screenSize.height * 0.025,
-                    ),
-                  ),
-                  SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Buscar en Directorio',
-                          style: AppTheme.getBodyMedium(screenSize).copyWith(
-                            color: AppTheme.getTextSecondaryColor(context),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        SizedBox(
-                            height: AppTheme.getSmallPadding(screenSize) * 0.3),
-                        Text(
-                          'Navegar al directorio de estudiantes',
-                          style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                            color: AppTheme.getTextSecondaryColor(context),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.all(
-                        AppTheme.getSmallPadding(screenSize) * 0.6),
-                    decoration: BoxDecoration(
-                      color: AppTheme.getBorderColor(context)
-                          .withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(
-                          AppTheme.getSmallRadius(screenSize)),
-                    ),
-                    child: Icon(
-                      Icons.arrow_forward_rounded,
-                      color: AppTheme.getTextSecondaryColor(context),
-                      size: screenSize.height * 0.022,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ],
     );
   }
@@ -875,7 +746,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
           ),
         ),
         SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-        // Class selector
+        // Class selector button
         GestureDetector(
           onTap: () => _showClassSelectionDialog(),
           child: Container(
@@ -1014,7 +885,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
           ),
         ),
         SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-        // Shift selector
+        // Shift selector button
         GestureDetector(
           onTap: () => _showShiftSelectionDialog(),
           child: Container(
@@ -1118,242 +989,1021 @@ class _NotificationSendViewState extends State<NotificationSendView>
   }
 
   void _navigateToStudentDirectory() async {
-    // Navigate to the actual student directory view
-    final result = await Navigator.pushNamed(
+    // Navigate to the selectable student directory view
+    final result = await Navigator.push<Map<String, dynamic>>(
       context,
-      '/admin/students', // Replace with your actual student directory route
-      arguments: {
-        'selectionMode': true, // Enable selection mode
-        'allowMultiSelect': false, // Only single selection for notifications
-        'showFilters': true, // Show grade/section filters
-      },
+      MaterialPageRoute(
+        builder: (context) => const SelectableStudentsDirectoryView(
+          selectionMode: true,
+          allowMultiSelect: false,
+        ),
+      ),
     );
 
     // Handle the selected student result
-    if (result != null && result is Map<String, dynamic>) {
+    if (result != null) {
       setState(() {
         _selectedStudent = result;
       });
     }
   }
 
-  void _showStudentSearchDialog() {
-    // Mock data - replace with actual student data
-    final students = [
+  void _showClassSelectionDialog() {
+    final classes = [
+      {'id': '1A', 'name': '1ro A', 'students': 25, 'teacher': 'Prof. García'},
+      {'id': '1B', 'name': '1ro B', 'students': 23, 'teacher': 'Prof. López'},
       {
-        'id': 'STU001',
-        'name': 'Juan Pérez',
-        'grade': '5to',
-        'section': 'A',
-        'avatar': null,
+        'id': '2A',
+        'name': '2do A',
+        'students': 27,
+        'teacher': 'Prof. Martínez'
       },
       {
-        'id': 'STU002',
-        'name': 'María González',
-        'grade': '4to',
-        'section': 'B',
-        'avatar': null,
+        'id': '2B',
+        'name': '2do B',
+        'students': 24,
+        'teacher': 'Prof. Rodríguez'
       },
       {
-        'id': 'STU003',
-        'name': 'Carlos Rodríguez',
-        'grade': '6to',
-        'section': 'A',
-        'avatar': null,
+        'id': '3A',
+        'name': '3ro A',
+        'students': 26,
+        'teacher': 'Prof. Fernández'
+      },
+      {'id': '3B', 'name': '3ro B', 'students': 22, 'teacher': 'Prof. Morales'},
+    ];
+
+    showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) => Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(
+                    AppTheme.getLargeRadius(MediaQuery.of(context).size)),
+              ),
+              elevation: 8,
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.9,
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.7,
+                ),
+                padding: EdgeInsets.all(
+                    AppTheme.getMediumPadding(MediaQuery.of(context).size)),
+                decoration: BoxDecoration(
+                  color: AppTheme.getCardColor(context),
+                  borderRadius: BorderRadius.circular(
+                      AppTheme.getLargeRadius(MediaQuery.of(context).size)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(AppTheme.getSmallPadding(
+                                  MediaQuery.of(context).size) *
+                              0.8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentBlue.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(
+                                AppTheme.getSmallRadius(
+                                    MediaQuery.of(context).size)),
+                          ),
+                          child: Icon(
+                            Icons.class_rounded,
+                            color: AppTheme.accentBlue,
+                            size: MediaQuery.of(context).size.height * 0.025,
+                          ),
+                        ),
+                        SizedBox(
+                            width: AppTheme.getMediumPadding(
+                                MediaQuery.of(context).size)),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Seleccionar Clase',
+                                style:
+                                    AppTheme.getH2(MediaQuery.of(context).size)
+                                        .copyWith(
+                                  color: AppTheme.getTextPrimaryColor(context),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                'Elige la clase que recibirá la notificación',
+                                style: AppTheme.getCaptionSmall(
+                                        MediaQuery.of(context).size)
+                                    .copyWith(
+                                  color:
+                                      AppTheme.getTextSecondaryColor(context),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: AppTheme.getTextSecondaryColor(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(
+                        height: AppTheme.getMediumPadding(
+                            MediaQuery.of(context).size)),
+                    // Classes grid
+                    Flexible(
+                      child: GridView.builder(
+                        shrinkWrap: true,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount:
+                              MediaQuery.of(context).size.width > 600 ? 2 : 1,
+                          childAspectRatio: 3.2,
+                          crossAxisSpacing: AppTheme.getSmallPadding(
+                              MediaQuery.of(context).size),
+                          mainAxisSpacing: AppTheme.getSmallPadding(
+                              MediaQuery.of(context).size),
+                        ),
+                        itemCount: classes.length,
+                        itemBuilder: (context, index) {
+                          final classData = classes[index];
+                          return Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () {
+                                  setState(() => _selectedClass =
+                                      classData['name'] as String);
+                                  Navigator.pop(context);
+                                },
+                                borderRadius: BorderRadius.circular(
+                                    AppTheme.getMediumRadius(
+                                        MediaQuery.of(context).size)),
+                                child: Container(
+                                  padding: EdgeInsets.all(
+                                      AppTheme.getMediumPadding(
+                                          MediaQuery.of(context).size)),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.getBackgroundColor(context),
+                                    borderRadius: BorderRadius.circular(
+                                        AppTheme.getMediumRadius(
+                                            MediaQuery.of(context).size)),
+                                    border: Border.all(
+                                      color: AppTheme.getBorderColor(context),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width:
+                                            MediaQuery.of(context).size.width *
+                                                0.12,
+                                        height:
+                                            MediaQuery.of(context).size.width *
+                                                0.12,
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.accentBlue
+                                              .withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(
+                                              AppTheme.getSmallRadius(
+                                                  MediaQuery.of(context).size)),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            classData['id'] as String,
+                                            style: AppTheme.getBodyMedium(
+                                                    MediaQuery.of(context).size)
+                                                .copyWith(
+                                              color: AppTheme.accentBlue,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(
+                                          width: AppTheme.getMediumPadding(
+                                              MediaQuery.of(context).size)),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              classData['name'] as String,
+                                              style: AppTheme.getBodyMedium(
+                                                      MediaQuery.of(context)
+                                                          .size)
+                                                  .copyWith(
+                                                color: AppTheme
+                                                    .getTextPrimaryColor(
+                                                        context),
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            SizedBox(
+                                                height:
+                                                    AppTheme.getSmallPadding(
+                                                            MediaQuery.of(
+                                                                    context)
+                                                                .size) *
+                                                        0.3),
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.people_outline_rounded,
+                                                  size: MediaQuery.of(context)
+                                                          .size
+                                                          .height *
+                                                      0.016,
+                                                  color: AppTheme
+                                                      .getTextSecondaryColor(
+                                                          context),
+                                                ),
+                                                SizedBox(
+                                                    width: AppTheme
+                                                            .getSmallPadding(
+                                                                MediaQuery.of(
+                                                                        context)
+                                                                    .size) *
+                                                        0.5),
+                                                Text(
+                                                  '${classData['students']} estudiantes',
+                                                  style:
+                                                      AppTheme.getCaptionSmall(
+                                                              MediaQuery.of(
+                                                                      context)
+                                                                  .size)
+                                                          .copyWith(
+                                                    color: AppTheme
+                                                        .getTextSecondaryColor(
+                                                            context),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.arrow_forward_ios_rounded,
+                                        size:
+                                            MediaQuery.of(context).size.height *
+                                                0.018,
+                                        color: AppTheme.getTextSecondaryColor(
+                                            context),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ));
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ));
+  }
+
+  void _showShiftSelectionDialog() {
+    final shifts = [
+      {
+        'id': 'morning',
+        'name': 'Matutino',
+        'time': '7:00 AM - 12:00 PM',
+        'students': 156,
+        'classes': 6,
+        'icon': Icons.wb_sunny_rounded,
+        'color': AppTheme.accentOrange,
       },
       {
-        'id': 'STU004',
-        'name': 'Ana Martínez',
-        'grade': '3ro',
-        'section': 'C',
-        'avatar': null,
-      },
-      {
-        'id': 'STU005',
-        'name': 'Luis Fernández',
-        'grade': '5to',
-        'section': 'B',
-        'avatar': null,
+        'id': 'afternoon',
+        'name': 'Vespertino',
+        'time': '1:00 PM - 6:00 PM',
+        'students': 134,
+        'classes': 5,
+        'icon': Icons.brightness_6_rounded,
+        'color': AppTheme.accentPurple,
       },
     ];
 
     showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-              AppTheme.getMediumRadius(MediaQuery.of(context).size)),
-        ),
-        child: Container(
-          padding: EdgeInsets.all(
-              AppTheme.getMediumPadding(MediaQuery.of(context).size)),
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.7,
-            maxWidth: MediaQuery.of(context).size.width * 0.9,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Row(
-                children: [
-                  Icon(
-                    Icons.search_rounded,
-                    color: AppTheme.accentOrange,
-                    size: MediaQuery.of(context).size.height * 0.025,
-                  ),
-                  SizedBox(
-                      width: AppTheme.getSmallPadding(
-                          MediaQuery.of(context).size)),
-                  Text(
-                    'Seleccionar Estudiante',
-                    style: AppTheme.getSubtitle1(MediaQuery.of(context).size)
-                        .copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Spacer(),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icon(Icons.close_rounded),
-                  ),
-                ],
+        context: context,
+        barrierDismissible: true,
+        builder: (context) => Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(
+                    AppTheme.getLargeRadius(MediaQuery.of(context).size)),
               ),
-              SizedBox(
-                  height:
-                      AppTheme.getMediumPadding(MediaQuery.of(context).size)),
-
-              // Search field
-              TextField(
-                decoration: InputDecoration(
-                  hintText: 'Buscar por nombre...',
-                  prefixIcon: Icon(Icons.search_rounded),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                        AppTheme.getSmallRadius(MediaQuery.of(context).size)),
-                  ),
+              elevation: 8,
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.9,
+                constraints: BoxConstraints(
+                  maxWidth: 500,
                 ),
-              ),
-              SizedBox(
-                  height:
-                      AppTheme.getMediumPadding(MediaQuery.of(context).size)),
+                padding: EdgeInsets.all(
+                    AppTheme.getMediumPadding(MediaQuery.of(context).size)),
+                decoration: BoxDecoration(
+                  color: AppTheme.getCardColor(context),
+                  borderRadius: BorderRadius.circular(
+                      AppTheme.getLargeRadius(MediaQuery.of(context).size)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(AppTheme.getSmallPadding(
+                                  MediaQuery.of(context).size) *
+                              0.8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentPurple.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(
+                                AppTheme.getSmallRadius(
+                                    MediaQuery.of(context).size)),
+                          ),
+                          child: Icon(
+                            Icons.schedule_rounded,
+                            color: AppTheme.accentPurple,
+                            size: MediaQuery.of(context).size.height * 0.025,
+                          ),
+                        ),
+                        SizedBox(
+                            width: AppTheme.getMediumPadding(
+                                MediaQuery.of(context).size)),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Seleccionar Turno',
+                                style:
+                                    AppTheme.getH2(MediaQuery.of(context).size)
+                                        .copyWith(
+                                  color: AppTheme.getTextPrimaryColor(context),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                'Elige el turno que recibirá la notificación',
+                                style: AppTheme.getCaptionSmall(
+                                        MediaQuery.of(context).size)
+                                    .copyWith(
+                                  color:
+                                      AppTheme.getTextSecondaryColor(context),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: AppTheme.getTextSecondaryColor(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(
+                        height: AppTheme.getMediumPadding(
+                            MediaQuery.of(context).size)),
+                    // Shifts list - Fixed layout to prevent overflow
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: shifts.map((shift) {
+                        final color = shift['color'] as Color;
+                        final isLast =
+                            shifts.indexOf(shift) == shifts.length - 1;
 
-              // Students list
-              Expanded(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: students.length,
-                  itemBuilder: (context, index) {
-                    final student = students[index];
-                    return Container(
-                      margin: EdgeInsets.only(
-                          bottom: AppTheme.getSmallPadding(
-                              MediaQuery.of(context).size)),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor:
-                              AppTheme.accentOrange.withValues(alpha: 0.1),
-                          child: Text(
-                            student['name']![0],
-                            style: TextStyle(
-                              color: AppTheme.accentOrange,
-                              fontWeight: FontWeight.w600,
+                        return Container(
+                            margin: EdgeInsets.only(
+                              bottom: isLast
+                                  ? 0
+                                  : AppTheme.getSmallPadding(
+                                      MediaQuery.of(context).size),
                             ),
-                          ),
-                        ),
-                        title: Text(
-                          student['name']!,
-                          style: AppTheme.getBodyMedium(
-                                  MediaQuery.of(context).size)
-                              .copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        subtitle: Text(
-                            '${student['grade']} - ${student['section']} • ID: ${student['id']}'),
-                        trailing: Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          size: MediaQuery.of(context).size.height * 0.018,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                              AppTheme.getSmallRadius(
-                                  MediaQuery.of(context).size)),
-                        ),
-                        onTap: () {
-                          setState(() => _selectedStudent = student);
-                          Navigator.pop(context);
-                        },
-                      ),
-                    );
-                  },
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () {
+                                  setState(() =>
+                                      _selectedShift = shift['name'] as String);
+                                  Navigator.pop(context);
+                                },
+                                borderRadius: BorderRadius.circular(
+                                    AppTheme.getMediumRadius(
+                                        MediaQuery.of(context).size)),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.all(
+                                      AppTheme.getMediumPadding(
+                                          MediaQuery.of(context).size)),
+                                  decoration: BoxDecoration(
+                                    color: color.withValues(alpha: 0.05),
+                                    borderRadius: BorderRadius.circular(
+                                        AppTheme.getMediumRadius(
+                                            MediaQuery.of(context).size)),
+                                    border: Border.all(
+                                      color: color.withValues(alpha: 0.2),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      // Icon container with fixed size
+                                      Container(
+                                        width:
+                                            MediaQuery.of(context).size.width *
+                                                0.12,
+                                        height:
+                                            MediaQuery.of(context).size.width *
+                                                0.12,
+                                        constraints: BoxConstraints(
+                                          maxWidth: 60,
+                                          maxHeight: 60,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: color.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(
+                                              AppTheme.getMediumRadius(
+                                                  MediaQuery.of(context).size)),
+                                        ),
+                                        child: Icon(
+                                          shift['icon'] as IconData,
+                                          color: color,
+                                          size: MediaQuery.of(context)
+                                                  .size
+                                                  .height *
+                                              0.028,
+                                        ),
+                                      ),
+                                      SizedBox(
+                                          width: AppTheme.getMediumPadding(
+                                              MediaQuery.of(context).size)),
+                                      // Content with flexible layout
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              shift['name'] as String,
+                                              style: AppTheme.getBodyLarge(
+                                                      MediaQuery.of(context)
+                                                          .size)
+                                                  .copyWith(
+                                                color: AppTheme
+                                                    .getTextPrimaryColor(
+                                                        context),
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            SizedBox(
+                                                height:
+                                                    AppTheme.getSmallPadding(
+                                                            MediaQuery.of(
+                                                                    context)
+                                                                .size) *
+                                                        0.3),
+                                            Text(
+                                              shift['time'] as String,
+                                              style: AppTheme.getBodyMedium(
+                                                      MediaQuery.of(context)
+                                                          .size)
+                                                  .copyWith(
+                                                color: color,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            SizedBox(
+                                                height:
+                                                    AppTheme.getSmallPadding(
+                                                            MediaQuery.of(
+                                                                    context)
+                                                                .size) *
+                                                        0.3),
+                                            // Stats row with flexible layout
+                                            Wrap(
+                                              spacing:
+                                                  AppTheme.getMediumPadding(
+                                                      MediaQuery.of(context)
+                                                          .size),
+                                              runSpacing:
+                                                  AppTheme.getSmallPadding(
+                                                          MediaQuery.of(context)
+                                                              .size) *
+                                                      0.5,
+                                              children: [
+                                                Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      Icons
+                                                          .people_outline_rounded,
+                                                      size:
+                                                          MediaQuery.of(context)
+                                                                  .size
+                                                                  .height *
+                                                              0.016,
+                                                      color: AppTheme
+                                                          .getTextSecondaryColor(
+                                                              context),
+                                                    ),
+                                                    SizedBox(
+                                                        width: AppTheme
+                                                                .getSmallPadding(
+                                                                    MediaQuery.of(
+                                                                            context)
+                                                                        .size) *
+                                                            0.5),
+                                                    Text(
+                                                      '${shift['students']} estudiantes',
+                                                      style: AppTheme
+                                                              .getCaptionSmall(
+                                                                  MediaQuery.of(
+                                                                          context)
+                                                                      .size)
+                                                          .copyWith(
+                                                        color: AppTheme
+                                                            .getTextSecondaryColor(
+                                                                context),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.class_rounded,
+                                                      size:
+                                                          MediaQuery.of(context)
+                                                                  .size
+                                                                  .height *
+                                                              0.016,
+                                                      color: AppTheme
+                                                          .getTextSecondaryColor(
+                                                              context),
+                                                    ),
+                                                    SizedBox(
+                                                        width: AppTheme
+                                                                .getSmallPadding(
+                                                                    MediaQuery.of(
+                                                                            context)
+                                                                        .size) *
+                                                            0.5),
+                                                    Text(
+                                                      '${shift['classes']} clases',
+                                                      style: AppTheme
+                                                              .getCaptionSmall(
+                                                                  MediaQuery.of(
+                                                                          context)
+                                                                      .size)
+                                                          .copyWith(
+                                                        color: AppTheme
+                                                            .getTextSecondaryColor(
+                                                                context),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      // Arrow icon
+                                      Icon(
+                                        Icons.arrow_forward_ios_rounded,
+                                        size:
+                                            MediaQuery.of(context).size.height *
+                                                0.020,
+                                        color: color,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ));
+                      }).toList(),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
+            ));
   }
 
-  void _showClassSelectionDialog() {
-    final classes = ['1ro A', '1ro B', '2do A', '2do B', '3ro A', '3ro B'];
+  Widget _buildComunicadoTypeSelector(Size screenSize) {
+    final comunicadoTypes = [
+      {
+        'value': TipoComunicado.informativo,
+        'label': 'Informativo',
+        'icon': Icons.info_rounded
+      },
+      {
+        'value': TipoComunicado.emergencia,
+        'label': 'Emergencia',
+        'icon': Icons.emergency_rounded
+      },
+      {
+        'value': TipoComunicado.evento,
+        'label': 'Evento',
+        'icon': Icons.event_rounded
+      },
+      {
+        'value': TipoComunicado.recordatorioPago,
+        'label': 'Recordatorio de Pago',
+        'icon': Icons.payment_rounded
+      },
+      {
+        'value': TipoComunicado.citatorio,
+        'label': 'Citatorio',
+        'icon': Icons.gavel_rounded
+      },
+      {
+        'value': TipoComunicado.celebracion,
+        'label': 'Celebración',
+        'icon': Icons.celebration_rounded
+      },
+      {
+        'value': TipoComunicado.suspencionClases,
+        'label': 'Suspensión de Clases',
+        'icon': Icons.cancel_rounded
+      },
+      {
+        'value': TipoComunicado.cambioHorario,
+        'label': 'Cambio de Horario',
+        'icon': Icons.schedule_rounded
+      },
+    ];
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Seleccionar Clase'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: classes.length,
-            itemBuilder: (context, index) {
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: AppTheme.accentBlue.withValues(alpha: 0.1),
-                  child: Icon(Icons.class_rounded, color: AppTheme.accentBlue),
+    return Wrap(
+      spacing: AppTheme.getSmallPadding(screenSize),
+      runSpacing: AppTheme.getSmallPadding(screenSize),
+      children: comunicadoTypes.map((type) {
+        final isSelected = _selectedComunicadoType == type['value'];
+        return GestureDetector(
+          onTap: () => setState(
+              () => _selectedComunicadoType = type['value'] as TipoComunicado),
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppTheme.getMediumPadding(screenSize),
+              vertical: AppTheme.getSmallPadding(screenSize),
+            ),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? AppTheme.warningColor.withValues(alpha: 0.1)
+                  : AppTheme.getBackgroundColor(context),
+              borderRadius:
+                  BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+              border: Border.all(
+                color: isSelected
+                    ? AppTheme.warningColor
+                    : AppTheme.getBorderColor(context),
+                width: isSelected ? 2 : 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  type['icon'] as IconData,
+                  color: isSelected
+                      ? AppTheme.warningColor
+                      : AppTheme.getTextSecondaryColor(context),
+                  size: screenSize.height * 0.022,
                 ),
-                title: Text(classes[index]),
-                onTap: () {
-                  setState(() => _selectedClass = classes[index]);
-                  Navigator.pop(context);
-                },
-              );
-            },
+                SizedBox(width: AppTheme.getSmallPadding(screenSize) * 0.5),
+                Text(
+                  type['label'] as String,
+                  style: AppTheme.getCaption(screenSize).copyWith(
+                    color: isSelected
+                        ? AppTheme.warningColor
+                        : AppTheme.getTextPrimaryColor(context),
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      }).toList(),
     );
   }
 
-  void _showShiftSelectionDialog() {
-    final shifts = ['Mañana', 'Tarde', 'Noche'];
+  Widget _buildPrioritySelector(Size screenSize) {
+    final priorities = [
+      {
+        'value': PrioridadComunicado.baja,
+        'label': 'Baja',
+        'color': AppTheme.accentBlue
+      },
+      {
+        'value': PrioridadComunicado.media,
+        'label': 'Media',
+        'color': AppTheme.accentOrange
+      },
+      {
+        'value': PrioridadComunicado.alta,
+        'label': 'Alta',
+        'color': AppTheme.warningColor
+      },
+      {
+        'value': PrioridadComunicado.critica,
+        'label': 'Crítica',
+        'color': AppTheme.errorColor
+      },
+    ];
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Seleccionar Turno'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: shifts
-              .map((shift) => ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor:
-                          AppTheme.accentPurple.withValues(alpha: 0.1),
-                      child: Icon(Icons.access_time_rounded,
-                          color: AppTheme.accentPurple),
-                    ),
-                    title: Text(shift),
-                    onTap: () {
-                      setState(() => _selectedShift = shift);
-                      Navigator.pop(context);
-                    },
-                  ))
-              .toList(),
-        ),
+    return GridView.builder(
+      shrinkWrap: true,
+      padding: EdgeInsets.zero,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 1.8,
+        crossAxisSpacing: AppTheme.getSmallPadding(screenSize),
+        mainAxisSpacing: AppTheme.getSmallPadding(screenSize),
       ),
+      itemCount: priorities.length,
+      itemBuilder: (context, index) {
+        final priority = priorities[index];
+        final isSelected = _selectedPriority == priority['value'];
+
+        return GestureDetector(
+          onTap: () => setState(() =>
+              _selectedPriority = priority['value'] as PrioridadComunicado),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? (priority['color'] as Color).withValues(alpha: 0.1)
+                  : AppTheme.getBackgroundColor(context),
+              borderRadius:
+                  BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+              border: Border.all(
+                color: isSelected
+                    ? priority['color'] as Color
+                    : AppTheme.getBorderColor(context),
+                width: isSelected ? 2 : 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: screenSize.width * 0.08,
+                  height: screenSize.width * 0.08,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                    maxWidth: 40,
+                    maxHeight: 40,
+                  ),
+                  decoration: BoxDecoration(
+                    color: (priority['color'] as Color)
+                        .withValues(alpha: isSelected ? 0.2 : 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.priority_high_rounded,
+                    color: priority['color'] as Color,
+                    size: screenSize.height * 0.02,
+                  ),
+                ),
+                SizedBox(width: AppTheme.getSmallPadding(screenSize) * 0.8),
+                Expanded(
+                  child: Text(
+                    priority['label'] as String,
+                    style: AppTheme.getCaptionSmall(screenSize).copyWith(
+                      color: isSelected
+                          ? priority['color'] as Color
+                          : AppTheme.getTextPrimaryColor(context),
+                      fontWeight:
+                          isSelected ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+                if (isSelected)
+                  Icon(
+                    Icons.check_circle_rounded,
+                    color: priority['color'] as Color,
+                    size: screenSize.height * 0.018,
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
+  }
+
+  Widget _buildMessageContent(Size screenSize) {
+    return Column(
+      children: [
+        // Title field (always present)
+        Container(
+          decoration: BoxDecoration(
+            color: AppTheme.getBackgroundColor(context),
+            borderRadius:
+                BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+            border: Border.all(
+              color: AppTheme.getBorderColor(context).withValues(alpha: 0.3),
+            ),
+          ),
+          child: TextField(
+            controller: _titleController,
+            style: AppTheme.getBodyMedium(screenSize).copyWith(
+              color: AppTheme.getTextPrimaryColor(context),
+            ),
+            decoration: InputDecoration(
+              labelText: 'Título del mensaje',
+              labelStyle: AppTheme.getBodyMedium(screenSize).copyWith(
+                color: AppTheme.getTextSecondaryColor(context),
+              ),
+              hintText: _selectedType == 'comunicado'
+                  ? 'Ej: Suspensión de clases por evento especial'
+                  : 'Ej: Reunión de padres programada',
+              hintStyle: AppTheme.getCaptionSmall(screenSize).copyWith(
+                color: AppTheme.getTextSecondaryColor(context)
+                    .withValues(alpha: 0.7),
+              ),
+              prefixIcon: Container(
+                margin:
+                    EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.8),
+                padding:
+                    EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.6),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentOrange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(
+                      AppTheme.getSmallRadius(screenSize)),
+                ),
+                child: Icon(
+                  Icons.title_rounded,
+                  color: AppTheme.accentOrange,
+                  size: screenSize.height * 0.022,
+                ),
+              ),
+              filled: false,
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: OutlineInputBorder(
+                borderRadius:
+                    BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+                borderSide: BorderSide(
+                  color: AppTheme.accentOrange,
+                  width: 2,
+                ),
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: AppTheme.getMediumPadding(screenSize),
+                vertical: AppTheme.getMediumPadding(screenSize),
+              ),
+            ),
+          ),
+        ),
+        SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+        // Message field
+        Container(
+          decoration: BoxDecoration(
+            color: AppTheme.getBackgroundColor(context),
+            borderRadius:
+                BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+            border: Border.all(
+              color: AppTheme.getBorderColor(context).withValues(alpha: 0.3),
+            ),
+          ),
+          child: TextField(
+            controller: _messageController,
+            maxLines: 6,
+            style: AppTheme.getBodyMedium(screenSize).copyWith(
+              color: AppTheme.getTextPrimaryColor(context),
+              height: 1.5,
+            ),
+            decoration: InputDecoration(
+              labelText: 'Mensaje',
+              labelStyle: AppTheme.getBodyMedium(screenSize).copyWith(
+                color: AppTheme.getTextSecondaryColor(context),
+              ),
+              hintText: _selectedType == 'comunicado'
+                  ? 'Escribe el contenido oficial del comunicado...\n\nIncluye detalles como fechas, motivos, acciones a tomar, y cualquier información relevante para la comunidad educativa.'
+                  : 'Escribe el contenido completo de tu mensaje aquí...\n\nPuedes incluir detalles importantes como fechas, horarios, y cualquier información relevante para los destinatarios.',
+              hintStyle: AppTheme.getCaptionSmall(screenSize).copyWith(
+                color: AppTheme.getTextSecondaryColor(context)
+                    .withValues(alpha: 0.7),
+                height: 1.4,
+              ),
+              alignLabelWithHint: true,
+              filled: false,
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: OutlineInputBorder(
+                borderRadius:
+                    BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+                borderSide: BorderSide(
+                  color: AppTheme.accentOrange,
+                  width: 2,
+                ),
+              ),
+              contentPadding:
+                  EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+            ),
+          ),
+        ),
+        SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+        // Tips
+        Row(
+          children: [
+            Icon(
+              Icons.lightbulb_outline_rounded,
+              color: AppTheme.accentOrange.withValues(alpha: 0.7),
+              size: screenSize.height * 0.018,
+            ),
+            SizedBox(width: AppTheme.getSmallPadding(screenSize) * 0.5),
+            Expanded(
+              child: Text(
+                _selectedType == 'comunicado'
+                    ? 'Tip: Los comunicados oficiales deben ser claros, precisos y contener toda la información necesaria.'
+                    : 'Tip: Sé claro y conciso. Los mensajes efectivos comunican la información esencial.',
+                style: AppTheme.getCaptionSmall(screenSize).copyWith(
+                  color: AppTheme.getTextSecondaryColor(context),
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _selectScheduleDate() async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(hours: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+                  primary: AppTheme.accentPurple,
+                ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedDate != null) {
+      final TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+        builder: (context, child) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: Theme.of(context).colorScheme.copyWith(
+                    primary: AppTheme.accentPurple,
+                  ),
+            ),
+            child: child!,
+          );
+        },
+      );
+
+      if (pickedTime != null) {
+        setState(() {
+          _scheduledDate = DateTime(
+            pickedDate.year,
+            pickedDate.month,
+            pickedDate.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          );
+        });
+      }
+    }
   }
 
   bool _canSendMessage() {
@@ -1374,6 +2024,9 @@ class _NotificationSendViewState extends State<NotificationSendView>
   }
 
   void _sendNotification() {
+    final messageType =
+        _selectedType == 'comunicado' ? 'Comunicado' : 'Permiso especial';
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -1386,7 +2039,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                 width: AppTheme.getSmallPadding(MediaQuery.of(context).size)),
             Expanded(
               child: Text(
-                'Notificación enviada exitosamente',
+                '$messageType ${_scheduledDate != null ? 'programado' : 'enviado'} exitosamente',
               ),
             ),
           ],

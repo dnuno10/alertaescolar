@@ -1,4 +1,5 @@
 import 'package:alertaescolar/components/buttons/custom_outline_button.dart';
+import 'package:alertaescolar/components/buttons/solid_button.dart';
 import 'package:alertaescolar/providers/language_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -130,10 +131,10 @@ class LanguageSelectionDialog extends StatelessWidget {
                       SizedBox(height: AppTheme.getMediumPadding(screenSize)),
                       SizedBox(
                         width: double.infinity,
-                        child: CustomOutlineButton(
+                        child: SolidButton(
                             onPressed: () => Navigator.of(context).pop(),
                             label: l10n.cancel,
-                            color: AppTheme.getTextPrimaryColor(context),
+                            backgroundColor: AppTheme.accentPurple,
                             screenSize: screenSize),
                       ),
                     ],

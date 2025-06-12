@@ -16,21 +16,6 @@ enum PrioridadComunicado {
   critica,
 }
 
-enum EstadoComunicado {
-  borrador,
-  programado,
-  enviado,
-  cancelado,
-}
-
-enum TipoAudiencia {
-  todos,
-  padres,
-  estudiantes,
-  profesores,
-  gradoEspecifico,
-}
-
 class Comunicado {
   final String id;
   final String titulo;
@@ -41,11 +26,9 @@ class Comunicado {
   final List<String>
       destinatarios; // Puede ser grados, grupos o IDs de estudiantes
   final PrioridadComunicado prioridad;
-  final EstadoComunicado estado;
   final String autorId;
   final String escuelaId;
   final Map<String, dynamic>? datosAdicionales;
-  final TipoAudiencia audiencia;
   final List<String> gradosEspecificos;
 
   const Comunicado({
@@ -57,11 +40,9 @@ class Comunicado {
     this.fechaProgramada,
     required this.destinatarios,
     this.prioridad = PrioridadComunicado.media,
-    this.estado = EstadoComunicado.borrador,
     required this.autorId,
     required this.escuelaId,
     this.datosAdicionales,
-    this.audiencia = TipoAudiencia.todos,
     this.gradosEspecificos = const [],
   });
 
@@ -92,17 +73,9 @@ class Comunicado {
         (e) => e.name == json['prioridad'],
         orElse: () => PrioridadComunicado.media,
       ),
-      estado: EstadoComunicado.values.firstWhere(
-        (e) => e.name == json['estado'],
-        orElse: () => EstadoComunicado.borrador,
-      ),
       autorId: json['autorId'] ?? '',
       escuelaId: json['escuelaId'] ?? '',
       datosAdicionales: json['datosAdicionales'],
-      audiencia: TipoAudiencia.values.firstWhere(
-        (e) => e.name == json['audiencia'],
-        orElse: () => TipoAudiencia.todos,
-      ),
       gradosEspecificos: List<String>.from(json['gradosEspecificos'] ?? []),
     );
   }
@@ -117,11 +90,9 @@ class Comunicado {
       'fechaProgramada': fechaProgramada?.toIso8601String(),
       'destinatarios': destinatarios,
       'prioridad': prioridad.name,
-      'estado': estado.name,
       'autorId': autorId,
       'escuelaId': escuelaId,
       'datosAdicionales': datosAdicionales,
-      'audiencia': audiencia.name,
       'gradosEspecificos': gradosEspecificos,
     };
   }
@@ -135,11 +106,9 @@ class Comunicado {
     DateTime? fechaProgramada,
     List<String>? destinatarios,
     PrioridadComunicado? prioridad,
-    EstadoComunicado? estado,
     String? autorId,
     String? escuelaId,
     Map<String, dynamic>? datosAdicionales,
-    TipoAudiencia? audiencia,
     List<String>? gradosEspecificos,
   }) {
     return Comunicado(
@@ -151,19 +120,12 @@ class Comunicado {
       fechaProgramada: fechaProgramada ?? this.fechaProgramada,
       destinatarios: destinatarios ?? this.destinatarios,
       prioridad: prioridad ?? this.prioridad,
-      estado: estado ?? this.estado,
       autorId: autorId ?? this.autorId,
       escuelaId: escuelaId ?? this.escuelaId,
       datosAdicionales: datosAdicionales ?? this.datosAdicionales,
-      audiencia: audiencia ?? this.audiencia,
       gradosEspecificos: gradosEspecificos ?? this.gradosEspecificos,
     );
   }
-
-  bool get esBorrador => estado == EstadoComunicado.borrador;
-  bool get estaProgramado => estado == EstadoComunicado.programado;
-  bool get estaEnviado => estado == EstadoComunicado.enviado;
-  bool get estaCancelado => estado == EstadoComunicado.cancelado;
 
   bool get esAltaPrioridad =>
       prioridad == PrioridadComunicado.alta ||
@@ -171,7 +133,7 @@ class Comunicado {
 
   @override
   String toString() {
-    return 'Comunicado(id: $id, titulo: $titulo, estado: $estado, prioridad: $prioridad)';
+    return 'Comunicado(id: $id, titulo: $titulo, prioridad: $prioridad)';
   }
 
   @override
