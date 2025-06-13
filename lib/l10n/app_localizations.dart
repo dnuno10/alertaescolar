@@ -1586,6 +1586,85 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get general => 'General';
 
+  // Inside the AppLocalizationsEn class, add all these missing translations:
+
+  @override
+  String get calendarExplanationText =>
+      'Attendance calendar shows student presence records by day';
+
+  @override
+  String get scanningActive => 'Scanning Active';
+
+  @override
+  String get readyToScan => 'Ready to Scan';
+
+  @override
+  String get stopScanning => 'Stop Scanning';
+
+  @override
+  String get excelExportDesc => 'Excel spreadsheet';
+
+  @override
+  String get shareReportDesc => 'Share report directly';
+
+  @override
+  String get reportGenerationConfirm =>
+      'Generate report with selected filters?';
+
+  @override
+  String get reportGenerated => 'Report generated successfully';
+
+  @override
+  String get share => 'Share';
+
+  @override
+  String get attendanceFor => 'Attendance for';
+
+  @override
+  String get completedSuccessfully => 'Completed Successfully';
+
+  @override
+  String get contactInfo => 'Contact Information';
+
+  @override
+  String get contactParentsConfirm => 'Contact parents?';
+
+  @override
+  String get directoryStats => 'Directory Statistics';
+
+  @override
+  String get newThisMonth => 'New This Month';
+
+  @override
+  String get searchByNameOrId => 'Search by name or ID';
+
+  @override
+  String get searchTip => 'Search tip';
+
+  @override
+  String get searchByName => 'Search by name';
+
+  @override
+  String get searchById => 'Search by ID';
+
+  @override
+  String get searchByGrade => 'Combine with filters';
+
+  @override
+  String get clearFilters => 'Clear Filters';
+
+  @override
+  String get allStatus => 'All Status';
+
+  @override
+  String get activeFilters => 'Active Filters';
+
+  @override
+  String get tryDifferentFilters => 'Try different filters or search terms';
+
+  @override
+  String get registeredOn => 'Registered on';
+
   @override
   String get recentNotifications => 'Recent Notifications';
 
@@ -2802,6 +2881,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get attendanceRegistered => 'Attendance Registered';
   @override
   String get createAnnouncement => 'Create Announcement';
+
   @override
   String get sendToGroup => 'Send to Group';
   @override
@@ -2826,6 +2906,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todayAttendance => 'Today\'s Attendance';
   @override
   String get totalScanned => 'Total Scanned';
+
   @override
   String get presentStudents => 'Present Students';
   @override
@@ -2856,6 +2937,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get studentProfile => 'Student Profile';
   @override
   String get familyContacts => 'Family Contacts';
+
   @override
   String get attendanceHistory => 'Attendance History';
   @override
@@ -2908,6 +2990,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get secondaryColor => 'Secondary Color';
   @override
   String get accentColor => 'Accent Color';
+
   @override
   String get updateSettings => 'Update Settings';
   @override
@@ -2955,6 +3038,257 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get scannedStudents => 'Scanned Students';
 
+  // Inside the AppLocalizationsEn class, add all these missing translations:
+
+  @override
+  String get timeSettings => 'Time Settings';
+
+  @override
+  String get toleranceSettings => 'Tolerance Settings';
+
+  @override
+  String get minutes => 'Minutes';
+
+  @override
+  String get editingScheduleFor => 'Editing schedule for';
+
+  @override
+  String get emergencyPhone => 'Emergency Phone';
+
+  @override
+  String get website => 'Website';
+
+  @override
+  String get socialMedia => 'Social Media';
+
+  @override
+  String get invalidEmail => 'Invalid Email';
+
+  @override
+  String get fieldRequired => 'This field is required';
+
+  @override
+  String get saving => 'Saving';
+
+  @override
+  String get schoolBranding => 'School Branding';
+
+  @override
+  String get schoolCode => 'School Code';
+
+  @override
+  String get foundedYear => 'Founded Year';
+
+  @override
+  String get description => 'Description';
+
+  @override
+  String get changeLogo => 'Change Logo';
+
+  @override
+  String get uploadLogo => 'Upload Logo';
+
+  @override
+  String get logoUploaded => 'Logo Uploaded';
+
+  @override
+  String get noLogoUploaded => 'No Logo Uploaded';
+
+  @override
+  String get preview => 'Preview';
+
+  @override
+  String get selectReportType => 'Select Report Type';
+
+  @override
+  String get punctualityReport => 'Punctuality Report';
+
+  @override
+  String get absenceReport => 'Absence Report';
+
+  @override
+  String get summaryReport => 'Summary Report';
+
+  @override
+  String get reportFilters => 'Report Filters';
+
+  @override
+  String get reportPeriod => 'Report Period';
+
+  @override
+  String get customPeriod => 'Custom Period';
+
+  @override
+  String get exportAs => 'Export as';
+
+  @override
+  String get exportConfirm => 'The report will be exported in format';
+
+  @override
+  String get export => 'Export';
+
+  @override
+  String get exporting => 'Exporting';
+
+  @override
+  String get generating => 'Generating';
+
+  @override
+  String get exportedSuccessfully => 'Exported successfully in format';
+
+  @override
+  String get attendanceReportDesc => 'Detailed attendance report by period';
+
+  @override
+  String get punctualityReportDesc => 'Analysis of tardiness and punctuality';
+
+  @override
+  String get absenceReportDesc => 'Statistics of school absenteeism';
+
+  @override
+  String get summaryReportDesc => 'Overview of all metrics';
+
+  @override
+  String get adminActions => 'Admin Actions';
+
+  @override
+  String get primaryActions => 'Primary Actions';
+
+  @override
+  String get communicationActions => 'Communication Actions';
+
+  @override
+  String get administrativeActions => 'Administrative Actions';
+
+  @override
+  String get emergencyActions => 'Emergency Actions';
+
+  @override
+  String get sendMessage => 'Send Message';
+
+  @override
+  String get sendEmail => 'Send Email';
+
+  @override
+  String get addNote => 'Add Note';
+
+  @override
+  String get scheduleCall => 'Schedule Call';
+
+  @override
+  String get printProfile => 'Print Profile';
+
+  @override
+  String get contact => 'Contact';
+
+  @override
+  String get schedule => 'Schedule';
+
+  @override
+  String get generate => 'Generate';
+
+  @override
+  String get print => 'Print';
+
+  @override
+  String get emergencyContactInitiated => 'Emergency Contact Initiated';
+
+  @override
+  String get sendMessageConfirm => 'Send message to parents?';
+
+  @override
+  String get sendEmailConfirm => 'Send email to parents?';
+
+  @override
+  String get addNoteConfirm => 'Add note to student record?';
+
+  @override
+  String get scheduleCallConfirm => 'Schedule call with parents?';
+
+  @override
+  String get generateReportConfirm => 'Generate student report?';
+
+  @override
+  String get printProfileConfirm => 'Print student profile?';
+
+  @override
+  String get emergencyContactConfirm => 'Initiate emergency contact protocol?';
+
+  @override
+  String get editStudentConfirm => 'Edit student information?';
+
+  @override
+  String get grades => 'Grades';
+
+  @override
+  String get groups => 'Groups';
+
+  @override
+  String get last30Days => 'Last 30 Days';
+
+  @override
+  String get viewAllRecords => 'View All Records';
+
+  @override
+  String get lastStudentScanned => 'Last Student Scanned';
+
+  @override
+  String get unknown => 'Unknown';
+
+  @override
+  String get now => 'Now';
+
+  @override
+  String get startScanningToSeeRecords => 'Start scanning to see records';
+
+  @override
+  String get noStudentsScanned => 'No students scanned';
+
+  @override
+  String get noAttendanceThisDate => 'No attendance for this date';
+
+  @override
+  String get totalAnnouncementsSent => 'Total announcements sent';
+
+  @override
+  String get read => 'Read';
+
+  @override
+  String get delivered => 'Delivered';
+
+  @override
+  String get pending => 'Pending';
+
+  @override
+  String get failed => 'Failed';
+
+  @override
+  String get noAnnouncementsSent => 'No announcements sent';
+
+  @override
+  String get createFirstAnnouncement => 'Create your first announcement';
+
+  @override
+  String get contacts => 'Contacts';
+
+  @override
+  String get primaryContact => 'Primary Contact';
+
+  @override
+  String get occupation => 'Occupation';
+
+  @override
+  String get emergencyContact => 'Emergency Contact';
+
+  @override
+  String get recentRecords => 'Recent Records';
+
+  @override
+  String get pdfExportDesc => 'PDF document for printing';
+
+  @override
+  String get imageExportDesc => 'Image for presentations';
+
   // Additional missing keys for admin components
   @override
   String get selectRecipient => 'Select Recipient';
@@ -2968,8 +3302,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get contentRequired => 'Content is required';
   @override
   String get sending => 'Sending';
-  @override
-  String get attendanceFor => 'Attendance for';
+
   @override
   String get totalStudents => 'Total Students';
   @override
@@ -3043,8 +3376,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get needScheduleChanges => 'Need Schedule Changes?';
   @override
   String get scheduleChangesDescription => 'Schedule changes description';
-  @override
-  String get calendarExplanationText => 'Attendance calendar explanation';
 
   // Admin notifications
   @override
@@ -3125,6 +3456,81 @@ class AppLocalizationsEn extends AppLocalizations {
 
 class AppLocalizationsEs extends AppLocalizations {
   AppLocalizationsEs() : super('es');
+
+  @override
+  String get scanningActive => 'Escaneo activo';
+
+  @override
+  String get readyToScan => 'Listo para escanear';
+
+  @override
+  String get stopScanning => 'Detener escaneo';
+
+  @override
+  String get excelExportDesc => 'Hoja de cálculo Excel';
+
+  @override
+  String get shareReportDesc => 'Compartir informe directamente';
+
+  @override
+  String get reportGenerationConfirm =>
+      '¿Generar informe con los filtros seleccionados?';
+
+  @override
+  String get reportGenerated => 'Informe generado exitosamente';
+
+  @override
+  String get share => 'Compartir';
+
+  @override
+  String get attendanceFor => 'Asistencia para';
+
+  @override
+  String get completedSuccessfully => 'Completado exitosamente';
+
+  @override
+  String get contactInfo => 'Información de contacto';
+
+  @override
+  String get contactParentsConfirm => '¿Contactar a los padres?';
+
+  @override
+  String get directoryStats => 'Estadísticas del directorio';
+
+  @override
+  String get newThisMonth => 'Nuevos este mes';
+
+  @override
+  String get searchByNameOrId => 'Buscar por nombre o ID';
+
+  @override
+  String get searchTip => 'Consejo de búsqueda';
+
+  @override
+  String get searchByName => 'Buscar por nombre';
+
+  @override
+  String get searchById => 'Buscar por ID';
+
+  @override
+  String get searchByGrade => 'Combinar con filtros';
+
+  @override
+  String get clearFilters => 'Limpiar filtros';
+
+  @override
+  String get allStatus => 'Todos los estados';
+
+  @override
+  String get activeFilters => 'Filtros activos';
+
+  @override
+  String get tryDifferentFilters =>
+      'Intenta usar diferentes filtros o términos de búsqueda';
+
+  @override
+  String get registeredOn => 'Registrado el';
+
   @override
   String get selectTime => 'Seleccionar Hora';
 
@@ -3592,10 +3998,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get quickSelection => 'Selección Rápida';
   @override
   String get read => 'Leído';
-  @override
-  String get scheduleByGroup => 'Horarios por Grupo';
-  @override
-  String get scheduleChanges => 'Cambios de Horario';
+
   @override
   String get scheduleChangesDescription => 'Descripción de cambios de horario';
   @override
@@ -3657,8 +4060,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tapToChooseShift => 'Toca para elegir turno';
   @override
   String get time => 'Hora';
-  @override
-  String get title => 'Título';
+
   @override
   String get titleRequired => 'El título es obligatorio';
   @override
@@ -5090,6 +5492,402 @@ class AppLocalizationsEs extends AppLocalizations {
   String get weeklySchedule => 'Horario Semanal';
   @override
   String get selectStudent => 'Seleccionar Estudiante';
+
+  // Inside the AppLocalizationsEs class, add all these missing translations:
+
+  @override
+  String get totalScanned => 'Total Escaneados';
+
+  @override
+  String get presentStudents => 'Estudiantes Presentes';
+
+  @override
+  String get todayAttendance => 'Asistencia de Hoy';
+
+  @override
+  String get lateStudents => 'Estudiantes Tardíos';
+
+  @override
+  String get scannedBy => 'Escaneado por';
+
+  @override
+  String get entryTime => 'Hora de Entrada';
+
+  @override
+  String get searchStudents => 'Buscar Estudiantes';
+
+  @override
+  String get filterBy => 'Filtrar por';
+
+  @override
+  String get allGrades => 'Todos los Grados';
+
+  @override
+  String get allGroups => 'Todos los Grupos';
+
+  @override
+  String get activeStudents => 'Estudiantes Activos';
+
+  @override
+  String get inactiveStudents => 'Estudiantes Inactivos';
+
+  @override
+  String get studentsFound => 'Estudiantes Encontrados';
+
+  @override
+  String get noStudentsFound => 'No se Encontraron Estudiantes';
+
+  @override
+  String get studentProfile => 'Perfil del Estudiante';
+
+  @override
+  String get familyContacts => 'Contactos Familiares';
+
+  @override
+  String get attendanceHistory => 'Historial de Asistencia';
+
+  @override
+  String get academicRecord => 'Registro Académico';
+
+  @override
+  String get contactParents => 'Contactar Padres';
+
+  @override
+  String get editStudent => 'Editar Estudiante';
+
+  @override
+  String get turn => 'Turno';
+
+  @override
+  String get morningShift => 'Turno Matutino';
+
+  @override
+  String get afternoonShift => 'Turno Vespertino';
+
+  @override
+  String get activated => 'Activado';
+
+  @override
+  String get deactivated => 'Desactivado';
+
+  @override
+  String get timeRemaining => 'Tiempo Restante';
+
+  @override
+  String get days => 'Días';
+
+  @override
+  String get entryTolerance => 'Tolerancia de Entrada';
+
+  @override
+  String get lateTolerance => 'Tolerancia de Tardanza';
+
+  @override
+  String get exitTime => 'Hora de Salida';
+
+  @override
+  String get configureSchedules => 'Configurar Horarios';
+
+  @override
+  String get schoolInfo => 'Información de la Escuela';
+
+  @override
+  String get schoolName => 'Nombre de la Escuela';
+
+  @override
+  String get schoolAddress => 'Dirección de la Escuela';
+
+  @override
+  String get schoolPhone => 'Teléfono de la Escuela';
+
+  @override
+  String get schoolEmail => 'Correo de la Escuela';
+
+  @override
+  String get principalName => 'Nombre del Director';
+
+  @override
+  String get schoolLogo => 'Logo de la Escuela';
+
+  @override
+  String get schoolColors => 'Colores de la Escuela';
+
+  @override
+  String get primaryColor => 'Color Primario';
+
+  @override
+  String get secondaryColor => 'Color Secundario';
+
+  @override
+  String get accentColor => 'Color de Acento';
+
+  @override
+  String get updateSettings => 'Actualizar Configuración';
+
+  @override
+  String get settingsUpdated => 'Configuración Actualizada';
+
+  @override
+  String get selectDateRange => 'Seleccionar Rango de Fechas';
+
+  @override
+  String get startDate => 'Fecha de Inicio';
+
+  @override
+  String get endDate => 'Fecha de Fin';
+
+  @override
+  String get generateReport => 'Generar Informe';
+
+  @override
+  String get exportReport => 'Exportar Informe';
+
+  @override
+  String get attendanceRate => 'Tasa de Asistencia';
+
+  @override
+  String get punctualityRate => 'Tasa de Puntualidad';
+
+  @override
+  String get absenceRate => 'Tasa de Ausencia';
+
+  @override
+  String get totalDays => 'Días Totales';
+
+  @override
+  String get presentDays => 'Días Presentes';
+
+  @override
+  String get lateDays => 'Días Tardíos';
+
+  @override
+  String get absentDays => 'Días Ausentes';
+
+  @override
+  String get monthlyReport => 'Informe Mensual';
+
+  @override
+  String get weeklyReport => 'Informe Semanal';
+
+  @override
+  String get dailyReport => 'Informe Diario';
+
+  @override
+  String get byGrade => 'Por Grado';
+
+  @override
+  String get byGroup => 'Por Grupo';
+
+  @override
+  String get byStudent => 'Por Estudiante';
+
+  @override
+  String get attendanceCalendar => 'Calendario de Asistencia';
+
+  @override
+  String get viewDetails => 'Ver Detalles';
+
+  @override
+  String get scannedStudents => 'Estudiantes Escaneados';
+
+  @override
+  String get scanTime => 'Hora de Escaneo';
+
+  @override
+  String get priority => 'Prioridad';
+
+  @override
+  String get urgent => 'Urgente';
+
+  @override
+  String get send => 'Enviar';
+
+  @override
+  String get announcementSent => 'Anuncio Enviado';
+
+  @override
+  String get timeSettings => 'Configuración de Tiempo';
+
+  @override
+  String get toleranceSettings => 'Configuración de Tolerancia';
+
+  @override
+  String get minutes => 'Minutos';
+
+  @override
+  String get editingScheduleFor => 'Editando horario para';
+
+  @override
+  String get emergencyPhone => 'Teléfono de Emergencia';
+
+  @override
+  String get website => 'Sitio Web';
+
+  @override
+  String get socialMedia => 'Redes Sociales';
+
+  @override
+  String get invalidEmail => 'Correo Inválido';
+
+  @override
+  String get fieldRequired => 'Este campo es obligatorio';
+
+  @override
+  String get saving => 'Guardando';
+
+  @override
+  String get schoolBranding => 'Marca de la Escuela';
+
+  @override
+  String get schoolCode => 'Código de la Escuela';
+
+  @override
+  String get foundedYear => 'Año de Fundación';
+
+  @override
+  String get description => 'Descripción';
+
+  @override
+  String get changeLogo => 'Cambiar Logo';
+
+  @override
+  String get uploadLogo => 'Subir Logo';
+
+  @override
+  String get logoUploaded => 'Logo Subido';
+
+  @override
+  String get noLogoUploaded => 'No se ha Subido Logo';
+
+  @override
+  String get preview => 'Vista Previa';
+
+  // Inside the AppLocalizationsEs class, add all these missing translations:
+
+  @override
+  String get selectReportType => 'Seleccionar Tipo de Informe';
+
+  @override
+  String get punctualityReport => 'Informe de Puntualidad';
+
+  @override
+  String get absenceReport => 'Informe de Ausencias';
+
+  @override
+  String get summaryReport => 'Informe Resumen';
+
+  @override
+  String get reportFilters => 'Filtros de Informe';
+
+  @override
+  String get reportPeriod => 'Período del Informe';
+
+  @override
+  String get customPeriod => 'Período Personalizado';
+
+  @override
+  String get exportAs => 'Exportar como';
+
+  @override
+  String get exportConfirm => 'El informe se exportará en formato';
+
+  @override
+  String get export => 'Exportar';
+
+  @override
+  String get exporting => 'Exportando';
+
+  @override
+  String get generating => 'Generando';
+
+  @override
+  String get exportedSuccessfully => 'Exportado exitosamente en formato';
+
+  @override
+  String get attendanceReportDesc =>
+      'Informe detallado de asistencia por período';
+
+  @override
+  String get punctualityReportDesc => 'Análisis de tardanzas y puntualidad';
+
+  @override
+  String get absenceReportDesc => 'Estadísticas de ausentismo escolar';
+
+  @override
+  String get summaryReportDesc => 'Resumen de todas las métricas';
+
+  @override
+  String get adminActions => 'Acciones de Administrador';
+
+  @override
+  String get primaryActions => 'Acciones Principales';
+
+  @override
+  String get communicationActions => 'Acciones de Comunicación';
+
+  @override
+  String get administrativeActions => 'Acciones Administrativas';
+
+  @override
+  String get emergencyActions => 'Acciones de Emergencia';
+
+  @override
+  String get sendMessage => 'Enviar Mensaje';
+
+  @override
+  String get sendEmail => 'Enviar Correo';
+
+  @override
+  String get addNote => 'Añadir Nota';
+
+  @override
+  String get printProfile => 'Imprimir Perfil';
+
+  @override
+  String get contact => 'Contacto';
+
+  @override
+  String get schedule => 'Horario';
+
+  @override
+  String get emergencyContactInitiated => 'Contacto de Emergencia Iniciado';
+
+  @override
+  String get sendMessageConfirm => '¿Enviar mensaje a los padres?';
+
+  @override
+  String get sendEmailConfirm => '¿Enviar correo a los padres?';
+
+  @override
+  String get addNoteConfirm => '¿Añadir nota al registro del estudiante?';
+
+  @override
+  String get scheduleCallConfirm => '¿Programar llamada con los padres?';
+
+  @override
+  String get generateReportConfirm => '¿Generar informe del estudiante?';
+
+  @override
+  String get printProfileConfirm => '¿Imprimir perfil del estudiante?';
+
+  @override
+  String get emergencyContactConfirm =>
+      '¿Iniciar protocolo de contacto de emergencia?';
+
+  @override
+  String get editStudentConfirm => '¿Editar información del estudiante?';
+
+  @override
+  String get grades => 'Grados';
+
+  @override
+  String get groups => 'Grupos';
+
+  @override
+  String get last30Days => 'Últimos 30 Días';
+
+  @override
+  String get viewAllRecords => 'Ver Todos los Registros';
 
   // Family relationship types - Spanish
   @override

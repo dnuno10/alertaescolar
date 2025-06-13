@@ -394,7 +394,6 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
                       ],
                     );
                   } else {
-                    // Mobile layout - 2 columns
                     return Column(
                       children: [
                         Row(

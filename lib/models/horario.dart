@@ -111,7 +111,7 @@ class ClaseHorario {
   }
 
   String get horarioTexto => '$horaInicio - $horaFin';
-  
+
   String get diaNombre {
     switch (dia) {
       case DiaSemana.lunes:

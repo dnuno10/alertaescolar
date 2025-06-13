@@ -15,7 +15,7 @@ class AdminMainActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!; // Non-null assertion added
+    final l10n = AppLocalizations.of(context); // Non-null assertion added
 
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -34,7 +34,6 @@ class AdminMainActions extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section header
           Row(
             children: [
               Container(
