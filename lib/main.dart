@@ -1,6 +1,8 @@
 import 'package:alertaescolar/providers/language_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app/app_routes.dart';
 import 'app/app_theme.dart';
@@ -10,6 +12,10 @@ import 'l10n/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Supabase.initialize(
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+  );
   runApp(const AlertaEscolarApp());
 }
 
@@ -65,7 +71,7 @@ class _AppContentState extends State<_AppContent> {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeProvider.themeMode,
-          initialRoute: AppRoutes.adminDashboard,
+          initialRoute: AppRoutes.intro,
           routes: AppRoutes.routes,
           onGenerateRoute: AppRoutes.onGenerateRoute,
         );

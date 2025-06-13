@@ -64,6 +64,102 @@ abstract class AppLocalizations {
   String studentCountOf(int count);
   String get arrivedAt;
 
+  // Authentication and intro related
+  String get alertaEscolar;
+  String get introWelcomeMessage;
+  String get introFooterText;
+  String get qrAttendanceFeature;
+  String get realTimeNotificationsFeature;
+  String get securityFeature;
+  String get getStarted;
+  String get learnMore;
+  String get alertaEscolarDescription;
+  String get login;
+  String get registerWithEmail;
+
+// Login related
+  String get loginErrorMessage;
+  String get signIn;
+  String get password;
+  String get passwordTooShort;
+  String get rememberMe;
+  String get forgotPassword;
+  String get signingIn;
+  String get loginSubtitle;
+
+// Login footer
+  String get dontHaveAccount;
+  String get signUp;
+  String get privacyPolicy;
+  String get termsOfService;
+  String get versionInfo;
+
+// Login options
+  String get continueAsGuest;
+  String get guestAccessDescription;
+  String get guestAccess;
+  String get guestAccessWarning;
+  String get continue_;
+
+// Signup related
+  String get mustAcceptTerms;
+  String get signUpErrorMessage;
+  String get createAccount;
+  String get phoneNumber;
+  String get iAcceptThe;
+  String get and;
+  String get creatingAccount;
+  String get joinAlertaEscolar;
+  String get signUpSubtitle;
+  String get selectUserType;
+
+// Signup footer
+  String get alreadyHaveAccount;
+  String get needHelp;
+  String get contactSupport;
+
+// Signup options
+  String get haveSchoolCode;
+  String get schoolCodeDescription;
+  String get enterSchoolCode;
+  String get invalidSchoolCode;
+  String get enterSchoolCodeHint;
+  String get schoolCodeInfo;
+  String get verifying;
+  String get verify;
+
+// Account setup
+  String get pleaseEnterFullName;
+  String get accountSetupSuccessful;
+  String get errorSettingUpAccount;
+  String get welcomeToAlertaEscolar;
+  String get pleaseCompleteYourProfile;
+  String get setting;
+  String get continueText;
+  String get thisInformationWillBeUsedForYourProfile;
+
+// Verification
+  String get enterCompleteCode;
+  String get codeVerifiedSuccessfully;
+  String get invalidVerificationCode;
+  String get codeResentSuccessfully;
+  String get errorResendingCode;
+  String get verifyCode;
+  String get enterVerificationCode;
+  String get resending;
+  String get resendCode;
+  String get verificationRequired;
+  String get codeSentTo;
+  String get verificationCodeHelpText;
+
+// Theme selection
+  String get selectTheme;
+  String get lightTheme;
+  String get lightThemeDescription;
+  String get darkTheme;
+  String get darkThemeDescription;
+  String get apply;
+
   // Days of week short names
   String get mondayShort;
   String get tuesdayShort;
@@ -1101,6 +1197,249 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get id => 'ID';
+
+  @override
+  String get alertaEscolar => 'School Alert';
+
+  @override
+  String get introWelcomeMessage =>
+      'Stay connected with your child\'s school activities and never miss important updates';
+
+  @override
+  String get introFooterText =>
+      'Discover all the features that will help you stay informed about your child\'s education';
+
+  @override
+  String get qrAttendanceFeature =>
+      'QR code attendance tracking for quick and accurate check-ins';
+
+  @override
+  String get realTimeNotificationsFeature =>
+      'Instant notifications for arrivals, departures, and important announcements';
+
+  @override
+  String get securityFeature =>
+      'Secure platform with encrypted data to protect your family\'s privacy';
+
+  @override
+  String get getStarted => 'Get Started';
+
+  @override
+  String get learnMore => 'Learn More';
+
+  @override
+  String get alertaEscolarDescription =>
+      'School Alert is a comprehensive platform designed to keep parents informed and connected with their children\'s educational journey.';
+
+  @override
+  String get loginErrorMessage => 'Please check your credentials and try again';
+
+  @override
+  String get signIn => 'Sign In';
+
+  @override
+  String get password => 'Password';
+
+  @override
+  String get passwordTooShort => 'Password must be at least 6 characters';
+
+  @override
+  String get rememberMe => 'Remember me';
+
+  @override
+  String get forgotPassword => 'Forgot Password?';
+
+  @override
+  String get signingIn => 'Signing in';
+
+  @override
+  String get loginSubtitle => 'Welcome back! Please sign in to your account';
+
+  @override
+  String get dontHaveAccount => 'Don\'t have an account?';
+
+  @override
+  String get signUp => 'Sign Up';
+
+  @override
+  String get privacyPolicy => 'Privacy Policy';
+
+  @override
+  String get termsOfService => 'Terms of Service';
+
+  @override
+  String get versionInfo => 'Version 1.0.0';
+
+  @override
+  String get continueAsGuest => 'Continue as Guest';
+
+  @override
+  String get guestAccessDescription =>
+      'Limited access to public information only';
+
+  @override
+  String get guestAccess => 'Guest Access';
+
+  @override
+  String get guestAccessWarning =>
+      'Guest access provides limited functionality. Sign up for full features.';
+
+  @override
+  String get continue_ => 'Continue';
+
+  @override
+  String get mustAcceptTerms =>
+      'You must accept the terms and conditions to continue';
+
+  @override
+  String get signUpErrorMessage =>
+      'There was an error creating your account. Please try again.';
+
+  @override
+  String get createAccount => 'Create Account';
+
+  @override
+  String get phoneNumber => 'Phone Number';
+
+  @override
+  String get iAcceptThe => 'I accept the';
+
+  @override
+  String get and => 'and';
+
+  @override
+  String get creatingAccount => 'Creating account';
+
+  @override
+  String get joinAlertaEscolar => 'Join School Alert';
+
+  @override
+  String get signUpSubtitle =>
+      'Create your account to get started with School Alert';
+
+  @override
+  String get selectUserType => 'Select your user type to continue';
+
+  @override
+  String get alreadyHaveAccount => 'Already have an account?';
+
+  @override
+  String get needHelp => 'Need help?';
+
+  @override
+  String get contactSupport => 'Contact Support';
+
+  @override
+  String get haveSchoolCode => 'Have a school code?';
+
+  @override
+  String get schoolCodeDescription =>
+      'Enter your school\'s unique code to connect with the institution';
+
+  @override
+  String get enterSchoolCode => 'Enter School Code';
+
+  @override
+  String get invalidSchoolCode =>
+      'Invalid school code. Please verify and try again.';
+
+  @override
+  String get enterSchoolCodeHint => 'e.g., SCH123456';
+
+  @override
+  String get schoolCodeInfo =>
+      'Ask your school administration for the unique school code';
+
+  @override
+  String get verifying => 'Verifying';
+
+  @override
+  String get verify => 'Verify';
+
+  @override
+  String get pleaseEnterFullName => 'Please enter your full name';
+
+  @override
+  String get accountSetupSuccessful => 'Account setup completed successfully!';
+
+  @override
+  String get errorSettingUpAccount =>
+      'Error setting up account. Please try again.';
+
+  @override
+  String get welcomeToAlertaEscolar => 'Welcome to School Alert!';
+
+  @override
+  String get pleaseCompleteYourProfile =>
+      'Please complete your profile to continue';
+
+  @override
+  String get setting => 'Setting';
+
+  @override
+  String get continueText => 'Continue';
+
+  @override
+  String get thisInformationWillBeUsedForYourProfile =>
+      'This information will be used for your profile and to personalize your experience';
+
+  @override
+  String get enterCompleteCode => 'Please enter the complete verification code';
+
+  @override
+  String get codeVerifiedSuccessfully => 'Code verified successfully!';
+
+  @override
+  String get invalidVerificationCode =>
+      'Invalid verification code. Please try again.';
+
+  @override
+  String get codeResentSuccessfully => 'Verification code resent successfully';
+
+  @override
+  String get errorResendingCode => 'Error resending code. Please try again.';
+
+  @override
+  String get verifyCode => 'Verify Code';
+
+  @override
+  String get enterVerificationCode => 'Enter the 6-digit verification code';
+
+  @override
+  String get resending => 'Resending';
+
+  @override
+  String get resendCode => 'Resend Code';
+
+  @override
+  String get verificationRequired => 'Verification Required';
+
+  @override
+  String get codeSentTo => 'We\'ve sent a verification code to';
+
+  @override
+  String get verificationCodeHelpText =>
+      'If you don\'t receive the code within a few minutes, check your spam folder or contact support.';
+
+  @override
+  String get selectTheme => 'Select Theme';
+
+  @override
+  String get lightTheme => 'Light Theme';
+
+  @override
+  String get lightThemeDescription => 'Bright and clean interface';
+
+  @override
+  String get darkTheme => 'Dark Theme';
+
+  @override
+  String get darkThemeDescription =>
+      'Dark interface for low light environments';
+
+  @override
+  String get apply => 'Apply';
+
   @override
   String get startTime => 'Start Time';
 
@@ -2379,6 +2718,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get punctuality => 'Punctuality';
+  @override
+  String get login => 'Login';
+
+  @override
+  String get registerWithEmail => 'Register with Email';
 
   @override
   String get thisWeek => 'This Week';
@@ -3513,6 +3857,256 @@ class AppLocalizationsEs extends AppLocalizations {
   String get searchById => 'Buscar por ID';
 
   @override
+  String get alertaEscolar => 'Alerta Escolar';
+
+  @override
+  String get introWelcomeMessage =>
+      'Mantente conectado con las actividades escolares de tu hijo y nunca te pierdas actualizaciones importantes';
+
+  @override
+  String get introFooterText =>
+      'Descubre todas las funciones que te ayudarán a mantenerte informado sobre la educación de tu hijo';
+
+  @override
+  String get qrAttendanceFeature =>
+      'Seguimiento de asistencia con código QR para registros rápidos y precisos';
+
+  @override
+  String get realTimeNotificationsFeature =>
+      'Notificaciones instantáneas para llegadas, salidas y anuncios importantes';
+
+  @override
+  String get securityFeature =>
+      'Plataforma segura con datos encriptados para proteger la privacidad de tu familia';
+
+  @override
+  String get getStarted => 'Comenzar';
+
+  @override
+  String get learnMore => 'Saber Más';
+
+  @override
+  String get alertaEscolarDescription =>
+      'Alerta Escolar es una plataforma integral diseñada para mantener a los padres informados y conectados con el viaje educativo de sus hijos.';
+
+  @override
+  String get loginErrorMessage =>
+      'Por favor verifica tus credenciales e intenta nuevamente';
+
+  @override
+  String get signIn => 'Iniciar Sesión';
+
+  @override
+  String get password => 'Contraseña';
+
+  @override
+  String get passwordTooShort =>
+      'La contraseña debe tener al menos 6 caracteres';
+
+  @override
+  String get rememberMe => 'Recordarme';
+
+  @override
+  String get forgotPassword => '¿Olvidaste tu contraseña?';
+
+  @override
+  String get signingIn => 'Iniciando sesión';
+
+  @override
+  String get loginSubtitle =>
+      '¡Bienvenido de vuelta! Por favor inicia sesión en tu cuenta';
+
+  @override
+  String get dontHaveAccount => '¿No tienes una cuenta?';
+
+  @override
+  String get signUp => 'Registrarse';
+
+  @override
+  String get privacyPolicy => 'Política de Privacidad';
+
+  @override
+  String get termsOfService => 'Términos de Servicio';
+
+  @override
+  String get versionInfo => 'Versión 1.0.0';
+
+  @override
+  String get continueAsGuest => 'Continuar como Invitado';
+
+  @override
+  String get guestAccessDescription =>
+      'Acceso limitado solo a información pública';
+
+  @override
+  String get guestAccess => 'Acceso de Invitado';
+
+  @override
+  String get guestAccessWarning =>
+      'El acceso de invitado proporciona funcionalidad limitada. Regístrate para obtener todas las funciones.';
+
+  @override
+  String get continue_ => 'Continuar';
+
+  @override
+  String get mustAcceptTerms =>
+      'Debes aceptar los términos y condiciones para continuar';
+
+  @override
+  String get signUpErrorMessage =>
+      'Hubo un error al crear tu cuenta. Por favor intenta nuevamente.';
+
+  @override
+  String get createAccount => 'Crear Cuenta';
+
+  @override
+  String get phoneNumber => 'Número de Teléfono';
+
+  @override
+  String get iAcceptThe => 'Acepto los';
+
+  @override
+  String get and => 'y';
+
+  @override
+  String get creatingAccount => 'Creando cuenta';
+
+  @override
+  String get joinAlertaEscolar => 'Únete a Alerta Escolar';
+
+  @override
+  String get signUpSubtitle =>
+      'Crea tu cuenta para comenzar con Alerta Escolar';
+
+  @override
+  String get selectUserType => 'Selecciona tu tipo de usuario para continuar';
+
+  @override
+  String get alreadyHaveAccount => '¿Ya tienes una cuenta?';
+
+  @override
+  String get needHelp => '¿Necesitas ayuda?';
+
+  @override
+  String get contactSupport => 'Contactar Soporte';
+
+  @override
+  String get haveSchoolCode => '¿Tienes un código escolar?';
+
+  @override
+  String get schoolCodeDescription =>
+      'Ingresa el código único de tu escuela para conectarte con la institución';
+
+  @override
+  String get enterSchoolCode => 'Ingresar Código Escolar';
+
+  @override
+  String get invalidSchoolCode =>
+      'Código escolar inválido. Por favor verifica e intenta nuevamente.';
+
+  @override
+  String get enterSchoolCodeHint => 'ej., ESC123456';
+
+  @override
+  String get schoolCodeInfo =>
+      'Solicita a la administración de tu escuela el código escolar único';
+
+  @override
+  String get verifying => 'Verificando';
+
+  @override
+  String get verify => 'Verificar';
+
+  @override
+  String get pleaseEnterFullName => 'Por favor ingresa tu nombre completo';
+
+  @override
+  String get accountSetupSuccessful =>
+      '¡Configuración de cuenta completada exitosamente!';
+
+  @override
+  String get errorSettingUpAccount =>
+      'Error al configurar la cuenta. Por favor intenta nuevamente.';
+
+  @override
+  String get welcomeToAlertaEscolar => '¡Bienvenido a Alerta Escolar!';
+
+  @override
+  String get pleaseCompleteYourProfile =>
+      'Por favor completa tu perfil para continuar';
+
+  @override
+  String get setting => 'Configurando';
+
+  @override
+  String get continueText => 'Continuar';
+
+  @override
+  String get thisInformationWillBeUsedForYourProfile =>
+      'Esta información será utilizada para tu perfil y para personalizar tu experiencia';
+
+  @override
+  String get enterCompleteCode =>
+      'Por favor ingresa el código de verificación completo';
+
+  @override
+  String get codeVerifiedSuccessfully => '¡Código verificado exitosamente!';
+
+  @override
+  String get invalidVerificationCode =>
+      'Código de verificación inválido. Por favor intenta nuevamente.';
+
+  @override
+  String get codeResentSuccessfully =>
+      'Código de verificación reenviado exitosamente';
+
+  @override
+  String get errorResendingCode =>
+      'Error al reenviar el código. Por favor intenta nuevamente.';
+
+  @override
+  String get verifyCode => 'Verificar Código';
+
+  @override
+  String get enterVerificationCode =>
+      'Ingresa el código de verificación de 6 dígitos';
+
+  @override
+  String get resending => 'Reenviando';
+
+  @override
+  String get resendCode => 'Reenviar Código';
+
+  @override
+  String get verificationRequired => 'Verificación Requerida';
+
+  @override
+  String get codeSentTo => 'Hemos enviado un código de verificación a';
+
+  @override
+  String get verificationCodeHelpText =>
+      'Si no recibes el código en unos minutos, revisa tu carpeta de spam o contacta al soporte.';
+
+  @override
+  String get selectTheme => 'Seleccionar Tema';
+
+  @override
+  String get lightTheme => 'Tema Claro';
+
+  @override
+  String get lightThemeDescription => 'Interfaz brillante y limpia';
+
+  @override
+  String get darkTheme => 'Tema Oscuro';
+
+  @override
+  String get darkThemeDescription =>
+      'Interfaz oscura para entornos de poca luz';
+
+  @override
+  String get apply => 'Aplicar';
+
+  @override
   String get searchByGrade => 'Combinar con filtros';
 
   @override
@@ -4577,6 +5171,11 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get addFamilyContactsEmergency =>
       'Añadir contactos familiares para emergencias';
+  @override
+  String get login => 'Iniciar Sesión';
+
+  @override
+  String get registerWithEmail => 'Registrarse con Correo';
 
   @override
   String get fullName => 'Nombre Completo';

@@ -2,6 +2,7 @@ import 'package:alertaescolar/providers/language_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
+import '../services/auth_service.dart';
 import 'user_provider.dart';
 import 'student_provider.dart';
 import 'notification_provider.dart';
@@ -18,6 +19,7 @@ class ProviderManager {
         ChangeNotifierProvider(create: (_) => StudentProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
+        ChangeNotifierProvider(create: (_) => AuthService()),
       ],
       child: child,
     );
@@ -43,9 +45,13 @@ class ProviderManager {
           Provider.of<StudentProvider>(context, listen: false);
       final notificationProvider =
           Provider.of<NotificationProvider>(context, listen: false);
+      final authService = Provider.of<AuthService>(context, listen: false);
 
       // Small delay between initialization phases
       await Future.delayed(const Duration(milliseconds: 100));
+
+      // Initialize auth service first
+      await _safeInitialize(() => authService.initialize(context));
 
       // Initialize data providers
       await Future.wait([

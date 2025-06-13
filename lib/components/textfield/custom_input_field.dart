@@ -1,6 +1,5 @@
 import 'package:alertaescolar/app/app_theme.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class CustomInputField extends StatefulWidget {
   final TextEditingController controller;
@@ -10,6 +9,10 @@ class CustomInputField extends StatefulWidget {
   final IconData? icon; // ahora opcional
   final String? Function(String?)? validator;
   final TextInputType? keyboardType;
+  final FocusNode? focusNode;
+  final bool? obscureText;
+  final Widget? suffixIcon;
+  final TextCapitalization? textCapitalization;
 
   const CustomInputField({
     super.key,
@@ -20,6 +23,10 @@ class CustomInputField extends StatefulWidget {
     this.icon,
     this.validator,
     this.keyboardType,
+    this.focusNode,
+    this.obscureText,
+    this.suffixIcon,
+    this.textCapitalization,
   });
 
   @override
@@ -47,9 +54,13 @@ class _CustomInputFieldState extends State<CustomInputField> {
         SizedBox(height: widget.screenSize.height * 0.01),
         TextFormField(
           controller: widget.controller,
+          focusNode: widget.focusNode,
           validator: widget.validator,
           keyboardType: widget.keyboardType,
-          obscureText: widget.isPassword ? _obscureText : false,
+          textCapitalization:
+              widget.textCapitalization ?? TextCapitalization.none,
+          obscureText:
+              widget.obscureText ?? (widget.isPassword ? _obscureText : false),
           style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
             fontWeight: FontWeight.w500,
             color: themeTextColor,

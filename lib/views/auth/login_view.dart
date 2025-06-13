@@ -1,0 +1,56 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../app/app_theme.dart';
+import '../../l10n/app_localizations.dart';
+import '../../providers/language_provider.dart';
+import 'components/login_body_component.dart';
+import 'components/login_options_component.dart';
+import 'components/login_footer_component.dart';
+
+class LoginView extends StatefulWidget {
+  const LoginView({super.key});
+
+  @override
+  State<LoginView> createState() => _LoginViewState();
+}
+
+class _LoginViewState extends State<LoginView> {
+  @override
+  Widget build(BuildContext context) {
+    // Mantén el almacenamiento del idioma
+    Provider.of<LocaleProvider>(context);
+
+    return Scaffold(
+      // Centramos el contenido y lo llevamos al final
+      body: GestureDetector(
+        onTap: () {
+          FocusScope.of(context).unfocus();
+        },
+        child: Container(
+          color: Colors.transparent,
+          width: double.infinity,
+          height: double.infinity,
+          child: SingleChildScrollView(
+            child: SizedBox(
+              height: MediaQuery.of(context)
+                  .size
+                  .height, // Aseguramos que la Column ocupe toda la altura de la pantalla
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    children: [
+                      LoginBodyComponent(),
+                      LoginOptionsComponent(),
+                    ],
+                  ),
+                  LoginFooterComponent(),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

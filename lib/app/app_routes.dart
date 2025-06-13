@@ -7,22 +7,37 @@ import 'package:alertaescolar/views/admin/schedule/schedule_management_view.dart
 import 'package:alertaescolar/views/admin/school/school_settings_view.dart';
 import 'package:alertaescolar/views/admin/students/student_profile_admin_view.dart';
 import 'package:alertaescolar/views/admin/students/students_directory_view.dart';
-import 'package:alertaescolar/views/students/students_view_new.dart';
+import 'package:alertaescolar/views/user/students/students_view_new.dart';
+import 'package:alertaescolar/views/auth/intro_view.dart';
+import 'package:alertaescolar/views/auth/login_view.dart';
+import 'package:alertaescolar/views/auth/signup_view.dart';
+import 'package:alertaescolar/views/auth/finish_setting_up_view.dart';
+import 'package:alertaescolar/views/auth/verify_magic_link_view.dart';
 import 'package:flutter/material.dart';
-import '../views/home/home_view.dart';
-import '../views/profile/profile_view.dart';
-import '../views/profile/personal_data_navigation_view.dart';
-import '../views/profile/personal_info/contact_information_view.dart';
-import '../views/profile/personal_info/personal_information_view_new.dart'
+import '../views/user/home/home_view.dart';
+import '../views/user/profile/profile_view.dart';
+import '../views/user/profile/personal_data_navigation_view.dart';
+import '../views/user/profile/personal_info/contact_information_view.dart';
+import '../views/user/profile/personal_info/personal_information_view_new.dart'
     as personal_info;
-import '../views/profile/password_security_view_new.dart' as password_security;
-import '../views/profile/notification_settings_view_new.dart'
+import '../views/user/profile/password_security_view_new.dart'
+    as password_security;
+import '../views/user/profile/notification_settings_view_new.dart'
     as notification_settings;
-import '../views/profile/family_information_view.dart';
+import '../views/user/profile/family_information_view.dart';
 
-import '../views/notifications/notifications_view.dart';
+import '../views/user/notifications/notifications_view.dart';
 
 class AppRoutes {
+  // Auth routes
+  static const String intro = '/intro';
+  static const String login = '/login';
+  static const String signup = '/signup';
+  static const String register = '/register'; // Add this line
+  static const String finishSettingUp = '/finish_setting_up';
+  static const String verifyMagicLink = '/verify_magic_link';
+
+  // Main app routes
   static const String home = '/';
   static const String profile = '/profile';
   static const String students = '/students';
@@ -64,6 +79,26 @@ class AppRoutes {
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
+      // Auth routes
+      case intro:
+        return MaterialPageRoute(builder: (context) => const IntroView());
+      case login:
+        return MaterialPageRoute(builder: (context) => const LoginView());
+      case signup:
+        return MaterialPageRoute(builder: (context) => const SignUpView());
+      case register:
+        return MaterialPageRoute(
+            builder: (context) => const SignUpView()); // Add this line
+      case finishSettingUp:
+        return MaterialPageRoute(
+            builder: (context) => const FinishSettingUpView());
+      case verifyMagicLink:
+        final email = settings.arguments as String? ?? '';
+        return MaterialPageRoute(
+          builder: (context) => VerifyMagicLinkView(email: email),
+        );
+
+      // Main app routes
       case home:
         return MaterialPageRoute(builder: (context) => const HomeView());
       case profile:

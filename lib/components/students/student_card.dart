@@ -1,5 +1,5 @@
 import 'package:alertaescolar/l10n/app_localizations.dart';
-import 'package:alertaescolar/views/students/student_detail_view.dart';
+import 'package:alertaescolar/views/user/students/student_detail_view.dart';
 import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../app/app_theme.dart';

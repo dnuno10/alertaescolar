@@ -1,4 +1,4 @@
-import 'package:alertaescolar/views/profile/password_security_view_new.dart';
+import 'package:alertaescolar/views/user/profile/password_security_view_new.dart';
 import 'package:alertaescolar/components/profile/profile_header.dart';
 import 'package:alertaescolar/components/profile/settings_section_title.dart';
 import 'package:alertaescolar/components/profile/settings_card.dart';

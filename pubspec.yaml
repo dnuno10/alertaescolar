@@ -52,6 +52,18 @@ dependencies:
   # Calendar widget
   table_calendar: ^3.0.9
   fl_chart: ^0.71.0
+  supabase_flutter: ^2.9.1
+  sign_in_with_apple: ^7.0.1
+  google_sign_in: ^6.3.0
+
+  # Authentication UI dependencies
+  animated_text_kit: ^4.2.3
+  flutter_svg: ^2.0.10+1
+  flutter_pin_code_fields: ^2.2.0
+  crypto: ^3.0.6
+  shimmer: ^3.0.0
+  flutter_staggered_animations: ^1.1.1
+  flutter_dotenv: ^5.2.1
 
 dev_dependencies:
   flutter_test:
