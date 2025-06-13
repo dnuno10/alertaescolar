@@ -212,7 +212,7 @@ class AppTheme {
 
   // 🎨 Typography Styles - Dynamic Poppins Font with Responsive Sizing
   // h1: Dynamic sizing based on screen height (largest)
-  static TextStyle getH1(Size screenSize) => GoogleFonts.poppins(
+  static TextStyle getH1(Size screenSize) => GoogleFonts.raleway(
         fontSize: screenSize.height * 0.03, // ~32px on 800px screen
         fontWeight: FontWeight.bold, // 700
         color: textPrimaryLight,
@@ -221,7 +221,7 @@ class AppTheme {
       );
 
   // h2: Dynamic sizing (semi-bold headers)
-  static TextStyle getH2(Size screenSize) => GoogleFonts.poppins(
+  static TextStyle getH2(Size screenSize) => GoogleFonts.raleway(
         fontSize: screenSize.height * 0.025, // ~24px on 800px screen
         fontWeight: FontWeight.w600, // semi-bold
         color: textPrimaryLight,
@@ -312,7 +312,7 @@ class AppTheme {
 
   // Legacy static getters (deprecated - use dynamic versions)
   @deprecated
-  static TextStyle get h1 => GoogleFonts.poppins(
+  static TextStyle get h1 => GoogleFonts.podkova(
         fontSize: 32,
         fontWeight: FontWeight.bold,
         color: textPrimaryLight,
@@ -321,7 +321,7 @@ class AppTheme {
       );
 
   @deprecated
-  static TextStyle get h2 => GoogleFonts.poppins(
+  static TextStyle get h2 => GoogleFonts.podkova(
         fontSize: 24,
         fontWeight: FontWeight.w600,
         color: textPrimaryLight,

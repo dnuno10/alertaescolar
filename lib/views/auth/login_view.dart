@@ -4,8 +4,6 @@ import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/language_provider.dart';
 import 'components/login_body_component.dart';
-import 'components/login_options_component.dart';
-import 'components/login_footer_component.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -41,10 +39,8 @@ class _LoginViewState extends State<LoginView> {
                   Column(
                     children: [
                       LoginBodyComponent(),
-                      LoginOptionsComponent(),
                     ],
                   ),
-                  LoginFooterComponent(),
                 ],
               ),
             ),

@@ -3,6 +3,7 @@ import 'package:alertaescolar/components/profile/profile_header.dart';
 import 'package:alertaescolar/components/profile/settings_sections_content.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../app/app_theme.dart';
 
 class ProfileView extends StatefulWidget {

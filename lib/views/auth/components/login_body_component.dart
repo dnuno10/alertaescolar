@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../app/app_theme.dart';
@@ -12,25 +13,49 @@ class LoginBodyComponent extends StatefulWidget {
   State<LoginBodyComponent> createState() => _LoginBodyComponentState();
 }
 
-class _LoginBodyComponentState extends State<LoginBodyComponent> {
+class _LoginBodyComponentState extends State<LoginBodyComponent>
+    with TickerProviderStateMixin {
   late TextEditingController _emailController;
+  late TextEditingController _passwordController;
   late FocusNode _emailNode;
+  late FocusNode _passwordNode;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
-    _emailController = TextEditingController();
-    _emailNode = FocusNode();
     super.initState();
+    _emailController = TextEditingController();
+    _passwordController = TextEditingController();
+    _emailNode = FocusNode();
+    _passwordNode = FocusNode();
+
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOut,
+    ));
+
+    _fadeController.forward();
   }
 
   @override
   void dispose() {
     _emailController.dispose();
+    _passwordController.dispose();
     _emailNode.dispose();
+    _passwordNode.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
-  /// Validar si el correo electrónico tiene un formato válido
   bool _isEmailValid(String email) {
     final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
     return emailRegex.hasMatch(email);
@@ -38,154 +63,524 @@ class _LoginBodyComponentState extends State<LoginBodyComponent> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color textColor = isDark ? Colors.white : const Color(0xFF2F3E46);
     final Size size = MediaQuery.of(context).size;
     final l10n = AppLocalizations.of(context);
 
-    return SafeArea(
-      child: Column(
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: SizedBox(
+        height: size.height,
+        width: size.width,
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header section
+              _buildHeader(size, l10n),
+              // Expanded content
+              Expanded(
+                child: _buildLoginForm(size, l10n),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(Size size, AppLocalizations l10n) {
+    return Container(
+      padding: EdgeInsets.all(AppTheme.getMediumPadding(size)),
+      child: Row(
         children: [
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: size.width * 0.05),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: Icon(
+              Icons.arrow_back_ios_new,
+              color: AppTheme.getTextPrimaryColor(context),
+              size: 20,
+            ),
+            style: IconButton.styleFrom(
+              backgroundColor: AppTheme.getCardColor(context),
+              elevation: 2,
+            ),
+          ),
+          SizedBox(width: AppTheme.getMediumPadding(size)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  icon: Icon(Icons.arrow_back_ios, color: textColor),
-                  iconSize: size.height * 0.035,
-                ),
                 Text(
-                  "Alerta Escolar",
-                  style: AppTheme.getH2(size).copyWith(
-                    color: textColor,
+                  l10n.welcomeBack,
+                  style: AppTheme.getCaption(size).copyWith(
+                    color: AppTheme.getTextSecondaryColor(context),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                SizedBox(width: size.height * 0.035 + 16)
+                Text(
+                  l10n.loginSubtitle,
+                  style: AppTheme.getH2(size).copyWith(
+                    color: AppTheme.getTextPrimaryColor(context),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
-          ),
-          SizedBox(height: size.height * 0.07),
-          Text(
-            l10n.loginSubtitle,
-            style: AppTheme.getH2(size).copyWith(
-              fontWeight: FontWeight.w400,
-              color: textColor,
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: size.height * 0.030),
-            child: CustomInputField(
-              label: l10n.email,
-              controller: _emailController,
-              focusNode: _emailNode,
-              keyboardType: TextInputType.emailAddress,
-              screenSize: size,
-            ),
-          ),
-          SolidButton(
-            label: l10n.continue_,
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            screenSize: size,
-            width: size.width * 0.9,
-            onPressed: () {
-              final email = _emailController.text.trim();
-
-              // Validar correo electrónico antes de continuar
-              if (!_isEmailValid(email)) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(l10n.enterValidEmail),
-                    backgroundColor: AppTheme.errorColor,
-                  ),
-                );
-                return;
-              }
-              _checkAndRegisterEmail();
-            },
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                l10n.dontHaveAccount,
-                style: AppTheme.getBodyMedium(size).copyWith(
-                  fontWeight: FontWeight.w400,
-                  color: textColor.withOpacity(0.6),
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  HapticFeedback.mediumImpact();
-                  Navigator.pushReplacementNamed(context, '/signup');
-                },
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: size.height * 0.02),
-                  child: Text(
-                    l10n.signUp,
-                    style: AppTheme.getBodyMedium(size).copyWith(
-                      fontWeight: FontWeight.w400,
-                      color: textColor,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: size.width * 0.41,
-                height: 2,
-                color: textColor,
-              ),
-              Text(
-                l10n.or,
-                style: AppTheme.getBodyMedium(size).copyWith(
-                  fontWeight: FontWeight.w400,
-                  color: textColor,
-                ),
-              ),
-              Container(
-                width: size.width * 0.41,
-                height: 2,
-                color: textColor,
-              ),
-            ],
           ),
         ],
       ),
     );
   }
 
-  Future<void> _checkAndRegisterEmail() async {
+  Widget _buildLoginForm(Size size, AppLocalizations l10n) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(AppTheme.getLargeRadius(size) * 1.5),
+          topRight: Radius.circular(AppTheme.getLargeRadius(size) * 1.5),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.getShadowColor(context),
+            blurRadius: 20,
+            spreadRadius: -5,
+            offset: const Offset(0, -8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Header pill
+          Container(
+            width: size.width * 0.15,
+            height: 4,
+            margin: EdgeInsets.only(
+              top: AppTheme.getMediumPadding(size),
+              bottom: AppTheme.getLargePadding(size),
+            ),
+            decoration: BoxDecoration(
+              color: AppTheme.getBorderColor(context),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+
+          // Scrollable content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppTheme.getMediumPadding(size),
+              ),
+              child: Column(
+                children: [
+                  // Email field
+                  CustomInputField(
+                    controller: _emailController,
+                    label: l10n.email,
+                    screenSize: size,
+                    icon: Icons.email_outlined,
+                    keyboardType: TextInputType.emailAddress,
+                    focusNode: _emailNode,
+                  ),
+
+                  SizedBox(height: AppTheme.getMediumPadding(size)),
+
+                  // Login button using SolidButton
+                  SolidButton(
+                    label: l10n.login,
+                    backgroundColor: AppTheme.accentPurple,
+                    screenSize: size,
+                    width: size.width * 0.9,
+                    onPressed: _checkAndLogin,
+                  ),
+
+                  SizedBox(height: AppTheme.getMediumPadding(size)),
+
+                  // Sign up link
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        l10n.dontHaveAccount,
+                        style: AppTheme.getBodyMedium(size).copyWith(
+                          color: AppTheme.getTextSecondaryColor(context),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushReplacementNamed(context, '/signup');
+                        },
+                        child: Text(
+                          l10n.signUp,
+                          style: AppTheme.getBodyMedium(size).copyWith(
+                            color: AppTheme.accentPurple,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Divider with proper styling
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      vertical: AppTheme.getSmallPadding(size),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: size.width * 0.3,
+                          height: 1,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppTheme.getBorderColor(context)
+                                    .withOpacity(0.1),
+                                AppTheme.getBorderColor(context),
+                                AppTheme.getBorderColor(context)
+                                    .withOpacity(0.1),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: AppTheme.getSmallPadding(size),
+                          ),
+                          child: Text(
+                            l10n.or,
+                            style: AppTheme.getCaptionSmall(size).copyWith(
+                              color: AppTheme.getTextSecondaryColor(context),
+                            ),
+                          ),
+                        ),
+                        Container(
+                          width: size.width * 0.3,
+                          height: 1,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppTheme.getBorderColor(context)
+                                    .withOpacity(0.1),
+                                AppTheme.getBorderColor(context),
+                                AppTheme.getBorderColor(context)
+                                    .withOpacity(0.1),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Social login options
+                  LoginOptionsComponent(size: size),
+
+                  SizedBox(height: AppTheme.getSmallPadding(size)),
+
+                  // Terms & Privacy at bottom
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      vertical: AppTheme.getMediumPadding(size),
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        top: BorderSide(
+                          color:
+                              AppTheme.getBorderColor(context).withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.pushNamed(context, '/terms');
+                          },
+                          child: Text(
+                            l10n.termsOfService,
+                            style: AppTheme.getCaptionSmall(size).copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.accentPurple,
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: AppTheme.getSmallPadding(size),
+                          ),
+                          child: Container(
+                            height: size.height * 0.015,
+                            width: 1,
+                            color: AppTheme.getTextSecondaryColor(context)
+                                .withOpacity(0.3),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.pushNamed(context, '/privacy');
+                          },
+                          child: Text(
+                            l10n.privacyPolicy,
+                            style: AppTheme.getCaptionSmall(size).copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.accentPurple,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: AppTheme.getMediumPadding(size)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _checkAndLogin() async {
     final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final l10n = AppLocalizations.of(context);
+
+    if (!_isEmailValid(email)) {
+      _showErrorSnackBar(l10n.enterValidEmail);
+      return;
+    }
+
+    if (password.length < 6) {
+      _showErrorSnackBar(l10n.passwordTooShort);
+      return;
+    }
 
     try {
-      // Placeholder for email verification logic
-      // For now, we'll navigate to magic link verification
+      // TODO: Implement login logic
       if (mounted) {
-        Navigator.pushNamed(
-          context,
-          '/verify_magic_link',
-          arguments: email,
-        );
+        Navigator.pushReplacementNamed(context, '/home');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context).loginErrorMessage),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
+        _showErrorSnackBar(l10n.loginErrorMessage);
       }
     }
+  }
+
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppTheme.errorColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(
+              AppTheme.getMediumRadius(MediaQuery.of(context).size)),
+        ),
+        margin: EdgeInsets.all(
+            AppTheme.getMediumPadding(MediaQuery.of(context).size)),
+      ),
+    );
+  }
+}
+
+class LoginOptionsComponent extends StatelessWidget {
+  final Size size;
+
+  const LoginOptionsComponent({super.key, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _GoogleSignInButton(size: size),
+        if (Platform.isIOS) ...[
+          SizedBox(height: AppTheme.getMediumPadding(size)),
+          _AppleSignInButton(size: size),
+        ],
+      ],
+    );
+  }
+}
+
+class _GoogleSignInButton extends StatelessWidget {
+  final Size size;
+
+  const _GoogleSignInButton({required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return Container(
+      width: size.width * 0.9,
+      height: size.height * 0.06,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.getShadowColor(context),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+            spreadRadius: -2,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
+          onTap: () => _signInWithGoogle(context),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppTheme.getMediumPadding(size),
+              vertical: AppTheme.getSmallPadding(size),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Google Logo
+                Container(
+                  width: size.height * 0.025,
+                  height: size.height * 0.025,
+                  decoration: BoxDecoration(
+                    image: const DecorationImage(
+                      image: AssetImage('images/google_logo.png'),
+                      fit: BoxFit.contain,
+                    ),
+                    borderRadius:
+                        BorderRadius.circular(size.height * 0.025 / 2),
+                  ),
+                  // Fallback in case image isn't available
+                  child: Image.network(
+                    'https://developers.google.com/identity/images/g-logo.png',
+                    width: size.height * 0.025,
+                    height: size.height * 0.025,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(
+                        Icons.g_mobiledata,
+                        color: Colors.blue,
+                        size: size.height * 0.025,
+                      );
+                    },
+                  ),
+                ),
+                SizedBox(width: AppTheme.getSmallPadding(size)),
+                Text(
+                  l10n.continueWithGoogle,
+                  style: AppTheme.getBodyMedium(size).copyWith(
+                    color: const Color(0xFF3C4043),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _signInWithGoogle(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.signingInWithGoogle),
+        backgroundColor: AppTheme.accentBlue,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(
+            AppTheme.getMediumRadius(size),
+          ),
+        ),
+        margin: EdgeInsets.all(AppTheme.getMediumPadding(size)),
+      ),
+    );
+  }
+}
+
+class _AppleSignInButton extends StatelessWidget {
+  final Size size;
+
+  const _AppleSignInButton({required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return Container(
+      width: size.width * 0.9,
+      height: size.height * 0.06,
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.getShadowColor(context),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+            spreadRadius: -2,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
+          onTap: () => _signInWithApple(context),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppTheme.getMediumPadding(size),
+              vertical: AppTheme.getSmallPadding(size),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.apple,
+                  color: Colors.white,
+                  size: size.height * 0.025,
+                ),
+                SizedBox(width: AppTheme.getSmallPadding(size)),
+                Text(
+                  l10n.continueWithApple,
+                  style: AppTheme.getBodyMedium(size).copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _signInWithApple(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.signingInWithApple),
+        backgroundColor: AppTheme.accentBlue,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(
+            AppTheme.getMediumRadius(size),
+          ),
+        ),
+        margin: EdgeInsets.all(AppTheme.getMediumPadding(size)),
+      ),
+    );
   }
 }

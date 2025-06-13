@@ -10,6 +10,7 @@ import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../models/models.dart';
 import '../../../app/app_theme.dart';
 
 class SchoolInfoView extends StatefulWidget {

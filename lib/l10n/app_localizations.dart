@@ -76,7 +76,18 @@ abstract class AppLocalizations {
   String get alertaEscolarDescription;
   String get login;
   String get registerWithEmail;
-
+// Missing authentication-related getters
+  String get continueWithGoogle;
+  String get signingInWithGoogle;
+  String get joinUs;
+  String get signUpWithGoogle;
+  String get signingUpWithGoogle;
+  String get signUpWithApple;
+  String get signingUpWithApple;
+  String get continueWithApple;
+  String get signingInWithApple;
+  String get changeEmail;
+  String get returnToStart;
 // Login related
   String get loginErrorMessage;
   String get signIn;
@@ -783,6 +794,7 @@ abstract class AppLocalizations {
   String get toConfirm => 'To Confirm';
   String get studentLinkedSuccessfully => 'Student Linked Successfully';
   String get errorLinkingStudent => 'Error Linking Student';
+  String get verification;
 
   // Student Detail
   String get viewSchedule => 'View Schedule';
@@ -1203,7 +1215,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get introWelcomeMessage =>
-      'Stay connected with your child\'s school activities and never miss important updates';
+      'Stay connected with your child\'s school activities';
 
   @override
   String get introFooterText =>
@@ -1214,12 +1226,49 @@ class AppLocalizationsEn extends AppLocalizations {
       'QR code attendance tracking for quick and accurate check-ins';
 
   @override
+  String get verification => 'Verification';
+
+  @override
   String get realTimeNotificationsFeature =>
       'Instant notifications for arrivals, departures, and important announcements';
 
   @override
   String get securityFeature =>
       'Secure platform with encrypted data to protect your family\'s privacy';
+
+// Missing authentication-related implementations
+  @override
+  String get continueWithGoogle => 'Continue with Google';
+
+  @override
+  String get signingInWithGoogle => 'Signing in with Google...';
+
+  @override
+  String get joinUs => 'Join Us';
+
+  @override
+  String get signUpWithGoogle => 'Sign up with Google';
+
+  @override
+  String get signingUpWithGoogle => 'Signing up with Google...';
+
+  @override
+  String get signUpWithApple => 'Sign up with Apple';
+
+  @override
+  String get signingUpWithApple => 'Signing up with Apple...';
+
+  @override
+  String get continueWithApple => 'Continue with Apple';
+
+  @override
+  String get signingInWithApple => 'Signing in with Apple...';
+
+  @override
+  String get changeEmail => 'Change Email';
+
+  @override
+  String get returnToStart => 'Return to Start';
 
   @override
   String get getStarted => 'Get Started';
@@ -1253,7 +1302,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signingIn => 'Signing in';
 
   @override
-  String get loginSubtitle => 'Welcome back! Please sign in to your account';
+  String get loginSubtitle => 'Please sign in to your account';
 
   @override
   String get dontHaveAccount => 'Don\'t have an account?';
@@ -3848,6 +3897,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get searchByNameOrId => 'Buscar por nombre o ID';
 
   @override
+  String get verification => 'Verificación';
+
+  @override
   String get searchTip => 'Consejo de búsqueda';
 
   @override
@@ -3861,7 +3913,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get introWelcomeMessage =>
-      'Mantente conectado con las actividades escolares de tu hijo y nunca te pierdas actualizaciones importantes';
+      'Mantente conectado con las actividades escolares de tu hijo';
 
   @override
   String get introFooterText =>
@@ -3913,8 +3965,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get signingIn => 'Iniciando sesión';
 
   @override
-  String get loginSubtitle =>
-      '¡Bienvenido de vuelta! Por favor inicia sesión en tu cuenta';
+  String get loginSubtitle => 'Por favor inicia sesión en tu cuenta';
 
   @override
   String get dontHaveAccount => '¿No tienes una cuenta?';
@@ -3944,6 +3995,40 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get guestAccessWarning =>
       'El acceso de invitado proporciona funcionalidad limitada. Regístrate para obtener todas las funciones.';
+
+// Missing authentication-related implementations
+  @override
+  String get continueWithGoogle => 'Continuar con Google';
+
+  @override
+  String get signingInWithGoogle => 'Iniciando sesión con Google...';
+
+  @override
+  String get joinUs => 'Únete a nosotros';
+
+  @override
+  String get signUpWithGoogle => 'Registrarse con Google';
+
+  @override
+  String get signingUpWithGoogle => 'Registrándose con Google...';
+
+  @override
+  String get signUpWithApple => 'Registrarse con Apple';
+
+  @override
+  String get signingUpWithApple => 'Registrándose con Apple...';
+
+  @override
+  String get continueWithApple => 'Continuar con Apple';
+
+  @override
+  String get signingInWithApple => 'Iniciando sesión con Apple...';
+
+  @override
+  String get changeEmail => 'Cambiar Email';
+
+  @override
+  String get returnToStart => 'Volver al inicio';
 
   @override
   String get continue_ => 'Continuar';

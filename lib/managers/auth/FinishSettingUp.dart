@@ -32,7 +32,7 @@ class FinishSettingUp {
         'email': email,
         'nombre': nombre,
         'apellido': apellido,
-        'tipo': 'padre', // Tipo por defecto
+        'tipo': 'padre',
         'activo': true,
         'fecha_registro': DateTime.now().toIso8601String(),
       });

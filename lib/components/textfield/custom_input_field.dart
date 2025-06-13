@@ -97,15 +97,12 @@ class _CustomInputFieldState extends State<CustomInputField> {
                   )
                 : null,
             filled: true,
-            fillColor: widget.isPassword
-                ? Colors.transparent
-                : AppTheme.getInputFillColor(context),
+            fillColor: Colors.transparent,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(
                   AppTheme.getSmallRadius(widget.screenSize)),
               borderSide: BorderSide(
-                color: AppTheme.accentPurple
-                    .withOpacity(widget.isPassword ? 0.2 : 0.0),
+                color: AppTheme.accentPurple.withOpacity(0.2),
                 width: 1,
               ),
             ),
@@ -113,8 +110,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
               borderRadius: BorderRadius.circular(
                   AppTheme.getSmallRadius(widget.screenSize)),
               borderSide: BorderSide(
-                color: AppTheme.accentPurple
-                    .withOpacity(widget.isPassword ? 0.2 : 0.0),
+                color: AppTheme.accentPurple.withOpacity(0.2),
                 width: 1,
               ),
             ),

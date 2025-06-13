@@ -12,12 +12,16 @@ import 'l10n/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load();
+
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
   runApp(const AlertaEscolarApp());
 }
+
+final supabase = Supabase.instance.client;
 
 class AlertaEscolarApp extends StatelessWidget {
   const AlertaEscolarApp({super.key});

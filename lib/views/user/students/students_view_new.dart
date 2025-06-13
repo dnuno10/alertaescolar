@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../app/app_theme.dart';
 import '../../../components/students/students_header.dart';

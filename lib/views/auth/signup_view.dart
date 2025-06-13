@@ -4,8 +4,6 @@ import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/language_provider.dart';
 import 'components/signup_body_component.dart';
-import 'components/signup_options_component.dart';
-import 'components/signup_footer_component.dart';
 
 class SignUpView extends StatefulWidget {
   const SignUpView({super.key});
@@ -40,10 +38,8 @@ class _SignUpViewState extends State<SignUpView> {
                   Column(
                     children: [
                       SignUpBodyComponent(),
-                      SignUpOptionsComponent(),
                     ],
                   ),
-                  SignUpFooterComponent(),
                 ],
               ),
             ),

@@ -13,6 +13,7 @@ import '../../../app/app_theme.dart';
 import '../../../managers/user_provider.dart';
 import '../../../managers/student_provider.dart';
 import '../../../managers/notification_provider.dart';
+import '../../../models/models.dart';
 import '../notifications/notifications_view.dart';
 import '../profile/profile_view.dart';
 

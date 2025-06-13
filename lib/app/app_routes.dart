@@ -8,11 +8,6 @@ import 'package:alertaescolar/views/admin/school/school_settings_view.dart';
 import 'package:alertaescolar/views/admin/students/student_profile_admin_view.dart';
 import 'package:alertaescolar/views/admin/students/students_directory_view.dart';
 import 'package:alertaescolar/views/user/students/students_view_new.dart';
-import 'package:alertaescolar/views/auth/intro_view.dart';
-import 'package:alertaescolar/views/auth/login_view.dart';
-import 'package:alertaescolar/views/auth/signup_view.dart';
-import 'package:alertaescolar/views/auth/finish_setting_up_view.dart';
-import 'package:alertaescolar/views/auth/verify_magic_link_view.dart';
 import 'package:flutter/material.dart';
 import '../views/user/home/home_view.dart';
 import '../views/user/profile/profile_view.dart';
@@ -25,19 +20,23 @@ import '../views/user/profile/password_security_view_new.dart'
 import '../views/user/profile/notification_settings_view_new.dart'
     as notification_settings;
 import '../views/user/profile/family_information_view.dart';
-
 import '../views/user/notifications/notifications_view.dart';
+
+// Auth view imports
+import '../views/auth/intro_view.dart';
+import '../views/auth/login_view.dart';
+import '../views/auth/signup_view.dart';
+import '../views/auth/verify_magic_link_view.dart';
+import '../views/auth/finish_setting_up_view.dart';
 
 class AppRoutes {
   // Auth routes
   static const String intro = '/intro';
   static const String login = '/login';
   static const String signup = '/signup';
-  static const String register = '/register'; // Add this line
-  static const String finishSettingUp = '/finish_setting_up';
   static const String verifyMagicLink = '/verify_magic_link';
+  static const String finishSettingUp = '/finish_setting_up';
 
-  // Main app routes
   static const String home = '/';
   static const String profile = '/profile';
   static const String students = '/students';
@@ -71,6 +70,10 @@ class AppRoutes {
   static const String adminProfile = '/admin/profile';
 
   static Map<String, WidgetBuilder> get routes => {
+        intro: (context) => const IntroView(),
+        login: (context) => const LoginView(),
+        signup: (context) => const SignUpView(),
+        finishSettingUp: (context) => const FinishSettingUpView(),
         home: (context) => const HomeView(),
         profile: (context) => const ProfileView(),
         students: (context) => const StudentsView(),
@@ -86,19 +89,23 @@ class AppRoutes {
         return MaterialPageRoute(builder: (context) => const LoginView());
       case signup:
         return MaterialPageRoute(builder: (context) => const SignUpView());
-      case register:
+      case verifyMagicLink:
+        final email = settings.arguments as String?;
+        if (email == null) {
+          return MaterialPageRoute(
+            builder: (context) => const Scaffold(
+              body: Center(
+                child: Text('Error: Email required for verification'),
+              ),
+            ),
+          );
+        }
         return MaterialPageRoute(
-            builder: (context) => const SignUpView()); // Add this line
+            builder: (context) => VerifyMagicLinkView(email: email));
       case finishSettingUp:
         return MaterialPageRoute(
             builder: (context) => const FinishSettingUpView());
-      case verifyMagicLink:
-        final email = settings.arguments as String? ?? '';
-        return MaterialPageRoute(
-          builder: (context) => VerifyMagicLinkView(email: email),
-        );
 
-      // Main app routes
       case home:
         return MaterialPageRoute(builder: (context) => const HomeView());
       case profile:
