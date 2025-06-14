@@ -70,7 +70,25 @@ abstract class AppLocalizations {
   String get verifyingCode;
   String get resendingCode;
   String get registering;
+  String get settingUpAccount;
+  String get loading;
 
+  // Authentication related strings
+  String get verificationSuccessful;
+  String get completeYourProfile;
+  String get loginSuccessful;
+  String get appleSignInError;
+  String get googleSignInError;
+  String get accountSetupSuccessfully;
+  String get unexpectedError;
+  String get logoutSuccessful;
+  String get logoutError;
+
+  // Relationship related strings
+  String get relationshipType;
+  String get selectYourRelationshipWithStudent;
+  String get tutor;
+  String get relative;
   // Authentication and intro related
   String get alertaEscolar;
   String get introWelcomeMessage;
@@ -1235,6 +1253,54 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get id => 'ID';
+
+  @override
+  String get loading => 'Loading...';
+
+  @override
+  String get settingUpAccount => 'Setting up account...';
+
+  // Add implementations to AppLocalizationsEn class:
+
+  @override
+  String get verificationSuccessful => 'Verification successful';
+
+  @override
+  String get completeYourProfile => 'Please complete your profile';
+
+  @override
+  String get loginSuccessful => 'Login successful';
+
+  @override
+  String get appleSignInError => 'There was a problem signing in with Apple';
+
+  @override
+  String get googleSignInError => 'There was a problem signing in with Google';
+
+  @override
+  String get accountSetupSuccessfully => 'Account setup completed successfully';
+
+  @override
+  String get unexpectedError => 'An unexpected error occurred';
+
+  @override
+  String get logoutSuccessful => 'Logout successful';
+
+  @override
+  String get logoutError => 'There was a problem signing out';
+
+  @override
+  String get relationshipType => 'Relationship Type';
+
+  @override
+  String get selectYourRelationshipWithStudent =>
+      'Select your relationship with the student';
+
+  @override
+  String get tutor => 'Tutor';
+
+  @override
+  String get relative => 'Relative';
 
   @override
   String get signUpEmailRegistered => 'This email is already registered';
@@ -3918,6 +3984,56 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get registering => 'Registrando...';
+
+  @override
+  String get loading => 'Cargando...';
+
+  @override
+  String get settingUpAccount => 'Configurando cuenta...';
+
+  // Add implementations to AppLocalizationsEs class:
+
+  @override
+  String get verificationSuccessful => 'Verificación exitosa';
+
+  @override
+  String get completeYourProfile => 'Por favor completa tu perfil';
+
+  @override
+  String get loginSuccessful => 'Inicio de sesión exitoso';
+
+  @override
+  String get appleSignInError => 'Hubo un problema al iniciar sesión con Apple';
+
+  @override
+  String get googleSignInError =>
+      'Hubo un problema al iniciar sesión con Google';
+
+  @override
+  String get accountSetupSuccessfully =>
+      'Configuración de cuenta completada exitosamente';
+
+  @override
+  String get unexpectedError => 'Ocurrió un error inesperado';
+
+  @override
+  String get logoutSuccessful => 'Cierre de sesión exitoso';
+
+  @override
+  String get logoutError => 'Hubo un problema al cerrar sesión';
+
+  @override
+  String get relationshipType => 'Tipo de Relación';
+
+  @override
+  String get selectYourRelationshipWithStudent =>
+      'Selecciona tu relación con el estudiante';
+
+  @override
+  String get tutor => 'Tutor';
+
+  @override
+  String get relative => 'Familiar';
 
   @override
   String get emailAlreadyExists =>

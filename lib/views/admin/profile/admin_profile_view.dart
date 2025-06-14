@@ -1,3 +1,4 @@
+import 'package:alertaescolar/components/dialogs/logout_dialog.dart';
 import 'package:alertaescolar/views/user/profile/password_security_view_new.dart';
 import 'package:alertaescolar/components/profile/profile_header.dart';
 import 'package:alertaescolar/components/profile/settings_section_title.dart';
@@ -142,7 +143,7 @@ class _AdminProfileViewState extends State<AdminProfileView> {
                   // Logout Button
                   LogoutButton(
                     screenSize: screenSize,
-                    onTap: () {},
+                    onTap: () => LogoutDialog.show(context),
                   ),
 
                   SizedBox(height: AppTheme.getLargePadding(screenSize) * 2),

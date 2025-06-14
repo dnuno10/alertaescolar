@@ -2,6 +2,7 @@
 
 import 'package:alertaescolar/app/app_theme.dart';
 import 'package:alertaescolar/components/loading_dialog.dart';
+import 'package:alertaescolar/managers/auth/AdminSetup.dart';
 import 'package:alertaescolar/widgets/custom_snack_bar.dart';
 import 'package:alertaescolar/managers/user_provider.dart';
 import 'package:alertaescolar/models/usuario.dart';
@@ -49,6 +50,8 @@ class LogIn {
   }
 
   Future<void> checkLoginStatus() async {
+    final l10n = AppLocalizations.of(context);
+
     try {
       debugPrint("🔍 Checking current session...");
       final session = Supabase.instance.client.auth.currentSession;
@@ -74,10 +77,22 @@ class LogIn {
       Navigator.of(context).pop();
 
       if (userExist == null) {
-        // Usuario no existe, redirigir a configuración
+        // Usuario no existe, verificar si es un administrador en la lista de acceso
+        final isAdmin = await AdminSetup.checkAndSetupAdmin(
+          context,
+          session.user.email ?? '',
+          session.user.id,
+        );
+
+        if (isAdmin) {
+          // Si ya se configuró como administrador, se ha manejado la navegación
+          return;
+        }
+
+        // Si no es admin, continuar con el flujo normal
         _showSuccessAndNavigate(
           context,
-          'Verificación exitosa',
+          l10n.verificationSuccessful,
           '/finish_setting_up',
         );
       } else {
@@ -89,15 +104,15 @@ class LogIn {
           // Perfil incompleto, redirigir a configuración
           _showSuccessAndNavigate(
             context,
-            'Complete su perfil',
+            l10n.completeYourProfile,
             '/finish_setting_up',
           );
         } else {
-          // Perfil completo, redirigir al dashboard o home
+          // Perfil completo, comprobar si es admin y redirigir adecuadamente
           _showSuccessAndNavigate(
             context,
-            'Inicio de sesión exitoso',
-            usuario.esAdministrador ? '/admin_dashboard' : '/',
+            l10n.loginSuccessful,
+            usuario.tipo == TipoUsuario.administrador ? '/admin' : '/',
           );
         }
       }
@@ -107,7 +122,7 @@ class LogIn {
 
       CustomSnackBar.show(
         context: context,
-        message: 'Database error: ${error.message}',
+        message: l10n.unexpectedError,
         isError: true,
       );
     } catch (error) {
@@ -116,7 +131,7 @@ class LogIn {
 
       CustomSnackBar.show(
         context: context,
-        message: 'Unexpected error occurred. Please try again.',
+        message: l10n.unexpectedError,
         isError: true,
       );
     }

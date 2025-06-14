@@ -66,7 +66,7 @@ class HomeHeader extends StatelessWidget {
                       ),
                       child: Center(
                         child: Text(
-                          firstName[0].toUpperCase(),
+                          'S', //firstName[1].toUpperCase(),
                           style: AppTheme.getH2(screenSize).copyWith(
                             color: Colors.white,
                           ),

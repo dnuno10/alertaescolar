@@ -44,21 +44,25 @@ class Usuario {
       nombre: json['nombre'] ?? '',
       apellido: json['apellido'] ?? '',
       email: json['email'] ?? '',
-      telefono: json['telefono'],
+      telefono: json['telefono'], // This is already nullable in your model
       tipo: TipoUsuario.values.firstWhere(
-        (e) => e.name == json['tipo'],
+        (e) => e.name == (json['tipo'] as String? ?? 'padre'),
         orElse: () => TipoUsuario.padre,
       ),
       tipoAdministrador: json['tipoAdministrador'] != null
           ? TipoAdministrador.values.firstWhere(
-              (e) => e.name == json['tipoAdministrador'],
+              (e) =>
+                  e.name ==
+                  (json['tipoAdministrador'] as String? ?? 'administrativo'),
               orElse: () => TipoAdministrador.administrativo,
             )
           : null,
       escuelaId: json['escuelaId'],
       fotoUrl: json['fotoUrl'],
       activo: json['activo'] ?? true,
-      fechaRegistro: DateTime.parse(json['fechaRegistro']),
+      fechaRegistro: json['fechaRegistro'] != null
+          ? DateTime.parse(json['fechaRegistro'])
+          : DateTime.now(),
       fechaUltimaConexion: json['fechaUltimaConexion'] != null
           ? DateTime.parse(json['fechaUltimaConexion'])
           : null,

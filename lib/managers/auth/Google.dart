@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:alertaescolar/app/app_theme.dart';
 import 'package:alertaescolar/components/loading_dialog.dart';
 import 'package:alertaescolar/l10n/app_localizations.dart';
+import 'package:alertaescolar/managers/auth/AdminSetup.dart';
 import 'package:alertaescolar/widgets/custom_snack_bar.dart';
 import 'package:alertaescolar/models/models.dart';
 import 'package:alertaescolar/managers/user_provider.dart';
@@ -68,7 +69,6 @@ class Google {
 
       // Obtener el provider de usuario
       final userProvider = Provider.of<UserProvider>(context, listen: false);
-
       // Verificar si el usuario existe en la base de datos
       final userExist = await _supabase
           .from('usuarios')
@@ -77,27 +77,37 @@ class Google {
           .maybeSingle();
 
       if (userExist == null) {
-        // Usuario no existe, redirigir a configuración
+        // Usuario no existe, verificar si es un administrador en la lista de acceso
+        // ignore: use_build_context_synchronously
+        final isAdmin = await AdminSetup.checkAndSetupAdmin(
+            context, response.user!.email ?? '', response.user!.id);
+
+        if (isAdmin) {
+          // Si ya se configuró como administrador, se ha manejado la navegación
+          LoadingDialog.hide(context);
+          return;
+        }
+
+        // Si no es admin, continuar con el flujo normal
         _showSuccessAndNavigate(
           context,
-          'Verificación exitosa',
+          l10n.verificationSuccessful,
           '/finish_setting_up',
         );
       } else {
         final usuario = Usuario.fromJson(userExist);
         await userProvider.updateUser(usuario);
-
         if (usuario.nombre.isEmpty || usuario.apellido.isEmpty) {
           _showSuccessAndNavigate(
             context,
-            'Complete su perfil',
+            l10n.completeYourProfile,
             '/finish_setting_up',
           );
         } else {
           _showSuccessAndNavigate(
             context,
-            'Inicio de sesión exitoso',
-            usuario.esAdministrador ? '/admin_dashboard' : '/',
+            l10n.loginSuccessful,
+            usuario.tipo == TipoUsuario.administrador ? '/admin' : '/',
           );
         }
       }
@@ -110,7 +120,7 @@ class Google {
       if (context.mounted) {
         CustomSnackBar.show(
           context: context,
-          message: 'Error al iniciar sesión con Google',
+          message: l10n.googleSignInError,
           isError: true,
         );
       }

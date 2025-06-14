@@ -7,6 +7,7 @@ import '../../components/textfield/custom_input_field.dart';
 import '../../managers/auth/FinishSettingUp.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../widgets/custom_snack_bar.dart';
+import '../../models/usuario.dart';
 
 class FinishSettingUpView extends StatefulWidget {
   const FinishSettingUpView({super.key});
@@ -23,6 +24,8 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
   late FocusNode _lastNameNode;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+
+  TipoUsuario _selectedUserType = TipoUsuario.padre;
 
   @override
   void initState() {
@@ -97,7 +100,10 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
       child: Row(
         children: [
           IconButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => {
+              Supabase.instance.client.auth.signOut(),
+              Navigator.pop(context)
+            },
             icon: Icon(
               Icons.arrow_back_ios_new,
               color: AppTheme.getTextPrimaryColor(context),
@@ -177,11 +183,6 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
               ),
               child: Column(
                 children: [
-                  // Welcome description
-                  _buildWelcomeDescription(size, l10n),
-
-                  SizedBox(height: AppTheme.getLargePadding(size)),
-
                   // First Name field
                   CustomInputField(
                     controller: _firstNameController,
@@ -208,6 +209,11 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
 
                   SizedBox(height: AppTheme.getLargePadding(size)),
 
+                  // User Type Selection
+                  _buildUserTypeSelection(size, l10n),
+
+                  SizedBox(height: AppTheme.getLargePadding(size)),
+
                   // Continue button
                   AnimatedBuilder(
                     animation: Listenable.merge([
@@ -222,9 +228,11 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
                             : AppTheme.accentPurple.withOpacity(0.6),
                         screenSize: size,
                         width: size.width * 0.9,
-                        onPressed: () {
-                          _isFormValid ? _finishSetup : null;
-                        },
+                        onPressed: _isFormValid
+                            ? () {
+                                _finishSetup();
+                              }
+                            : () {},
                       );
                     },
                   ),
@@ -233,66 +241,6 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
 
                   // Return to start link
                   _buildReturnToStartSection(size, l10n),
-
-                  SizedBox(height: AppTheme.getMediumPadding(size)),
-
-                  // Terms & Privacy at bottom
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      vertical: AppTheme.getMediumPadding(size),
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        top: BorderSide(
-                          color:
-                              AppTheme.getBorderColor(context).withOpacity(0.3),
-                          width: 1,
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.pushNamed(context, '/terms');
-                          },
-                          child: Text(
-                            l10n.termsOfService,
-                            style: AppTheme.getCaptionSmall(size).copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: AppTheme.accentPurple,
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: AppTheme.getSmallPadding(size),
-                          ),
-                          child: Container(
-                            height: size.height * 0.015,
-                            width: 1,
-                            color: AppTheme.getTextSecondaryColor(context)
-                                .withOpacity(0.3),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.pushNamed(context, '/privacy');
-                          },
-                          child: Text(
-                            l10n.privacyPolicy,
-                            style: AppTheme.getCaptionSmall(size).copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: AppTheme.accentPurple,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  SizedBox(height: AppTheme.getMediumPadding(size)),
                 ],
               ),
             ),
@@ -302,14 +250,11 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
     );
   }
 
-  Widget _buildWelcomeDescription(Size size, AppLocalizations l10n) {
+  Widget _buildUserTypeSelection(Size size, AppLocalizations l10n) {
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppTheme.getSmallPadding(size),
-        vertical: AppTheme.getMediumPadding(size),
-      ),
+      padding: EdgeInsets.all(AppTheme.getMediumPadding(size)),
       decoration: BoxDecoration(
-        color: AppTheme.accentPurple.withOpacity(0.05),
+        color: AppTheme.accentPurple.withOpacity(0.03),
         borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
         border: Border.all(
           color: AppTheme.accentPurple.withOpacity(0.1),
@@ -317,31 +262,151 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
         ),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.person_add_outlined,
-            color: AppTheme.accentPurple,
-            size: size.height * 0.04,
+          Row(
+            children: [
+              Icon(
+                Icons.family_restroom,
+                color: AppTheme.accentPurple,
+                size: MediaQuery.of(context).size.height * 0.03,
+              ),
+              SizedBox(width: AppTheme.getSmallPadding(size)),
+              Text(
+                l10n.relationshipType,
+                style: AppTheme.getBodyLarge(size).copyWith(
+                  color: AppTheme.getTextPrimaryColor(context),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
+
           SizedBox(height: AppTheme.getSmallPadding(size)),
+
           Text(
-            l10n.pleaseCompleteYourProfile,
-            textAlign: TextAlign.center,
-            style: AppTheme.getBodyMedium(size).copyWith(
+            l10n.selectYourRelationshipWithStudent,
+            style: AppTheme.getCaption(size).copyWith(
               color: AppTheme.getTextSecondaryColor(context),
-              height: 1.4,
             ),
           ),
-          SizedBox(height: AppTheme.getSmallPadding(size) * 0.5),
-          Text(
-            l10n.thisInformationWillBeUsedForYourProfile,
-            textAlign: TextAlign.center,
-            style: AppTheme.getCaptionSmall(size).copyWith(
-              color: AppTheme.getTextSecondaryColor(context),
-              height: 1.3,
-            ),
+
+          SizedBox(height: AppTheme.getMediumPadding(size)),
+
+          // User type options in a grid
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            childAspectRatio: 2.5,
+            mainAxisSpacing: AppTheme.getMediumPadding(size) * 0.8,
+            crossAxisSpacing: AppTheme.getMediumPadding(size) * 0.8,
+            children: [
+              _buildUserTypeOption(
+                size,
+                TipoUsuario.padre,
+                l10n.father,
+                Icons.man,
+              ),
+              _buildUserTypeOption(
+                size,
+                TipoUsuario.madre,
+                l10n.mother,
+                Icons.woman,
+              ),
+              _buildUserTypeOption(
+                size,
+                TipoUsuario.tutor,
+                l10n.tutor,
+                Icons.school,
+              ),
+              _buildUserTypeOption(
+                size,
+                TipoUsuario.familiar,
+                l10n.relative,
+                Icons.people,
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildUserTypeOption(
+      Size size, TipoUsuario userType, String label, IconData icon) {
+    final isSelected = _selectedUserType == userType;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      decoration: BoxDecoration(
+        color: isSelected
+            ? AppTheme.accentPurple.withOpacity(0.15)
+            : AppTheme.getCardColor(context),
+        borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
+        border: Border.all(
+          color: isSelected
+              ? AppTheme.accentPurple
+              : AppTheme.getBorderColor(context),
+          width: 1.5,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
+          onTap: () {
+            setState(() {
+              _selectedUserType = userType;
+            });
+          },
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppTheme.getMediumPadding(size) * 0.8,
+              vertical: AppTheme.getSmallPadding(size) * 0.8,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppTheme.accentPurple
+                        : AppTheme.accentPurple.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isSelected ? Colors.white : AppTheme.accentPurple,
+                    size: 20,
+                  ),
+                ),
+                SizedBox(width: AppTheme.getSmallPadding(size) * 0.7),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        label,
+                        style: AppTheme.getBodyMedium(size).copyWith(
+                          color: isSelected
+                              ? AppTheme.accentPurple
+                              : AppTheme.getTextPrimaryColor(context),
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -398,6 +463,7 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
         email: user.email ?? '',
         nombre: firstName,
         apellido: lastName,
+        tipo: _selectedUserType, // Pass the selected user type
       );
 
       finishSettingUp.settingUpAccount();

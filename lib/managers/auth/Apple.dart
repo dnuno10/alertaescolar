@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:alertaescolar/app/app_theme.dart';
 import 'package:alertaescolar/components/loading_dialog.dart';
 import 'package:alertaescolar/l10n/app_localizations.dart';
+import 'package:alertaescolar/managers/auth/AdminSetup.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -67,7 +68,18 @@ class Apple {
           .maybeSingle();
 
       if (userExist == null) {
-        // Usuario no existe, redirigir a configuración
+        // Usuario no existe, verificar si es un administrador en la lista de acceso
+        // ignore: use_build_context_synchronously
+        final isAdmin = await AdminSetup.checkAndSetupAdmin(
+            context, response.user!.email ?? '', response.user!.id);
+
+        if (isAdmin) {
+          // Si ya se configuró como administrador, se ha manejado la navegación
+          LoadingDialog.hide(context);
+          return;
+        }
+
+        // Si no es admin, continuar con el flujo normal
         final nuevoUsuario = Usuario(
           id: response.user!.id,
           nombre: credential.givenName ?? '',
@@ -82,7 +94,7 @@ class Apple {
 
         _showSuccessAndNavigate(
           context,
-          'Verificación exitosa',
+          l10n.verificationSuccessful,
           '/finish_setting_up',
         );
       } else {
@@ -96,24 +108,24 @@ class Apple {
           // Perfil incompleto, redirigir a configuración
           _showSuccessAndNavigate(
             context,
-            'Complete su perfil',
+            l10n.completeYourProfile,
             '/finish_setting_up',
           );
         } else {
-          // Perfil completo, redirigir al dashboard o home
+          // Perfil completo, redirigir según el tipo de usuario
           _showSuccessAndNavigate(
             context,
-            'Inicio de sesión exitoso',
-            usuario.esAdministrador ? '/admin_dashboard' : '/',
+            l10n.loginSuccessful,
+            usuario.tipo == TipoUsuario.administrador ? '/admin' : '/',
           );
         }
       }
     } catch (e) {
       // ignore: use_build_context_synchronously
-      LoadingDialog.hide(context); // ignore: avoid_print
+      LoadingDialog.hide(context);
       debugPrint('Error during Apple Sign-In: $e');
       // ignore: use_build_context_synchronously
-      _showError(context, 'Error al iniciar sesión con Apple');
+      _showError(context, l10n.appleSignInError);
     }
   }
 

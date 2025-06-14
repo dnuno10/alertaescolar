@@ -38,7 +38,7 @@ class CustomSnackBar {
       margin: const EdgeInsets.all(16),
     );
 
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    //ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    //ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 }
