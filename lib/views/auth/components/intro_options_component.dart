@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../components/buttons/solid_button.dart';
+import '../../../managers/auth/Google.dart';
+import '../../../app/app_theme.dart';
 
 class IntroOptionsComponent extends StatelessWidget {
   const IntroOptionsComponent({super.key});
@@ -207,20 +208,7 @@ class _GoogleSignInButton extends StatelessWidget {
   }
 
   void _signInWithGoogle(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.signingInWithGoogle),
-        backgroundColor: AppTheme.accentBlue,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-            AppTheme.getMediumRadius(size),
-          ),
-        ),
-        margin: EdgeInsets.all(AppTheme.getMediumPadding(size)),
-      ),
-    );
+    // Use the Google authentication manager
+    Google().signInWithGoogle(context);
   }
 }

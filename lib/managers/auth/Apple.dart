@@ -1,6 +1,10 @@
 // ignore_for_file: file_names
 import 'dart:convert';
+import 'dart:math';
 
+import 'package:alertaescolar/app/app_theme.dart';
+import 'package:alertaescolar/components/loading_dialog.dart';
+import 'package:alertaescolar/l10n/app_localizations.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -20,7 +24,9 @@ class Apple {
   factory Apple() => _instance;
 
   Future<void> signInWithApple(BuildContext context) async {
-    _showLoadingDialog(context);
+    final l10n = AppLocalizations.of(context);
+
+    LoadingDialog.show(context, message: l10n.signingInWithApple);
 
     try {
       final rawNonce = _supabase.auth.generateRawNonce();
@@ -60,11 +66,8 @@ class Apple {
           .eq('email', response.user!.email.toString())
           .maybeSingle();
 
-      // ignore: use_build_context_synchronously
-      _closeLoadingDialog(context);
-
       if (userExist == null) {
-        // Create new user with Apple data
+        // Usuario no existe, redirigir a configuración
         final nuevoUsuario = Usuario(
           id: response.user!.id,
           nombre: credential.givenName ?? '',
@@ -75,46 +78,42 @@ class Apple {
 
         await userProvider.updateUser(nuevoUsuario);
 
+        LoadingDialog.hide(context);
+
         _showSuccessAndNavigate(
-          // ignore: use_build_context_synchronously
           context,
           'Verificación exitosa',
           '/finish_setting_up',
         );
       } else {
+        // Usuario existe, verificar si el perfil está completo
         final usuario = Usuario.fromJson(userExist);
         await userProvider.updateUser(usuario);
 
-        _showSuccessAndNavigate(
-          // ignore: use_build_context_synchronously
-          context,
-          'Inicio de sesión exitoso',
-          '/admin_dashboard',
-        );
+        LoadingDialog.hide(context);
+
+        if (usuario.nombre.isEmpty || usuario.apellido.isEmpty) {
+          // Perfil incompleto, redirigir a configuración
+          _showSuccessAndNavigate(
+            context,
+            'Complete su perfil',
+            '/finish_setting_up',
+          );
+        } else {
+          // Perfil completo, redirigir al dashboard o home
+          _showSuccessAndNavigate(
+            context,
+            'Inicio de sesión exitoso',
+            usuario.esAdministrador ? '/admin_dashboard' : '/',
+          );
+        }
       }
     } catch (e) {
       // ignore: use_build_context_synchronously
-      _closeLoadingDialog(context);
-      // ignore: avoid_print
+      LoadingDialog.hide(context); // ignore: avoid_print
       debugPrint('Error during Apple Sign-In: $e');
       // ignore: use_build_context_synchronously
       _showError(context, 'Error al iniciar sesión con Apple');
-    }
-  }
-
-  void _showLoadingDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-  }
-
-  void _closeLoadingDialog(BuildContext context) {
-    if (Navigator.canPop(context)) {
-      Navigator.of(context).pop();
     }
   }
 

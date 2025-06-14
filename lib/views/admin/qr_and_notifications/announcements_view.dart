@@ -6,6 +6,7 @@ import '../../../providers/theme_provider.dart';
 import '../../../components/headers/nav_header.dart';
 import '../../../components/admin/forms/announcement_form.dart';
 import '../../../components/admin/forms/components/sent_announcements_list.dart';
+import '../../../widgets/custom_snack_bar.dart';
 
 class AnnouncementsView extends StatefulWidget {
   const AnnouncementsView({super.key});

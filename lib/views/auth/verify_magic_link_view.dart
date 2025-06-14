@@ -1,9 +1,14 @@
+import 'package:alertaescolar/components/loading_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../components/buttons/solid_button.dart';
+import '../../managers/auth/VerifyMagicLink.dart';
+import '../../widgets/custom_snack_bar.dart';
+import '../../managers/auth/MagicLink.dart';
 
 class VerifyMagicLinkView extends StatefulWidget {
   final String email;
@@ -25,7 +30,6 @@ class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
-  bool _isResending = false;
   String _currentPin = '';
 
   @override
@@ -66,46 +70,64 @@ class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
   }
 
   void _verifyCode(String code) {
-    Navigator.pushReplacementNamed(
-      context,
-      '/finish_setting_up',
-      arguments: {'email': widget.email, 'code': code},
+    final l10n = AppLocalizations.of(context);
+
+    if (code.isEmpty || code.length != 6) {
+      _showErrorSnackBar(l10n.enterCompleteCode);
+      return;
+    }
+    LoadingDialog.show(context, message: l10n.verifyingCode);
+
+    // Use the VerifyMagicLink manager
+    final verifyManager = VerifyMagicLink(
+      context: context,
+      email: widget.email,
+      code: code,
     );
+
+    verifyManager.verifyCode();
   }
 
   Future<void> _resendCode() async {
-    if (_isResending) return;
-
-    setState(() {
-      _isResending = true;
-    });
-
     final l10n = AppLocalizations.of(context);
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
+    LoadingDialog.show(context, message: l10n.resendingCode);
 
-    if (mounted) {
-      setState(() {
-        _isResending = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.codeResentSuccessfully),
-          backgroundColor: AppTheme.accentBlue,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(
-              AppTheme.getMediumRadius(MediaQuery.of(context).size),
-            ),
-          ),
-          margin: EdgeInsets.all(
-            AppTheme.getMediumPadding(MediaQuery.of(context).size),
-          ),
-        ),
+    try {
+      // Use SendingMagicLink manager for consistent resend functionality
+      final sendingManager = SendingMagicLink(
+        context: context,
+        email: widget.email,
       );
+
+      await sendingManager.resendMagicLink();
+
+      if (mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: l10n.codeResentSuccessfully,
+          isError: false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: l10n.errorResendingCode,
+          isError: true,
+        );
+      }
     }
+  }
+
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+
+    CustomSnackBar.show(
+      context: context,
+      message: message,
+      isError: true,
+    );
   }
 
   @override
@@ -343,25 +365,14 @@ class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         TextButton(
-          onPressed: _isResending ? null : _resendCode,
-          child: _isResending
-              ? SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppTheme.accentPurple,
-                    ),
-                  ),
-                )
-              : Text(
-                  l10n.resendCode,
-                  style: AppTheme.getBodyMedium(size).copyWith(
-                    color: AppTheme.accentPurple,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+          onPressed: _resendCode,
+          child: Text(
+            l10n.resendCode,
+            style: AppTheme.getBodyMedium(size).copyWith(
+              color: AppTheme.accentPurple,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
       ],
     );

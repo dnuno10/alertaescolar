@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../app/app_theme.dart';
-import '../../l10n/app_localizations.dart';
 import '../../providers/language_provider.dart';
 import 'components/login_body_component.dart';
 
@@ -30,9 +28,7 @@ class _LoginViewState extends State<LoginView> {
           height: double.infinity,
           child: SingleChildScrollView(
             child: SizedBox(
-              height: MediaQuery.of(context)
-                  .size
-                  .height, // Aseguramos que la Column ocupe toda la altura de la pantalla
+              height: MediaQuery.of(context).size.height,
               child: const Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

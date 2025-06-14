@@ -1,10 +1,15 @@
 import 'dart:io';
+import 'package:alertaescolar/widgets/custom_snack_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../app/app_theme.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../components/buttons/solid_button.dart';
 import '../../../components/textfield/custom_input_field.dart';
+import '../../../managers/auth/Google.dart';
+import '../../../managers/auth/Apple.dart';
+import '../../../managers/auth/Login.dart';
+import '../../../app/app_theme.dart';
 
 class SignUpBodyComponent extends StatefulWidget {
   const SignUpBodyComponent({super.key});
@@ -347,37 +352,17 @@ class _SignUpBodyComponentState extends State<SignUpBodyComponent>
       return;
     }
 
-    try {
-      // Placeholder for email verification logic
-      if (mounted) {
-        Navigator.pushNamed(
-          context,
-          '/verify_magic_link',
-          arguments: email,
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        _showErrorSnackBar(l10n.signUpErrorMessage);
-      }
-    }
+    // Use Login manager to check and register
+    await LogIn(context).checkAndRegister(email);
   }
 
   void _showErrorSnackBar(String message) {
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppTheme.errorColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-              AppTheme.getMediumRadius(MediaQuery.of(context).size)),
-        ),
-        margin: EdgeInsets.all(
-            AppTheme.getMediumPadding(MediaQuery.of(context).size)),
-      ),
+    CustomSnackBar.show(
+      context: context,
+      message: message,
+      isError: true,
     );
   }
 }
@@ -481,21 +466,8 @@ class _GoogleSignUpButton extends StatelessWidget {
   }
 
   void _signUpWithGoogle(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.signingUpWithGoogle),
-        backgroundColor: AppTheme.accentBlue,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-            AppTheme.getMediumRadius(size),
-          ),
-        ),
-        margin: EdgeInsets.all(AppTheme.getMediumPadding(size)),
-      ),
-    );
+    // Use the Google authentication manager
+    Google().signInWithGoogle(context);
   }
 }
 
@@ -558,20 +530,7 @@ class _AppleSignUpButton extends StatelessWidget {
   }
 
   void _signUpWithApple(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.signingUpWithApple),
-        backgroundColor: AppTheme.accentBlue,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-            AppTheme.getMediumRadius(size),
-          ),
-        ),
-        margin: EdgeInsets.all(AppTheme.getMediumPadding(size)),
-      ),
-    );
+    // Use the Apple authentication manager
+    Apple().signInWithApple(context);
   }
 }

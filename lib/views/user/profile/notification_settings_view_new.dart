@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../app/app_theme.dart';
+import '../../../widgets/custom_snack_bar.dart';
 
 class NotificationSettingsView extends StatefulWidget {
   const NotificationSettingsView({super.key});
@@ -101,42 +102,16 @@ class _NotificationSettingsViewState extends State<NotificationSettingsView> {
 
   void _testNotification(AppLocalizations l10n) {
     // Show a test notification
-    final screenSize = MediaQuery.of(context).size;
     final soundText = _soundEnabled
         ? l10n.testNotificationWithSound
         : l10n.testNotificationWithoutSound;
     final vibrationText = _vibrationEnabled ? l10n.withVibration : '';
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              _soundEnabled ? Icons.volume_up : Icons.volume_off,
-              color: AppTheme.onPrimaryColor,
-              size: screenSize.width * 0.05,
-            ),
-            SizedBox(width: screenSize.width * 0.02),
-            Expanded(
-              child: Text(
-                '$soundText$vibrationText',
-                style:
-                    AppTheme.getCaption(MediaQuery.of(context).size).copyWith(
-                  fontWeight: FontWeight.w500,
-                  color: AppTheme.onPrimaryColor,
-                ),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: AppTheme.accentPurple,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-              AppTheme.getSmallRadius(MediaQuery.of(context).size)),
-        ),
-        duration: const Duration(seconds: 3),
-      ),
+    CustomSnackBar.show(
+      context: context,
+      message: '$soundText$vibrationText',
+      isError: false,
+      duration: const Duration(seconds: 3),
     );
   }
 }

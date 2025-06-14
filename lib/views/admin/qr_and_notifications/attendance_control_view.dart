@@ -7,6 +7,7 @@ import '../../../components/admin/qr_and_notifications/qr_scanner_card.dart';
 import '../../../components/admin/qr_and_notifications/attendance_control_header.dart';
 import 'notification_send_view.dart';
 import 'scanner_configuration_view.dart';
+import '../../../widgets/custom_snack_bar.dart';
 
 class AttendanceControlView extends StatefulWidget {
   const AttendanceControlView({super.key});

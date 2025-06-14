@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../managers/notification_provider.dart';
+import '../../widgets/custom_snack_bar.dart';
 
 class NotificationsListSection extends StatelessWidget {
   final Size screenSize;

@@ -1,9 +1,8 @@
+import 'package:alertaescolar/views/auth/components/signup_body_component.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../app/app_theme.dart';
-import '../../l10n/app_localizations.dart';
+
 import '../../providers/language_provider.dart';
-import 'components/signup_body_component.dart';
 
 class SignUpView extends StatefulWidget {
   const SignUpView({super.key});

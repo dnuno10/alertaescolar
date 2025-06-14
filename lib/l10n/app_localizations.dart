@@ -63,6 +63,13 @@ abstract class AppLocalizations {
   String get endTime;
   String studentCountOf(int count);
   String get arrivedAt;
+  String get signUpEmailRegistered;
+  String get emailInvalid;
+  String get emailAlreadyExists;
+  String get loggingIn;
+  String get verifyingCode;
+  String get resendingCode;
+  String get registering;
 
   // Authentication and intro related
   String get alertaEscolar;
@@ -76,6 +83,9 @@ abstract class AppLocalizations {
   String get alertaEscolarDescription;
   String get login;
   String get registerWithEmail;
+  String get magicLinkSent;
+  String get pleaseCreateAccount;
+
 // Missing authentication-related getters
   String get continueWithGoogle;
   String get signingInWithGoogle;
@@ -1184,9 +1194,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hours => 'Hours';
 
   @override
+  String get pleaseCreateAccount => 'Please create an account to continue';
+
+  @override
+  String get emailInvalid => 'Invalid email address';
+
+  @override
+  String get emailAlreadyExists => 'This email address is already registered';
+
+  @override
   String get ok => 'OK';
+
   @override
   String get noSchedulesAvailable => 'No schedules available';
+
+  @override
+  String get registering => 'Registering...';
+
+  @override
+  String get resendingCode => 'Resending code...';
 
   @override
   String noClassesForDay(String day) => 'No classes for $day';
@@ -1211,7 +1237,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get id => 'ID';
 
   @override
+  String get signUpEmailRegistered => 'This email is already registered';
+
+  @override
+  String get magicLinkSent => 'Magic link sent! Check your email to continue.';
+
+  @override
   String get alertaEscolar => 'School Alert';
+  @override
+  String get loggingIn => 'Logging in...';
+
+  @override
+  String get verifyingCode => 'Verifying code...';
 
   @override
   String get introWelcomeMessage =>
@@ -3852,6 +3889,8 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get scanningActive => 'Escaneo activo';
+  @override
+  String get pleaseCreateAccount => 'Por favor crea una cuenta para continuar';
 
   @override
   String get readyToScan => 'Listo para escanear';
@@ -3864,6 +3903,25 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get shareReportDesc => 'Compartir informe directamente';
+
+  @override
+  String get emailInvalid => 'Dirección de correo inválida';
+
+  @override
+  String get loggingIn => 'Iniciando sesión...';
+
+  @override
+  String get verifyingCode => 'Verificando código...';
+
+  @override
+  String get resendingCode => 'Reenviando código...';
+
+  @override
+  String get registering => 'Registrando...';
+
+  @override
+  String get emailAlreadyExists =>
+      'Esta dirección de correo ya está registrada';
 
   @override
   String get reportGenerationConfirm =>
@@ -3907,6 +3965,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get searchById => 'Buscar por ID';
+
+  @override
+  String get signUpEmailRegistered => 'Este correo ya está registrado';
 
   @override
   String get alertaEscolar => 'Alerta Escolar';
@@ -4243,6 +4304,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get next => 'Siguiente';
+
+  @override
+  String get magicLinkSent =>
+      '¡Enlace mágico enviado! Revisa tu correo para continuar.';
 
   @override
   String get saveConfiguration => 'Guardar Configuración';

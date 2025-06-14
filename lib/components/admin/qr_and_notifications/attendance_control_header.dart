@@ -3,6 +3,7 @@ import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import 'scanning_status_indicator.dart';
 import 'action_button.dart';
+import '../../../widgets/custom_snack_bar.dart';
 
 class AttendanceControlHeader extends StatelessWidget {
   final bool isScanning;

@@ -8,12 +8,12 @@ class MockUserService {
 
   // Usuario mock actual
   static final Usuario _currentUser = Usuario(
-    id: 'user_001',
-    nombre: 'María Elena',
-    apellido: 'González López',
-    email: 'maria.gonzalez@email.com',
-    telefono: '+52 55 1234 5678',
-    tipo: TipoUsuario.madre,
+    id: '',
+    nombre: '',
+    apellido: '',
+    email: '',
+    telefono: '',
+    tipo: TipoUsuario.padre,
     fechaRegistro: DateTime.now().subtract(const Duration(days: 180)),
   );
 

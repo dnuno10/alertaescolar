@@ -15,6 +15,7 @@ import '../../../components/admin/scanner_config/progress_line.dart';
 import '../../../components/admin/scanner_config/schedule_step_card.dart';
 import '../../../components/admin/scanner_config/shift_summary.dart';
 import '../../../components/admin/scanner_config/tolerance_summary_card.dart';
+import '../../../widgets/custom_snack_bar.dart';
 
 class ScannerConfigurationView extends StatefulWidget {
   final TimeOfDay morningStartTime;

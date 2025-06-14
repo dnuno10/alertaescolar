@@ -4,6 +4,9 @@ import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../components/buttons/solid_button.dart';
 import '../../components/textfield/custom_input_field.dart';
+import '../../managers/auth/FinishSettingUp.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../widgets/custom_snack_bar.dart';
 
 class FinishSettingUpView extends StatefulWidget {
   const FinishSettingUpView({super.key});
@@ -355,6 +358,7 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
         ),
         TextButton(
           onPressed: () {
+            Supabase.instance.client.auth.signOut();
             Navigator.pushReplacementNamed(context, '/intro');
           },
           child: Text(
@@ -380,30 +384,23 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
     }
 
     try {
-      // TODO: Save user profile data
-      if (mounted) {
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.accountSetupSuccessful),
-            backgroundColor: AppTheme.accentBlue,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(
-                AppTheme.getMediumRadius(MediaQuery.of(context).size),
-              ),
-            ),
-            margin: EdgeInsets.all(
-              AppTheme.getMediumPadding(MediaQuery.of(context).size),
-            ),
-          ),
-        );
-
-        // Navigate to home
-        Future.delayed(const Duration(seconds: 1), () {
-          Navigator.pushReplacementNamed(context, '/');
-        });
+      // Get current user from Supabase
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) {
+        _showErrorSnackBar(l10n.errorSettingUpAccount);
+        return;
       }
+
+      // Use the FinishSettingUp manager
+      final finishSettingUp = FinishSettingUp(
+        context: context,
+        idUser: user.id,
+        email: user.email ?? '',
+        nombre: firstName,
+        apellido: lastName,
+      );
+
+      finishSettingUp.settingUpAccount();
     } catch (e) {
       if (mounted) {
         _showErrorSnackBar(l10n.errorSettingUpAccount);
@@ -414,20 +411,10 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
   void _showErrorSnackBar(String message) {
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppTheme.errorColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-            AppTheme.getMediumRadius(MediaQuery.of(context).size),
-          ),
-        ),
-        margin: EdgeInsets.all(
-          AppTheme.getMediumPadding(MediaQuery.of(context).size),
-        ),
-      ),
+    CustomSnackBar.show(
+      context: context,
+      message: message,
+      isError: true,
     );
   }
 }

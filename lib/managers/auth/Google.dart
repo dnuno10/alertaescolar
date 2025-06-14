@@ -1,4 +1,9 @@
 // ignore_for_file: file_names
+import 'dart:math';
+
+import 'package:alertaescolar/app/app_theme.dart';
+import 'package:alertaescolar/components/loading_dialog.dart';
+import 'package:alertaescolar/l10n/app_localizations.dart';
 import 'package:alertaescolar/widgets/custom_snack_bar.dart';
 import 'package:alertaescolar/models/models.dart';
 import 'package:alertaescolar/managers/user_provider.dart';
@@ -20,26 +25,19 @@ class Google {
 
   // Método principal para iniciar sesión
   Future<void> signInWithGoogle(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+
     const webClientId =
         '84476159662-prk0gfmqhd1j1dtechkas0s4gffm5iu6.apps.googleusercontent.com';
-    // const iosClientId =
-    //     '733878207598-de09lsosiju0962cs78ausrto1hkg6bq.apps.googleusercontent.com';
+    const iosClientId =
+        '84476159662-5srkbbd1l6aibi2ng9plj67ec6qhr8pf.apps.googleusercontent.com';
 
     final GoogleSignIn googleSignIn = GoogleSignIn(
-      // clientId: iosClientId,
+      clientId: iosClientId,
       serverClientId: webClientId,
     );
 
-    // Mostrar pantalla de carga
-    showDialog(
-      context: context,
-      barrierDismissible: false, // Impide que se cierre al tocar fuera
-      builder: (BuildContext context) {
-        return const Center(
-          child: CircularProgressIndicator(), // Indicador de carga
-        );
-      },
-    );
+    LoadingDialog.show(context, message: l10n.signingInWithGoogle);
 
     try {
       final googleUser = await googleSignIn.signIn();
@@ -78,49 +76,35 @@ class Google {
           .eq('email', response.user!.email ?? '')
           .maybeSingle();
 
-      // Cerrar pantalla de carga
-      if (context.mounted) {
-        Navigator.of(context).pop();
-      }
-
       if (userExist == null) {
-        // Usuario no existe, crear nuevo usuario y redirigir a configuración
-        final nuevoUsuario = Usuario(
-          id: response.user!.id,
-          nombre: googleUser.displayName?.split(' ').first ?? '',
-          apellido: googleUser.displayName?.split(' ').skip(1).join(' ') ?? '',
-          email: response.user!.email ?? '',
-          fotoUrl: googleUser.photoUrl,
-          fechaRegistro: DateTime.now(),
+        // Usuario no existe, redirigir a configuración
+        _showSuccessAndNavigate(
+          context,
+          'Verificación exitosa',
+          '/finish_setting_up',
         );
-
-        await userProvider.updateUser(nuevoUsuario);
-
-        if (context.mounted) {
-          _showSuccessAndNavigate(
-            context,
-            'Inicio de sesión exitoso',
-            '/finish_setting_up',
-          );
-        }
       } else {
-        // Usuario existe, actualizar datos locales
         final usuario = Usuario.fromJson(userExist);
         await userProvider.updateUser(usuario);
 
-        if (context.mounted) {
+        if (usuario.nombre.isEmpty || usuario.apellido.isEmpty) {
+          _showSuccessAndNavigate(
+            context,
+            'Complete su perfil',
+            '/finish_setting_up',
+          );
+        } else {
           _showSuccessAndNavigate(
             context,
             'Inicio de sesión exitoso',
-            '/',
+            usuario.esAdministrador ? '/admin_dashboard' : '/',
           );
         }
       }
     } catch (e) {
       // Cerrar pantalla de carga en caso de error
-      if (context.mounted) {
-        Navigator.of(context).pop();
-      }
+      LoadingDialog.hide(context);
+
       debugPrint('Error en Google Sign In: $e');
 
       if (context.mounted) {

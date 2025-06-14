@@ -1,8 +1,10 @@
 // ignore_for_file: file_names, use_build_context_synchronously
 
+import 'package:alertaescolar/components/loading_dialog.dart';
 import 'package:alertaescolar/widgets/custom_snack_bar.dart';
 import 'package:alertaescolar/managers/user_provider.dart';
 import 'package:alertaescolar/models/usuario.dart';
+import 'package:alertaescolar/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -17,13 +19,16 @@ class VerifyMagicLink {
 
   /// Verifica el código de autenticación en Supabase
   Future<void> verifyCode() async {
+    final l10n = AppLocalizations.of(context);
+
     if (code.isEmpty || code.length != 6) {
+      // Close loading dialog first
+      LoadingDialog.hide(context);
       CustomSnackBar.show(
         context: context,
-        message: 'Por favor ingrese un código válido',
+        message: l10n.enterCompleteCode,
         isError: true,
       );
-      Navigator.pop(context);
       return;
     }
 
@@ -58,28 +63,41 @@ class VerifyMagicLink {
 
         await userProvider.updateUser(nuevoUsuario);
 
+        LoadingDialog.hide(context);
         _showSuccessAndNavigate(
           context,
-          'Verificación exitosa',
+          l10n.codeVerifiedSuccessfully,
           '/finish_setting_up',
         );
       } else {
         final usuario = Usuario.fromJson(userExist);
         await userProvider.updateUser(usuario);
 
-        _showSuccessAndNavigate(
-          context,
-          'Inicio de sesión exitoso',
-          '/admin_dashboard',
-        );
+        LoadingDialog.hide(context);
+
+        if (usuario.nombre.isEmpty || usuario.apellido.isEmpty) {
+          // Perfil incompleto, redirigir a configuración
+          _showSuccessAndNavigate(
+            context,
+            'Complete su perfil',
+            '/finish_setting_up',
+          );
+        } else {
+          // Perfil completo, redirigir al dashboard o home
+          _showSuccessAndNavigate(
+            context,
+            'Inicio de sesión exitoso',
+            usuario.esAdministrador ? '/admin_dashboard' : '/',
+          );
+        }
       }
     } catch (e) {
+      LoadingDialog.hide(context);
       CustomSnackBar.show(
         context: context,
-        message: 'Código inválido',
+        message: l10n.invalidVerificationCode,
         isError: true,
       );
-      Navigator.pop(context);
     }
   }
 

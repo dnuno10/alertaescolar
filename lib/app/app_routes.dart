@@ -21,6 +21,7 @@ import '../views/user/profile/notification_settings_view_new.dart'
     as notification_settings;
 import '../views/user/profile/family_information_view.dart';
 import '../views/user/notifications/notifications_view.dart';
+import '../widgets/custom_snack_bar.dart';
 
 // Auth view imports
 import '../views/auth/intro_view.dart';
@@ -93,15 +94,34 @@ class AppRoutes {
         final email = settings.arguments as String?;
         if (email == null) {
           return MaterialPageRoute(
-            builder: (context) => const Scaffold(
+            builder: (context) => Scaffold(
               body: Center(
-                child: Text('Error: Email required for verification'),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('Error: Email required for verification'),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        CustomSnackBar.show(
+                          context: context,
+                          message: 'Please provide email for verification',
+                          isError: true,
+                        );
+                        Navigator.pushReplacementNamed(
+                            context, AppRoutes.login);
+                      },
+                      child: const Text('Return to Login'),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
         }
         return MaterialPageRoute(
             builder: (context) => VerifyMagicLinkView(email: email));
+
       case finishSettingUp:
         return MaterialPageRoute(
             builder: (context) => const FinishSettingUpView());

@@ -2,6 +2,7 @@ import 'package:alertaescolar/app/app_theme.dart';
 import 'package:alertaescolar/components/buttons/solid_button.dart';
 import 'package:alertaescolar/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import '../../widgets/custom_snack_bar.dart';
 
 class InfoNoticeCardAction extends StatelessWidget {
   final AppLocalizations l10n;
@@ -61,21 +62,10 @@ class InfoNoticeCardAction extends StatelessWidget {
             backgroundColor: AppTheme.accentPurple,
             width: double.infinity,
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    l10n.functionInDevelopment,
-                    style: AppTheme.getCaption(screenSize).copyWith(
-                      color: AppTheme.onPrimaryColor,
-                    ),
-                  ),
-                  backgroundColor: AppTheme.accentPurple,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                        AppTheme.getSmallRadius(screenSize)),
-                  ),
-                ),
+              CustomSnackBar.show(
+                context: context,
+                message: l10n.functionInDevelopment,
+                isError: false,
               );
             },
             icon: Icons.contact_support_outlined,

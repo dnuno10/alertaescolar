@@ -110,7 +110,7 @@ class AuthService extends ChangeNotifier {
   }
 
   /// Determina la ruta inicial basada en el estado de autenticación
-  String getInitialRoute() {
+  Future<String> getInitialRoute() async {
     if (!_isInitialized) {
       return '/intro';
     }
@@ -120,6 +120,21 @@ class AuthService extends ChangeNotifier {
     }
 
     if (isLoggedIn) {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        // Verificar si el perfil está completo
+        final userExist = await Supabase.instance.client
+            .from('usuarios')
+            .select('*')
+            .eq('id', user.id)
+            .maybeSingle();
+
+        if (userExist == null ||
+            userExist['nombre'] == null ||
+            userExist['apellido'] == null) {
+          return '/finish_setting_up';
+        }
+      }
       return '/';
     }
 

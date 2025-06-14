@@ -20,6 +20,7 @@ import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/comunicado.dart';
 import '../students/selectable_students_directory_view.dart';
+import '../../../widgets/custom_snack_bar.dart';
 
 class NotificationSendView extends StatefulWidget {
   final String? preselectedType;
@@ -404,35 +405,16 @@ class _NotificationSendViewState extends State<NotificationSendView>
   }
 
   void _sendNotification() {
-    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
+    final l10n = AppLocalizations.of(context)!;
     final messageType = _selectedType == 'comunicado'
         ? l10n.communication
         : l10n.specialPermission;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(
-              Icons.check_circle_rounded,
-              color: Colors.white,
-            ),
-            SizedBox(
-                width: AppTheme.getSmallPadding(MediaQuery.of(context).size)),
-            Expanded(
-              child: Text(
-                '$messageType ${_scheduledDate != null ? l10n.scheduled : l10n.sentSuccessfully}',
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: AppTheme.successColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-              AppTheme.getMediumRadius(MediaQuery.of(context).size)),
-        ),
-      ),
+    CustomSnackBar.show(
+      context: context,
+      message:
+          '$messageType ${_scheduledDate != null ? l10n.scheduled : l10n.sentSuccessfully}',
+      isError: false,
     );
     Navigator.pop(context);
   }

@@ -55,7 +55,7 @@ class FinishSettingUp {
         message: 'Cuenta configurada exitosamente',
         isError: false,
       );
-      Navigator.pushReplacementNamed(context, '/');
+      Navigator.pushReplacementNamed(context, '/admin_dashboard');
     } catch (e) {
       CustomSnackBar.show(
         context: context,

@@ -4,6 +4,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../buttons/solid_button.dart';
 import 'components/recipient_selector.dart';
 import 'components/priority_selector.dart';
+import '../../../widgets/custom_snack_bar.dart';
 
 class AnnouncementForm extends StatefulWidget {
   final Size screenSize;
@@ -220,22 +221,10 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
 
       if (mounted) {
         final l10n = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              l10n.announcementSent,
-              style: AppTheme.getCaption(widget.screenSize).copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            backgroundColor: AppTheme.successColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(
-                  AppTheme.getSmallRadius(widget.screenSize)),
-            ),
-          ),
+        CustomSnackBar.show(
+          context: context,
+          message: l10n.announcementSent,
+          isError: false,
         );
 
         // Clear form
@@ -260,22 +249,10 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
   }
 
   void _showError(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: AppTheme.getCaption(widget.screenSize).copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        backgroundColor: AppTheme.errorColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.circular(AppTheme.getSmallRadius(widget.screenSize)),
-        ),
-      ),
+    CustomSnackBar.show(
+      context: context,
+      message: message,
+      isError: true,
     );
   }
 }

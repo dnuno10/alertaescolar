@@ -1,10 +1,16 @@
 import 'dart:io';
+import 'package:alertaescolar/widgets/custom_snack_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../app/app_theme.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../components/buttons/solid_button.dart';
 import '../../../components/textfield/custom_input_field.dart';
+import '../../../managers/auth/Google.dart';
+import '../../../managers/auth/Apple.dart';
+import '../../../managers/auth/Login.dart';
+import '../../../managers/auth/MagicLink.dart';
+import '../../../app/app_theme.dart';
 
 class LoginBodyComponent extends StatefulWidget {
   const LoginBodyComponent({super.key});
@@ -191,7 +197,7 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
                     backgroundColor: AppTheme.accentPurple,
                     screenSize: size,
                     width: size.width * 0.9,
-                    onPressed: _checkAndLogin,
+                    onPressed: () => _handleLogin(),
                   ),
 
                   SizedBox(height: AppTheme.getMediumPadding(size)),
@@ -345,48 +351,22 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
     );
   }
 
-  Future<void> _checkAndLogin() async {
+  void _handleLogin() {
     final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-    final l10n = AppLocalizations.of(context);
-
-    if (!_isEmailValid(email)) {
-      _showErrorSnackBar(l10n.enterValidEmail);
-      return;
-    }
-
-    if (password.length < 6) {
-      _showErrorSnackBar(l10n.passwordTooShort);
-      return;
-    }
-
-    try {
-      // TODO: Implement login logic
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
-      }
-    } catch (e) {
-      if (mounted) {
-        _showErrorSnackBar(l10n.loginErrorMessage);
-      }
+    if (email.isNotEmpty && _isEmailValid(email)) {
+      LogIn(context).checkAndLogin(email);
+    } else {
+      _showErrorSnackBar(AppLocalizations.of(context).emailInvalid);
     }
   }
 
   void _showErrorSnackBar(String message) {
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppTheme.errorColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-              AppTheme.getMediumRadius(MediaQuery.of(context).size)),
-        ),
-        margin: EdgeInsets.all(
-            AppTheme.getMediumPadding(MediaQuery.of(context).size)),
-      ),
+    CustomSnackBar.show(
+      context: context,
+      message: message,
+      isError: true,
     );
   }
 }
@@ -490,21 +470,8 @@ class _GoogleSignInButton extends StatelessWidget {
   }
 
   void _signInWithGoogle(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.signingInWithGoogle),
-        backgroundColor: AppTheme.accentBlue,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-            AppTheme.getMediumRadius(size),
-          ),
-        ),
-        margin: EdgeInsets.all(AppTheme.getMediumPadding(size)),
-      ),
-    );
+    // Use the Google authentication manager
+    Google().signInWithGoogle(context);
   }
 }
 
@@ -567,20 +534,12 @@ class _AppleSignInButton extends StatelessWidget {
   }
 
   void _signInWithApple(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.signingInWithApple),
-        backgroundColor: AppTheme.accentBlue,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-            AppTheme.getMediumRadius(size),
-          ),
-        ),
-        margin: EdgeInsets.all(AppTheme.getMediumPadding(size)),
-      ),
-    );
+    // Use the Apple authentication manager
+    Apple().signInWithApple(context);
   }
+}
+
+void _signInWithApple(BuildContext context) {
+  // Use the Apple authentication manager
+  Apple().signInWithApple(context);
 }

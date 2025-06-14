@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../services/mock_notification_service.dart';
+import '../widgets/custom_snack_bar.dart';
 
 class NotificationProvider extends ChangeNotifier {
   List<Notificacion> _notifications = [];

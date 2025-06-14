@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../buttons/solid_button.dart';
+import '../../../widgets/custom_snack_bar.dart';
 
 class QRScannerSection extends StatefulWidget {
   final Size screenSize;
@@ -317,22 +318,10 @@ class _QRScannerSectionState extends State<QRScannerSection>
     // Show success message
     if (mounted) {
       final l10n = AppLocalizations.of(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            l10n.attendanceRegistered,
-            style: AppTheme.getCaption(widget.screenSize).copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          backgroundColor: AppTheme.successColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(
-                AppTheme.getSmallRadius(widget.screenSize)),
-          ),
-        ),
+      CustomSnackBar.show(
+        context: context,
+        message: l10n.attendanceRegistered,
+        isError: false,
       );
     }
   }
