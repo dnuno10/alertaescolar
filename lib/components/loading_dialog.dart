@@ -16,29 +16,36 @@ class LoadingDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      type: MaterialType.transparency,
-      child: Center(
-        child: SizedBox(
-          child: Container(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(
-                  color: Colors.white,
-                ),
-                if (message != null) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    message!,
-                    style: GoogleFonts.poppins(
-                      fontSize: MediaQuery.of(context).size.height * 0.02,
-                      color: Colors.white,
-                    ),
-                    textAlign: TextAlign.center,
+      child: Container(
+        width: double.infinity,
+        height: double.infinity,
+        color: AppTheme.getBackgroundColor(context),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Center(
+              //   child: Image.asset(
+              //     "images/alertaescolar_logo.png",
+              //     width: MediaQuery.of(context).size.height * 0.045,
+              //     height: MediaQuery.of(context).size.height * 0.045,
+              //   ),
+              // ),
+              CircularProgressIndicator(
+                color: AppTheme.getTextPrimaryColor(context),
+              ),
+              if (message.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(
+                  message,
+                  style: GoogleFonts.poppins(
+                    fontSize: MediaQuery.of(context).size.height * 0.02,
+                    color: AppTheme.getTextPrimaryColor(context),
                   ),
-                ],
+                  textAlign: TextAlign.center,
+                ),
               ],
-            ),
+            ],
           ),
         ),
       ),
@@ -50,10 +57,12 @@ class LoadingDialog extends StatelessWidget {
     required String message,
     Color? color,
   }) {
-    showDialog(
+    showGeneralDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => LoadingDialog(
+      barrierLabel: '',
+      transitionDuration: const Duration(milliseconds: 200),
+      pageBuilder: (context, animation1, animation2) => LoadingDialog(
         message: message,
         color: color,
       ),

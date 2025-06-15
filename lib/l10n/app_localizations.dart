@@ -73,6 +73,67 @@ abstract class AppLocalizations {
   String get settingUpAccount;
   String get loading;
 
+  String get error;
+  String get loadingSchoolInformation;
+  String get errorFetchingSchool;
+  String get errorLoadingSchool;
+  String get updatingSchoolInformation;
+  String get errorUpdatingSchool;
+  String get noAssociatedSchool;
+  String get errorLoadingSchoolInfo;
+  String get requiredFields;
+  String get pleaseCompleteFields;
+  String get couldNotGetSchoolInfo;
+  String get unknownError;
+  String get errorSavingChanges;
+
+  String get editContact;
+  String get name;
+  String get enterContactName;
+  String get enterPhoneNumber;
+  String get enterEmail;
+  String get contactUpdatedSuccessfully;
+  String get errorUpdatingContact;
+
+  String get updatingContact;
+  String get deletingContact;
+  String get savingContact;
+
+  String get associatedSchool;
+  String get accountType;
+  String get unverified;
+  String get administrativeRole;
+  String get todayAt;
+  String get yesterdayAt;
+  String get administratorAccount;
+  String get adminAccountInformation;
+
+  String get loadingUserData;
+  String get updatingPersonalInfo;
+
+  String get myProfile;
+  String get manageYourAccount;
+  String get user;
+  String get parentRole;
+  String get fatherRole;
+  String get motherRole;
+  String get tutorRole;
+  String get relativeRole;
+  String get adminRole;
+
+  String get neverConnected;
+  String get school;
+  String get director;
+  String get subdirector;
+  String get secretary;
+  String get securityStaff;
+  String get teacher;
+  String get administrative;
+  String get administrativo;
+  String get administrator;
+  String get parent;
+  String get student;
+
   // Authentication related strings
   String get verificationSuccessful;
   String get completeYourProfile;
@@ -579,6 +640,7 @@ abstract class AppLocalizations {
   String get cacheCleared => 'Cache cleared';
   String get twoFactorSetup => 'Setting up two-factor authentication...';
   String get viewingSessions => 'Viewing active sessions...';
+  String get noChangesDetected;
 
   // Contact Information
   String get contactData => 'Contact Data';
@@ -724,11 +786,6 @@ abstract class AppLocalizations {
   String get usernameChangedSuccessfully => 'Username Changed Successfully';
   String get errorChangingUsername => 'Error Changing Username';
 
-  // Profile
-  String get myProfile => 'My Profile';
-  String get manageYourAccount => 'Manage Your Account';
-  String get user => 'User';
-  String get parentRole => 'Parent Role';
   String get activeDays => 'Active Days';
   String get account => 'Account';
   String get editProfileAndContactData => 'Edit Profile and Contact Data';
@@ -762,7 +819,6 @@ abstract class AppLocalizations {
   String get reportsAndStatistics => 'Reports and Statistics';
   String get summary => 'Summary';
   String get activity => 'Activity';
-  String get student => 'Student';
   String get period => 'Period';
   String get selectPeriod => 'Select Period';
   String get generalSummary => 'General Summary';
@@ -905,9 +961,7 @@ abstract class AppLocalizations {
   String get manageAccountData => 'Manage your account data';
   String get passwordSecurity => 'Password & Security';
   String get parentAccount => 'Parent Account';
-  String get administrator => 'Administrator';
-  String get teacher => 'Teacher';
-  String get parent => 'Parent';
+
   String get lastLogin => 'Last Login';
 
   // Missing keys for home view
@@ -1224,6 +1278,126 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ok => 'OK';
 
   @override
+  String get editContact => 'Edit Contact';
+
+  @override
+  String get name => 'Name';
+
+  @override
+  String get enterContactName => 'Enter contact name';
+
+  @override
+  String get enterPhoneNumber => 'Enter phone number';
+
+  @override
+  String get enterEmail => 'Enter email address';
+
+  @override
+  String get error => 'Error';
+
+  @override
+  String get loadingSchoolInformation => 'Loading school information...';
+
+  @override
+  String get errorFetchingSchool => 'Error fetching school information';
+
+  @override
+  String get errorLoadingSchool => 'Error loading school data';
+
+  @override
+  String get updatingSchoolInformation => 'Updating school information...';
+
+  @override
+  String get errorUpdatingSchool => 'Error updating school information';
+
+  @override
+  String get noAssociatedSchool => 'No associated school found';
+
+  @override
+  String get errorLoadingSchoolInfo => 'Error loading school information';
+
+  @override
+  String get requiredFields => 'Required Fields';
+
+  @override
+  String get pleaseCompleteFields => 'Please complete all required fields';
+
+  @override
+  String get couldNotGetSchoolInfo => 'Could not get school information';
+
+  @override
+  String get unknownError => 'An unknown error occurred';
+
+  @override
+  String get errorSavingChanges => 'Error saving changes';
+
+  @override
+  String get contactUpdatedSuccessfully => 'Contact updated successfully';
+
+  @override
+  String get errorUpdatingContact => 'Error updating contact';
+
+  @override
+  String get updatingContact => 'Updating contact...';
+
+  @override
+  String get deletingContact => 'Deleting contact...';
+
+  @override
+  String get savingContact => 'Saving contact...';
+
+  @override
+  String get noChangesDetected => 'No changes detected';
+
+  @override
+  String get loadingUserData => 'Loading user data...';
+  @override
+  String get updatingPersonalInfo => 'Updating personal information...';
+
+  @override
+  String get associatedSchool => 'Associated School';
+  @override
+  String get accountType => 'Account Type';
+  @override
+  String get unverified => 'Unverified';
+  @override
+  String get administrativeRole => 'Administrative Role';
+  @override
+  String get todayAt => 'Today at';
+  @override
+  String get yesterdayAt => 'Yesterday at';
+  @override
+  String get administratorAccount => 'Administrator Account';
+  @override
+  String get adminAccountInformation =>
+      'You have administrator privileges. You can access and manage school information, students, and security settings.';
+
+  @override
+  String get neverConnected => 'Never connected';
+  @override
+  String get school => 'School';
+  @override
+  String get director => 'Principal';
+  @override
+  String get subdirector => 'Vice Principal';
+  @override
+  String get secretary => 'Secretary';
+  @override
+  String get securityStaff => 'Security Staff';
+  @override
+  String get teacher => 'Teacher';
+  @override
+  String get administrative => 'Administrative';
+  @override
+  String get administrativo => 'Administrative';
+  @override
+  String get administrator => 'Administrator';
+  @override
+  String get parent => 'Parent';
+  @override
+  String get student => 'Student';
+
+  @override
   String get noSchedulesAvailable => 'No schedules available';
 
   @override
@@ -1244,6 +1418,25 @@ class AppLocalizationsEn extends AppLocalizations {
       'No classes scheduled for this day';
   @override
   String get allStatuses => 'All Statuses';
+
+  @override
+  String get myProfile => 'My Profile';
+  @override
+  String get manageYourAccount => 'Manage your account';
+  @override
+  String get user => 'User';
+  @override
+  String get parentRole => 'Parent';
+  @override
+  String get fatherRole => 'Father';
+  @override
+  String get motherRole => 'Mother';
+  @override
+  String get tutorRole => 'Tutor';
+  @override
+  String get relativeRole => 'Family Member';
+  @override
+  String get adminRole => 'Administrator';
 
   @override
   String get searchByDateStaffOrLocation => 'Search by date, staff or location';
@@ -2751,19 +2944,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get errorChangingUsername => 'Error changing username';
 
-  // Profile - English
-  @override
-  String get myProfile => 'My Profile';
-
-  @override
-  String get manageYourAccount => 'Manage your account';
-
-  @override
-  String get user => 'User';
-
-  @override
-  String get parentRole => 'Parent/Guardian';
-
   @override
   String get activeDays => 'Active days';
 
@@ -2852,9 +3032,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activity => 'Activity';
-
-  @override
-  String get student => 'Student';
 
   @override
   String get period => 'Period';
@@ -3234,15 +3411,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get parentAccount => 'Parent Account';
-
-  @override
-  String get administrator => 'Administrator';
-
-  @override
-  String get teacher => 'Teacher';
-
-  @override
-  String get parent => 'Parent';
 
   @override
   String get lastLogin => 'Last Login';
@@ -3977,6 +4145,124 @@ class AppLocalizationsEs extends AppLocalizations {
   String get loggingIn => 'Iniciando sesión...';
 
   @override
+  String get noChangesDetected => 'No se detectaron cambios';
+
+  @override
+  String get loadingUserData => 'Cargando datos del usuario...';
+  @override
+  String get updatingPersonalInfo => 'Actualizando información personal...';
+
+  @override
+  String get editContact => 'Editar Contacto';
+
+  @override
+  String get name => 'Nombre';
+
+  @override
+  String get enterContactName => 'Ingresa nombre del contacto';
+
+  @override
+  String get enterPhoneNumber => 'Ingresa número telefónico';
+
+  @override
+  String get enterEmail => 'Ingresa dirección de correo';
+
+  @override
+  String get contactUpdatedSuccessfully => 'Contacto actualizado exitosamente';
+
+  @override
+  String get errorUpdatingContact => 'Error al actualizar contacto';
+
+  @override
+  String get error => 'Error';
+
+  @override
+  String get loadingSchoolInformation =>
+      'Cargando información de la escuela...';
+
+  @override
+  String get errorFetchingSchool =>
+      'Error al obtener la información de la escuela';
+
+  @override
+  String get errorLoadingSchool => 'Error al cargar los datos de la escuela';
+
+  @override
+  String get updatingSchoolInformation =>
+      'Actualizando información de la escuela...';
+
+  @override
+  String get errorUpdatingSchool =>
+      'Error al actualizar la información de la escuela';
+
+  @override
+  String get noAssociatedSchool => 'No se encontró escuela asociada';
+
+  @override
+  String get errorLoadingSchoolInfo =>
+      'Error al cargar la información de la escuela';
+
+  @override
+  String get requiredFields => 'Campos Obligatorios';
+
+  @override
+  String get pleaseCompleteFields =>
+      'Por favor completa todos los campos obligatorios';
+
+  @override
+  String get couldNotGetSchoolInfo =>
+      'No se pudo obtener la información de la escuela';
+
+  @override
+  String get unknownError => 'Ocurrió un error desconocido';
+
+  @override
+  String get errorSavingChanges => 'Error al guardar los cambios';
+
+  @override
+  String get associatedSchool => 'Escuela Asociada';
+  @override
+  String get accountType => 'Tipo de Cuenta';
+  @override
+  String get unverified => 'No Verificado';
+  @override
+  String get administrativeRole => 'Rol Administrativo';
+  @override
+  String get todayAt => 'Hoy a las';
+  @override
+  String get yesterdayAt => 'Ayer a las';
+  @override
+  String get administratorAccount => 'Cuenta de Administrador';
+  @override
+  String get adminAccountInformation =>
+      'Tienes privilegios de administrador. Puedes acceder y gestionar información de la escuela, estudiantes y configuraciones de seguridad.';
+
+  @override
+  String get neverConnected => 'Nunca conectado';
+  @override
+  String get school => 'Escuela';
+  @override
+  String get director => 'Director';
+  @override
+  String get subdirector => 'Subdirector';
+  @override
+  String get secretary => 'Secretario';
+  @override
+  String get securityStaff => 'Personal de Seguridad';
+  @override
+  String get teacher => 'Maestro';
+  @override
+  String get administrative => 'Administrativo';
+  @override
+  String get administrativo => 'Administrativo';
+  @override
+  String get administrator => 'Administrador';
+  @override
+  String get parent => 'Padre/Madre';
+  @override
+  String get student => 'Estudiante';
+
+  @override
   String get verifyingCode => 'Verificando código...';
 
   @override
@@ -3988,8 +4274,37 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get loading => 'Cargando...';
 
+  // Implementaciones de los nuevos getters en español
+  @override
+  String get updatingContact => 'Actualizando contacto...';
+
+  @override
+  String get deletingContact => 'Eliminando contacto...';
+
+  @override
+  String get savingContact => 'Guardando contacto...';
+
   @override
   String get settingUpAccount => 'Configurando cuenta...';
+
+  @override
+  String get myProfile => 'Mi Perfil';
+  @override
+  String get manageYourAccount => 'Administra tu cuenta';
+  @override
+  String get user => 'Usuario';
+  @override
+  String get parentRole => 'Padre/Madre';
+  @override
+  String get fatherRole => 'Padre';
+  @override
+  String get motherRole => 'Madre';
+  @override
+  String get tutorRole => 'Tutor';
+  @override
+  String get relativeRole => 'Familiar';
+  @override
+  String get adminRole => 'Administrador';
 
   // Add implementations to AppLocalizationsEs class:
 
@@ -5771,19 +6086,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get errorChangingUsername => 'Error al cambiar el nombre de usuario';
 
-  // Profile - Spanish
-  @override
-  String get myProfile => 'Mi Perfil';
-
-  @override
-  String get manageYourAccount => 'Gestionar tu cuenta';
-
-  @override
-  String get user => 'Usuario';
-
-  @override
-  String get parentRole => 'Padre/Tutor';
-
   @override
   String get activeDays => 'Días activos';
 
@@ -5874,9 +6176,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get activity => 'Actividad';
-
-  @override
-  String get student => 'Estudiante';
 
   @override
   String get period => 'Período';
@@ -6257,15 +6556,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get parentAccount => 'Cuenta de Padre';
-
-  @override
-  String get administrator => 'Administrador';
-
-  @override
-  String get teacher => 'Profesor';
-
-  @override
-  String get parent => 'Padre';
 
   @override
   String get lastLogin => 'Último Inicio de Sesión';

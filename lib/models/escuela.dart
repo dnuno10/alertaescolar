@@ -1,6 +1,6 @@
 enum TipoEscuela { publica, privada, mixta }
 
-enum NivelEducativo { preescolar, primaria, secundaria, bachillerato, mixto }
+enum NivelEducativo { preescolar, primaria, secundaria, bachillerato }
 
 class Escuela {
   final String id;
@@ -11,12 +11,9 @@ class Escuela {
   final String direccion;
   final String telefono;
   final String email;
-  final String? logoUrl;
-  final Map<String, String> coloresInstitucionales;
-  final bool activa;
+  final String? sitioWeb;
+  final String? descripcion;
   final DateTime fechaRegistro;
-  final DateTime? fechaUltimaActualizacion;
-  final Map<String, dynamic> horarios;
 
   const Escuela({
     required this.id,
@@ -27,15 +24,33 @@ class Escuela {
     required this.direccion,
     required this.telefono,
     required this.email,
-    this.logoUrl,
-    this.coloresInstitucionales = const {},
-    this.activa = true,
+    this.sitioWeb,
+    this.descripcion,
     required this.fechaRegistro,
-    this.fechaUltimaActualizacion,
-    this.horarios = const {},
   });
 
   factory Escuela.fromJson(Map<String, dynamic> json) {
+    // Convert boolean education level flags to enum list
+    List<NivelEducativo> niveles = [];
+    if (json['preescolar'] == true) {
+      niveles.add(NivelEducativo.preescolar);
+    }
+    if (json['primaria'] == true) {
+      niveles.add(NivelEducativo.primaria);
+    }
+    if (json['secundaria'] == true) {
+      niveles.add(NivelEducativo.secundaria);
+    }
+    if (json['preparatoria'] == true) {
+      // Use 'preparatoria' field from DB for bachillerato level
+      niveles.add(NivelEducativo.bachillerato);
+    }
+
+    // Default to primaria if no levels are selected
+    if (niveles.isEmpty) {
+      niveles.add(NivelEducativo.primaria);
+    }
+
     return Escuela(
       id: json['id'] ?? '',
       nombre: json['nombre'] ?? '',
@@ -44,24 +59,14 @@ class Escuela {
         (e) => e.name == json['tipo'],
         orElse: () => TipoEscuela.publica,
       ),
-      nivelesEducativos: (json['nivelesEducativos'] as List? ?? [])
-          .map((e) => NivelEducativo.values.firstWhere(
-                (nivel) => nivel.name == e,
-                orElse: () => NivelEducativo.primaria,
-              ))
-          .toList(),
+      nivelesEducativos: niveles,
       direccion: json['direccion'] ?? '',
       telefono: json['telefono'] ?? '',
       email: json['email'] ?? '',
-      logoUrl: json['logoUrl'],
-      coloresInstitucionales:
-          Map<String, String>.from(json['coloresInstitucionales'] ?? {}),
-      activa: json['activa'] ?? true,
-      fechaRegistro: DateTime.parse(json['fechaRegistro']),
-      fechaUltimaActualizacion: json['fechaUltimaActualizacion'] != null
-          ? DateTime.parse(json['fechaUltimaActualizacion'])
-          : null,
-      horarios: Map<String, dynamic>.from(json['horarios'] ?? {}),
+      sitioWeb: json['sitio_web'],
+      descripcion: json['descripcion'],
+      fechaRegistro: DateTime.parse(
+          json['fecha_registro'] ?? DateTime.now().toIso8601String()),
     );
   }
 
@@ -71,16 +76,18 @@ class Escuela {
       'nombre': nombre,
       'codigo': codigo,
       'tipo': tipo.name,
-      'nivelesEducativos': nivelesEducativos.map((e) => e.name).toList(),
+      // Convert education level enums to boolean fields for database
+      'preescolar': nivelesEducativos.contains(NivelEducativo.preescolar),
+      'primaria': nivelesEducativos.contains(NivelEducativo.primaria),
+      'secundaria': nivelesEducativos.contains(NivelEducativo.secundaria),
+      'preparatoria': nivelesEducativos.contains(
+          NivelEducativo.bachillerato), // Use 'preparatoria' field in DB
       'direccion': direccion,
       'telefono': telefono,
       'email': email,
-      'logoUrl': logoUrl,
-      'coloresInstitucionales': coloresInstitucionales,
-      'activa': activa,
-      'fechaRegistro': fechaRegistro.toIso8601String(),
-      'fechaUltimaActualizacion': fechaUltimaActualizacion?.toIso8601String(),
-      'horarios': horarios,
+      'sitio_web': sitioWeb,
+      'descripcion': descripcion,
+      'fecha_registro': fechaRegistro.toIso8601String(),
     };
   }
 
@@ -93,12 +100,9 @@ class Escuela {
     String? direccion,
     String? telefono,
     String? email,
-    String? logoUrl,
-    Map<String, String>? coloresInstitucionales,
-    bool? activa,
+    String? sitioWeb,
+    String? descripcion,
     DateTime? fechaRegistro,
-    DateTime? fechaUltimaActualizacion,
-    Map<String, dynamic>? horarios,
   }) {
     return Escuela(
       id: id ?? this.id,
@@ -109,24 +113,15 @@ class Escuela {
       direccion: direccion ?? this.direccion,
       telefono: telefono ?? this.telefono,
       email: email ?? this.email,
-      logoUrl: logoUrl ?? this.logoUrl,
-      coloresInstitucionales:
-          coloresInstitucionales ?? this.coloresInstitucionales,
-      activa: activa ?? this.activa,
+      sitioWeb: sitioWeb ?? this.sitioWeb,
+      descripcion: descripcion ?? this.descripcion,
       fechaRegistro: fechaRegistro ?? this.fechaRegistro,
-      fechaUltimaActualizacion:
-          fechaUltimaActualizacion ?? this.fechaUltimaActualizacion,
-      horarios: horarios ?? this.horarios,
     );
   }
 
-  bool get tieneHorarios => horarios.isNotEmpty;
-  bool get tieneColoresPersonalizados => coloresInstitucionales.isNotEmpty;
-  bool get tieneUltimaActualizacion => fechaUltimaActualizacion != null;
-
   @override
   String toString() {
-    return 'Escuela(id: $id, nombre: $nombre, codigo: $codigo, activa: $activa)';
+    return 'Escuela(id: $id, nombre: $nombre, codigo: $codigo)';
   }
 
   @override

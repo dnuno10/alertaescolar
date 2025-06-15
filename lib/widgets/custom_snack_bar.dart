@@ -39,6 +39,6 @@ class CustomSnackBar {
     );
 
     //ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    //ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 }

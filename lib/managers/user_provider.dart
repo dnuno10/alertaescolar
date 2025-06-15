@@ -1,3 +1,8 @@
+import 'dart:math';
+
+import 'package:alertaescolar/components/loading_dialog.dart';
+import 'package:alertaescolar/l10n/app_localizations.dart';
+import 'package:alertaescolar/widgets/custom_snack_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
@@ -14,20 +19,29 @@ class UserProvider extends ChangeNotifier {
 
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  // Carga el usuario actual desde Supabase
-  Future<void> loadCurrentUser() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+// In the loadCurrentUser method:
+  Future<void> loadCurrentUser(BuildContext context) async {
+    if (!context.mounted) return;
+
+    final l10n = AppLocalizations.of(context);
+    bool dialogShown = false;
 
     try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      // Only show dialog if we're in an interactive context
+      if (ModalRoute.of(context)?.isCurrent ?? false) {
+        LoadingDialog.show(context, message: l10n.loadingUserData);
+        dialogShown = true;
+      }
+
       // Check if there's an active user session
       final user = _supabase.auth.currentUser;
       if (user == null) {
         debugPrint('No active user session found');
         _currentUser = null;
-        _isLoading = false;
-        notifyListeners();
         return;
       }
 
@@ -43,22 +57,31 @@ class UserProvider extends ChangeNotifier {
         _currentUser = Usuario.fromJson(userData);
       } else {
         debugPrint('User authenticated but not in database: ${user.id}');
-        // If user is authenticated but not in database, initialize with basic data
-        _currentUser = Usuario(
-          id: user.id,
-          nombre: user.userMetadata?['full_name']?.split(' ').first ?? '',
-          apellido:
-              user.userMetadata?['full_name']?.split(' ').skip(1).join(' ') ??
-                  '',
-          email: user.email ?? '',
-          fotoUrl: user.userMetadata?['avatar_url'],
-          fechaRegistro: DateTime.now(),
-        );
+        // // Create basic user object from auth data
+        // _currentUser = Usuario(
+        //   id: user.id,
+        //   nombre: user.userMetadata?['full_name']?.split(' ').first ?? '',
+        //   apellido:
+        //       user.userMetadata?['full_name']?.split(' ').skip(1).join(' ') ??
+        //           '',
+        //   email: user.email ?? '',
+        //   fotoUrl: user.userMetadata?['avatar_url'],
+        //   fechaRegistro: DateTime.now(),
+        // );
       }
     } catch (e) {
       debugPrint('Error loading user data: $e');
       _error = e.toString();
     } finally {
+      // Always hide the dialog if it was shown and context is still valid
+      if (dialogShown && context.mounted) {
+        try {
+          LoadingDialog.hide(context);
+        } catch (e) {
+          debugPrint('Error hiding loading dialog: $e');
+        }
+      }
+
       _isLoading = false;
       notifyListeners();
     }
@@ -79,7 +102,6 @@ class UserProvider extends ChangeNotifier {
           'nombre': user.nombre,
           'apellido': user.apellido,
           'tipo': user.tipo.name,
-          'foto_url': user.fotoUrl,
           'id_escuela': user.escuelaId,
           'tipo_administrador': user.tipoAdministrador?.name,
           'fecha_registro': user.fechaRegistro.toIso8601String(),
@@ -96,6 +118,84 @@ class UserProvider extends ChangeNotifier {
       rethrow; // Re-lanzar la excepción para que pueda ser manejada por el llamador
     } finally {
       _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // ...existing code...
+
+  Future<void> updatePersonalInfo(
+      String nombre, String apellido, BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+
+    LoadingDialog.show(context, message: l10n.updatingPersonalInfo);
+
+    if (_currentUser == null) {
+      LoadingDialog.hide(context);
+      CustomSnackBar.show(
+        context: context,
+        message: 'No hay usuario activo',
+        isError: true,
+      );
+      throw Exception('No hay usuario activo');
+    }
+
+    _error = null;
+    notifyListeners();
+
+    try {
+      // Verificar si hay cambios
+      if (_currentUser!.nombre == nombre &&
+          _currentUser!.apellido == apellido) {
+        debugPrint('No hay cambios en el nombre o apellido');
+        CustomSnackBar.show(
+          context: context,
+          message: l10n.noChangesDetected,
+        );
+        return;
+      }
+
+      // Crear usuario actualizado
+      final updatedUser = _currentUser!.copyWith(
+        nombre: nombre,
+        apellido: apellido,
+      );
+
+      // Actualizar en la base de datos
+      await _supabase.from('usuarios').update({
+        'nombre': nombre,
+        'apellido': apellido,
+      }).eq('id', _currentUser!.id);
+
+      debugPrint(
+          'Información personal actualizada en la base de datos: ${_currentUser!.id}');
+
+      // Actualizar en memoria
+      _currentUser = updatedUser;
+      debugPrint(
+          'Información personal actualizada en el provider: ${_currentUser!.id}');
+
+      // Mostrar mensaje de éxito
+      CustomSnackBar.show(
+        context: context,
+        message: l10n.personalInformationUpdatedSuccessfully,
+      );
+    } catch (e) {
+      LoadingDialog.hide(context);
+
+      debugPrint('Error actualizando información personal: $e');
+      _error = e.toString();
+
+      // Mostrar mensaje de error
+      CustomSnackBar.show(
+        context: context,
+        message: '${l10n.errorUpdatingInformation}: $e',
+        isError: true,
+      );
+
+      rethrow;
+    } finally {
+      LoadingDialog.hide(context);
       notifyListeners();
     }
   }

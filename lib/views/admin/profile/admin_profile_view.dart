@@ -1,5 +1,4 @@
 import 'package:alertaescolar/components/dialogs/logout_dialog.dart';
-import 'package:alertaescolar/views/user/profile/password_security_view_new.dart';
 import 'package:alertaescolar/components/profile/profile_header.dart';
 import 'package:alertaescolar/components/profile/settings_section_title.dart';
 import 'package:alertaescolar/components/profile/settings_card.dart';
@@ -56,19 +55,6 @@ class _AdminProfileViewState extends State<AdminProfileView> {
                         subtitle: l10n.editProfileAndContactData,
                         onTap: () => Navigator.pushNamed(
                             context, AppRoutes.personalDataNavigation),
-                        screenSize: screenSize,
-                      ),
-                      const Divider(height: 1),
-                      SettingsTile(
-                        icon: Icons.lock_outline,
-                        title: l10n.security,
-                        subtitle: l10n.changePasswordAndAuthentication,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const PasswordSecurityView(),
-                          ),
-                        ),
                         screenSize: screenSize,
                       ),
                     ],

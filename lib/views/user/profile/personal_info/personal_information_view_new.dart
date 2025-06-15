@@ -3,6 +3,7 @@ import 'package:alertaescolar/components/profile/personal_info_section_title.dar
 import 'package:alertaescolar/components/profile/personal_info_form_card.dart';
 import 'package:alertaescolar/components/profile/current_name_display_card.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
+import 'package:alertaescolar/widgets/custom_snack_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -92,15 +93,6 @@ class _PersonalInformationViewState extends State<PersonalInformationView> {
     );
   }
 
-  void _resetForm(AppLocalizations l10n) {
-    final user = Provider.of<UserProvider>(context, listen: false).currentUser;
-    setState(() {
-      _nameController.text = user?.nombre ?? '';
-      _lastNameController.text = user?.apellido ?? '';
-    });
-    _showMessage(l10n.formReset);
-  }
-
   Future<void> _saveChanges(AppLocalizations l10n) async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -111,23 +103,13 @@ class _PersonalInformationViewState extends State<PersonalInformationView> {
     });
 
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
-
       final userProvider = Provider.of<UserProvider>(context, listen: false);
-      final currentUser = userProvider.currentUser;
 
-      if (currentUser != null) {
-        final updatedUser = currentUser.copyWith(
-          nombre: _nameController.text.trim(),
-          apellido: _lastNameController.text.trim(),
-        );
-
-        await userProvider.updateUser(updatedUser);
-        _showMessage(l10n.personalInformationUpdatedSuccessfully);
-      }
+      // Llamamos directamente al nuevo método específico
+      await userProvider.updatePersonalInfo(_nameController.text.trim(),
+          _lastNameController.text.trim(), context);
     } catch (e) {
-      _showMessage('${l10n.errorUpdatingInformation}: $e');
+      _showMessage('${l10n.errorUpdatingInformation}: $e', isError: true);
     } finally {
       setState(() {
         _isLoading = false;
@@ -135,25 +117,21 @@ class _PersonalInformationViewState extends State<PersonalInformationView> {
     }
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: AppTheme.getCaption(MediaQuery.of(context).size).copyWith(
-            fontWeight: FontWeight.w500,
-            color: AppTheme.onPrimaryColor,
-          ),
-        ),
-        backgroundColor: AppTheme.getTextPrimaryColor(context),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-              AppTheme.getSmallRadius(MediaQuery.of(context).size)),
-        ),
-        margin: EdgeInsets.all(
-            AppTheme.getSmallPadding(MediaQuery.of(context).size)),
-      ),
+  void _resetForm(AppLocalizations l10n) {
+    final user = Provider.of<UserProvider>(context, listen: false).currentUser;
+    setState(() {
+      _nameController.text = user?.nombre ?? '';
+      _lastNameController.text = user?.apellido ?? '';
+    });
+    _showMessage(l10n.formReset);
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    CustomSnackBar.show(
+      context: context,
+      message: message,
+      isError: isError,
+      duration: const Duration(seconds: 3),
     );
   }
 }

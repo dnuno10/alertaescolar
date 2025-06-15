@@ -1,12 +1,13 @@
-import 'package:alertaescolar/components/buttons/custom_outline_button.dart';
 import 'package:alertaescolar/components/headers/nav_header.dart';
-import 'package:alertaescolar/components/buttons/solid_button.dart';
 import 'package:alertaescolar/components/tips_cards/info_notice_card.dart';
 import 'package:alertaescolar/components/profile/family_section_title.dart';
 import 'package:alertaescolar/components/profile/family_contacts_list.dart';
 import 'package:alertaescolar/components/profile/new_contact_form.dart';
 import 'package:alertaescolar/components/buttons/action_buttons_row.dart';
-import 'package:alertaescolar/providers/theme_provider.dart';
+import 'package:alertaescolar/components/loading_dialog.dart';
+import 'package:alertaescolar/managers/family_provider.dart';
+import 'package:alertaescolar/widgets/custom_snack_bar.dart';
+import 'package:alertaescolar/views/user/profile/edit_family_contact_view.dart'; // Added this import
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
@@ -29,27 +30,14 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
   TipoParentesco _selectedRelation = TipoParentesco.padre;
   bool _isLoading = false;
 
-  // Mock data for existing family contacts using the model
-  final List<ContactoFamiliar> _familyContacts = [
-    ContactoFamiliar(
-      id: '1',
-      usuarioId: 'user_1',
-      nombre: 'María González',
-      parentesco: TipoParentesco.madre,
-      telefono: '+52 555 123 4567',
-      email: 'maria.gonzalez@email.com',
-      fechaRegistro: DateTime.now().subtract(const Duration(days: 30)),
-    ),
-    ContactoFamiliar(
-      id: '2',
-      usuarioId: 'user_1',
-      nombre: 'Carlos González',
-      parentesco: TipoParentesco.padre,
-      telefono: '+52 555 987 6543',
-      email: 'carlos.gonzalez@email.com',
-      fechaRegistro: DateTime.now().subtract(const Duration(days: 25)),
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // Load family contacts when the view is created
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadFamilyContacts();
+    });
+  }
 
   @override
   void dispose() {
@@ -64,12 +52,12 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
     final l10n = AppLocalizations.of(context);
     final screenSize = MediaQuery.of(context).size;
 
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return Scaffold(
-          backgroundColor: AppTheme.getBackgroundColor(context),
-          resizeToAvoidBottomInset: true,
-          body: CustomScrollView(
+    return Scaffold(
+      backgroundColor: AppTheme.getBackgroundColor(context),
+      resizeToAvoidBottomInset: true,
+      body: Consumer<FamilyProvider>(
+        builder: (context, familyProvider, _) {
+          return CustomScrollView(
             slivers: [
               NavHeader(title: l10n.familyInformation),
 
@@ -89,7 +77,8 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
                       SizedBox(height: AppTheme.getSmallPadding(screenSize)),
 
                       FamilyContactsList(
-                        familyContacts: _familyContacts,
+                        familyContacts: familyProvider
+                            .contacts, // Cambiar de familyContacts a contacts
                         onEditContact: _editContact,
                         onDeleteContact: _deleteContact,
                         screenSize: screenSize,
@@ -142,21 +131,51 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
                 ),
               ),
             ],
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
+// Actualizar las llamadas a _showMessage en _loadFamilyContacts
 
-  void _clearForm() {
-    setState(() {
-      _contactNameController.clear();
-      _contactPhoneController.clear();
-      _contactEmailController.clear();
-      _selectedRelation = TipoParentesco.padre;
-    });
+  Future<void> _loadFamilyContacts() async {
+    // Check if mounted before proceeding
+    if (!mounted) return;
+
+    try {
+      final familyProvider =
+          Provider.of<FamilyProvider>(context, listen: false);
+
+      LoadingDialog.show(
+        context,
+        message: AppLocalizations.of(context).loading,
+      );
+
+      await familyProvider.loadFamilyContacts();
+
+      // Check if still mounted before proceeding
+      if (!mounted) return;
+
+      LoadingDialog.hide(context);
+
+      // Show error if any
+      if (familyProvider.error != null) {
+        // Ignoramos el error específico de "relation not exists" ya que es esperado
+        if (!familyProvider.error!.contains(
+            'relation "public.contactos_familiares" does not exist')) {
+          _showMessage(familyProvider.error!, isError: true);
+        }
+        familyProvider.clearError();
+      }
+    } catch (e) {
+      if (mounted) {
+        LoadingDialog.hide(context);
+        _showMessage("Error: ${e.toString()}", isError: true);
+      }
+    }
   }
 
+// Actualizar en _addContact
   void _addContact(AppLocalizations l10n) async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -167,30 +186,29 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
     });
 
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
+      final familyProvider =
+          Provider.of<FamilyProvider>(context, listen: false);
 
-      // Add contact to list using the model
-      final newContact = ContactoFamiliar(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        nombre: _contactNameController.text.trim(),
-        parentesco: _selectedRelation,
-        telefono: _contactPhoneController.text.trim(),
-        email: _contactEmailController.text.trim().isEmpty
+      final result = await familyProvider.addFamilyContact(
+        context, // Añadir el parámetro context como primer argumento
+        _contactNameController.text.trim(),
+        _selectedRelation,
+        _contactPhoneController.text.trim(),
+        _contactEmailController.text.trim().isEmpty
             ? null
             : _contactEmailController.text.trim(),
-        fechaRegistro: DateTime.now(),
-        usuarioId: 'user_1', // Set the user ID
       );
 
-      setState(() {
-        _familyContacts.add(newContact);
-      });
-
-      _showMessage(l10n.familyContactAddedSuccessfully);
-      _clearForm();
+      if (result != null) {
+        _showMessage(l10n.familyContactAddedSuccessfully, isError: false);
+        _clearForm();
+      } else if (familyProvider.error != null) {
+        _showMessage('${l10n.errorAddingContact}: ${familyProvider.error}',
+            isError: true);
+        familyProvider.clearError();
+      }
     } catch (e) {
-      _showMessage('${l10n.errorAddingContact}: $e');
+      _showMessage('${l10n.errorAddingContact}: $e', isError: true);
     } finally {
       setState(() {
         _isLoading = false;
@@ -198,11 +216,23 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
     }
   }
 
-  void _editContact(ContactoFamiliar contact, AppLocalizations l10n) {
-    // Implementation for editing contact
-    _showMessage(l10n.editContactFeatureComingSoon);
+// Actualizar en _editContact
+  void _editContact(ContactoFamiliar contact, AppLocalizations l10n) async {
+    // Navigate to edit contact view
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditFamilyContactView(contact: contact),
+      ),
+    );
+
+    // If the edit was successful, reload the contacts
+    if (result == true) {
+      _loadFamilyContacts();
+    }
   }
 
+// Actualizar en _deleteContact
   void _deleteContact(
       ContactoFamiliar contact, AppLocalizations l10n, Size screenSize) {
     showDialog(
@@ -237,12 +267,20 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
             ),
           ),
           TextButton(
-            onPressed: () {
-              setState(() {
-                _familyContacts.remove(contact);
-              });
+            onPressed: () async {
               Navigator.pop(context);
-              _showMessage(l10n.contactDeleted);
+
+              final familyProvider =
+                  Provider.of<FamilyProvider>(context, listen: false);
+              final success =
+                  await familyProvider.deleteFamilyContact(context, contact.id);
+
+              if (success) {
+                _showMessage(l10n.contactDeleted, isError: false);
+              } else if (familyProvider.error != null) {
+                _showMessage(familyProvider.error!, isError: true);
+                familyProvider.clearError();
+              }
             },
             child: Text(
               l10n.delete,
@@ -256,25 +294,27 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
     );
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: AppTheme.getCaption(MediaQuery.of(context).size).copyWith(
-            fontWeight: FontWeight.w500,
-            color: AppTheme.onPrimaryColor,
-          ),
-        ),
-        backgroundColor: AppTheme.getTextPrimaryColor(context),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-              AppTheme.getSmallRadius(MediaQuery.of(context).size)),
-        ),
-        margin: EdgeInsets.all(
-            AppTheme.getSmallPadding(MediaQuery.of(context).size)),
-      ),
+  // Añadir este método a la clase _FamilyInformationViewState
+  void _clearForm() {
+    setState(() {
+      _contactNameController.clear();
+      _contactPhoneController.clear();
+      _contactEmailController.clear();
+      _selectedRelation =
+          TipoParentesco.padre; // Restablecer al valor predeterminado
+    });
+
+    FocusScope.of(context).unfocus();
+  }
+
+  // Actualizar el método _showMessage para usar CustomSnackBar en lugar de SnackBar directo
+  void _showMessage(String message, {bool isError = false}) {
+    // Utilizamos la clase CustomSnackBar que proporciona una interfaz más consistente
+    CustomSnackBar.show(
+      context: context,
+      message: message,
+      isError:
+          isError, // Indicamos si es un error para mostrar el color adecuado
     );
   }
 }

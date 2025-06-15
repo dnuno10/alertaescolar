@@ -21,7 +21,7 @@ class ThemeSelectionDialog extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth >= screenSize.width * 0.75;
-          final maxWidth = isWide ? screenSize.width * 0.6 : double.infinity;
+          final maxWidth = isWide ? screenSize.width * 0.9 : double.infinity;
 
           return Container(
             constraints: BoxConstraints(maxWidth: maxWidth),
@@ -72,14 +72,6 @@ class ThemeSelectionDialog extends StatelessWidget {
                           ),
                         ),
                       ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: Icon(
-                          Icons.close_rounded,
-                          color: AppTheme.getTextSecondaryColor(context),
-                          size: screenSize.height * 0.025,
-                        ),
-                      ),
                     ],
                   ),
 
@@ -96,8 +88,10 @@ class ThemeSelectionDialog extends StatelessWidget {
                             icon: Icons.light_mode_rounded,
                             isSelected:
                                 themeProvider.themeMode == ThemeMode.light,
-                            onTap: () =>
-                                themeProvider.setThemeMode(ThemeMode.light),
+                            onTap: () {
+                              themeProvider.setThemeMode(ThemeMode.light);
+                              Navigator.of(context).pop();
+                            },
                             screenSize: screenSize,
                           ),
                           SizedBox(
@@ -108,8 +102,10 @@ class ThemeSelectionDialog extends StatelessWidget {
                             icon: Icons.dark_mode_rounded,
                             isSelected:
                                 themeProvider.themeMode == ThemeMode.dark,
-                            onTap: () =>
-                                themeProvider.setThemeMode(ThemeMode.dark),
+                            onTap: () {
+                              themeProvider.setThemeMode(ThemeMode.dark);
+                              Navigator.of(context).pop();
+                            },
                             screenSize: screenSize,
                           ),
                           SizedBox(
@@ -120,8 +116,10 @@ class ThemeSelectionDialog extends StatelessWidget {
                             icon: Icons.settings_rounded,
                             isSelected:
                                 themeProvider.themeMode == ThemeMode.system,
-                            onTap: () =>
-                                themeProvider.setThemeMode(ThemeMode.system),
+                            onTap: () {
+                              themeProvider.setThemeMode(ThemeMode.system);
+                              Navigator.of(context).pop();
+                            },
                             screenSize: screenSize,
                           ),
                         ],
@@ -129,29 +127,16 @@ class ThemeSelectionDialog extends StatelessWidget {
                     },
                   ),
 
-                  SizedBox(height: AppTheme.getLargePadding(screenSize)),
+                  SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
                   // Actions
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CustomOutlineButton(
-                          onPressed: () => Navigator.pop(context),
-                          label: l10n.cancel,
-                          color: AppTheme.getTextSecondaryColor(context),
-                          screenSize: screenSize,
-                        ),
-                      ),
-                      SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-                      Expanded(
-                        child: SolidButton(
-                          onPressed: () => Navigator.pop(context),
-                          label: l10n.apply,
-                          backgroundColor: AppTheme.accentPurple,
-                          screenSize: screenSize,
-                        ),
-                      ),
-                    ],
+                  SizedBox(
+                    width: double.infinity,
+                    child: SolidButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        label: l10n.cancel,
+                        backgroundColor: AppTheme.accentPurple,
+                        screenSize: screenSize),
                   ),
                 ],
               ),

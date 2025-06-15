@@ -46,7 +46,7 @@ class _HomeViewState extends State<HomeView> {
         Provider.of<NotificationProvider>(context, listen: false);
 
     await Future.wait([
-      userProvider.loadCurrentUser(),
+      userProvider.loadCurrentUser(context),
       studentProvider.loadStudents(),
       notificationProvider.loadNotifications(),
     ]);

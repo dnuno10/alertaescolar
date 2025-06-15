@@ -38,14 +38,14 @@ class PersonalDataInfoTile extends StatelessWidget {
               vertical: AppTheme.getSmallPadding(screenSize) * 0.25,
             ),
             decoration: BoxDecoration(
-              color: AppTheme.accentYellow.withOpacity(0.1),
+              color: AppTheme.accentPurple.withOpacity(0.1),
               borderRadius: BorderRadius.circular(
                   AppTheme.getSmallRadius(screenSize) * 0.5),
             ),
             child: Text(
               value,
               style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                color: AppTheme.accentYellow,
+                color: AppTheme.accentPurple,
                 fontWeight: FontWeight.w600,
               ),
             ),

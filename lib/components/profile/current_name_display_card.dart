@@ -36,13 +36,13 @@ class CurrentNameDisplayCard extends StatelessWidget {
             width: screenSize.width * 0.1,
             height: screenSize.width * 0.1,
             decoration: BoxDecoration(
-              color: AppTheme.accentYellow.withOpacity(0.1),
+              color: AppTheme.accentBlue.withOpacity(0.1),
               borderRadius:
                   BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
             ),
             child: Icon(
               Icons.badge_outlined,
-              color: AppTheme.accentYellow,
+              color: AppTheme.accentBlue,
               size: screenSize.width * 0.05,
             ),
           ),
@@ -69,14 +69,14 @@ class CurrentNameDisplayCard extends StatelessWidget {
                         vertical: AppTheme.getSmallPadding(screenSize) * 0.25,
                       ),
                       decoration: BoxDecoration(
-                        color: AppTheme.accentYellow.withOpacity(0.1),
+                        color: AppTheme.accentBlue.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(
                             AppTheme.getSmallRadius(screenSize) * 0.5),
                       ),
                       child: Text(
                         user?.nombreCompleto ?? l10n.notAvailable,
                         style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                          color: AppTheme.accentYellow,
+                          color: AppTheme.accentBlue,
                           fontWeight: FontWeight.w600,
                         ),
                       ),

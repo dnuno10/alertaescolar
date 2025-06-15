@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../managers/user_provider.dart';
 import '../../app/app_theme.dart';
+import '../../models/usuario.dart';
 
 class ProfileHeader extends StatelessWidget {
   final Size screenSize;
@@ -87,6 +88,7 @@ class ProfileHeader extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
+                        // Profile Avatar
                         Container(
                           width: screenSize.width * 0.15,
                           height: screenSize.width * 0.15,
@@ -113,12 +115,13 @@ class ProfileHeader extends StatelessWidget {
                           ),
                         ),
                         SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+                        // User Info
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                user?.nombre ?? l10n.user,
+                                user?.nombreCompleto ?? l10n.user,
                                 style:
                                     AppTheme.getSubtitle1(screenSize).copyWith(
                                   fontWeight: FontWeight.w600,
@@ -143,7 +146,7 @@ class ProfileHeader extends StatelessWidget {
                                           0.5),
                                 ),
                                 child: Text(
-                                  l10n.parentRole,
+                                  _getRoleText(user?.tipo, l10n),
                                   style: AppTheme.getCaptionSmall(screenSize)
                                       .copyWith(
                                     fontWeight: FontWeight.w600,
@@ -165,5 +168,22 @@ class ProfileHeader extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _getRoleText(TipoUsuario? tipo, AppLocalizations l10n) {
+    if (tipo == null) return l10n.parentRole;
+
+    switch (tipo) {
+      case TipoUsuario.padre:
+        return l10n.fatherRole;
+      case TipoUsuario.madre:
+        return l10n.motherRole;
+      case TipoUsuario.tutor:
+        return l10n.tutorRole;
+      case TipoUsuario.familiar:
+        return l10n.relativeRole;
+      case TipoUsuario.administrador:
+        return l10n.adminRole;
+    }
   }
 }

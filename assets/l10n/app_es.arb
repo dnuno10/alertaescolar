@@ -76,5 +76,17 @@
   "grade": "Grado",
   "recentAttendance": "Asistencia Reciente",
   "noAttendanceRecords": "Sin registros de asistencia",
-  "noData": "Sin datos"
+  "noData": "Sin datos",
+  "error": "Error",
+  "ok": "Aceptar",
+  "yearFounded": "Año de fundación",
+  "requiredFields": "Campos obligatorios",
+  "pleaseCompleteFields": "Por favor complete los siguientes campos",
+  "noSchoolAssociated": "No hay escuela asociada a tu cuenta",
+  "noSchoolData": "No se pudo obtener la información de la escuela",
+  "unknownError": "Error desconocido",
+  "failedToLoadSchool": "Error al cargar la información de la escuela",
+  "schoolSettingsUpdated": "Configuración de la escuela actualizada correctamente",
+  "schoolName": "Nombre de la escuela",
+  "address": "Dirección"
 }

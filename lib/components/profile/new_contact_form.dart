@@ -76,6 +76,7 @@ class NewContactForm extends StatelessWidget {
             CustomInputField(
               controller: contactPhoneController,
               label: l10n.phone,
+              keyboardType: TextInputType.phone,
               icon: Icons.phone_outlined,
               screenSize: screenSize,
               validator: (value) {

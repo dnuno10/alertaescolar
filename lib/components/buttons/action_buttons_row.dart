@@ -9,6 +9,8 @@ class ActionButtonsRow extends StatelessWidget {
   final VoidCallback onAddPressed;
   final bool isLoading;
   final Size screenSize;
+  final String? clearButtonText;
+  final String? addButtonText;
 
   const ActionButtonsRow({
     super.key,
@@ -16,6 +18,8 @@ class ActionButtonsRow extends StatelessWidget {
     required this.onAddPressed,
     required this.isLoading,
     required this.screenSize,
+    this.clearButtonText,
+    this.addButtonText,
   });
 
   @override
@@ -27,7 +31,7 @@ class ActionButtonsRow extends StatelessWidget {
         Expanded(
           child: CustomOutlineButton(
             onPressed: isLoading ? () {} : onClearPressed,
-            label: l10n.clear,
+            label: clearButtonText ?? l10n.clear,
             color: AppTheme.accentPurple,
             screenSize: screenSize,
           ),
@@ -37,7 +41,7 @@ class ActionButtonsRow extends StatelessWidget {
           child: SolidButton(
             backgroundColor: AppTheme.accentPurple,
             onPressed: isLoading ? () {} : onAddPressed,
-            label: l10n.addContact,
+            label: addButtonText ?? l10n.addContact,
             screenSize: screenSize,
             width: double.infinity,
           ),

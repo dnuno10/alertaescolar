@@ -49,15 +49,6 @@ class SettingsSectionsContent extends StatelessWidget {
               ),
               Divider(height: 1, color: AppTheme.getDividerColor(context)),
               SettingsTile(
-                icon: Icons.security_outlined,
-                title: l10n.security,
-                subtitle: l10n.changePasswordAndAuthentication,
-                onTap: () =>
-                    Navigator.of(context).pushNamed(AppRoutes.passwordSecurity),
-                screenSize: screenSize,
-              ),
-              Divider(height: 1, color: AppTheme.getDividerColor(context)),
-              SettingsTile(
                 icon: Icons.family_restroom_outlined,
                 title: l10n.familyInformation,
                 subtitle: l10n.emergencyDataAndContacts,

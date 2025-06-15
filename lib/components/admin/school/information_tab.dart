@@ -7,19 +7,31 @@ import '../../../components/textfield/custom_input_field.dart';
 import '../../../components/textfield/custom_text_area_field.dart';
 import '../../../components/admin/school/section_card.dart';
 import '../../../components/dropdown/custom_dropdown_field.dart';
-import '../../../components/admin/school/multi_select_field.dart';
+import '../../../components/admin/school/education_level_checkboxes.dart';
 
 class InformationTab extends StatelessWidget {
   final GlobalKey<FormState> formKey;
   final TextEditingController nombreController;
   final TextEditingController codigoController;
   final TextEditingController descripcionController;
-  final TextEditingController directorController;
   final TextEditingController yearFoundedController;
   final TipoEscuela selectedTipo;
-  final List<NivelEducativo> selectedNiveles;
   final ValueChanged<TipoEscuela> onTipoChanged;
+
+  // Education level booleans
+  final bool hasPreescolar;
+  final bool hasPrimaria;
+  final bool hasSecundaria;
+  final bool hasBachillerato;
+  final ValueChanged<bool> onPreescolarChanged;
+  final ValueChanged<bool> onPrimariaChanged;
+  final ValueChanged<bool> onSecundariaChanged;
+  final ValueChanged<bool> onBachilleratoChanged;
+
+  // Keep original fields for backwards compatibility
+  final List<NivelEducativo> selectedNiveles;
   final ValueChanged<List<NivelEducativo>> onNivelesChanged;
+
   final bool isLoading;
   final VoidCallback onSave;
   final String Function(TipoEscuela) getTipoLabel;
@@ -31,7 +43,6 @@ class InformationTab extends StatelessWidget {
     required this.nombreController,
     required this.codigoController,
     required this.descripcionController,
-    required this.directorController,
     required this.yearFoundedController,
     required this.selectedTipo,
     required this.selectedNiveles,
@@ -41,6 +52,14 @@ class InformationTab extends StatelessWidget {
     required this.onSave,
     required this.getTipoLabel,
     required this.getNivelLabel,
+    this.hasPreescolar = false,
+    this.hasPrimaria = true,
+    this.hasSecundaria = false,
+    this.hasBachillerato = false,
+    required this.onPreescolarChanged,
+    required this.onPrimariaChanged,
+    required this.onSecundariaChanged,
+    required this.onBachilleratoChanged,
   });
 
   @override
@@ -95,13 +114,6 @@ class InformationTab extends StatelessWidget {
                   ],
                 ),
                 SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                CustomInputField(
-                  controller: directorController,
-                  label: l10n.principal,
-                  screenSize: screenSize,
-                  icon: Icons.person_rounded,
-                ),
-                SizedBox(height: AppTheme.getMediumPadding(screenSize)),
                 CustomTextAreaField(
                   label: l10n.description,
                   controller: descripcionController,
@@ -125,12 +137,16 @@ class InformationTab extends StatelessWidget {
                   getLabel: getTipoLabel,
                 ),
                 SizedBox(height: AppTheme.getLargePadding(screenSize)),
-                MultiSelectField(
+                EducationLevelCheckboxes(
                   label: l10n.educationLevels,
-                  selectedItems: selectedNiveles,
-                  allItems: NivelEducativo.values,
-                  onChanged: onNivelesChanged,
-                  getLabel: getNivelLabel,
+                  hasPreescolar: hasPreescolar,
+                  hasPrimaria: hasPrimaria,
+                  hasSecundaria: hasSecundaria,
+                  hasBachillerato: hasBachillerato,
+                  onPreescolarChanged: onPreescolarChanged,
+                  onPrimariaChanged: onPrimariaChanged,
+                  onSecundariaChanged: onSecundariaChanged,
+                  onBachilleratoChanged: onBachilleratoChanged,
                 ),
               ],
             ),

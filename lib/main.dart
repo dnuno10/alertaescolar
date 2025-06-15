@@ -12,6 +12,7 @@ import 'app/app_theme.dart';
 import 'managers/provider_manager.dart';
 import 'managers/user_provider.dart';
 import 'providers/theme_provider.dart';
+import 'managers/family_provider.dart';
 import 'l10n/app_localizations.dart';
 
 void main() async {
@@ -73,7 +74,7 @@ class _AppContentState extends State<_AppContent> {
 
             try {
               // Try to load user data directly into UserProvider
-              await userProvider.loadCurrentUser();
+              await userProvider.loadCurrentUser(context);
 
               // If user is loaded but needs profile completion
               if (!userProvider.hasCompleteProfile()) {
@@ -119,16 +120,15 @@ class _AppContentState extends State<_AppContent> {
                   Center(
                     child: Image.asset(
                       "images/alertaescolar_logo.png",
-                      width: MediaQuery.of(context).size.height * 0.06,
-                      height: MediaQuery.of(context).size.height * 0.06,
+                      width: MediaQuery.of(context).size.height * 0.045,
+                      height: MediaQuery.of(context).size.height * 0.045,
                     ),
                   ),
                   Center(
                     child: LoadingAnimationWidget.twoRotatingArc(
                       color: AppTheme.getTextPrimaryColor(context),
                       //rightDotColor: AppTheme.accentPurple,
-
-                      size: MediaQuery.of(context).size.height * 0.1,
+                      size: MediaQuery.of(context).size.height * 0.075,
                     ),
                   ),
                 ],

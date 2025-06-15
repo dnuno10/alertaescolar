@@ -1,30 +1,50 @@
+import 'package:alertaescolar/managers/family_provider.dart';
 import 'package:alertaescolar/providers/language_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/theme_provider.dart';
 import '../services/auth_service.dart';
-import 'user_provider.dart';
-import 'student_provider.dart';
 import 'notification_provider.dart';
+import 'student_provider.dart';
+import 'user_provider.dart';
+import 'school_provider.dart'; // Add SchoolProvider import
 
 class ProviderManager {
+  // Create provider instances that we'll use for lazy initialization
+  static final ThemeProvider _themeProvider = ThemeProvider();
+  static final UserProvider _userProvider = UserProvider();
+  static final StudentProvider _studentProvider = StudentProvider();
+  static final NotificationProvider _notificationProvider =
+      NotificationProvider();
+  static final FamilyProvider _familyProvider = FamilyProvider();
+  static final LocaleProvider _localeProvider = LocaleProvider();
+  static final AuthService _authService = AuthService();
+  static final SchoolProvider _schoolProvider =
+      SchoolProvider(); // Add SchoolProvider instance
+
+  // Add initialization status flags
   static bool _isInitialized = false;
   static bool _isInitializing = false;
 
   static Widget wrapWithProviders({required Widget child}) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => UserProvider()),
-        ChangeNotifierProvider(create: (_) => StudentProvider()),
-        ChangeNotifierProvider(create: (_) => NotificationProvider()),
-        ChangeNotifierProvider(create: (_) => LocaleProvider()),
-        ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider<ThemeProvider>.value(value: _themeProvider),
+        ChangeNotifierProvider<UserProvider>.value(value: _userProvider),
+        ChangeNotifierProvider<StudentProvider>.value(value: _studentProvider),
+        ChangeNotifierProvider<NotificationProvider>.value(
+            value: _notificationProvider),
+        ChangeNotifierProvider<FamilyProvider>.value(value: _familyProvider),
+        ChangeNotifierProvider<LocaleProvider>.value(value: _localeProvider),
+        ChangeNotifierProvider<AuthService>.value(value: _authService),
+        ChangeNotifierProvider<SchoolProvider>.value(value: _schoolProvider),
       ],
       child: child,
     );
   }
 
+  // Basic initialization that doesn't require MaterialLocalizations
   static Future<void> initializeProviders(BuildContext context) async {
     // Prevent multiple initialization attempts
     if (_isInitialized || _isInitializing) {
@@ -37,43 +57,50 @@ class ProviderManager {
       // Ensure Flutter binding is initialized
       WidgetsFlutterBinding.ensureInitialized();
 
-      // Add a longer delay to ensure platform channels are ready
-      await Future.delayed(const Duration(milliseconds: 500));
+      try {
+        await _userProvider.loadCurrentUser(context);
+        debugPrint("User provider initialized successfully");
+      } catch (e) {
+        debugPrint("User provider initialization error: $e");
+      }
 
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      final studentProvider =
-          Provider.of<StudentProvider>(context, listen: false);
-      final notificationProvider =
-          Provider.of<NotificationProvider>(context, listen: false);
-      final authService = Provider.of<AuthService>(context, listen: false);
+      try {
+        await _familyProvider.loadFamilyContacts();
+        debugPrint("Family provider initialized successfully");
+      } catch (e) {
+        debugPrint("Family provider initialization error: $e");
+      }
+      // Initialize providers that don't need MaterialLocalizations
+      try {
+        await _authService.initialize(context);
+        debugPrint("Auth service initialized successfully");
+      } catch (e) {
+        debugPrint("Auth service initialization error: $e");
+      }
 
-      // Small delay between initialization phases
-      await Future.delayed(const Duration(milliseconds: 100));
+      try {
+        await _studentProvider.loadStudents();
+        debugPrint("Student provider initialized successfully");
+      } catch (e) {
+        debugPrint("Student provider initialization error: $e");
+      }
 
-      // Initialize auth service first
-      await _safeInitialize(() => authService.initialize(context));
+      try {
+        await _notificationProvider.loadNotifications();
+        debugPrint("Notification provider initialized successfully");
+      } catch (e) {
+        debugPrint("Notification provider initialization error: $e");
+      }
 
-      // Initialize data providers
-      await Future.wait([
-        _safeInitialize(() => userProvider.loadCurrentUser()),
-        _safeInitialize(() => studentProvider.loadStudents()),
-        _safeInitialize(() => notificationProvider.loadNotifications()),
-      ]);
-
+      // Mark as initialized
       _isInitialized = true;
+      debugPrint("Basic providers initialized successfully");
     } catch (e) {
-      debugPrint('Error in provider initialization: $e');
+      debugPrint('Error in basic provider initialization: $e');
+      // Mark as initialized to avoid getting stuck
+      _isInitialized = true;
     } finally {
       _isInitializing = false;
-    }
-  }
-
-  static Future<void> _safeInitialize(
-      Future<void> Function() initFunction) async {
-    try {
-      await initFunction();
-    } catch (e) {
-      debugPrint('Provider initialization error: $e');
     }
   }
 

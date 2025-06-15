@@ -15,8 +15,7 @@ import '../views/user/profile/personal_data_navigation_view.dart';
 import '../views/user/profile/personal_info/contact_information_view.dart';
 import '../views/user/profile/personal_info/personal_information_view_new.dart'
     as personal_info;
-import '../views/user/profile/password_security_view_new.dart'
-    as password_security;
+
 import '../views/user/profile/notification_settings_view_new.dart'
     as notification_settings;
 import '../views/user/profile/family_information_view.dart';
@@ -146,10 +145,6 @@ class AppRoutes {
             builder: (context) =>
                 const personal_info.PersonalInformationView());
 
-      case passwordSecurity:
-        return MaterialPageRoute(
-            builder: (context) =>
-                const password_security.PasswordSecurityView());
       case notificationSettings:
         return MaterialPageRoute(
             builder: (context) =>

@@ -241,26 +241,108 @@ class AttendanceStatisticsCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _StatItem(
-                icon: Icons.check_circle_rounded,
-                color: AppTheme.successColor,
-                value: selectedPeriod == 0 ? '7' : '28',
-                label: l10n.attendances,
-                screenSize: screenSize,
+              // Wrap each child in Flexible to allow them to resize based on available space
+              Flexible(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: screenSize.height * 0.06,
+                      height: screenSize.height * 0.06,
+                      decoration: BoxDecoration(
+                        color: AppTheme.successColor,
+                        borderRadius:
+                            BorderRadius.circular(screenSize.height * 0.015),
+                      ),
+                      child: const Padding(padding: EdgeInsets.zero),
+                    ),
+                    SizedBox(
+                        height: AppTheme.getSmallPadding(screenSize) / 1.2),
+                    Text(
+                      selectedPeriod == 0 ? '7' : '28',
+                      style: AppTheme.getH2(screenSize).copyWith(
+                        color: AppTheme.getTextPrimaryColor(context),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      l10n.attendances,
+                      style: AppTheme.getCaption(screenSize).copyWith(
+                        color: AppTheme.getTextSecondaryColor(context),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
-              _StatItem(
-                icon: Icons.schedule_rounded,
-                color: AppTheme.warningColor,
-                value: selectedPeriod == 0 ? '0' : '3',
-                label: l10n.lateArrivals,
-                screenSize: screenSize,
+              Flexible(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: screenSize.height * 0.06,
+                      height: screenSize.height * 0.06,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFDCB5A),
+                        borderRadius:
+                            BorderRadius.circular(screenSize.height * 0.015),
+                      ),
+                      child: const Padding(padding: EdgeInsets.zero),
+                    ),
+                    SizedBox(
+                        height: AppTheme.getSmallPadding(screenSize) / 1.2),
+                    Text(
+                      selectedPeriod == 0 ? '0' : '3',
+                      style: AppTheme.getH2(screenSize).copyWith(
+                        color: AppTheme.getTextPrimaryColor(context),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      l10n.lateArrivals,
+                      style: AppTheme.getCaption(screenSize).copyWith(
+                        color: AppTheme.getTextSecondaryColor(context),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
-              _StatItem(
-                icon: Icons.cancel_rounded,
-                color: AppTheme.errorColor,
-                value: selectedPeriod == 0 ? '0' : '2',
-                label: l10n.absences,
-                screenSize: screenSize,
+              Flexible(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: screenSize.height * 0.06,
+                      height: screenSize.height * 0.06,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF4757),
+                        borderRadius:
+                            BorderRadius.circular(screenSize.height * 0.015),
+                      ),
+                      child: const Padding(padding: EdgeInsets.zero),
+                    ),
+                    SizedBox(
+                        height: AppTheme.getSmallPadding(screenSize) / 1.2),
+                    Text(
+                      selectedPeriod == 0 ? '0' : '2',
+                      style: AppTheme.getH2(screenSize).copyWith(
+                        color: AppTheme.getTextPrimaryColor(context),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      l10n.absences,
+                      style: AppTheme.getCaption(screenSize).copyWith(
+                        color: AppTheme.getTextSecondaryColor(context),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
