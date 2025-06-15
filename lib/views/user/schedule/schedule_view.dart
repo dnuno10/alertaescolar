@@ -9,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/models.dart';
-import '../../../services/mock_schedule_service.dart';
 import '../../../app/app_theme.dart';
 
 class ScheduleView extends StatefulWidget {
@@ -28,7 +27,6 @@ class _ScheduleViewState extends State<ScheduleView>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  final MockScheduleService _scheduleService = MockScheduleService();
   Map<DiaSemana, List<ClaseHorario>> _schedule = {};
   bool _isLoading = true;
   int _selectedDayIndex = 0;
@@ -55,13 +53,13 @@ class _ScheduleViewState extends State<ScheduleView>
 
   Future<void> _loadSchedule() async {
     try {
-      final schedule =
-          await _scheduleService.getStudentSchedule(widget.student.id);
-      final organizedSchedule =
-          _scheduleService.organizeScheduleByDay(schedule);
+      // final schedule =
+      //     await _scheduleService.getStudentSchedule(widget.student.id);
+      // final organizedSchedule =
+      //     _scheduleService.organizeScheduleByDay(schedule);
 
       setState(() {
-        _schedule = organizedSchedule;
+        // _schedule = organizedSchedule;
         _isLoading = false;
       });
     } catch (e) {

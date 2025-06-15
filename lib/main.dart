@@ -1,5 +1,6 @@
 import 'package:alertaescolar/components/pulsating_logo.dart';
 import 'package:alertaescolar/providers/language_provider.dart';
+import 'package:alertaescolar/providers/schedule_provider.dart';
 import 'package:alertaescolar/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';

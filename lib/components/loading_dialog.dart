@@ -70,8 +70,12 @@ class LoadingDialog extends StatelessWidget {
   }
 
   static void hide(BuildContext context) {
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
+    try {
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      debugPrint('Error hiding loading dialog: $e');
     }
   }
 }

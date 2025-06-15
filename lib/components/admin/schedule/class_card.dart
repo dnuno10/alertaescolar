@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
-import '../../../l10n/app_localizations.dart';
 import '../../../models/models.dart';
-import 'info_chip.dart';
 
 class ClassCard extends StatelessWidget {
   final ClaseHorario clase;
@@ -15,14 +13,14 @@ class ClassCard extends StatelessWidget {
     required this.clase,
     required this.index,
     required this.screenSize,
-    required this.subject,
+    this.subject,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (subject == null) return const SizedBox();
-
-    final Color cardColor = _getColorFromHex(subject!.color);
+    final String subjectName = subject?.nombre ?? 'Materia';
+    final String professor = subject?.profesor ?? 'Profesor';
+    final Color cardColor = _getSubjectColor(subject?.color ?? '#9B5DE5');
 
     return TweenAnimationBuilder<double>(
       duration: Duration(milliseconds: 300 + (index * 100)),
@@ -33,8 +31,10 @@ class ClassCard extends StatelessWidget {
           child: Opacity(
             opacity: value,
             child: Container(
+              margin:
+                  EdgeInsets.only(bottom: AppTheme.getSmallPadding(screenSize)),
               decoration: BoxDecoration(
-                color: AppTheme.getCardColor(context),
+                color: AppTheme.getSurfaceColor(context),
                 borderRadius:
                     BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
                 border: Border.all(
@@ -51,117 +51,101 @@ class ClassCard extends StatelessWidget {
               ),
               child: Material(
                 color: Colors.transparent,
-                child: Padding(
-                  padding:
-                      EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-                  child: Column(
-                    children: [
-                      // Header con icono y nombre
-                      Row(
-                        children: [
-                          Container(
-                            width: screenSize.width * 0.12,
-                            height: screenSize.width * 0.12,
-                            decoration: BoxDecoration(
-                              color: cardColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(
-                                  AppTheme.getSmallRadius(screenSize)),
-                            ),
-                            child: Icon(
-                              _getSubjectIcon(subject!.nombre),
-                              color: cardColor,
-                              size: screenSize.width * 0.06,
-                            ),
-                          ),
-                          SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  subject!.nombre,
-                                  style: AppTheme.getSubtitle1(screenSize)
-                                      .copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color:
-                                        AppTheme.getTextPrimaryColor(context),
-                                    height: 1.2,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                SizedBox(height: screenSize.height * 0.003),
-                                Text(
-                                  subject!.profesor,
-                                  style: AppTheme.getBodyMedium(screenSize)
-                                      .copyWith(
-                                    color:
-                                        AppTheme.getTextSecondaryColor(context),
-                                    height: 1.3,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                          // Day indicator
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal:
-                                  AppTheme.getSmallPadding(screenSize) * 0.75,
-                              vertical:
-                                  AppTheme.getSmallPadding(screenSize) * 0.5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: cardColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(
-                                  AppTheme.getSmallRadius(screenSize)),
-                            ),
-                            child: Text(
-                              clase.diaNombre.substring(0, 3),
-                              style:
-                                  AppTheme.getCaptionSmall(screenSize).copyWith(
-                                fontWeight: FontWeight.w600,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(
+                      AppTheme.getMediumRadius(screenSize)),
+                  child: Padding(
+                    padding:
+                        EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+                    child: Column(
+                      children: [
+                        // Header con icono y nombre
+                        Row(
+                          children: [
+                            Container(
+                              width: screenSize.width * 0.12,
+                              height: screenSize.width * 0.12,
+                              decoration: BoxDecoration(
+                                color: cardColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(
+                                    AppTheme.getSmallRadius(screenSize)),
+                              ),
+                              child: Icon(
+                                _getSubjectIcon(subjectName),
                                 color: cardColor,
+                                size: screenSize.width * 0.06,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-
-                      // Separador
-                      SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-
-                      // Información de tiempo y lugar
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: clase.aula.isNotEmpty ? 1 : 2,
-                            child: InfoChip(
-                              icon: Icons.access_time_rounded,
-                              text: clase.horarioTexto,
-                              color: cardColor,
-                              screenSize: screenSize,
-                            ),
-                          ),
-                          if (clase.aula.isNotEmpty) ...[
                             SizedBox(
-                                width:
-                                    AppTheme.getSmallPadding(screenSize) * 0.5),
+                                width: AppTheme.getSmallPadding(screenSize)),
                             Expanded(
-                              flex: 1,
-                              child: InfoChip(
-                                icon: Icons.location_on_outlined,
-                                text: clase.aula,
-                                color: AppTheme.getTextSecondaryColor(context),
-                                screenSize: screenSize,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    subjectName,
+                                    style: AppTheme.getSubtitle1(screenSize)
+                                        .copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color:
+                                          AppTheme.getTextPrimaryColor(context),
+                                      height: 1.2,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  SizedBox(height: screenSize.height * 0.003),
+                                  Text(
+                                    professor,
+                                    style: AppTheme.getBodyMedium(screenSize)
+                                        .copyWith(
+                                      color: AppTheme.getTextSecondaryColor(
+                                          context),
+                                      height: 1.3,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                               ),
                             ),
                           ],
-                        ],
-                      ),
-                    ],
+                        ),
+
+                        // Separador
+                        SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+
+                        // Información de tiempo y lugar
+                        Row(
+                          children: [
+                            Expanded(
+                              flex: clase.aula.isNotEmpty ? 1 : 2,
+                              child: _buildInfoChip(
+                                icon: Icons.access_time_rounded,
+                                text: clase.horarioTexto,
+                                color: cardColor,
+                                screenSize: screenSize,
+                              ),
+                            ),
+                            if (clase.aula.isNotEmpty) ...[
+                              SizedBox(
+                                  width: AppTheme.getSmallPadding(screenSize) *
+                                      0.5),
+                              Expanded(
+                                flex: 1,
+                                child: _buildInfoChip(
+                                  icon: Icons.location_on_outlined,
+                                  text: clase.aula,
+                                  color:
+                                      AppTheme.getTextSecondaryColor(context),
+                                  screenSize: screenSize,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -172,7 +156,44 @@ class ClassCard extends StatelessWidget {
     );
   }
 
-  Color _getColorFromHex(String hexColor) {
+  Widget _buildInfoChip({
+    required IconData icon,
+    required String text,
+    required Color color,
+    required Size screenSize,
+  }) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppTheme.getSmallPadding(screenSize) * 0.75,
+        vertical: AppTheme.getSmallPadding(screenSize) * 0.5,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: screenSize.width * 0.035,
+            color: color,
+          ),
+          SizedBox(width: screenSize.width * 0.01),
+          Text(
+            text,
+            style: AppTheme.getCaptionSmall(screenSize).copyWith(
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getSubjectColor(String hexColor) {
     try {
       final hex = hexColor.replaceAll('#', '');
       return Color(int.parse('FF$hex', radix: 16));
