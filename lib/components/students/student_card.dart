@@ -92,7 +92,7 @@ class StudentCard extends StatelessWidget {
                       ),
                       SizedBox(height: screenSize.height * 0.005),
                       Text(
-                        student.grado,
+                        student.grupo,
                         style: AppTheme.getBodyMedium(screenSize).copyWith(
                           color: AppTheme.getTextSecondaryColor(context),
                         ),
@@ -104,17 +104,17 @@ class StudentCard extends StatelessWidget {
                           vertical: screenSize.height * 0.005,
                         ),
                         decoration: BoxDecoration(
-                          color: student.activo
+                          color: student.vinculado
                               ? AppTheme.successColor.withValues(alpha: 0.1)
                               : AppTheme.warningColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(
                               AppTheme.getSmallRadius(screenSize) * 0.7),
                         ),
                         child: Text(
-                          student.activo ? l10n.active : l10n.inactive,
+                          student.vinculado ? l10n.active : l10n.inactive,
                           style: AppTheme.getCaptionSmall(screenSize).copyWith(
                             fontWeight: FontWeight.w500,
-                            color: student.activo
+                            color: student.vinculado
                                 ? AppTheme.successColor
                                 : AppTheme.warningColor,
                             letterSpacing: 0.1,

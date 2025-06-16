@@ -58,7 +58,7 @@ class StudentInfoCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  '${student.grado}${student.grupo}',
+                  student.grupo,
                   style: AppTheme.getBodyMedium(screenSize).copyWith(
                     color: AppTheme.getTextSecondaryColor(context),
                   ),

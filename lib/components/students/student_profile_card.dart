@@ -81,17 +81,17 @@ class StudentProfileCard extends StatelessWidget {
                 vertical: screenSize.height * 0.01,
               ),
               decoration: BoxDecoration(
-                color: student.activo
+                color: student.vinculado
                     ? AppTheme.successColor.withValues(alpha: 0.1)
                     : AppTheme.warningColor.withValues(alpha: 0.1),
                 borderRadius:
                     BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
               ),
               child: Text(
-                student.activo ? l10n.active : l10n.inactive,
+                student.vinculado ? l10n.active : l10n.inactive,
                 style: AppTheme.getCaption(screenSize).copyWith(
                   fontWeight: FontWeight.w600,
-                  color: student.activo
+                  color: student.vinculado
                       ? AppTheme.successColor
                       : AppTheme.warningColor,
                   letterSpacing: 0.1,

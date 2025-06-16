@@ -147,7 +147,7 @@ class _AttendanceItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
+    final l10n = AppLocalizations.of(context);
     final statusColor = _getStatusColor(notification.tipo);
     final statusIcon = _getStatusIcon(notification.tipo);
     final timeAgo = _getTimeAgo(notification.fechaHora, l10n);

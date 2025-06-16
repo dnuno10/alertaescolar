@@ -6,27 +6,23 @@ enum Turno {
 class Alumno {
   final String id;
   final String nombre;
-  final String grado;
   final String grupo;
-  final String escuelaId;
-  final String? fotoUrl;
-  final String llave;
-  final bool activo;
-  final DateTime fechaRegistro;
-  final List<String> tutoresIds;
+  final String id_escuela;
+  final String id_llave;
+  final bool vinculado;
+  final String matricula;
+  final DateTime fecha_registro;
   final Turno turno;
 
   const Alumno({
     required this.id,
     required this.nombre,
-    required this.grado,
     required this.grupo,
-    required this.escuelaId,
-    this.fotoUrl,
-    required this.llave,
-    this.activo = true,
-    required this.fechaRegistro,
-    this.tutoresIds = const [],
+    required this.id_escuela,
+    required this.id_llave,
+    this.vinculado = true,
+    required this.matricula,
+    required this.fecha_registro,
     this.turno = Turno.matutino,
   });
 
@@ -34,14 +30,12 @@ class Alumno {
     return Alumno(
       id: json['id'] ?? '',
       nombre: json['nombre'] ?? '',
-      grado: json['grado'] ?? '',
       grupo: json['grupo'] ?? '',
-      escuelaId: json['escuelaId'] ?? '',
-      fotoUrl: json['fotoUrl'],
-      llave: json['llave'] ?? '',
-      activo: json['activo'] ?? true,
-      fechaRegistro: DateTime.parse(json['fechaRegistro']),
-      tutoresIds: List<String>.from(json['tutoresIds'] ?? []),
+      id_escuela: json['id_escuela'] ?? '',
+      id_llave: json['id_llave'] ?? '',
+      vinculado: json['vinculado'] ?? true,
+      matricula: json['matricula'] ?? '',
+      fecha_registro: DateTime.parse(json['fecha_registro']),
       turno: Turno.values.firstWhere(
         (e) => e.name == json['turno'],
         orElse: () => Turno.matutino,
@@ -53,14 +47,12 @@ class Alumno {
     return {
       'id': id,
       'nombre': nombre,
-      'grado': grado,
       'grupo': grupo,
-      'escuelaId': escuelaId,
-      'fotoUrl': fotoUrl,
-      'llave': llave,
-      'activo': activo,
-      'fechaRegistro': fechaRegistro.toIso8601String(),
-      'tutoresIds': tutoresIds,
+      'id_escuela': id_escuela,
+      'id_llave': id_llave,
+      'vinculado': vinculado,
+      'matricula': matricula,
+      'fecha_registro': fecha_registro.toIso8601String(),
       'turno': turno.name,
     };
   }
@@ -68,39 +60,33 @@ class Alumno {
   Alumno copyWith({
     String? id,
     String? nombre,
-    String? grado,
     String? grupo,
-    String? escuelaId,
-    String? fotoUrl,
-    String? llave,
-    bool? activo,
-    DateTime? fechaRegistro,
-    List<String>? tutoresIds,
+    String? id_escuela,
+    String? id_llave,
+    bool? vinculado,
+    String? matricula,
+    DateTime? fecha_registro,
     Turno? turno,
   }) {
     return Alumno(
       id: id ?? this.id,
       nombre: nombre ?? this.nombre,
-      grado: grado ?? this.grado,
       grupo: grupo ?? this.grupo,
-      escuelaId: escuelaId ?? this.escuelaId,
-      fotoUrl: fotoUrl ?? this.fotoUrl,
-      llave: llave ?? this.llave,
-      activo: activo ?? this.activo,
-      fechaRegistro: fechaRegistro ?? this.fechaRegistro,
-      tutoresIds: tutoresIds ?? this.tutoresIds,
+      id_escuela: id_escuela ?? this.id_escuela,
+      id_llave: id_llave ?? this.id_llave,
+      vinculado: vinculado ?? this.vinculado,
+      matricula: matricula ?? this.matricula,
+      fecha_registro: fecha_registro ?? this.fecha_registro,
       turno: turno ?? this.turno,
     );
   }
 
-  bool get tieneTutores => tutoresIds.isNotEmpty;
-  String get gradoCompleto => '$grado$grupo';
   bool get esMatutino => turno == Turno.matutino;
   bool get esVespertino => turno == Turno.vespertino;
 
   @override
   String toString() {
-    return 'Alumno(id: $id, nombre: $nombre, grado: $grado, grupo: $grupo, turno: $turno, activo: $activo)';
+    return 'Alumno(id: $id, nombre: $nombre, matricula: $matricula, grupo: $grupo, turno: $turno, vinculado: $vinculado)';
   }
 
   @override

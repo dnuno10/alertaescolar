@@ -1,14 +1,12 @@
 import 'package:alertaescolar/components/admin/directory/directory_filters_card.dart';
 import 'package:alertaescolar/components/admin/directory/directory_header.dart';
-import 'package:alertaescolar/components/textfield/custom_input_field.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
-import 'package:alertaescolar/utils/mock_student_generator.dart';
+import 'package:alertaescolar/managers/student_provider.dart';
+import 'package:alertaescolar/managers/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../app/app_theme.dart';
-
-import '../../../models/models.dart';
 
 class StudentsDirectoryView extends StatefulWidget {
   const StudentsDirectoryView({super.key});
@@ -19,18 +17,20 @@ class StudentsDirectoryView extends StatefulWidget {
 
 class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
   final TextEditingController _searchController = TextEditingController();
-  List<Alumno> _allStudents = [];
-  List<Alumno> _filteredStudents = [];
   String _selectedGrade = 'all';
   String _selectedGroup = 'all';
   String _selectedStatus = 'all';
-  bool _isLoading = true;
+  String _selectedTurno = 'all';
 
   @override
   void initState() {
     super.initState();
-    _loadStudents();
     _searchController.addListener(_filterStudents);
+
+    // Load students after the widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadStudents();
+    });
   }
 
   @override
@@ -40,40 +40,45 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
   }
 
   Future<void> _loadStudents() async {
-    setState(() => _isLoading = true);
-    try {
-      // Get mock students using the utility class
-      final students = MockStudentGenerator.getMockStudents();
-      setState(() {
-        _allStudents = students;
-        _filteredStudents = students;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
+    final studentProvider =
+        Provider.of<StudentProvider>(context, listen: false);
+
+    // Get the current user's school ID
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final escuelaId = userProvider.currentUser?.escuelaId;
+
+    debugPrint('Loading students for escuelaId: $escuelaId');
+
+    if (escuelaId != null) {
+      await studentProvider.loadStudents(escuelaId: escuelaId);
+    } else {
+      // Fallback: try to load students without school filter (this might not work depending on your database structure)
+      debugPrint('No escuelaId found for current user, using fallback');
+      await studentProvider.loadStudents(escuelaId: 'ESC001');
+    }
+
+    // Apply current filters after loading
+    _filterStudents();
+
+    debugPrint(
+        'After load and filter - Students loaded: ${studentProvider.students.length}');
+    debugPrint(
+        'After load and filter - Filtered students: ${studentProvider.filteredStudents.length}');
+    if (studentProvider.error != null) {
+      debugPrint('Error loading students: ${studentProvider.error}');
     }
   }
 
   void _filterStudents() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      _filteredStudents = _allStudents.where((student) {
-        final matchesSearch = student.nombre.toLowerCase().contains(query) ||
-            student.id.toLowerCase().contains(query);
-
-        final matchesGrade =
-            _selectedGrade == 'all' || student.grado.contains(_selectedGrade);
-
-        final matchesGroup =
-            _selectedGroup == 'all' || student.grupo == _selectedGroup;
-
-        final matchesStatus = _selectedStatus == 'all' ||
-            (_selectedStatus == 'active' && student.activo) ||
-            (_selectedStatus == 'inactive' && !student.activo);
-
-        return matchesSearch && matchesGrade && matchesGroup && matchesStatus;
-      }).toList();
-    });
+    final studentProvider =
+        Provider.of<StudentProvider>(context, listen: false);
+    studentProvider.filterStudents(
+      searchQuery: _searchController.text,
+      grado: _selectedGrade,
+      grupo: _selectedGroup,
+      status: _selectedStatus,
+      turno: _selectedTurno,
+    );
   }
 
   @override
@@ -81,8 +86,50 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
     final l10n = AppLocalizations.of(context);
     final screenSize = MediaQuery.of(context).size;
 
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
+    return Consumer3<ThemeProvider, StudentProvider, UserProvider>(
+      builder: (context, themeProvider, studentProvider, userProvider, child) {
+        final allStudents = studentProvider.getAlumnosFromStudents();
+
+        // Show loading state
+        if (studentProvider.isLoading && studentProvider.students.isEmpty) {
+          return Scaffold(
+            backgroundColor: AppTheme.getBackgroundColor(context),
+            body: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        // Show error state
+        if (studentProvider.error != null && studentProvider.students.isEmpty) {
+          return Scaffold(
+            backgroundColor: AppTheme.getBackgroundColor(context),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: AppTheme.errorColor,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    studentProvider.error!,
+                    style: AppTheme.getBodyMedium(screenSize),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadStudents,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
         return Scaffold(
           backgroundColor: AppTheme.getBackgroundColor(context),
           body: CustomScrollView(
@@ -110,9 +157,9 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                         selectedGroup: _selectedGroup,
                         selectedStatus: _selectedStatus,
                         searchController: _searchController,
-                        totalStudents: _allStudents.length,
-                        filteredStudents: _filteredStudents.length,
-                        students: _filteredStudents,
+                        totalStudents: studentProvider.students.length,
+                        filteredStudents: allStudents.length,
+                        students: allStudents,
                         onGradeChanged: (value) {
                           setState(() => _selectedGrade = value);
                           _filterStudents();
@@ -130,6 +177,7 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                             _selectedGrade = 'all';
                             _selectedGroup = 'all';
                             _selectedStatus = 'all';
+                            _selectedTurno = 'all';
                             _searchController.clear();
                           });
                           _filterStudents();

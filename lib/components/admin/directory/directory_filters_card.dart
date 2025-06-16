@@ -58,7 +58,15 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
+    final l10n = AppLocalizations.of(context);
+
+    // Debug: Check what students data is being received
+    debugPrint(
+        'DirectoryFiltersCard: Received ${widget.students.length} students');
+    if (widget.students.isNotEmpty) {
+      debugPrint(
+          'DirectoryFiltersCard: First student: ${widget.students.first.nombre}');
+    }
 
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(widget.screenSize)),
@@ -279,13 +287,13 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
                         width: AppTheme.getSmallPadding(widget.screenSize)),
                     _buildCompactStat(
                         l10n.active, // Replaced hardcoded text
-                        widget.students.where((s) => s.activo).length,
+                        widget.students.where((s) => s.vinculado).length,
                         AppTheme.successColor),
                     SizedBox(
                         width: AppTheme.getSmallPadding(widget.screenSize)),
                     _buildCompactStat(
                         l10n.inactive, // Replaced hardcoded text
-                        widget.students.where((s) => !s.activo).length,
+                        widget.students.where((s) => !s.vinculado).length,
                         AppTheme.errorColor),
                   ],
                 ),
@@ -322,10 +330,10 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
   }
 
   Widget _buildStudentItem(Alumno student, bool isLast) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final statusColor =
-        student.activo ? AppTheme.successColor : AppTheme.errorColor;
-    final gradeGroup = '${student.grado}${student.grupo}';
+        student.vinculado ? AppTheme.successColor : AppTheme.errorColor;
+    final gradeGroup = student.grupo;
 
     return Container(
       margin: EdgeInsets.only(
@@ -411,11 +419,11 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
                         children: [
                           _buildChip(gradeGroup, AppTheme.accentBlue),
                           _buildChip(
-                              student.activo
+                              student.vinculado
                                   ? l10n.active
                                   : l10n.inactive, // Replaced hardcoded text
                               statusColor),
-                          _buildChip(student.llave,
+                          _buildChip(student.id_llave,
                               AppTheme.getTextSecondaryColor(context)),
                         ],
                       ),
@@ -440,7 +448,7 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
   }
 
   Widget _buildEmptyState() {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       padding: EdgeInsets.all(AppTheme.getLargePadding(widget.screenSize)),
@@ -579,7 +587,7 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
   }
 
   String _getDropdownLabel(String value, String filterType) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
 
     if (value == 'all') {
       switch (filterType) {

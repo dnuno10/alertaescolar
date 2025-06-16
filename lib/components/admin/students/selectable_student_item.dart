@@ -22,8 +22,8 @@ class SelectableStudentItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final statusColor =
-        student.activo ? AppTheme.successColor : AppTheme.errorColor;
-    final gradeGroup = '${student.grado}${student.grupo}';
+        student.vinculado ? AppTheme.successColor : AppTheme.errorColor;
+    final gradeGroup = student.grupo;
 
     return Container(
       margin: EdgeInsets.only(
@@ -92,7 +92,8 @@ class SelectableStudentItem extends StatelessWidget {
                             screenSize: screenSize,
                           ),
                           StatusChip(
-                            text: student.activo ? l10n.active : l10n.inactive,
+                            text:
+                                student.vinculado ? l10n.active : l10n.inactive,
                             color: statusColor,
                             screenSize: screenSize,
                           ),

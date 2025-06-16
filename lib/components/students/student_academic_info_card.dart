@@ -46,7 +46,7 @@ class StudentAcademicInfoCard extends StatelessWidget {
           StudentDetailRow(
             icon: Icons.school_rounded,
             label: l10n.gradeLevel,
-            value: student.grado,
+            value: student.grupo,
             iconColor: AppTheme.accentBlue,
             screenSize: screenSize,
           ),

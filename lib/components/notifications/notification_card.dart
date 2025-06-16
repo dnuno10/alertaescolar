@@ -19,7 +19,7 @@ class NotificationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
+    final l10n = AppLocalizations.of(context);
     final colors = [
       AppTheme.accentBlue,
       AppTheme.successColor,

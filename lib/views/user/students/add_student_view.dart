@@ -118,20 +118,7 @@ class _AddStudentViewState extends State<AddStudentView> {
       final studentProvider =
           Provider.of<StudentProvider>(context, listen: false);
 
-      // TODO: Replace with actual API call to link student by key
-      final newStudent = Alumno(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        nombre: '${l10n.student} ${_keyController.text.substring(0, 3)}',
-        grado: l10n.toConfirm,
-        llave: _keyController.text.trim(),
-        activo: true,
-        turno: Turno.matutino,
-        grupo: '1A',
-        escuelaId: '',
-        fechaRegistro: DateTime.now(),
-      );
-
-      await studentProvider.addStudent(newStudent);
+      // await studentProvider.addStudent(newStudent);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

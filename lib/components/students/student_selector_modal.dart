@@ -146,7 +146,7 @@ class StudentSelectorModal extends StatelessWidget {
                                 ),
                                 SizedBox(height: screenSize.height * 0.003),
                                 Text(
-                                  student.grado,
+                                  student.grupo,
                                   style:
                                       AppTheme.getCaption(screenSize).copyWith(
                                     color:

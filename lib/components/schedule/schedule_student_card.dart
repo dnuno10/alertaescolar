@@ -97,7 +97,7 @@ class ScheduleStudentCard extends StatelessWidget {
                             AppTheme.getSmallRadius(screenSize) * 0.5),
                       ),
                       child: Text(
-                        student.grado,
+                        student.grupo,
                         style: AppTheme.getCaptionSmall(screenSize).copyWith(
                           fontWeight: FontWeight.w600,
                           color: color,
@@ -112,17 +112,17 @@ class ScheduleStudentCard extends StatelessWidget {
                         vertical: AppTheme.getSmallPadding(screenSize) * 0.25,
                       ),
                       decoration: BoxDecoration(
-                        color: student.activo
+                        color: student.vinculado
                             ? AppTheme.successColor.withValues(alpha: 0.1)
                             : AppTheme.warningColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(
                             AppTheme.getSmallRadius(screenSize) * 0.5),
                       ),
                       child: Text(
-                        student.activo ? 'Activo' : 'Inactivo',
+                        student.vinculado ? 'Activo' : 'Inactivo',
                         style: AppTheme.getCaptionSmall(screenSize).copyWith(
                           fontWeight: FontWeight.w600,
-                          color: student.activo
+                          color: student.vinculado
                               ? AppTheme.successColor
                               : AppTheme.warningColor,
                           height: 1.2,

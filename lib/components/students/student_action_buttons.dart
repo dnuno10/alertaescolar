@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/models.dart';
-import '../../managers/student_provider.dart';
 import '../../app/app_theme.dart';
 import '../buttons/solid_button.dart';
 import '../buttons/custom_outline_button.dart';
@@ -99,12 +97,11 @@ class StudentActionButtons extends StatelessWidget {
             ),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Go back to students list
-              Provider.of<StudentProvider>(context, listen: false)
-                  .removeStudent(student.id);
 
+              // For now, just show a message since we need the current user ID to unlink
+              // In a real implementation, you'd get the current user ID from UserProvider
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
@@ -113,7 +110,7 @@ class StudentActionButtons extends StatelessWidget {
                       color: AppTheme.onPrimaryColor,
                     ),
                   ),
-                  backgroundColor: AppTheme.errorColor,
+                  backgroundColor: AppTheme.successColor,
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(
@@ -121,6 +118,8 @@ class StudentActionButtons extends StatelessWidget {
                   ),
                 ),
               );
+
+              Navigator.pop(context); // Go back to students list
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.errorColor,

@@ -4,7 +4,6 @@ import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/models.dart';
 import '../../../views/admin/students/student_profile_admin_view.dart';
-import '../../../widgets/custom_snack_bar.dart';
 
 class EnhancedDateDetails extends StatefulWidget {
   final Size screenSize;
@@ -51,15 +50,6 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
     // Now we're safely in didChangeDependencies where it's ok to access localizations
     _allNotifications = _generateCompleteData();
     _filterNotifications();
-  }
-
-  // This empty mock method is fine since it doesn't use localizations
-  List<Notificacion> _generateMockData() {
-    // Only show records for past dates or today
-    if (widget.selectedDate.isAfter(DateTime.now())) {
-      return [];
-    }
-    return <Notificacion>[]; // Return empty list, real data comes from _generateCompleteData
   }
 
   List<Notificacion> _generateCompleteData() {
@@ -142,7 +132,7 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
   }
 
   String _getTipoTitle(TipoNotificacion tipo) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
 
     switch (tipo) {
       case TipoNotificacion.entrada:
@@ -157,7 +147,7 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
   }
 
   String _getTipoMessage(TipoNotificacion tipo, String studentName) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
 
     switch (tipo) {
       case TipoNotificacion.entrada:
@@ -176,7 +166,6 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
 
     final query = _searchController.text.toLowerCase().trim();
     // We can safely access localizations here as this will be called after build
-    final l10n = AppLocalizations.of(context)!;
 
     setState(() {
       _filteredNotifications = _allNotifications.where((notification) {
@@ -232,18 +221,18 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
   void _navigateToStudentProfile(Notificacion notification) {
     final studentName =
         notification.datosAdicionales?['alumnoNombre'] ?? 'Estudiante';
-    final grade = notification.datosAdicionales?['alumnoGrado'] ?? '';
-    final group = notification.datosAdicionales?['alumnoGrupo'] ?? '';
+    final group = notification.datosAdicionales?['alumnoGrupo'] ?? 'A';
 
     final mockStudent = Alumno(
       id: notification.alumnoId,
       nombre: studentName,
-      grado: grade,
       grupo: group,
-      escuelaId: 'school_001',
-      llave: 'KEY${notification.alumnoId}',
-      fechaRegistro: DateTime.now().subtract(const Duration(days: 30)),
-      tutoresIds: ['tutor_001'],
+      id_escuela: 'school_001',
+      id_llave: 'KEY${notification.alumnoId}',
+      vinculado: true,
+      matricula: 'MAT${notification.alumnoId}',
+      fecha_registro: DateTime.now().subtract(const Duration(days: 30)),
+      turno: Turno.matutino,
     );
 
     Navigator.push(
@@ -256,7 +245,7 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final presentCount = _filteredNotifications
         .where((n) => n.tipo == TipoNotificacion.entrada)
         .length;
@@ -656,7 +645,6 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
 
   Widget _buildStudentItem(Notificacion notification, bool isLast) {
     final statusColor = _getStatusColor(notification.tipo);
-    final statusIcon = _getStatusIcon(notification.tipo);
     final studentName =
         notification.datosAdicionales?['alumnoNombre'] ?? 'Estudiante';
     final grade = notification.datosAdicionales?['alumnoGrado'] ?? '';
@@ -778,8 +766,7 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
   }
 
   Widget _buildEmptyState() {
-    final l10n = AppLocalizations.of(context)!;
-
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: EdgeInsets.all(AppTheme.getLargePadding(widget.screenSize)),
       child: Column(
@@ -888,25 +875,8 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
     }
   }
 
-  IconData _getStatusIcon(TipoNotificacion tipo) {
-    switch (tipo) {
-      case TipoNotificacion.entrada:
-        return Icons.check_circle_rounded;
-      case TipoNotificacion.salida:
-        return Icons.logout_rounded;
-      case TipoNotificacion.retraso:
-        return Icons.schedule_rounded;
-      case TipoNotificacion.ausencia:
-        return Icons.cancel_rounded;
-      case TipoNotificacion.permisoEspecial:
-        return Icons.verified_user_rounded;
-      default:
-        return Icons.check_circle_rounded;
-    }
-  }
-
   String _getStatusText(TipoNotificacion tipo) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
 
     switch (tipo) {
       case TipoNotificacion.entrada:

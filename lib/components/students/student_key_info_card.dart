@@ -46,7 +46,9 @@ class StudentKeyInfoCard extends StatelessWidget {
           StudentDetailRow(
             icon: Icons.key_rounded,
             label: l10n.keyCode,
-            value: student.llave.isNotEmpty ? student.llave : l10n.notAssigned,
+            value: student.id_llave.isNotEmpty
+                ? student.id_llave
+                : l10n.notAssigned,
             iconColor: AppTheme.accentYellow,
             screenSize: screenSize,
           ),
@@ -54,11 +56,11 @@ class StudentKeyInfoCard extends StatelessWidget {
           StudentDetailRow(
             icon: Icons.power_settings_new_rounded,
             label: l10n.status, // Replaced hardcoded 'Status'
-            value: student.activo
+            value: student.vinculado
                 ? l10n.activated
                 : l10n.deactivated, // Replaced hardcoded status values
             iconColor:
-                student.activo ? AppTheme.successColor : AppTheme.errorColor,
+                student.vinculado ? AppTheme.successColor : AppTheme.errorColor,
             screenSize: screenSize,
           ),
           SizedBox(height: AppTheme.getSmallPadding(screenSize)),

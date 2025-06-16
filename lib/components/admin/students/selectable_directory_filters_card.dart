@@ -50,7 +50,7 @@ class SelectableDirectoryFiltersCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),

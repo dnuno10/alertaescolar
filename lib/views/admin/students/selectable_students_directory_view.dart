@@ -1,6 +1,6 @@
 import 'package:alertaescolar/components/headers/nav_header.dart';
-import 'package:alertaescolar/components/textfield/custom_input_field.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
+import 'package:alertaescolar/managers/student_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
@@ -28,13 +28,10 @@ class SelectableStudentsDirectoryView extends StatefulWidget {
 class _SelectableStudentsDirectoryViewState
     extends State<SelectableStudentsDirectoryView> {
   final TextEditingController _searchController = TextEditingController();
-  List<Alumno> _allStudents = [];
-  List<Alumno> _filteredStudents = [];
   String _selectedGrade = 'all';
   String _selectedGroup = 'all';
   String _selectedStatus = 'all';
-  bool _isLoading = true;
-  Alumno? _selectedStudent;
+  String _selectedTurno = 'all';
 
   @override
   void initState() {
@@ -50,124 +47,25 @@ class _SelectableStudentsDirectoryViewState
   }
 
   Future<void> _loadStudents() async {
-    setState(() => _isLoading = true);
-    try {
-      final students = _getMockStudents();
-      setState(() {
-        _allStudents = students;
-        _filteredStudents = students;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-    }
-  }
+    final studentProvider =
+        Provider.of<StudentProvider>(context, listen: false);
 
-  List<Alumno> _getMockStudents() {
-    return [
-      Alumno(
-        id: 'STU001',
-        nombre: 'Ana García López',
-        grado: '6°',
-        grupo: 'A',
-        escuelaId: 'ESC001',
-        llave: 'STU001',
-        activo: true,
-        fechaRegistro: DateTime.now().subtract(const Duration(days: 30)),
-      ),
-      Alumno(
-        id: 'STU002',
-        nombre: 'Carlos Mendoza Ruiz',
-        grado: '5°',
-        grupo: 'B',
-        escuelaId: 'ESC001',
-        llave: 'STU002',
-        activo: true,
-        fechaRegistro: DateTime.now().subtract(const Duration(days: 45)),
-      ),
-      Alumno(
-        id: 'STU003',
-        nombre: 'María Fernández Castro',
-        grado: '4°',
-        grupo: 'C',
-        escuelaId: 'ESC001',
-        llave: 'STU003',
-        activo: false,
-        fechaRegistro: DateTime.now().subtract(const Duration(days: 60)),
-      ),
-      Alumno(
-        id: 'STU004',
-        nombre: 'José Luis Herrera',
-        grado: '6°',
-        grupo: 'A',
-        escuelaId: 'ESC001',
-        llave: 'STU004',
-        activo: true,
-        fechaRegistro: DateTime.now().subtract(const Duration(days: 20)),
-      ),
-      Alumno(
-        id: 'STU005',
-        nombre: 'Sofia Rodriguez',
-        grado: '3°',
-        grupo: 'B',
-        escuelaId: 'ESC001',
-        llave: 'STU005',
-        activo: true,
-        fechaRegistro: DateTime.now().subtract(const Duration(days: 10)),
-      ),
-      Alumno(
-        id: 'STU006',
-        nombre: 'Miguel Torres Silva',
-        grado: '5°',
-        grupo: 'A',
-        escuelaId: 'ESC001',
-        llave: 'STU006',
-        activo: true,
-        fechaRegistro: DateTime.now().subtract(const Duration(days: 15)),
-      ),
-      Alumno(
-        id: 'STU007',
-        nombre: 'Laura Jiménez Cruz',
-        grado: '4°',
-        grupo: 'B',
-        escuelaId: 'ESC001',
-        llave: 'STU007',
-        activo: true,
-        fechaRegistro: DateTime.now().subtract(const Duration(days: 25)),
-      ),
-      Alumno(
-        id: 'STU008',
-        nombre: 'Diego Morales Vega',
-        grado: '6°',
-        grupo: 'C',
-        escuelaId: 'ESC001',
-        llave: 'STU008',
-        activo: false,
-        fechaRegistro: DateTime.now().subtract(const Duration(days: 50)),
-      ),
-    ];
+    // TODO: Get escuelaId from user session or arguments
+    final escuelaId = widget.arguments?['escuelaId'] ?? 'ESC001';
+
+    await studentProvider.loadStudents(escuelaId: escuelaId);
   }
 
   void _filterStudents() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      _filteredStudents = _allStudents.where((student) {
-        final matchesSearch = student.nombre.toLowerCase().contains(query) ||
-            student.id.toLowerCase().contains(query);
-
-        final matchesGrade =
-            _selectedGrade == 'all' || student.grado.contains(_selectedGrade);
-
-        final matchesGroup =
-            _selectedGroup == 'all' || student.grupo == _selectedGroup;
-
-        final matchesStatus = _selectedStatus == 'all' ||
-            (_selectedStatus == 'active' && student.activo) ||
-            (_selectedStatus == 'inactive' && !student.activo);
-
-        return matchesSearch && matchesGrade && matchesGroup && matchesStatus;
-      }).toList();
-    });
+    final studentProvider =
+        Provider.of<StudentProvider>(context, listen: false);
+    studentProvider.filterStudents(
+      searchQuery: _searchController.text,
+      grado: _selectedGrade,
+      grupo: _selectedGroup,
+      status: _selectedStatus,
+      turno: _selectedTurno,
+    );
   }
 
   void _selectStudent(Alumno student) {
@@ -176,11 +74,12 @@ class _SelectableStudentsDirectoryViewState
       final selectedStudentData = {
         'id': student.id,
         'name': student.nombre,
-        'grade': student.grado.replaceAll('°', 'to'),
+        'grade': student.grupo,
         'section': student.grupo,
-        'active': student.activo,
-        'llave': student.llave,
-        'escuelaId': student.escuelaId,
+        'active': student.vinculado,
+        'llave': student.id_llave,
+        'escuelaId': student.id_escuela,
+        'matricula': student.matricula,
       };
 
       Navigator.pop(context, selectedStudentData);
@@ -192,8 +91,11 @@ class _SelectableStudentsDirectoryViewState
     final l10n = AppLocalizations.of(context);
     final screenSize = MediaQuery.of(context).size;
 
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
+    return Consumer2<ThemeProvider, StudentProvider>(
+      builder: (context, themeProvider, studentProvider, child) {
+        final allStudents = studentProvider.getAlumnosFromStudents();
+        final filteredStudents = allStudents;
+
         return Scaffold(
           backgroundColor: AppTheme.getBackgroundColor(context),
           body: CustomScrollView(
@@ -212,9 +114,9 @@ class _SelectableStudentsDirectoryViewState
                     selectedGroup: _selectedGroup,
                     selectedStatus: _selectedStatus,
                     searchController: _searchController,
-                    totalStudents: _allStudents.length,
-                    filteredStudents: _filteredStudents.length,
-                    students: _filteredStudents,
+                    totalStudents: allStudents.length,
+                    filteredStudents: filteredStudents.length,
+                    students: filteredStudents,
                     onGradeChanged: (value) {
                       setState(() => _selectedGrade = value);
                       _filterStudents();
@@ -232,6 +134,7 @@ class _SelectableStudentsDirectoryViewState
                         _selectedGrade = 'all';
                         _selectedGroup = 'all';
                         _selectedStatus = 'all';
+                        _selectedTurno = 'all';
                         _searchController.clear();
                       });
                       _filterStudents();

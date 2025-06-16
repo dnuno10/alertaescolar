@@ -2,7 +2,6 @@ import 'package:alertaescolar/components/students/empty_students_card.dart';
 import 'package:flutter/material.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
-import '../../models/alumno.dart';
 
 import 'package:provider/provider.dart';
 
@@ -93,7 +92,7 @@ class StudentsOverviewSection extends StatelessWidget {
 }
 
 class StudentListItem extends StatelessWidget {
-  final Alumno student;
+  final StudentDetails student;
   final int index;
   final int totalVisible;
   final Size screenSize;
@@ -178,7 +177,7 @@ class StudentListItem extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        student.grado,
+                        student.grupo,
                         style: AppTheme.getCaptionSmall(screenSize).copyWith(
                           color: color,
                           fontWeight: FontWeight.w600,
@@ -189,16 +188,20 @@ class StudentListItem extends StatelessWidget {
                     Container(
                       width: screenSize.height * 0.005,
                       height: screenSize.height * 0.005,
-                      decoration: const BoxDecoration(
-                        color: AppTheme.successColor,
+                      decoration: BoxDecoration(
+                        color: student.llaveActiva
+                            ? AppTheme.successColor
+                            : AppTheme.warningColor,
                         shape: BoxShape.circle,
                       ),
                     ),
                     SizedBox(width: screenSize.height * 0.005),
                     Text(
-                      l10n.active,
+                      student.llaveActiva ? l10n.active : l10n.inactive,
                       style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                        color: AppTheme.successColor,
+                        color: student.llaveActiva
+                            ? AppTheme.successColor
+                            : AppTheme.warningColor,
                         fontWeight: FontWeight.w500,
                       ),
                     ),

@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../managers/student_provider.dart';
-import '../../models/models.dart'; // Asegúrate que contenga `Alumno`
 
 class TodayScheduleSection extends StatelessWidget {
   final Size screenSize;
@@ -53,7 +52,7 @@ class TodayScheduleSection extends StatelessWidget {
         // Selector de estudiante
         Consumer<StudentProvider>(
           builder: (context, studentProvider, child) {
-            final students = studentProvider.students;
+            final students = studentProvider.getAlumnosFromStudents();
             if (students.isEmpty) return const SizedBox.shrink();
 
             final selectedId = selectedStudentId ?? students.first.id;

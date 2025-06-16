@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../managers/student_provider.dart';
-import '../../models/models.dart';
 
 class AttendanceStatisticsCard extends StatelessWidget {
   final Size screenSize;
@@ -24,7 +23,7 @@ class AttendanceStatisticsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -90,7 +89,7 @@ class AttendanceStatisticsCard extends StatelessWidget {
           // Student selector
           Consumer<StudentProvider>(
             builder: (context, studentProvider, child) {
-              final students = studentProvider.students;
+              final students = studentProvider.getAlumnosFromStudents();
               if (students.isEmpty) return const SizedBox.shrink();
 
               final selectedStudent = students.firstWhere(
@@ -391,55 +390,6 @@ class _PeriodButton extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String value;
-  final String label;
-  final Size screenSize;
-
-  const _StatItem({
-    required this.icon,
-    required this.color,
-    required this.value,
-    required this.label,
-    required this.screenSize,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          width: screenSize.height * 0.06,
-          height: screenSize.height * 0.06,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius:
-                BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-          ),
-          child:
-              Icon(icon, color: Colors.white, size: screenSize.height * 0.03),
-        ),
-        SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-        Text(
-          value,
-          style: AppTheme.getH2(screenSize).copyWith(
-            color: AppTheme.getTextPrimaryColor(context),
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        Text(
-          label,
-          style: AppTheme.getCaption(screenSize).copyWith(
-            color: AppTheme.getTextSecondaryColor(context),
-          ),
-        ),
-      ],
     );
   }
 }

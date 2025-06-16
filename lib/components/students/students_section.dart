@@ -55,7 +55,7 @@ class StudentsSection extends StatelessWidget {
                 StudentsEmptyState(screenSize: screenSize)
               else
                 StudentsList(
-                  students: studentProvider.students,
+                  students: studentProvider.getAlumnosFromStudents(),
                   isWide: isWide,
                   screenSize: screenSize,
                 ),

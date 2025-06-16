@@ -5,15 +5,13 @@ import 'package:alertaescolar/components/notifications/recent_notifications_sect
 import 'package:alertaescolar/components/quick_actions_section.dart';
 import 'package:alertaescolar/components/schedule/today_schedule_section.dart';
 import 'package:alertaescolar/components/students/students_overview_section.dart';
+import 'package:alertaescolar/managers/student_provider.dart';
 import 'package:alertaescolar/views/user/students/students_view_new.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../l10n/app_localizations.dart';
 import '../../../app/app_theme.dart';
 import '../../../managers/user_provider.dart';
-import '../../../managers/student_provider.dart';
 import '../../../managers/notification_provider.dart';
-import '../../../models/models.dart';
 import '../notifications/notifications_view.dart';
 import '../profile/profile_view.dart';
 
@@ -47,14 +45,21 @@ class _HomeViewState extends State<HomeView> {
 
     await Future.wait([
       userProvider.loadCurrentUser(context),
-      studentProvider.loadStudents(),
       notificationProvider.loadNotifications(),
     ]);
+
+    // Get current user ID and load their students
+    final currentUser = userProvider.currentUser;
+    if (currentUser != null) {
+      await studentProvider.loadStudentsForUser(userId: currentUser.id);
+    } else {
+      // Fallback to loading students by escuelaId if no user found
+      await studentProvider.loadStudents(escuelaId: 'ESC001');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     final screenSize = MediaQuery.of(context).size;
 
     return Scaffold(

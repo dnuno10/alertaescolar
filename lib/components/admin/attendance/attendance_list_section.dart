@@ -25,7 +25,7 @@ class _AttendanceListSectionState extends State<AttendanceListSection> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
+    final l10n = AppLocalizations.of(context);
     final notifications = _generateMockNotifications();
     final filteredNotifications = _filterNotifications(notifications);
 
@@ -140,7 +140,7 @@ class _AttendanceListSectionState extends State<AttendanceListSection> {
       return [];
     }
 
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
 
     return [
       Notificacion(
@@ -263,7 +263,7 @@ class _DatePickerButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
+    final l10n = AppLocalizations.of(context);
 
     return GestureDetector(
       onTap: () => _showDatePicker(context, l10n),
@@ -520,12 +520,13 @@ class _AttendanceListItem extends StatelessWidget {
     final mockStudent = Alumno(
       id: notification.alumnoId,
       nombre: notification.datosAdicionales?['alumnoNombre'] ?? 'Estudiante',
-      grado: notification.datosAdicionales?['alumnoGrado'] ?? '',
-      grupo: notification.datosAdicionales?['alumnoGrupo'] ?? '',
-      escuelaId: 'school_001',
-      llave: 'KEY${notification.alumnoId}',
-      fechaRegistro: DateTime.now().subtract(const Duration(days: 30)),
-      tutoresIds: ['tutor_001'],
+      grupo: notification.datosAdicionales?['alumnoGrupo'] ?? 'A',
+      id_escuela: 'school_001',
+      id_llave: 'KEY${notification.alumnoId}',
+      vinculado: true,
+      matricula: 'MAT${notification.alumnoId}',
+      fecha_registro: DateTime.now().subtract(const Duration(days: 30)),
+      turno: Turno.matutino,
     );
 
     Navigator.push(

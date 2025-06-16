@@ -16,7 +16,7 @@ class TimeFilterSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
+    final l10n = AppLocalizations.of(context);
 
     return Padding(
       padding: EdgeInsets.symmetric(
