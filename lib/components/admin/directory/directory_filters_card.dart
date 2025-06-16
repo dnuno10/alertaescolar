@@ -1,23 +1,27 @@
+import 'package:alertaescolar/managers/student_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../textfield/custom_input_field.dart';
-import '../../../models/models.dart';
 import '../../../views/admin/students/student_profile_admin_view.dart';
 
 class DirectoryFiltersCard extends StatefulWidget {
   final Size screenSize;
-  final String selectedGrade;
-  final String selectedGroup;
+  final String selectedGrade; // Will be used for grupo
+  final String selectedGroup; // Will be used for nivel_educativo
   final String selectedStatus;
-  final ValueChanged<String> onGradeChanged;
-  final ValueChanged<String> onGroupChanged;
+  final String selectedTurno; // Add turno parameter
+  final ValueChanged<String> onGradeChanged; // Will handle grupo changes
+  final ValueChanged<String>
+      onGroupChanged; // Will handle nivel_educativo changes
   final ValueChanged<String> onStatusChanged;
+  final ValueChanged<String> onTurnoChanged; // Add turno handler
   final VoidCallback onClearFilters;
   final TextEditingController searchController;
   final int totalStudents;
   final int filteredStudents;
-  final List<Alumno> students;
+  final List<StudentDetails> students;
 
   const DirectoryFiltersCard({
     super.key,
@@ -25,9 +29,11 @@ class DirectoryFiltersCard extends StatefulWidget {
     required this.selectedGrade,
     required this.selectedGroup,
     required this.selectedStatus,
+    required this.selectedTurno, // Add this parameter
     required this.onGradeChanged,
     required this.onGroupChanged,
     required this.onStatusChanged,
+    required this.onTurnoChanged, // Add this parameter
     required this.onClearFilters,
     required this.searchController,
     required this.totalStudents,
@@ -47,7 +53,7 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
         widget.selectedStatus != 'all';
   }
 
-  void _navigateToStudentProfile(Alumno student) {
+  void _navigateToStudentProfile(StudentDetails student) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -60,13 +66,20 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    // Debug: Check what students data is being received
-    debugPrint(
-        'DirectoryFiltersCard: Received ${widget.students.length} students');
-    if (widget.students.isNotEmpty) {
-      debugPrint(
-          'DirectoryFiltersCard: First student: ${widget.students.first.nombre}');
-    }
+    // Get filter options from the student provider
+    final studentProvider = context.watch<StudentProvider>();
+    final availableGrupos = [
+      'all',
+      ...studentProvider.getAvailableGrupoNames()
+    ];
+    final availableNiveles = [
+      'all',
+      ...studentProvider.getAvailableNivelesEducativos()
+    ];
+    final availableTurnos = [
+      'all',
+      ...studentProvider.getAvailableTurnoNames()
+    ];
 
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(widget.screenSize)),
@@ -156,56 +169,69 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
           LayoutBuilder(
             builder: (context, constraints) {
               if (constraints.maxWidth > 600) {
-                // Desktop/Tablet layout - 3 columns
+                // Desktop/Tablet layout - 4 columns
                 return Row(
                   children: [
                     Expanded(
                         child: _buildFilterDropdown(
-                            l10n.grade, // Replaced hardcoded text
-                            widget.selectedGrade,
-                            ['all', '1°', '2°', '3°', '4°', '5°', '6°'])),
+                            'Grupo',
+                            widget.selectedGrade, // grupo filter
+                            availableGrupos)),
                     SizedBox(
                         width: AppTheme.getSmallPadding(widget.screenSize)),
                     Expanded(
                         child: _buildFilterDropdown(
-                            l10n.group, // Replaced hardcoded text
-                            widget.selectedGroup,
-                            ['all', 'A', 'B', 'C', 'D'])),
+                            'Nivel Educativo',
+                            widget.selectedGroup, // nivel_educativo filter
+                            availableNiveles)),
                     SizedBox(
                         width: AppTheme.getSmallPadding(widget.screenSize)),
                     Expanded(
                         child: _buildFilterDropdown(
-                            l10n.status, // Replaced hardcoded text
+                            'Turno',
+                            widget.selectedTurno, // turno filter
+                            availableTurnos)),
+                    SizedBox(
+                        width: AppTheme.getSmallPadding(widget.screenSize)),
+                    Expanded(
+                        child: _buildFilterDropdown(
+                            'Estado',
                             widget.selectedStatus,
                             ['all', 'active', 'inactive'])),
                   ],
                 );
               } else {
-                // Mobile layout - 2 columns
+                // Mobile layout - 2x2
                 return Column(
                   children: [
                     Row(
                       children: [
                         Expanded(
-                            child: _buildFilterDropdown(
-                                l10n.grade, // Replaced hardcoded text
-                                widget.selectedGrade,
-                                ['all', '1°', '2°', '3°', '4°', '5°', '6°'])),
+                            child: _buildFilterDropdown('Grupo',
+                                widget.selectedGrade, availableGrupos)),
                         SizedBox(
                             width: AppTheme.getSmallPadding(widget.screenSize)),
                         Expanded(
-                            child: _buildFilterDropdown(
-                                l10n.group, // Replaced hardcoded text
-                                widget.selectedGroup,
-                                ['all', 'A', 'B', 'C', 'D'])),
+                            child: _buildFilterDropdown('Nivel Educativo',
+                                widget.selectedGroup, availableNiveles)),
                       ],
                     ),
                     SizedBox(
                         height: AppTheme.getSmallPadding(widget.screenSize)),
-                    _buildFilterDropdown(
-                        l10n.status, // Replaced hardcoded text
-                        widget.selectedStatus,
-                        ['all', 'active', 'inactive']),
+                    Row(
+                      children: [
+                        Expanded(
+                            child: _buildFilterDropdown('Turno',
+                                widget.selectedTurno, availableTurnos)),
+                        SizedBox(
+                            width: AppTheme.getSmallPadding(widget.screenSize)),
+                        Expanded(
+                            child: _buildFilterDropdown(
+                                'Estado',
+                                widget.selectedStatus,
+                                ['all', 'active', 'inactive'])),
+                      ],
+                    ),
                   ],
                 );
               }
@@ -287,13 +313,13 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
                         width: AppTheme.getSmallPadding(widget.screenSize)),
                     _buildCompactStat(
                         l10n.active, // Replaced hardcoded text
-                        widget.students.where((s) => s.vinculado).length,
+                        widget.students.where((s) => s.llaveActiva).length,
                         AppTheme.successColor),
                     SizedBox(
                         width: AppTheme.getSmallPadding(widget.screenSize)),
                     _buildCompactStat(
                         l10n.inactive, // Replaced hardcoded text
-                        widget.students.where((s) => !s.vinculado).length,
+                        widget.students.where((s) => !s.llaveActiva).length,
                         AppTheme.errorColor),
                   ],
                 ),
@@ -329,10 +355,11 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
     );
   }
 
-  Widget _buildStudentItem(Alumno student, bool isLast) {
+  Widget _buildStudentItem(StudentDetails student, bool isLast) {
     final l10n = AppLocalizations.of(context);
     final statusColor =
-        student.vinculado ? AppTheme.successColor : AppTheme.errorColor;
+        student.llaveActiva ? AppTheme.successColor : AppTheme.errorColor;
+    // Use grupo field instead of id_grupo to show the actual group name
     final gradeGroup = student.grupo;
 
     return Container(
@@ -385,28 +412,15 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              student.nombre,
-                              style: AppTheme.getBodyMedium(widget.screenSize)
-                                  .copyWith(
-                                color: AppTheme.getTextPrimaryColor(context),
-                                fontWeight: FontWeight.w600,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Text(
-                            student.id,
-                            style: AppTheme.getCaptionSmall(widget.screenSize)
-                                .copyWith(
-                              color: AppTheme.getTextSecondaryColor(context),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        student.nombre,
+                        style:
+                            AppTheme.getBodyMedium(widget.screenSize).copyWith(
+                          color: AppTheme.getTextPrimaryColor(context),
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                       SizedBox(
                           height: AppTheme.getSmallPadding(widget.screenSize) *
@@ -419,12 +433,12 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
                         children: [
                           _buildChip(gradeGroup, AppTheme.accentBlue),
                           _buildChip(
-                              student.vinculado
-                                  ? l10n.active
-                                  : l10n.inactive, // Replaced hardcoded text
+                              student.llaveActiva ? l10n.active : l10n.inactive,
                               statusColor),
-                          _buildChip(student.id_llave,
-                              AppTheme.getTextSecondaryColor(context)),
+                          student.llaveCodigo?.isNotEmpty == true
+                              ? _buildChip(student.matricula,
+                                  AppTheme.getTextSecondaryColor(context))
+                              : Container(),
                         ],
                       ),
                     ],
@@ -557,11 +571,15 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
             underline: const SizedBox(),
             onChanged: (newValue) {
               switch (label) {
-                case 'Grado':
-                  widget.onGradeChanged(newValue!);
-                  break;
                 case 'Grupo':
-                  widget.onGroupChanged(newValue!);
+                  widget.onGradeChanged(newValue!); // Handle grupo changes
+                  break;
+                case 'Nivel Educativo':
+                  widget.onGroupChanged(
+                      newValue!); // Handle nivel_educativo changes
+                  break;
+                case 'Turno':
+                  widget.onTurnoChanged(newValue!); // Handle turno changes
                   break;
                 case 'Estado':
                   widget.onStatusChanged(newValue!);

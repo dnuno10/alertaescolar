@@ -73,6 +73,9 @@ abstract class AppLocalizations {
   String get settingUpAccount;
   String get loading;
 
+  String get loadingFamilyContacts;
+  String get loadingNotifications;
+
   String get error;
   String get loadingSchoolInformation;
   String get errorFetchingSchool;
@@ -1276,6 +1279,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ok => 'OK';
+  @override
+  String get loadingFamilyContacts => 'Loading family contacts...';
+
+  @override
+  String get loadingNotifications => 'Loading notifications...';
 
   @override
   String get editContact => 'Edit Contact';
@@ -4137,6 +4145,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get shareReportDesc => 'Compartir informe directamente';
+
+  @override
+  String get loadingFamilyContacts => 'Cargando contactos familiares...';
+
+  @override
+  String get loadingNotifications => 'Cargando notificaciones...';
 
   @override
   String get emailInvalid => 'Dirección de correo inválida';

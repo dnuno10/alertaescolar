@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../app/app_theme.dart';
-import '../models/models.dart';
+import '../managers/student_provider.dart';
 
 class StudentColorSelector {
-  static Color getStudentColor(Alumno student) {
+  static Color getStudentColor(StudentDetails student) {
     final colors = [
       AppTheme.accentBlue,
       AppTheme.successColor,

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
-import '../../models/models.dart';
+import '../../managers/student_provider.dart';
 import '../../app/app_theme.dart';
 import 'student_detail_row.dart';
 
 class StudentAcademicInfoCard extends StatelessWidget {
-  final Alumno student;
+  final StudentDetails student;
   final Size screenSize;
 
   const StudentAcademicInfoCard({
@@ -16,7 +16,7 @@ class StudentAcademicInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -44,29 +44,37 @@ class StudentAcademicInfoCard extends StatelessWidget {
           ),
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
           StudentDetailRow(
-            icon: Icons.school_rounded,
-            label: l10n.gradeLevel,
-            value: student.grupo,
+            icon: Icons.class_rounded,
+            label: l10n.educationalLevel,
+            value: student.nivelEducativo.isNotEmpty
+                ? student.nivelEducativo
+                : l10n.notAssigned,
             iconColor: AppTheme.accentBlue,
             screenSize: screenSize,
           ),
           SizedBox(height: AppTheme.getSmallPadding(screenSize)),
           StudentDetailRow(
-            icon: Icons.access_time_rounded,
-            label: l10n.shift, // Replaced hardcoded 'Turno'
-            value: student.turno.name == 'matutino'
-                ? l10n.morning
-                : l10n.afternoon, // Replaced hardcoded values
-            iconColor: AppTheme.accentYellow,
+            icon: Icons.group_rounded,
+            label: l10n.group,
+            value: student.grupo.isNotEmpty ? student.grupo : l10n.notAssigned,
+            iconColor: AppTheme.successColor,
             screenSize: screenSize,
           ),
           SizedBox(height: AppTheme.getSmallPadding(screenSize)),
           StudentDetailRow(
-            icon: Icons.person_rounded,
+            icon: Icons.schedule_rounded,
+            label: l10n.shift,
+            value: student.turno?.isNotEmpty == true
+                ? student.turno!
+                : l10n.notAssigned,
+            iconColor: AppTheme.warningColor,
+            screenSize: screenSize,
+          ),
+          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+          StudentDetailRow(
+            icon: Icons.badge_rounded,
             label: l10n.studentId,
-            value: student.id.isNotEmpty
-                ? student.id.substring(0, 8.clamp(0, student.id.length))
-                : l10n.noId,
+            value: student.matricula.isNotEmpty ? student.matricula : l10n.noId,
             iconColor: AppTheme.accentPurple,
             screenSize: screenSize,
           ),

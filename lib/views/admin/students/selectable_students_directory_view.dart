@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../app/app_theme.dart';
-import '../../../models/models.dart';
 import '../../../components/admin/students/selectable_directory_filters_card.dart';
 
 class SelectableStudentsDirectoryView extends StatefulWidget {
@@ -61,14 +60,14 @@ class _SelectableStudentsDirectoryViewState
         Provider.of<StudentProvider>(context, listen: false);
     studentProvider.filterStudents(
       searchQuery: _searchController.text,
-      grado: _selectedGrade,
-      grupo: _selectedGroup,
+      grupo: _selectedGrade, // Filter by grupo name
+      nivelEducativo: _selectedGroup, // Filter by nivel_educativo
       status: _selectedStatus,
-      turno: _selectedTurno,
+      turno: _selectedTurno, // Filter by turno name
     );
   }
 
-  void _selectStudent(Alumno student) {
+  void _selectStudent(StudentDetails student) {
     if (widget.selectionMode) {
       // Convert Alumno to the expected format for notifications
       final selectedStudentData = {
@@ -76,9 +75,9 @@ class _SelectableStudentsDirectoryViewState
         'name': student.nombre,
         'grade': student.grupo,
         'section': student.grupo,
-        'active': student.vinculado,
-        'llave': student.id_llave,
-        'escuelaId': student.id_escuela,
+        'active': student.llaveActiva,
+        'llave': student.llaveId ?? '',
+        'escuelaId': student.escuelaId,
         'matricula': student.matricula,
       };
 
@@ -93,7 +92,7 @@ class _SelectableStudentsDirectoryViewState
 
     return Consumer2<ThemeProvider, StudentProvider>(
       builder: (context, themeProvider, studentProvider, child) {
-        final allStudents = studentProvider.getAlumnosFromStudents();
+        final allStudents = studentProvider.filteredStudents;
         final filteredStudents = allStudents;
 
         return Scaffold(

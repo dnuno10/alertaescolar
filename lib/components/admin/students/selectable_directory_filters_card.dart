@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../models/models.dart';
+import '../../../managers/student_provider.dart';
 import '../../../components/textfield/custom_input_field.dart';
 import 'filter_dropdown.dart';
 import 'student_empty_state.dart';
@@ -19,8 +19,8 @@ class SelectableDirectoryFiltersCard extends StatelessWidget {
   final TextEditingController searchController;
   final int totalStudents;
   final int filteredStudents;
-  final List<Alumno> students;
-  final Function(Alumno) onStudentSelected;
+  final List<StudentDetails> students;
+  final Function(StudentDetails) onStudentSelected;
   final bool selectionMode;
 
   const SelectableDirectoryFiltersCard({

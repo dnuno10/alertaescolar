@@ -1,6 +1,8 @@
+import 'package:alertaescolar/components/loading_dialog.dart';
 import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../../app/app_theme.dart';
+import '../../models/models.dart';
 
 class ScheduleLoadingState extends StatelessWidget {
   final Size screenSize;
@@ -21,7 +23,7 @@ class ScheduleLoadingState extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentPurple),
+              color: AppTheme.getTextPrimaryColor(context),
             ),
             SizedBox(height: AppTheme.getSmallPadding(screenSize)),
             Text(
@@ -34,5 +36,19 @@ class ScheduleLoadingState extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  // Static method for showing loading dialog instead of this widget
+  static void showDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    LoadingDialog.show(
+      context,
+      message: l10n.loadingSchedule,
+    );
+  }
+
+  // Static method for hiding loading dialog
+  static void hideDialog(BuildContext context) {
+    LoadingDialog.hide(context);
   }
 }

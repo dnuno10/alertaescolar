@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../providers/theme_provider.dart';
-import '../../../providers/schedule_provider.dart';
+import '../../../managers/schedule_provider.dart';
 import '../../../components/headers/nav_header.dart';
 import '../../../models/models.dart';
 import '../../../components/admin/schedule/education_level_group_selector.dart';

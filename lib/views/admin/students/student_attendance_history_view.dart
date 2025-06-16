@@ -3,7 +3,7 @@ import 'package:alertaescolar/components/textfield/custom_input_field.dart';
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../models/models.dart';
+import '../../../managers/student_provider.dart';
 import '../../../components/admin/students/empty_records_state.dart';
 import '../../../components/admin/students/attendance_record_item.dart';
 import '../../../components/admin/students/student_info_card.dart';
@@ -11,7 +11,7 @@ import '../../../components/admin/students/filters_section.dart';
 import '../../../components/admin/students/records_header.dart';
 
 class StudentAttendanceHistoryView extends StatefulWidget {
-  final Alumno student;
+  final StudentDetails student;
 
   const StudentAttendanceHistoryView({
     super.key,

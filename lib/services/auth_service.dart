@@ -150,6 +150,16 @@ class AuthService extends ChangeNotifier {
         // Usuario existe, cargar sus datos
         final usuario = Usuario.fromJson(userData);
         userProvider?.updateUser(usuario);
+
+        // Update route based on user type
+        if (usuario.tipo == TipoUsuario.administrador) {
+          _initialRoute = '/admin';
+          debugPrint('Admin user signed in, setting route to /admin');
+        } else {
+          _initialRoute = '/';
+          debugPrint('Regular user signed in, setting route to /');
+        }
+        notifyListeners();
       } else {
         // Check if user is in admin list
         // Context is already null-checked above

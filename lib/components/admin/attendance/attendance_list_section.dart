@@ -517,22 +517,12 @@ class _AttendanceListItem extends StatelessWidget {
   }
 
   void _navigateToStudentProfile(BuildContext context) {
-    final mockStudent = Alumno(
-      id: notification.alumnoId,
-      nombre: notification.datosAdicionales?['alumnoNombre'] ?? 'Estudiante',
-      grupo: notification.datosAdicionales?['alumnoGrupo'] ?? 'A',
-      id_escuela: 'school_001',
-      id_llave: 'KEY${notification.alumnoId}',
-      vinculado: true,
-      matricula: 'MAT${notification.alumnoId}',
-      fecha_registro: DateTime.now().subtract(const Duration(days: 30)),
-      turno: Turno.matutino,
-    );
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => StudentProfileAdminView(student: mockStudent),
+    // Remove mock student navigation since this is mock data
+    final l10n = AppLocalizations.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Esta es información de demostración'),
+        backgroundColor: AppTheme.warningColor,
       ),
     );
   }

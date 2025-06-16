@@ -1,6 +1,5 @@
 // ignore_for_file: file_names, use_build_context_synchronously
 
-import 'package:alertaescolar/components/loading_dialog.dart';
 import 'package:alertaescolar/l10n/app_localizations.dart';
 import 'package:alertaescolar/managers/user_provider.dart';
 import 'package:alertaescolar/models/usuario.dart';
@@ -32,7 +31,7 @@ class AdminSetup {
       }
 
       // If the email is in the admin list, set up the user with admin privileges
-      final adminRecord = adminData as Map<String, dynamic>;
+      final adminRecord = adminData;
 
       // Convert string to TipoAdministrador enum
       TipoAdministrador? tipoAdmin;
@@ -76,6 +75,9 @@ class AdminSetup {
       // Update the provider
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       await userProvider.updateUser(adminUser);
+
+      debugPrint(
+          'Admin user setup complete: ${adminUser.email}, routing to /admin');
 
       // Show success message and navigate to admin page
       _showSuccessAndNavigate(

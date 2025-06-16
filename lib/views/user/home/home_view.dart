@@ -6,6 +6,7 @@ import 'package:alertaescolar/components/quick_actions_section.dart';
 import 'package:alertaescolar/components/schedule/today_schedule_section.dart';
 import 'package:alertaescolar/components/students/students_overview_section.dart';
 import 'package:alertaescolar/managers/student_provider.dart';
+import 'package:alertaescolar/models/usuario.dart';
 import 'package:alertaescolar/views/user/students/students_view_new.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -43,19 +44,18 @@ class _HomeViewState extends State<HomeView> {
     final notificationProvider =
         Provider.of<NotificationProvider>(context, listen: false);
 
-    await Future.wait([
-      userProvider.loadCurrentUser(context),
-      notificationProvider.loadNotifications(),
-    ]);
-
-    // Get current user ID and load their students
+    // Don't call loadCurrentUser here as it might trigger navigation
+    // The user should already be loaded from main.dart initialization
     final currentUser = userProvider.currentUser;
-    if (currentUser != null) {
-      await studentProvider.loadStudentsForUser(userId: currentUser.id);
-    } else {
-      // Fallback to loading students by escuelaId if no user found
-      await studentProvider.loadStudents(escuelaId: 'ESC001');
+
+    // Only proceed if we have a user and they're not an admin
+    if (currentUser != null && currentUser.tipo != TipoUsuario.administrador) {
+      await Future.wait([
+        notificationProvider.loadNotifications(),
+        studentProvider.loadStudentsForUser(userId: currentUser.id),
+      ]);
     }
+    // If user is admin or not loaded, don't load anything as they shouldn't be here
   }
 
   @override

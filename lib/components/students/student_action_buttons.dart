@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
-import '../../models/models.dart';
+import '../../managers/student_provider.dart';
 import '../../app/app_theme.dart';
 import '../buttons/solid_button.dart';
 import '../buttons/custom_outline_button.dart';
 
 class StudentActionButtons extends StatelessWidget {
-  final Alumno student;
+  final StudentDetails student;
   final Size screenSize;
 
   const StudentActionButtons({

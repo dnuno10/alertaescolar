@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../models/models.dart';
+import '../../../managers/student_provider.dart';
 import '../../../views/admin/students/student_attendance_history_view.dart';
 
 class StudentAttendanceHistoryCard extends StatelessWidget {
-  final Alumno student;
+  final StudentDetails student;
   final Size screenSize;
 
   const StudentAttendanceHistoryCard({

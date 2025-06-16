@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
-import '../../../models/models.dart';
+import '../../../managers/student_provider.dart';
 
 class StudentInfoCard extends StatelessWidget {
-  final Alumno student;
+  final StudentDetails student;
   final Size screenSize;
 
   const StudentInfoCard({
@@ -58,7 +58,7 @@ class StudentInfoCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  student.grupo,
+                  '${student.nivelEducativo} - ${student.grupo}',
                   style: AppTheme.getBodyMedium(screenSize).copyWith(
                     color: AppTheme.getTextSecondaryColor(context),
                   ),

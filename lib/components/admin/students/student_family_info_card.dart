@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../app/app_theme.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:alertaescolar/app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../models/models.dart';
+import '../../../managers/student_provider.dart';
 
-class StudentFamilyInfoCard extends StatelessWidget {
-  final Alumno student;
+class StudentFamilyInfoCard extends StatefulWidget {
+  final StudentDetails student;
   final Size screenSize;
 
   const StudentFamilyInfoCard({
@@ -14,18 +15,123 @@ class StudentFamilyInfoCard extends StatelessWidget {
   });
 
   @override
+  State<StudentFamilyInfoCard> createState() => _StudentFamilyInfoCardState();
+}
+
+class _StudentFamilyInfoCardState extends State<StudentFamilyInfoCard> {
+  final SupabaseClient _supabase = Supabase.instance.client;
+  List<Map<String, dynamic>> _familyContacts = [];
+  bool _isLoading = true;
+  bool _hasLoadedData = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Don't load data here - wait for didChangeDependencies
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasLoadedData) {
+      _hasLoadedData = true;
+      _loadFamilyContacts();
+    }
+  }
+
+  Future<void> _loadFamilyContacts() async {
+    if (!mounted) return;
+
+    try {
+      setState(() => _isLoading = true);
+
+      // Step 1: Get tutor IDs from alumno_tutores table using student ID
+      final tutorResponse = await _supabase
+          .from('alumno_tutores')
+          .select('id_tutor')
+          .eq('id_alumno', widget.student.id);
+
+      if (tutorResponse.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _familyContacts = [];
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
+      // Step 2: Extract tutor IDs
+      final tutorIds =
+          tutorResponse.map((record) => record['id_tutor']).toList();
+
+      // Step 3: Get family contacts using id_usuario (not id_tutor)
+      final contactsResponse = await _supabase
+          .from('contactos_familiares')
+          .select('*')
+          .inFilter('id_usuario', tutorIds)
+          .order('fecha_registro');
+
+      if (mounted) {
+        setState(() {
+          _familyContacts = List<Map<String, dynamic>>.from(contactsResponse);
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading family contacts: $e');
+      if (mounted) {
+        setState(() {
+          _familyContacts = [];
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    // Mock family data for the student
-    final familyMembers = _generateMockFamilyData();
+    if (_isLoading) {
+      return Container(
+        padding: EdgeInsets.all(AppTheme.getMediumPadding(widget.screenSize)),
+        decoration: BoxDecoration(
+          color: AppTheme.getCardColor(context),
+          borderRadius:
+              BorderRadius.circular(AppTheme.getLargeRadius(widget.screenSize)),
+          border: Border.all(
+            color: AppTheme.getBorderColor(context),
+            width: 1,
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(
+                color: AppTheme.getTextPrimaryColor(context),
+              ),
+              SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
+              Text(
+                l10n.loadingFamilyContacts,
+                style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
+                  color: AppTheme.getTextPrimaryColor(context),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Container(
-      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+      padding: EdgeInsets.all(AppTheme.getMediumPadding(widget.screenSize)),
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
         borderRadius:
-            BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
+            BorderRadius.circular(AppTheme.getLargeRadius(widget.screenSize)),
         border: Border.all(
           color: AppTheme.getBorderColor(context),
           width: 1,
@@ -33,8 +139,8 @@ class StudentFamilyInfoCard extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: AppTheme.getShadowColor(context),
-            blurRadius: screenSize.height * 0.015,
-            offset: Offset(0, screenSize.height * 0.005),
+            blurRadius: widget.screenSize.height * 0.015,
+            offset: Offset(0, widget.screenSize.height * 0.005),
           ),
         ],
       ),
@@ -45,41 +151,42 @@ class StudentFamilyInfoCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding:
-                    EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.5),
+                padding: EdgeInsets.all(
+                    AppTheme.getSmallPadding(widget.screenSize) * 0.5),
                 decoration: BoxDecoration(
                   color: AppTheme.accentPurple.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(
-                      AppTheme.getSmallRadius(screenSize)),
+                      AppTheme.getSmallRadius(widget.screenSize)),
                 ),
                 child: Icon(
                   Icons.family_restroom_rounded,
                   color: AppTheme.accentPurple,
-                  size: screenSize.height * 0.025,
+                  size: widget.screenSize.height * 0.025,
                 ),
               ),
-              SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+              SizedBox(width: AppTheme.getSmallPadding(widget.screenSize)),
               Expanded(
                 child: Text(
                   l10n.familyContacts,
-                  style: AppTheme.getH2(screenSize).copyWith(
+                  style: AppTheme.getH2(widget.screenSize).copyWith(
                     color: AppTheme.getTextPrimaryColor(context),
                   ),
                 ),
               ),
               Container(
                 padding: EdgeInsets.symmetric(
-                  horizontal: AppTheme.getSmallPadding(screenSize) * 0.75,
-                  vertical: AppTheme.getSmallPadding(screenSize) * 0.5,
+                  horizontal:
+                      AppTheme.getSmallPadding(widget.screenSize) * 0.75,
+                  vertical: AppTheme.getSmallPadding(widget.screenSize) * 0.5,
                 ),
                 decoration: BoxDecoration(
                   color: AppTheme.accentPurple.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(
-                      AppTheme.getSmallRadius(screenSize) * 0.5),
+                      AppTheme.getSmallRadius(widget.screenSize) * 0.5),
                 ),
                 child: Text(
-                  '${familyMembers.length} ${l10n.contacts}',
-                  style: AppTheme.getCaptionSmall(screenSize).copyWith(
+                  '${_familyContacts.length} ${l10n.contacts}',
+                  style: AppTheme.getCaptionSmall(widget.screenSize).copyWith(
                     color: AppTheme.accentPurple,
                     fontWeight: FontWeight.w600,
                   ),
@@ -88,58 +195,43 @@ class StudentFamilyInfoCard extends StatelessWidget {
             ],
           ),
 
-          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+          SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
 
           // Family Members List
-          ...familyMembers.asMap().entries.map((entry) {
-            final index = entry.key;
-            final member = entry.value;
-            return _FamilyMemberItem(
-              member: member,
-              screenSize: screenSize,
-              isLast: index == familyMembers.length - 1,
-              l10n: l10n,
-            );
-          }),
+          if (_familyContacts.isEmpty)
+            Center(
+              child: Padding(
+                padding: EdgeInsets.all(
+                    AppTheme.getMediumPadding(widget.screenSize)),
+                child: Text(
+                  'No hay contactos familiares registrados',
+                  style: AppTheme.getCaption(widget.screenSize).copyWith(
+                    color: AppTheme.getTextSecondaryColor(context),
+                  ),
+                ),
+              ),
+            )
+          else
+            ..._familyContacts.asMap().entries.map((entry) {
+              final index = entry.key;
+              final contact = entry.value;
+              return _FamilyMemberItem(
+                member: contact,
+                screenSize: widget.screenSize,
+                isLast: index == _familyContacts.length - 1,
+                l10n: l10n,
+              );
+            }),
 
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+          SizedBox(height: AppTheme.getSmallPadding(widget.screenSize)),
         ],
       ),
     );
   }
-
-  List<Map<String, String>> _generateMockFamilyData() {
-    return [
-      {
-        'name': 'María Elena García',
-        'relationship': 'Madre',
-        'phone': '+52 55 1234 5678',
-        'email': 'maria.garcia@email.com',
-        'occupation': 'Doctora',
-        'isPrimary': 'true',
-      },
-      {
-        'name': 'Carlos Martínez López',
-        'relationship': 'Padre',
-        'phone': '+52 55 9876 5432',
-        'email': 'carlos.martinez@email.com',
-        'occupation': 'Ingeniero',
-        'isPrimary': 'false',
-      },
-      {
-        'name': 'Ana García Ruiz',
-        'relationship': 'Abuela',
-        'phone': '+52 55 5555 1234',
-        'email': 'ana.garcia@email.com',
-        'occupation': 'Jubilada',
-        'isPrimary': 'false',
-      },
-    ];
-  }
 }
 
 class _FamilyMemberItem extends StatelessWidget {
-  final Map<String, String> member;
+  final Map<String, dynamic> member;
   final Size screenSize;
   final bool isLast;
   final AppLocalizations l10n;
@@ -153,8 +245,6 @@ class _FamilyMemberItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isPrimary = member['isPrimary'] == 'true';
-
     return Container(
       margin: EdgeInsets.only(
         bottom: isLast ? 0 : AppTheme.getMediumPadding(screenSize),
@@ -164,12 +254,6 @@ class _FamilyMemberItem extends StatelessWidget {
         color: AppTheme.getBackgroundColor(context),
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        border: isPrimary
-            ? Border.all(
-                color: AppTheme.accentPurple.withOpacity(0.3),
-                width: 2,
-              )
-            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,32 +263,13 @@ class _FamilyMemberItem extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  member['name']!,
+                  member['nombre']?.toString() ?? 'Sin nombre',
                   style: AppTheme.getSubtitle1(screenSize).copyWith(
                     color: AppTheme.getTextPrimaryColor(context),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              if (isPrimary)
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppTheme.getSmallPadding(screenSize) * 0.75,
-                    vertical: AppTheme.getSmallPadding(screenSize) * 0.25,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentPurple,
-                    borderRadius: BorderRadius.circular(
-                        AppTheme.getSmallRadius(screenSize) * 0.5),
-                  ),
-                  child: Text(
-                    l10n.primaryContact,
-                    style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
             ],
           ),
 
@@ -222,7 +287,7 @@ class _FamilyMemberItem extends StatelessWidget {
                   AppTheme.getSmallRadius(screenSize) * 0.5),
             ),
             child: Text(
-              member['relationship']!,
+              member['parentesco']?.toString() ?? 'Sin parentesco',
               style: AppTheme.getCaptionSmall(screenSize).copyWith(
                 color: AppTheme.accentBlue,
                 fontWeight: FontWeight.w600,
@@ -233,23 +298,26 @@ class _FamilyMemberItem extends StatelessWidget {
           SizedBox(height: AppTheme.getSmallPadding(screenSize)),
 
           // Contact Information
-          _ContactRow(
-            icon: Icons.phone_rounded,
-            label: l10n.phone,
-            value: member['phone']!,
-            screenSize: screenSize,
-            color: AppTheme.successColor,
-          ),
+          if (member['telefono'] != null)
+            _ContactRow(
+              icon: Icons.phone_rounded,
+              label: l10n.phone,
+              value: member['telefono'].toString(),
+              screenSize: screenSize,
+              color: AppTheme.successColor,
+            ),
 
-          SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.5),
+          if (member['telefono'] != null && member['email'] != null)
+            SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.5),
 
-          _ContactRow(
-            icon: Icons.email_rounded,
-            label: 'Email',
-            value: member['email']!,
-            screenSize: screenSize,
-            color: AppTheme.accentBlue,
-          ),
+          if (member['email'] != null)
+            _ContactRow(
+              icon: Icons.email_rounded,
+              label: 'Email',
+              value: member['email'].toString(),
+              screenSize: screenSize,
+              color: AppTheme.accentBlue,
+            ),
         ],
       ),
     );

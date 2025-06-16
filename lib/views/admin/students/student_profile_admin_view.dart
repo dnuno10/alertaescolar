@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../providers/theme_provider.dart';
-import '../../../models/models.dart';
+import '../../../managers/student_provider.dart';
 import '../../../components/headers/nav_header.dart';
 import '../../../components/students/student_profile_card.dart';
 import '../../../components/students/student_academic_info_card.dart';
@@ -13,7 +13,7 @@ import '../../../components/admin/students/student_attendance_history_card.dart'
 import '../../../utils/student_color_selector.dart';
 
 class StudentProfileAdminView extends StatelessWidget {
-  final Alumno student;
+  final StudentDetails student;
 
   const StudentProfileAdminView({
     super.key,

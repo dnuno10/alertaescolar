@@ -35,11 +35,14 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
 
   @override
   void dispose() {
+    _searchController.removeListener(_filterStudents);
     _searchController.dispose();
     super.dispose();
   }
 
   Future<void> _loadStudents() async {
+    if (!mounted) return;
+
     final studentProvider =
         Provider.of<StudentProvider>(context, listen: false);
 
@@ -49,35 +52,43 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
 
     debugPrint('Loading students for escuelaId: $escuelaId');
 
-    if (escuelaId != null) {
-      await studentProvider.loadStudents(escuelaId: escuelaId);
-    } else {
-      // Fallback: try to load students without school filter (this might not work depending on your database structure)
-      debugPrint('No escuelaId found for current user, using fallback');
-      await studentProvider.loadStudents(escuelaId: 'ESC001');
-    }
+    try {
+      if (escuelaId != null) {
+        await studentProvider.loadStudents(escuelaId: escuelaId);
+      } else {
+        // Fallback: try to load students without school filter (this might not work depending on your database structure)
+        debugPrint('No escuelaId found for current user, using fallback');
+        await studentProvider.loadStudents(escuelaId: 'ESC001');
+      }
 
-    // Apply current filters after loading
-    _filterStudents();
+      // Apply current filters after loading - check mounted again
+      if (mounted) {
+        _filterStudents();
+      }
 
-    debugPrint(
-        'After load and filter - Students loaded: ${studentProvider.students.length}');
-    debugPrint(
-        'After load and filter - Filtered students: ${studentProvider.filteredStudents.length}');
-    if (studentProvider.error != null) {
-      debugPrint('Error loading students: ${studentProvider.error}');
+      debugPrint(
+          'After load and filter - Students loaded: ${studentProvider.students.length}');
+      debugPrint(
+          'After load and filter - Filtered students: ${studentProvider.filteredStudents.length}');
+      if (studentProvider.error != null) {
+        debugPrint('Error loading students: ${studentProvider.error}');
+      }
+    } catch (e) {
+      debugPrint('Error in _loadStudents: $e');
     }
   }
 
   void _filterStudents() {
+    if (!mounted) return;
+
     final studentProvider =
         Provider.of<StudentProvider>(context, listen: false);
     studentProvider.filterStudents(
       searchQuery: _searchController.text,
-      grado: _selectedGrade,
-      grupo: _selectedGroup,
+      grupo: _selectedGrade, // Filter by grupo name
+      nivelEducativo: _selectedGroup, // Filter by nivel_educativo
       status: _selectedStatus,
-      turno: _selectedTurno,
+      turno: _selectedTurno, // Filter by turno name
     );
   }
 
@@ -88,7 +99,7 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
 
     return Consumer3<ThemeProvider, StudentProvider, UserProvider>(
       builder: (context, themeProvider, studentProvider, userProvider, child) {
-        final allStudents = studentProvider.getAlumnosFromStudents();
+        final allStudents = studentProvider.filteredStudents;
 
         // Show loading state
         if (studentProvider.isLoading && studentProvider.students.isEmpty) {
@@ -153,23 +164,31 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                       // Filters
                       DirectoryFiltersCard(
                         screenSize: screenSize,
-                        selectedGrade: _selectedGrade,
-                        selectedGroup: _selectedGroup,
+                        selectedGrade: _selectedGrade, // grupo
+                        selectedGroup: _selectedGroup, // nivel_educativo
                         selectedStatus: _selectedStatus,
+                        selectedTurno: _selectedTurno, // Add turno parameter
                         searchController: _searchController,
                         totalStudents: studentProvider.students.length,
                         filteredStudents: allStudents.length,
                         students: allStudents,
                         onGradeChanged: (value) {
+                          // Handle grupo changes
                           setState(() => _selectedGrade = value);
                           _filterStudents();
                         },
                         onGroupChanged: (value) {
+                          // Handle nivel_educativo changes
                           setState(() => _selectedGroup = value);
                           _filterStudents();
                         },
                         onStatusChanged: (value) {
                           setState(() => _selectedStatus = value);
+                          _filterStudents();
+                        },
+                        onTurnoChanged: (value) {
+                          // Add turno handler
+                          setState(() => _selectedTurno = value);
                           _filterStudents();
                         },
                         onClearFilters: () {

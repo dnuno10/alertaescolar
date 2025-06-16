@@ -60,9 +60,10 @@ class SchoolProvider with ChangeNotifier {
     } catch (e) {
       _error = '${l10n.errorLoadingSchool}: $e';
     } finally {
+      LoadingDialog.hide(context);
+
       _isLoading = false;
       notifyListeners();
-      LoadingDialog.hide(context);
     }
     return _currentSchool;
   }
@@ -89,9 +90,9 @@ class SchoolProvider with ChangeNotifier {
       _error = '${l10n.errorUpdatingSchool}: $e';
       return false;
     } finally {
+      LoadingDialog.hide(context);
       _isLoading = false;
       notifyListeners();
-      LoadingDialog.hide(context);
     }
   }
 }

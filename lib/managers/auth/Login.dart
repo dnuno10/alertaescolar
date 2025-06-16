@@ -1,6 +1,5 @@
 // ignore_for_file: file_names, use_build_context_synchronously
 
-import 'package:alertaescolar/app/app_theme.dart';
 import 'package:alertaescolar/components/loading_dialog.dart';
 import 'package:alertaescolar/managers/auth/AdminSetup.dart';
 import 'package:alertaescolar/widgets/custom_snack_bar.dart';
@@ -109,10 +108,14 @@ class LogIn {
           );
         } else {
           // Perfil completo, comprobar si es admin y redirigir adecuadamente
+          final route =
+              usuario.tipo == TipoUsuario.administrador ? '/admin' : '/';
+          debugPrint(
+              'User login complete: ${usuario.email}, tipo: ${usuario.tipo}, routing to: $route');
           _showSuccessAndNavigate(
             context,
             l10n.loginSuccessful,
-            usuario.tipo == TipoUsuario.administrador ? '/admin' : '/',
+            route,
           );
         }
       }

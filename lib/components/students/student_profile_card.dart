@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
-import '../../models/models.dart';
+import '../../managers/student_provider.dart';
 import '../../app/app_theme.dart';
 
 class StudentProfileCard extends StatelessWidget {
-  final Alumno student;
+  final StudentDetails student;
   final Color color;
   final Size screenSize;
 
@@ -81,17 +81,17 @@ class StudentProfileCard extends StatelessWidget {
                 vertical: screenSize.height * 0.01,
               ),
               decoration: BoxDecoration(
-                color: student.vinculado
+                color: student.llaveActiva
                     ? AppTheme.successColor.withValues(alpha: 0.1)
                     : AppTheme.warningColor.withValues(alpha: 0.1),
                 borderRadius:
                     BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
               ),
               child: Text(
-                student.vinculado ? l10n.active : l10n.inactive,
+                student.llaveActiva ? l10n.active : l10n.inactive,
                 style: AppTheme.getCaption(screenSize).copyWith(
                   fontWeight: FontWeight.w600,
-                  color: student.vinculado
+                  color: student.llaveActiva
                       ? AppTheme.successColor
                       : AppTheme.warningColor,
                   letterSpacing: 0.1,

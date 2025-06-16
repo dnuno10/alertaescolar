@@ -1,9 +1,11 @@
+import 'package:alertaescolar/components/loading_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../managers/notification_provider.dart';
 import '../../widgets/custom_snack_bar.dart';
+import '../../models/models.dart';
 
 class NotificationsListSection extends StatelessWidget {
   final Size screenSize;
@@ -35,6 +37,16 @@ class NotificationsListSection extends StatelessWidget {
       sliver: Consumer<NotificationProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {
+            // Show LoadingDialog for notifications loading
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final l10n = AppLocalizations.of(context);
+              LoadingDialog.show(
+                context,
+                message:
+                    l10n.loadingNotifications ?? 'Cargando notificaciones...',
+              );
+            });
+
             return SliverToBoxAdapter(
               child: Container(
                 height: screenSize.height * 0.25,
@@ -44,13 +56,38 @@ class NotificationsListSection extends StatelessWidget {
                       AppTheme.getMediumRadius(screenSize)),
                 ),
                 child: Center(
-                  child: CircularProgressIndicator(
-                    color: AppTheme.accentPurple,
-                    strokeWidth: 2,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        color: AppTheme.getTextPrimaryColor(context),
+                        strokeWidth: 2,
+                      ),
+                      SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+                      Text(
+                        AppLocalizations.of(context).loadingNotifications ??
+                            'Cargando notificaciones...',
+                        style: AppTheme.getBodyMedium(screenSize).copyWith(
+                          color: AppTheme.getTextPrimaryColor(context),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
                 ),
               ),
             );
+          } else {
+            // Hide LoadingDialog when not loading
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              try {
+                if (Navigator.of(context).canPop()) {
+                  LoadingDialog.hide(context);
+                }
+              } catch (e) {
+                // LoadingDialog might not be showing, ignore error
+              }
+            });
           }
 
           final filteredNotifications =

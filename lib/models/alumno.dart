@@ -1,4 +1,4 @@
-enum Turno {
+enum TurnoEnum {
   matutino,
   vespertino,
 }
@@ -6,39 +6,42 @@ enum Turno {
 class Alumno {
   final String id;
   final String nombre;
-  final String grupo;
+  final String id_grupo;
+  final String grupo; // Add this field to store the group name
   final String id_escuela;
   final String id_llave;
   final bool vinculado;
   final String matricula;
   final DateTime fecha_registro;
-  final Turno turno;
+  final TurnoEnum turno;
 
   const Alumno({
     required this.id,
     required this.nombre,
-    required this.grupo,
+    required this.id_grupo,
+    required this.grupo, // Add this parameter
     required this.id_escuela,
     required this.id_llave,
     this.vinculado = true,
     required this.matricula,
     required this.fecha_registro,
-    this.turno = Turno.matutino,
+    this.turno = TurnoEnum.matutino,
   });
 
   factory Alumno.fromJson(Map<String, dynamic> json) {
     return Alumno(
       id: json['id'] ?? '',
       nombre: json['nombre'] ?? '',
-      grupo: json['grupo'] ?? '',
+      id_grupo: json['id_grupo'] ?? '',
+      grupo: json['grupo'] ?? '', // Add this field
       id_escuela: json['id_escuela'] ?? '',
       id_llave: json['id_llave'] ?? '',
       vinculado: json['vinculado'] ?? true,
       matricula: json['matricula'] ?? '',
       fecha_registro: DateTime.parse(json['fecha_registro']),
-      turno: Turno.values.firstWhere(
+      turno: TurnoEnum.values.firstWhere(
         (e) => e.name == json['turno'],
-        orElse: () => Turno.matutino,
+        orElse: () => TurnoEnum.matutino,
       ),
     );
   }
@@ -47,7 +50,8 @@ class Alumno {
     return {
       'id': id,
       'nombre': nombre,
-      'grupo': grupo,
+      'id_grupo': id_grupo,
+      'grupo': grupo, // Add this field
       'id_escuela': id_escuela,
       'id_llave': id_llave,
       'vinculado': vinculado,
@@ -60,18 +64,20 @@ class Alumno {
   Alumno copyWith({
     String? id,
     String? nombre,
-    String? grupo,
+    String? id_grupo,
+    String? grupo, // Add this parameter
     String? id_escuela,
     String? id_llave,
     bool? vinculado,
     String? matricula,
     DateTime? fecha_registro,
-    Turno? turno,
+    TurnoEnum? turno,
   }) {
     return Alumno(
       id: id ?? this.id,
       nombre: nombre ?? this.nombre,
-      grupo: grupo ?? this.grupo,
+      id_grupo: id_grupo ?? this.id_grupo,
+      grupo: grupo ?? this.grupo, // Add this field
       id_escuela: id_escuela ?? this.id_escuela,
       id_llave: id_llave ?? this.id_llave,
       vinculado: vinculado ?? this.vinculado,
@@ -81,12 +87,12 @@ class Alumno {
     );
   }
 
-  bool get esMatutino => turno == Turno.matutino;
-  bool get esVespertino => turno == Turno.vespertino;
+  bool get esMatutino => turno == TurnoEnum.matutino;
+  bool get esVespertino => turno == TurnoEnum.vespertino;
 
   @override
   String toString() {
-    return 'Alumno(id: $id, nombre: $nombre, matricula: $matricula, grupo: $grupo, turno: $turno, vinculado: $vinculado)';
+    return 'Alumno(id: $id, nombre: $nombre, matricula: $matricula, id_grupo: $id_grupo, grupo: $grupo, turno: $turno, vinculado: $vinculado)';
   }
 
   @override

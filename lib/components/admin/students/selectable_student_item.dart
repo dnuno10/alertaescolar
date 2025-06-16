@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../models/models.dart';
+import '../../../managers/student_provider.dart';
 import 'status_chip.dart';
 
 class SelectableStudentItem extends StatelessWidget {
-  final Alumno student;
+  final StudentDetails student;
   final bool isLast;
-  final Function(Alumno) onSelected;
+  final Function(StudentDetails) onSelected;
   final Size screenSize;
 
   const SelectableStudentItem({
@@ -22,7 +22,7 @@ class SelectableStudentItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final statusColor =
-        student.vinculado ? AppTheme.successColor : AppTheme.errorColor;
+        student.llaveActiva ? AppTheme.successColor : AppTheme.errorColor;
     final gradeGroup = student.grupo;
 
     return Container(
@@ -92,8 +92,9 @@ class SelectableStudentItem extends StatelessWidget {
                             screenSize: screenSize,
                           ),
                           StatusChip(
-                            text:
-                                student.vinculado ? l10n.active : l10n.inactive,
+                            text: student.llaveActiva
+                                ? l10n.active
+                                : l10n.inactive,
                             color: statusColor,
                             screenSize: screenSize,
                           ),

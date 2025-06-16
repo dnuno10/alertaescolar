@@ -1,6 +1,6 @@
 import 'package:alertaescolar/managers/family_provider.dart';
 import 'package:alertaescolar/providers/language_provider.dart';
-import 'package:alertaescolar/providers/schedule_provider.dart'; // Add ScheduleProvider import
+import 'package:alertaescolar/managers/schedule_provider.dart'; // Add ScheduleProvider import
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

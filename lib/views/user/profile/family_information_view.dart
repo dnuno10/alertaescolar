@@ -172,10 +172,13 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
         LoadingDialog.hide(context);
         _showMessage("Error: ${e.toString()}", isError: true);
       }
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
-// Actualizar en _addContact
   void _addContact(AppLocalizations l10n) async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -190,7 +193,7 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
           Provider.of<FamilyProvider>(context, listen: false);
 
       final result = await familyProvider.addFamilyContact(
-        context, // Añadir el parámetro context como primer argumento
+        context,
         _contactNameController.text.trim(),
         _selectedRelation,
         _contactPhoneController.text.trim(),
@@ -216,7 +219,6 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
     }
   }
 
-// Actualizar en _editContact
   void _editContact(ContactoFamiliar contact, AppLocalizations l10n) async {
     // Navigate to edit contact view
     final result = await Navigator.push(
@@ -232,7 +234,6 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
     }
   }
 
-// Actualizar en _deleteContact
   void _deleteContact(
       ContactoFamiliar contact, AppLocalizations l10n, Size screenSize) {
     showDialog(
