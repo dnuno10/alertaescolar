@@ -89,35 +89,65 @@ class StudentKeyInfoCard extends StatelessWidget {
   }
 
   String _calculateRemainingTime() {
-    if (student.fechaRegistroLlave == null ||
-        student.limiteVinculacion == null) {
+    // Check if we have the required data from the llaves table
+    if (student.fechaRegistroLlave == null) {
       return 'Información no disponible';
     }
 
-    // Calculate expiration date from key registration timestamp + limit in days
-    final expirationDate = student.fechaRegistroLlave!
-        .add(Duration(days: student.limiteVinculacion!.toInt()));
-
+    // Get the current time
     final now = DateTime.now();
-    final remainingDuration = expirationDate.difference(now);
 
-    if (remainingDuration.isNegative) {
+    // If fechaDesactivacionLlave is null, the key doesn't expire
+    if (student.fechaDesactivacionLlave == null) {
+      return 'Sin límite de tiempo';
+    }
+
+    // The remaining time is the difference between now and fecha_desactivacion
+    final expirationDate = student.fechaDesactivacionLlave!;
+
+    // Check if already expired
+    if (expirationDate.isBefore(now)) {
       return 'Expirado';
     }
 
-    final remainingDays = remainingDuration.inDays;
-    final remainingHours = remainingDuration.inHours % 24;
+    // Calculate remaining time
+    final difference = expirationDate.difference(now);
 
-    if (remainingDays == 0) {
-      if (remainingHours == 0) {
-        final remainingMinutes = remainingDuration.inMinutes;
-        return '$remainingMinutes minutos restantes';
+    if (difference.inDays > 0) {
+      final days = difference.inDays;
+      final hours = difference.inHours % 24;
+
+      if (days > 1) {
+        return '$days días restantes';
+      } else if (days == 1) {
+        if (hours > 0) {
+          return '1 día y $hours horas restantes';
+        } else {
+          return '1 día restante';
+        }
       }
-      return '$remainingHours horas restantes';
-    } else if (remainingDays == 1) {
-      return '1 día restante';
-    } else {
-      return '$remainingDays días restantes';
     }
+
+    if (difference.inHours > 0) {
+      final hours = difference.inHours;
+      final minutes = difference.inMinutes % 60;
+
+      if (hours > 1) {
+        return '$hours horas restantes';
+      } else {
+        if (minutes > 0) {
+          return '1 hora y $minutes minutos restantes';
+        } else {
+          return '1 hora restante';
+        }
+      }
+    }
+
+    if (difference.inMinutes > 0) {
+      final minutes = difference.inMinutes;
+      return '$minutes minutos restantes';
+    }
+
+    return 'Menos de 1 minuto restante';
   }
 }

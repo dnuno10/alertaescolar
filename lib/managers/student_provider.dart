@@ -21,8 +21,12 @@ class StudentDetails {
   final String? llaveCodigo;
   final bool llaveActiva;
   final DateTime fechaRegistro;
-  final DateTime? fechaRegistroLlave;
-  final int? limiteVinculacion;
+  final DateTime?
+      fechaRegistroLlave; // This should come from llaves.fecha_registro
+  final DateTime?
+      fechaDesactivacionLlave; // This should come from llaves.fecha_desactivacion
+  final int?
+      limiteVinculacion; // This should come from llaves.limite_vinculacion_dias
   final List<TutorInfo> tutores;
   final List<Map<String, dynamic>> familyContacts; // Add this field
 
@@ -43,6 +47,7 @@ class StudentDetails {
     required this.llaveActiva,
     required this.fechaRegistro,
     this.fechaRegistroLlave,
+    this.fechaDesactivacionLlave,
     this.limiteVinculacion,
     required this.tutores,
     this.familyContacts = const [], // Add this parameter
@@ -65,6 +70,7 @@ class StudentDetails {
     bool? llaveActiva,
     DateTime? fechaRegistro,
     DateTime? fechaRegistroLlave,
+    DateTime? fechaDesactivacionLlave,
     int? limiteVinculacion,
     List<TutorInfo>? tutores,
     List<Map<String, dynamic>>? familyContacts, // Add this parameter
@@ -86,6 +92,8 @@ class StudentDetails {
       llaveActiva: llaveActiva ?? this.llaveActiva,
       fechaRegistro: fechaRegistro ?? this.fechaRegistro,
       fechaRegistroLlave: fechaRegistroLlave ?? this.fechaRegistroLlave,
+      fechaDesactivacionLlave:
+          fechaDesactivacionLlave ?? this.fechaDesactivacionLlave,
       limiteVinculacion: limiteVinculacion ?? this.limiteVinculacion,
       tutores: tutores ?? this.tutores,
       familyContacts: familyContacts ?? this.familyContacts, // Add this line
@@ -102,6 +110,38 @@ class StudentDetails {
       return '$horaInicioTurno - $horaFinTurno';
     }
     return 'Sin horario';
+  }
+
+  // Helper method to get remaining time in a more readable format
+  String get tiempoRestanteFormateado {
+    if (fechaRegistroLlave == null) {
+      return 'Información no disponible';
+    }
+
+    final now = DateTime.now();
+
+    if (limiteVinculacion == null || limiteVinculacion == 0) {
+      return 'Sin límite de tiempo';
+    }
+
+    final expirationDate =
+        fechaRegistroLlave!.add(Duration(days: limiteVinculacion!));
+
+    if (expirationDate.isBefore(now)) {
+      return 'Expirado';
+    }
+
+    final difference = expirationDate.difference(now);
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays} días restantes';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} horas restantes';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} minutos restantes';
+    } else {
+      return 'Menos de 1 minuto restante';
+    }
   }
 }
 
@@ -632,6 +672,9 @@ class StudentProvider with ChangeNotifier {
         fechaRegistroLlave: activeLlave != null
             ? DateTime.parse(activeLlave['fecha_registro'])
             : null,
+        fechaDesactivacionLlave: activeLlave?['fecha_desactivacion'] != null
+            ? DateTime.parse(activeLlave['fecha_desactivacion'])
+            : null,
         limiteVinculacion: activeLlave?['limite_vinculacion']?.toInt(),
         tutores: tutorsList,
         familyContacts: familyContacts,
@@ -769,6 +812,9 @@ class StudentProvider with ChangeNotifier {
         fechaRegistro: DateTime.parse(data['fecha_registro']),
         fechaRegistroLlave: activeLlave != null
             ? DateTime.parse(activeLlave['fecha_registro'])
+            : null,
+        fechaDesactivacionLlave: activeLlave?['fecha_desactivacion'] != null
+            ? DateTime.parse(activeLlave['fecha_desactivacion'])
             : null,
         limiteVinculacion: activeLlave?['limite_vinculacion']?.toInt(),
         tutores: tutorsList,
@@ -1205,7 +1251,6 @@ class StudentProvider with ChangeNotifier {
     // Use Future.microtask to avoid calling during build
     Future.microtask(() => notifyListeners());
   }
-// ...existing code...
 
   // Load family contacts for a specific student
   Future<List<Map<String, dynamic>>> loadFamilyContactsForStudent(

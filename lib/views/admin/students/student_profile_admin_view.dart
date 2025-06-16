@@ -57,7 +57,7 @@ class StudentProfileAdminView extends StatelessWidget {
 
                       SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-                      // Key Information
+                      // Key Information - now will show correct remaining time
                       StudentKeyInfoCard(
                         student: student,
                         screenSize: screenSize,
