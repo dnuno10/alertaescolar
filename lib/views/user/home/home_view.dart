@@ -121,9 +121,6 @@ class _HomeViewState extends State<HomeView> {
           SizedBox(height: AppTheme.getLargePadding(screenSize) * 1.5),
           TodayScheduleSection(
             screenSize: screenSize,
-            selectedStudentId: _selectedStudentIdForSchedule,
-            onStudentSelected: (id) =>
-                setState(() => _selectedStudentIdForSchedule = id),
           ),
           SizedBox(height: AppTheme.getLargePadding(screenSize) * 1.5),
           QuickActionsSection(
