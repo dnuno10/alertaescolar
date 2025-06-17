@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:math' as math;
 import '../models/models.dart';
 import '../models/alumno.dart';
 import '../models/turno.dart' as turno_model;
@@ -229,8 +230,6 @@ class StudentProvider with ChangeNotifier {
     }
   }
 
-// ...existing code...
-
   // Load students for current user (based on tutor relationship)
   Future<void> loadStudentsForUser({
     required String userId,
@@ -361,8 +360,6 @@ class StudentProvider with ChangeNotifier {
     }
   }
 
-// ...existing code...
-
   // Load a specific student by ID
   Future<void> loadStudentById({required String studentId}) async {
     debugPrint('loadStudentById: Starting for studentId: $studentId');
@@ -436,8 +433,6 @@ class StudentProvider with ChangeNotifier {
       Future.microtask(() => notifyListeners());
     }
   }
-
-// ...existing code...
 
   // Load all students for a school with complete details including filtering data
   Future<void> loadStudents({
@@ -693,8 +688,6 @@ class StudentProvider with ChangeNotifier {
     }
   }
 
-// ...existing code...
-
   // Updated mapping method that gets family contacts from the nested query response
   StudentDetails _mapToStudentDetailsWithContacts(Map<String, dynamic> data) {
     debugPrint(
@@ -834,7 +827,6 @@ class StudentProvider with ChangeNotifier {
     }
   }
 
-// ...existing code...
   // Load filtering data (grupos and turnos)
   Future<void> _loadFilteringData(String escuelaId) async {
     debugPrint('_loadFilteringData: Starting for escuelaId: $escuelaId');
@@ -1298,6 +1290,513 @@ class StudentProvider with ChangeNotifier {
           'loadFamilyContactsForStudent: Error loading family contacts: $e');
       debugPrint('loadFamilyContactsForStudent: Error type: ${e.runtimeType}');
       return [];
+    }
+  }
+
+  // Updated method to validate student key code with complete data and better error handling
+  Future<Map<String, dynamic>?> validateStudentKeyCode(String keyCode) async {
+    debugPrint(
+        'validateStudentKeyCode: Starting validation for code: $keyCode');
+
+    try {
+      _isLoading = true;
+      _error = null;
+      Future.microtask(() => notifyListeners());
+
+      // First check if the key exists at all
+      debugPrint('validateStudentKeyCode: Step 1 - Checking if key exists');
+      final keyExistsResponse = await _supabase
+          .from('llaves')
+          .select('id, codigo, id_alumno, id_escuela, activo')
+          .eq('codigo', keyCode)
+          .maybeSingle();
+
+      if (keyExistsResponse == null) {
+        debugPrint('validateStudentKeyCode: Key not found in database');
+        throw Exception('Código de estudiante no encontrado');
+      }
+
+      debugPrint(
+          'validateStudentKeyCode: Key found: ${keyExistsResponse['id']}');
+      debugPrint(
+          'validateStudentKeyCode: Key alumno ID: ${keyExistsResponse['id_alumno']}');
+      debugPrint(
+          'validateStudentKeyCode: Key escuela ID: ${keyExistsResponse['id_escuela']}');
+
+      // Check if alumno exists
+      debugPrint('validateStudentKeyCode: Step 2 - Checking if alumno exists');
+      final alumnoResponse = await _supabase
+          .from('alumnos')
+          .select('id, nombre')
+          .eq('id', keyExistsResponse['id_alumno'])
+          .maybeSingle();
+
+      if (alumnoResponse == null) {
+        debugPrint('validateStudentKeyCode: Alumno not found for key');
+        throw Exception('Estudiante asociado al código no encontrado');
+      }
+
+      debugPrint(
+          'validateStudentKeyCode: Alumno found: ${alumnoResponse['nombre']}');
+
+      // Check if escuela exists
+      debugPrint('validateStudentKeyCode: Step 3 - Checking if escuela exists');
+      final escuelaResponse = await _supabase
+          .from('escuelas')
+          .select('id, nombre')
+          .eq('id', keyExistsResponse['id_escuela'])
+          .maybeSingle();
+
+      if (escuelaResponse == null) {
+        debugPrint('validateStudentKeyCode: Escuela not found for key');
+        throw Exception('Escuela asociada al código no encontrada');
+      }
+
+      debugPrint(
+          'validateStudentKeyCode: Escuela found: ${escuelaResponse['nombre']}');
+
+      // Now get comprehensive data with left joins instead of inner joins
+      debugPrint('validateStudentKeyCode: Step 4 - Getting comprehensive data');
+      final keyResponse = await _supabase.from('llaves').select('''
+            id,
+            codigo,
+            id_alumno,
+            id_escuela,
+            fecha_registro,
+            fecha_desactivacion,
+            limite_vinculacion,
+            activo,
+            alumnos(
+              id,
+              nombre,
+              matricula,
+              id_grupo,
+              id_turno,
+              id_escuela,
+              fecha_registro,
+              grupos(
+                id,
+                grupo,
+                nivel_educativo
+              ),
+              turnos(
+                id,
+                turno,
+                hora_inicio,
+                hora_fin
+              )
+            ),
+            escuelas(
+              id,
+              nombre,
+              codigo,
+              tipo,
+              direccion,
+              telefono,
+              email,
+              descripcion,
+              preescolar,
+              primaria,
+              secundaria,
+              preparatoria
+            )
+          ''').eq('codigo', keyCode).single();
+
+      debugPrint('validateStudentKeyCode: Comprehensive data retrieved');
+
+      final keyData = keyResponse;
+      final alumnoData = keyData['alumnos'];
+      final escuelaData = keyData['escuelas'];
+
+      if (alumnoData == null) {
+        debugPrint(
+            'validateStudentKeyCode: Alumno data is null in comprehensive query');
+        throw Exception('Datos del estudiante no disponibles');
+      }
+
+      if (escuelaData == null) {
+        debugPrint(
+            'validateStudentKeyCode: Escuela data is null in comprehensive query');
+        throw Exception('Datos de la escuela no disponibles');
+      }
+
+      final grupoData = alumnoData['grupos'];
+      final turnoData = alumnoData['turnos'];
+
+      debugPrint(
+          'validateStudentKeyCode: Key found for student: ${alumnoData['nombre']}');
+
+      // Validate limite_vinculacion > 0
+      final limiteVinculacion = keyData['limite_vinculacion'] as int?;
+      if (limiteVinculacion == null || limiteVinculacion <= 0) {
+        debugPrint(
+            'validateStudentKeyCode: No more registrations allowed, limit: $limiteVinculacion');
+        throw Exception('Este código ya no permite más registros');
+      }
+
+      debugPrint(
+          'validateStudentKeyCode: Limit validation passed, remaining: $limiteVinculacion');
+
+      // Validate dates
+      final now = DateTime.now();
+      final fechaRegistro = DateTime.parse(keyData['fecha_registro']);
+      final fechaDesactivacion = keyData['fecha_desactivacion'] != null
+          ? DateTime.parse(keyData['fecha_desactivacion'])
+          : null;
+
+      if (now.isBefore(fechaRegistro)) {
+        debugPrint('validateStudentKeyCode: Key not yet active');
+        throw Exception('Este código aún no está activo');
+      }
+
+      if (fechaDesactivacion != null && now.isAfter(fechaDesactivacion)) {
+        debugPrint('validateStudentKeyCode: Key has expired');
+        throw Exception('Este código ha expirado');
+      }
+
+      debugPrint('validateStudentKeyCode: Date validation passed');
+
+      // Calculate remaining days for the key
+      final remainingDays = fechaDesactivacion != null
+          ? fechaDesactivacion.difference(now).inDays
+          : null;
+
+      // Format time fields properly for timestamptz
+      String? formatTime(dynamic timeField) {
+        if (timeField == null) return null;
+        try {
+          // Parse the timestamptz field
+          final dateTime = DateTime.parse(timeField.toString());
+          return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+        } catch (e) {
+          debugPrint('validateStudentKeyCode: Error formatting time: $e');
+          return null;
+        }
+      }
+
+      // Format date fields properly for timestamptz
+      String formatTimestamptz(dynamic timestampField) {
+        try {
+          final dateTime = DateTime.parse(timestampField.toString());
+          return dateTime.toIso8601String();
+        } catch (e) {
+          debugPrint('validateStudentKeyCode: Error formatting timestamp: $e');
+          return timestampField.toString();
+        }
+      }
+
+      // Return comprehensive student data for confirmation
+      final validationResult = {
+        'isValid': true,
+        'keyId': keyData['id'],
+        'limiteVinculacion': limiteVinculacion,
+        'student': {
+          'id': alumnoData['id'],
+          'nombre': alumnoData['nombre'],
+          'matricula': alumnoData['matricula'],
+          'grupo': grupoData?['grupo'] ?? 'Sin grupo',
+          'nivelEducativo': grupoData?['nivel_educativo'] ?? 'Sin nivel',
+          'turno': turnoData?['turno'] ?? 'Sin turno',
+          'horaInicioTurno': formatTime(turnoData?['hora_inicio']),
+          'horaFinTurno': formatTime(turnoData?['hora_fin']),
+          'escuelaId': alumnoData['id_escuela'],
+          'fechaRegistroAlumno': alumnoData['fecha_registro'],
+        },
+        'school': {
+          'id': escuelaData['id'],
+          'nombre': escuelaData['nombre'],
+          'codigo': escuelaData['codigo'],
+          'tipo': escuelaData['tipo'],
+          'direccion': escuelaData['direccion'],
+          'telefono': escuelaData['telefono'],
+          'email': escuelaData['email'],
+          'descripcion': escuelaData['descripcion'],
+          'nivelesEducativos': {
+            'preescolar': escuelaData['preescolar'] ?? false,
+            'primaria': escuelaData['primaria'] ?? false,
+            'secundaria': escuelaData['secundaria'] ?? false,
+            'preparatoria': escuelaData['preparatoria'] ?? false,
+          }
+        },
+        'key': {
+          'id': keyData['id'],
+          'codigo': keyData['codigo'],
+          'fechaRegistro': formatTimestamptz(keyData['fecha_registro']),
+          'fechaDesactivacion': keyData['fecha_desactivacion'] != null
+              ? formatTimestamptz(keyData['fecha_desactivacion'])
+              : null,
+          'limiteVinculacion': limiteVinculacion,
+          'remainingDays': remainingDays,
+          'activo': keyData['activo'],
+        }
+      };
+
+      debugPrint('validateStudentKeyCode: Validation successful');
+      return validationResult;
+    } catch (e) {
+      _error = e.toString();
+      debugPrint('validateStudentKeyCode: Error: $_error');
+      debugPrint('validateStudentKeyCode: Error type: ${e.runtimeType}');
+
+      // Additional debugging: Let's check what keys exist
+      try {
+        debugPrint(
+            'validateStudentKeyCode: DEBUG - Checking all keys with similar codes');
+        final allKeysResponse = await _supabase
+            .from('llaves')
+            .select('id, codigo')
+            .ilike('codigo',
+                '%${keyCode.substring(0, math.min(keyCode.length, 5))}%')
+            .limit(10);
+
+        debugPrint(
+            'validateStudentKeyCode: Found ${allKeysResponse.length} similar keys:');
+        for (final key in allKeysResponse) {
+          debugPrint(
+              'validateStudentKeyCode: - ${key['codigo']} (${key['id']})');
+        }
+
+        // Also check exact match but without case sensitivity
+        final exactMatchResponse = await _supabase
+            .from('llaves')
+            .select('id, codigo, id_alumno, id_escuela')
+            .ilike('codigo', keyCode)
+            .maybeSingle();
+
+        if (exactMatchResponse != null) {
+          debugPrint(
+              'validateStudentKeyCode: Found exact match (case insensitive): ${exactMatchResponse}');
+        } else {
+          debugPrint(
+              'validateStudentKeyCode: No exact match found even with case insensitive search');
+        }
+      } catch (debugError) {
+        debugPrint('validateStudentKeyCode: Debug query failed: $debugError');
+      }
+
+      return null;
+    } finally {
+      _isLoading = false;
+      Future.microtask(() => notifyListeners());
+    }
+  }
+
+  // Method to register student with validated key
+  Future<bool> registerStudentWithKey({
+    required String keyId,
+    required String studentId,
+    required String tutorId,
+  }) async {
+    debugPrint('registerStudentWithKey: Starting registration');
+    debugPrint(
+        'registerStudentWithKey: keyId: $keyId, studentId: $studentId, tutorId: $tutorId');
+
+    try {
+      _isLoading = true;
+      _error = null;
+      Future.microtask(() => notifyListeners());
+
+      // Check if tutor is already linked to this student
+      debugPrint('registerStudentWithKey: Checking for existing relationship');
+      final existingRelation = await _supabase
+          .from('alumno_tutores')
+          .select('id')
+          .eq('id_alumno', studentId)
+          .eq('id_tutor', tutorId)
+          .maybeSingle();
+
+      if (existingRelation != null) {
+        debugPrint(
+            'registerStudentWithKey: Tutor already linked to this student');
+        throw Exception('Ya tienes este estudiante registrado');
+      }
+
+      debugPrint(
+          'registerStudentWithKey: No existing relationship found, proceeding');
+
+      // Get current key data before updating
+      debugPrint('registerStudentWithKey: Getting current key data');
+      final currentKeyData = await _supabase
+          .from('llaves')
+          .select('id, codigo, limite_vinculacion, activo, id_alumno')
+          .eq('id', keyId)
+          .single();
+
+      final currentLimit = currentKeyData['limite_vinculacion'] as int;
+      final currentActivo = currentKeyData['activo'] as bool;
+
+      debugPrint('registerStudentWithKey: Current key data:');
+      debugPrint('  - ID: ${currentKeyData['id']}');
+      debugPrint('  - Código: ${currentKeyData['codigo']}');
+      debugPrint('  - Limite actual: $currentLimit');
+      debugPrint('  - Activo actual: $currentActivo');
+      debugPrint('  - Alumno ID: ${currentKeyData['id_alumno']}');
+
+      // Validate that we can still register
+      if (currentLimit <= 0) {
+        debugPrint('registerStudentWithKey: Limit already exhausted');
+        throw Exception('Este código ya no permite más registros');
+      }
+
+      final newLimit = currentLimit - 1;
+      debugPrint('registerStudentWithKey: Will update to new limit: $newLimit');
+
+      // Update key: reduce limite_vinculacion by 1 and set activo to true
+      debugPrint('registerStudentWithKey: Updating key in database');
+
+      final updateResult = await _supabase
+          .from('llaves')
+          .update({
+            'limite_vinculacion': newLimit,
+            'activo': true,
+          })
+          .eq('id', keyId)
+          .select('id, limite_vinculacion, activo');
+
+      debugPrint('registerStudentWithKey: Key update result: $updateResult');
+
+      if (updateResult.isEmpty) {
+        debugPrint(
+            'registerStudentWithKey: No rows were updated - key not found?');
+        throw Exception('Error al actualizar la llave - llave no encontrada');
+      }
+
+      final updatedKey = updateResult.first;
+      debugPrint('registerStudentWithKey: Updated key data:');
+      debugPrint('  - Nuevo limite: ${updatedKey['limite_vinculacion']}');
+      debugPrint('  - Nuevo activo: ${updatedKey['activo']}');
+
+      // Verify the update was successful
+      if (updatedKey['limite_vinculacion'] != newLimit) {
+        debugPrint('registerStudentWithKey: Limite was not updated correctly');
+        throw Exception('Error al actualizar el límite de vinculación');
+      }
+
+      if (updatedKey['activo'] != true) {
+        debugPrint('registerStudentWithKey: Activo was not set to true');
+        throw Exception('Error al activar la llave');
+      }
+
+      debugPrint('registerStudentWithKey: Key updated successfully');
+
+      // Insert tutor-student relationship
+      debugPrint('registerStudentWithKey: Creating tutor-student relationship');
+      final relationshipResult = await _supabase.from('alumno_tutores').insert({
+        'id_alumno': studentId,
+        'id_tutor': tutorId,
+        'fecha_vinculacion': DateTime.now().toIso8601String(),
+      }).select('id, id_alumno, id_tutor, fecha_vinculacion');
+
+      debugPrint(
+          'registerStudentWithKey: Relationship creation result: $relationshipResult');
+
+      if (relationshipResult.isEmpty) {
+        debugPrint('registerStudentWithKey: Failed to create relationship');
+        throw Exception('Error al crear la relación tutor-estudiante');
+      }
+
+      debugPrint('registerStudentWithKey: Relationship created successfully');
+
+      // Reload user's students to include the new one
+      debugPrint('registerStudentWithKey: Reloading user students');
+      await loadStudentsForUser(userId: tutorId, forceReload: true);
+
+      debugPrint('registerStudentWithKey: Registration completed successfully');
+      debugPrint('registerStudentWithKey: Final summary:');
+      debugPrint('  - Limite reducido de $currentLimit a $newLimit');
+      debugPrint('  - Activo cambiado de $currentActivo a true');
+      debugPrint('  - Relación tutor-estudiante creada');
+
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      debugPrint('registerStudentWithKey: Error: $_error');
+      debugPrint('registerStudentWithKey: Error type: ${e.runtimeType}');
+
+      // Additional debugging: Check current key state after error
+      try {
+        debugPrint('registerStudentWithKey: Checking key state after error');
+        final errorCheckData = await _supabase
+            .from('llaves')
+            .select('id, codigo, limite_vinculacion, activo')
+            .eq('id', keyId)
+            .maybeSingle();
+
+        if (errorCheckData != null) {
+          debugPrint('registerStudentWithKey: Current key state after error:');
+          debugPrint('  - Limite: ${errorCheckData['limite_vinculacion']}');
+          debugPrint('  - Activo: ${errorCheckData['activo']}');
+        }
+      } catch (debugError) {
+        debugPrint('registerStudentWithKey: Debug query failed: $debugError');
+      }
+
+      return false;
+    } finally {
+      _isLoading = false;
+      Future.microtask(() => notifyListeners());
+    }
+  }
+
+  // Method to verify key state after registration
+  Future<Map<String, dynamic>?> getKeyState(String keyId) async {
+    debugPrint('getKeyState: Checking state for keyId: $keyId');
+
+    try {
+      final response = await _supabase
+          .from('llaves')
+          .select('id, codigo, limite_vinculacion, activo, id_alumno')
+          .eq('id', keyId)
+          .maybeSingle();
+
+      if (response != null) {
+        debugPrint('getKeyState: Current state:');
+        debugPrint('  - ID: ${response['id']}');
+        debugPrint('  - Código: ${response['codigo']}');
+        debugPrint('  - Limite: ${response['limite_vinculacion']}');
+        debugPrint('  - Activo: ${response['activo']}');
+        debugPrint('  - Alumno ID: ${response['id_alumno']}');
+      } else {
+        debugPrint('getKeyState: Key not found');
+      }
+
+      return response;
+    } catch (e) {
+      debugPrint('getKeyState: Error: $e');
+      return null;
+    }
+  }
+
+  // New method to check if user already has this student registered
+  Future<bool> checkIfUserAlreadyHasStudent({
+    required String studentId,
+    required String tutorId,
+  }) async {
+    debugPrint(
+        'checkIfUserAlreadyHasStudent: Checking for studentId: $studentId, tutorId: $tutorId');
+
+    try {
+      final existingRelation = await _supabase
+          .from('alumno_tutores')
+          .select('id, fecha_vinculacion')
+          .eq('id_alumno', studentId)
+          .eq('id_tutor', tutorId)
+          .maybeSingle();
+
+      final hasStudent = existingRelation != null;
+
+      debugPrint(
+          'checkIfUserAlreadyHasStudent: User already has student: $hasStudent');
+      if (hasStudent) {
+        debugPrint(
+            'checkIfUserAlreadyHasStudent: Existing relationship found with fecha_vinculacion: ${existingRelation['fecha_vinculacion']}');
+      }
+
+      return hasStudent;
+    } catch (e) {
+      debugPrint(
+          'checkIfUserAlreadyHasStudent: Error checking relationship: $e');
+      return false; // In case of error, allow the process to continue
     }
   }
 }

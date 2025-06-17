@@ -1,3 +1,5 @@
+import 'package:alertaescolar/managers/student_provider.dart';
+import 'package:alertaescolar/managers/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
@@ -12,6 +14,7 @@ class StudentsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final screenSize = MediaQuery.of(context).size;
 
     return Consumer<ThemeProvider>(
@@ -21,18 +24,79 @@ class StudentsView extends StatelessWidget {
           body: LayoutBuilder(
             builder: (context, constraints) {
               final isWide = constraints.maxWidth >= 900;
-
-              return CustomScrollView(
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: StudentsHeader(screenSize: screenSize),
+              Size size = MediaQuery.of(context).size;
+              return Stack(
+                children: [
+                  // Main content
+                  CustomScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: StudentsHeader(screenSize: screenSize),
+                      ),
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            bottom:
+                                size.height * 0.12, // Space for floating button
+                          ),
+                          child: StudentsSection(
+                            isWide: isWide,
+                            screenSize: screenSize,
+                            onAddStudent: () => _navigateToAddStudent(context),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  SliverToBoxAdapter(
-                    child: StudentsSection(
-                      isWide: isWide,
-                      screenSize: screenSize,
-                      onAddStudent: () => _navigateToAddStudent(context),
+
+                  // Fixed floating action button
+                  Positioned(
+                    bottom: MediaQuery.of(context).padding.bottom + 20,
+                    left: screenSize.width * 0.2,
+                    right: screenSize.width * 0.2,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(
+                          AppTheme.getLargeRadius(screenSize),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.getShadowColor(context),
+                            blurRadius: 15,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: ElevatedButton.icon(
+                        onPressed: () => _navigateToAddStudent(context),
+                        icon: Icon(
+                          Icons.add_rounded,
+                          size: screenSize.height * 0.025,
+                          color: Colors.white,
+                        ),
+                        label: Text(
+                          l10n.addStudent,
+                          style: AppTheme.getBodyMedium(screenSize).copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.accentBlue,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: AppTheme.getMediumPadding(screenSize),
+                            vertical: AppTheme.getMediumPadding(screenSize),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.getLargeRadius(screenSize),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -50,6 +114,18 @@ class StudentsView extends StatelessWidget {
       MaterialPageRoute(
         builder: (context) => const AddStudentView(),
       ),
-    );
+    ).then((_) {
+      // Refresh students list when returning from add student
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final studentProvider =
+          Provider.of<StudentProvider>(context, listen: false);
+
+      if (userProvider.currentUser != null) {
+        studentProvider.loadStudentsForUser(
+          userId: userProvider.currentUser!.id,
+          forceReload: true,
+        );
+      }
+    });
   }
 }

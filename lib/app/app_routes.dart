@@ -30,6 +30,7 @@ import '../views/auth/login_view.dart';
 import '../views/auth/signup_view.dart';
 import '../views/auth/verify_magic_link_view.dart';
 import '../views/auth/finish_setting_up_view.dart';
+import '../views/user/students/student_confirmation_view.dart';
 
 class AppRoutes {
   // Auth routes
@@ -47,6 +48,7 @@ class AppRoutes {
   static const String attendance = '/attendance';
   static const String reports = '/reports';
   static const String settings = '/settings';
+  static const String studentConfirmation = '/student-confirmation';
 
   // Profile section routes
   static const String personalData = '/profile/personal-data';
@@ -275,6 +277,24 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (context) => StudentDetailView(student: student),
           settings: RouteSettings(name: studentDetail),
+        );
+      case studentConfirmation:
+        final validationResult = settings.arguments as Map<String, dynamic>?;
+        if (validationResult == null) {
+          return MaterialPageRoute(
+            builder: (context) => const Scaffold(
+              body: Center(
+                child: Text('Error: Student validation data required'),
+              ),
+            ),
+            settings: RouteSettings(name: studentConfirmation),
+          );
+        }
+        debugPrint("AppRoutes: Building StudentConfirmationView");
+        return MaterialPageRoute(
+          builder: (context) =>
+              StudentConfirmationView(validationResult: validationResult),
+          settings: RouteSettings(name: studentConfirmation),
         );
 
       default:

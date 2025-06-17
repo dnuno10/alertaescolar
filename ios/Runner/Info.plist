@@ -56,5 +56,8 @@
 			</array>
 		</dict>
 	</array>
+
+	<key>NSCameraUsageDescription</key>
+<string>Esta aplicación necesita acceso a la cámara para escanear códigos QR de estudiantes</string>
 </dict>
 </plist>

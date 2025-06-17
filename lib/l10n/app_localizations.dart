@@ -73,6 +73,27 @@ abstract class AppLocalizations {
   String get settingUpAccount;
   String get loading;
 
+  // QR Scanner related strings
+  String get qrScannerPlaceholder;
+  String get qrScannerInstructions;
+  String get qrScannerBottomInstructions;
+
+  // Student validation strings
+  String get validatingCode;
+  String get validateCode;
+  String get invalidStudentCode;
+  String get errorValidatingCode;
+  String get userNotFound;
+  String get studentRegisteredSuccessfully;
+  String get errorRegisteringStudent;
+
+  // Student confirmation dialog strings
+  String get confirmStudentRegistration;
+  String get studentToRegister;
+  String get gradeGroup;
+  String get confirmRegistrationMessage;
+  String get confirmRegistration;
+
   String get loadingFamilyContacts;
   String get loadingNotifications;
 
@@ -1290,6 +1311,56 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get name => 'Name';
+
+  @override
+  String get qrScannerPlaceholder => 'Point camera at QR code';
+
+  @override
+  String get qrScannerInstructions =>
+      'Align the QR code within the frame to scan';
+
+  @override
+  String get qrScannerBottomInstructions =>
+      'Make sure the QR code is well lit and visible';
+
+  // Student validation strings - English
+  @override
+  String get validatingCode => 'Validating code...';
+
+  @override
+  String get validateCode => 'Validate Code';
+
+  @override
+  String get invalidStudentCode => 'Invalid student code';
+
+  @override
+  String get errorValidatingCode => 'Error validating code';
+
+  @override
+  String get userNotFound => 'User not found';
+
+  @override
+  String get studentRegisteredSuccessfully => 'Student registered successfully';
+
+  @override
+  String get errorRegisteringStudent => 'Error registering student';
+
+  // Student confirmation dialog strings - English
+  @override
+  String get confirmStudentRegistration => 'Confirm Student Registration';
+
+  @override
+  String get studentToRegister => 'Student to Register';
+
+  @override
+  String get gradeGroup => 'Grade/Group';
+
+  @override
+  String get confirmRegistrationMessage =>
+      'Are you sure you want to register this student?';
+
+  @override
+  String get confirmRegistration => 'Confirm Registration';
 
   @override
   String get enterContactName => 'Enter contact name';
@@ -4157,6 +4228,57 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get loggingIn => 'Iniciando sesión...';
+
+  @override
+  String get qrScannerPlaceholder => 'Apunta la cámara al código QR';
+
+  @override
+  String get qrScannerInstructions =>
+      'Alinea el código QR dentro del marco para escanear';
+
+  @override
+  String get qrScannerBottomInstructions =>
+      'Asegúrate de que el código QR esté bien iluminado y visible';
+
+  // Student validation strings - Spanish
+  @override
+  String get validatingCode => 'Validando código...';
+
+  @override
+  String get validateCode => 'Validar Código';
+
+  @override
+  String get invalidStudentCode => 'Código de estudiante inválido';
+
+  @override
+  String get errorValidatingCode => 'Error al validar código';
+
+  @override
+  String get userNotFound => 'Usuario no encontrado';
+
+  @override
+  String get studentRegisteredSuccessfully =>
+      'Estudiante registrado exitosamente';
+
+  @override
+  String get errorRegisteringStudent => 'Error al registrar estudiante';
+
+  // Student confirmation dialog strings - Spanish
+  @override
+  String get confirmStudentRegistration => 'Confirmar Registro de Estudiante';
+
+  @override
+  String get studentToRegister => 'Estudiante a Registrar';
+
+  @override
+  String get gradeGroup => 'Grado/Grupo';
+
+  @override
+  String get confirmRegistrationMessage =>
+      '¿Estás seguro de que quieres registrar este estudiante?';
+
+  @override
+  String get confirmRegistration => 'Confirmar Registro';
 
   @override
   String get noChangesDetected => 'No se detectaron cambios';
