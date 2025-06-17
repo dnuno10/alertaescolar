@@ -17,7 +17,9 @@ import '../../../managers/user_provider.dart';
 import '../../../managers/school_provider.dart';
 
 class SchoolInfoView extends StatefulWidget {
-  const SchoolInfoView({super.key});
+  final Escuela? school;
+
+  const SchoolInfoView({super.key, this.school});
 
   @override
   State<SchoolInfoView> createState() => _SchoolInfoViewState();
@@ -52,8 +54,24 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
   }
 
   Future<void> _loadSchoolData() async {
-    LoadingDialog.show(context,
-        message: 'Cargando información de la escuela...');
+    // Si se proporcionó la información de la escuela, usarla directamente
+    if (widget.school != null) {
+      setState(() {
+        _school = widget.school;
+        _isLoading = false;
+      });
+      _animationController.forward();
+      return;
+    }
+
+    // De lo contrario, cargar desde el ID de escuela del usuario
+    // Only show LoadingDialog when actually loading from database
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        LoadingDialog.show(context,
+            message: 'Cargando información de la escuela...');
+      }
+    });
 
     try {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
@@ -113,150 +131,189 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
               SliverToBoxAdapter(
                 child: FadeTransition(
                   opacity: _fadeAnimation,
-                  child: Padding(
-                    padding:
-                        EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-                    child: Column(
-                      children: [
-                        SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-
-                        // Modern School Header Card
-                        SchoolHeaderCard(
-                          schoolName: _school?.nombre ?? l10n.schoolName,
-                          subtitle: l10n.educationalExcellenceInstitution,
-                          screenSize: screenSize,
-                        ),
-
-                        SizedBox(height: AppTheme.getLargePadding(screenSize)),
-
-                        // Quick Stats Section
-                        QuickStatsSection(screenSize: screenSize, stats: [
-                          {
-                            'title': _school?.fechaRegistro != null
-                                ? l10n.yearsExperience(DateTime.now().year -
-                                    _school!.fechaRegistro.year)
-                                : l10n.yearsExperience(0),
-                            'subtitle': l10n.experienceLabel,
-                            'icon': Icons.timeline_rounded,
-                            'color': AppTheme.accentBlue
-                          },
-                          {
-                            'title': _getEducationalLevel(
-                                _school?.nivelesEducativos, l10n),
-                            'subtitle': l10n.educationalLevel,
-                            'icon': Icons.school_rounded,
-                            'color': AppTheme.successColor
-                          },
-                          {
-                            'title': _getSchoolType(_school?.tipo, l10n),
-                            'subtitle': l10n.institution,
-                            'icon': Icons.public_rounded,
-                            'color': AppTheme.warningColor
-                          },
-                        ]),
-
-                        SizedBox(height: AppTheme.getLargePadding(screenSize)),
-
-                        // Basic Information Section
-                        InfoSection(
-                          title: l10n.basicInformation,
-                          icon: Icons.school_rounded,
-                          color: AppTheme.accentBlue,
-                          screenSize: screenSize,
-                          children: [
-                            InfoRow(
-                              label: l10n.schoolCode,
-                              value: _school?.codigo ?? l10n.notAvailable,
-                              icon: Icons.tag_rounded,
-                              screenSize: screenSize,
-                            ),
-                            InfoRow(
-                              label: l10n.principal,
-                              value: l10n.principalName,
-                              icon: Icons.person_rounded,
-                              screenSize: screenSize,
-                            ),
-                            InfoRow(
-                              label: l10n.foundedYear,
-                              value: _school?.fechaRegistro != null
-                                  ? _school!.fechaRegistro.year.toString()
-                                  : l10n.notAvailable,
-                              icon: Icons.calendar_today_rounded,
-                              screenSize: screenSize,
-                            ),
-                            InfoRow(
-                              label: l10n.schoolType,
-                              value: _getSchoolType(_school?.tipo, l10n),
-                              icon: Icons.business_rounded,
-                              screenSize: screenSize,
-                            ),
-                            EducationLevelChips(
-                              levels: _getEducationalLevels(
-                                  _school?.nivelesEducativos, l10n),
-                              screenSize: screenSize,
-                            ),
-                          ],
-                        ),
-
-                        SizedBox(height: AppTheme.getLargePadding(screenSize)),
-
-                        // Contact Information Section
-                        InfoSection(
-                          title: l10n.contactInfo,
-                          icon: Icons.contact_phone_rounded,
-                          color: AppTheme.successColor,
-                          screenSize: screenSize,
-                          children: [
-                            ContactCard(
-                              label: l10n.address,
-                              value: _school?.direccion ?? l10n.notAvailable,
-                              icon: Icons.location_on_rounded,
-                              screenSize: screenSize,
-                              isClickable: _school?.direccion != null,
-                            ),
-                            ContactCard(
-                              label: l10n.phone,
-                              value: _school?.telefono ?? l10n.notAvailable,
-                              icon: Icons.phone_rounded,
-                              screenSize: screenSize,
-                              isClickable: _school?.telefono != null,
-                            ),
-                            ContactCard(
-                              label: l10n.email,
-                              value: _school?.email ?? l10n.notAvailable,
-                              icon: Icons.email_rounded,
-                              screenSize: screenSize,
-                              isClickable: _school?.email != null,
-                            ),
-                            // You can add more contact information if needed
-                          ],
-                        ),
-
-                        SizedBox(height: AppTheme.getLargePadding(screenSize)),
-
-                        // Description Section
-                        if (_school?.descripcion != null)
-                          DescriptionSection(
-                            description: _school!.descripcion!,
-                            screenSize: screenSize,
-                          )
-                        else
-                          DescriptionSection(
-                            description: l10n.schoolDescription,
-                            screenSize: screenSize,
-                          ),
-
-                        SizedBox(
-                            height: AppTheme.getLargePadding(screenSize) * 2),
-                      ],
-                    ),
-                  ),
+                  child: _isLoading
+                      ? _buildLoadingState(screenSize)
+                      : _buildContent(context, l10n, screenSize),
                 ),
               ),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildLoadingState(Size screenSize) {
+    return Padding(
+      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+      child: Column(
+        children: [
+          SizedBox(height: AppTheme.getLargePadding(screenSize) * 2),
+          const CircularProgressIndicator(),
+          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+          Text(
+            'Cargando información de la escuela...',
+            style: AppTheme.getBodyLarge(screenSize).copyWith(
+              color: AppTheme.getTextSecondaryColor(context),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent(
+      BuildContext context, AppLocalizations l10n, Size screenSize) {
+    if (_school == null) {
+      return _buildErrorState(l10n, screenSize);
+    }
+
+    return Padding(
+      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+      child: Column(
+        children: [
+          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+
+          // Modern School Header Card
+          SchoolHeaderCard(
+            schoolName: _school!.nombre,
+            subtitle: l10n.educationalExcellenceInstitution,
+            screenSize: screenSize,
+          ),
+
+          SizedBox(height: AppTheme.getLargePadding(screenSize)),
+
+          // Quick Stats Section
+          QuickStatsSection(screenSize: screenSize, stats: [
+            {
+              'title': _getEducationalLevel(_school!.nivelesEducativos, l10n),
+              'subtitle': l10n.educationalLevel,
+              'icon': Icons.school_rounded,
+              'color': AppTheme.successColor
+            },
+            {
+              'title': _getSchoolType(_school!.tipo, l10n),
+              'subtitle': l10n.institution,
+              'icon': Icons.public_rounded,
+              'color': AppTheme.warningColor
+            },
+          ]),
+
+          SizedBox(height: AppTheme.getLargePadding(screenSize)),
+
+          // Basic Information Section
+          InfoSection(
+            title: l10n.basicInformation,
+            icon: Icons.school_rounded,
+            color: AppTheme.accentBlue,
+            screenSize: screenSize,
+            children: [
+              InfoRow(
+                label: l10n.schoolCode,
+                value: _school!.codigo.isNotEmpty
+                    ? _school!.codigo
+                    : l10n.notAvailable,
+                icon: Icons.tag_rounded,
+                screenSize: screenSize,
+              ),
+              InfoRow(
+                label: l10n.schoolType,
+                value: _getSchoolType(_school!.tipo, l10n),
+                icon: Icons.business_rounded,
+                screenSize: screenSize,
+              ),
+              EducationLevelChips(
+                levels: _getEducationalLevels(_school!.nivelesEducativos, l10n),
+                screenSize: screenSize,
+              ),
+            ],
+          ),
+
+          SizedBox(height: AppTheme.getLargePadding(screenSize)),
+
+          // Contact Information Section
+          InfoSection(
+            title: l10n.contactInfo,
+            icon: Icons.contact_phone_rounded,
+            color: AppTheme.successColor,
+            screenSize: screenSize,
+            children: [
+              ContactCard(
+                label: l10n.address,
+                value: _school!.direccion.isNotEmpty
+                    ? _school!.direccion
+                    : l10n.notAvailable,
+                icon: Icons.location_on_rounded,
+                screenSize: screenSize,
+                isClickable: _school!.direccion.isNotEmpty,
+              ),
+              ContactCard(
+                label: l10n.phone,
+                value: _school!.telefono.isNotEmpty
+                    ? _school!.telefono
+                    : l10n.notAvailable,
+                icon: Icons.phone_rounded,
+                screenSize: screenSize,
+                isClickable: _school!.telefono.isNotEmpty,
+              ),
+              ContactCard(
+                label: l10n.email,
+                value: _school!.email.isNotEmpty
+                    ? _school!.email
+                    : l10n.notAvailable,
+                icon: Icons.email_rounded,
+                screenSize: screenSize,
+                isClickable: _school!.email.isNotEmpty,
+              ),
+            ],
+          ),
+
+          SizedBox(height: AppTheme.getLargePadding(screenSize)),
+
+          // Description Section
+          DescriptionSection(
+            description: _school!.descripcion?.isNotEmpty == true
+                ? _school!.descripcion!
+                : l10n.schoolDescription,
+            screenSize: screenSize,
+          ),
+
+          SizedBox(height: AppTheme.getLargePadding(screenSize) * 2),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(AppLocalizations l10n, Size screenSize) {
+    return Padding(
+      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+      child: Column(
+        children: [
+          SizedBox(height: AppTheme.getLargePadding(screenSize) * 2),
+          Icon(
+            Icons.error_outline,
+            size: 64,
+            color: AppTheme.errorColor,
+          ),
+          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+          Text(
+            'Error al cargar la información de la escuela',
+            style: AppTheme.getBodyMedium(screenSize).copyWith(
+              color: AppTheme.errorColor,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+          Text(
+            'Por favor, intenta de nuevo más tarde.',
+            style: AppTheme.getBodyLarge(screenSize).copyWith(
+              color: AppTheme.getTextSecondaryColor(context),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 

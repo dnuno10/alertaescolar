@@ -46,7 +46,7 @@ class InstructionsCard extends StatelessWidget {
           SizedBox(height: AppTheme.getSmallPadding(screenSize)),
           Text(
             l10n.linkStudentInstructions,
-            style: AppTheme.getBodyMedium(screenSize).copyWith(
+            style: AppTheme.getCaption(screenSize).copyWith(
               color: AppTheme.getTextPrimaryColor(context),
             ),
           ),

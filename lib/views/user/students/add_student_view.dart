@@ -59,11 +59,11 @@ class _AddStudentViewState extends State<AddStudentView> {
                   ),
                   child: Column(
                     children: [
-                      SizedBox(height: AppTheme.getLargePadding(screenSize)),
-                      InstructionsCard(
-                        l10n: l10n,
-                        screenSize: screenSize,
-                      ),
+                      // SizedBox(height: AppTheme.getLargePadding(screenSize)),
+                      // InstructionsCard(
+                      //   l10n: l10n,
+                      //   screenSize: screenSize,
+                      // ),
                       SizedBox(height: AppTheme.getMediumPadding(screenSize)),
                       QRScanOptionCard(
                         onTap: () => _openQRScanner(l10n),

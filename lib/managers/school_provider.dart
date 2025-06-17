@@ -20,7 +20,7 @@ class SchoolProvider with ChangeNotifier {
 
   Future<Escuela?> getSchoolById(String schoolId, BuildContext context) async {
     final l10n = AppLocalizations.of(context);
-    LoadingDialog.show(context, message: l10n.loadingSchoolInformation);
+    // Remove LoadingDialog from here since it's already shown in the calling method
     try {
       _isLoading = true;
       notifyListeners();
@@ -35,7 +35,6 @@ class SchoolProvider with ChangeNotifier {
     } catch (e) {
       _error = '${l10n.errorFetchingSchool}: $e';
     } finally {
-      LoadingDialog.hide(context);
       _isLoading = false;
       notifyListeners();
     }

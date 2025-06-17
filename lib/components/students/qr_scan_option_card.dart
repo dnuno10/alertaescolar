@@ -69,6 +69,38 @@ class QRScanOptionCard extends StatelessWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
+                SizedBox(height: screenSize.height * 0.008),
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppTheme.getSmallPadding(screenSize),
+                    vertical: AppTheme.getSmallPadding(screenSize) * 0.5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentPurple.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(
+                      AppTheme.getSmallRadius(screenSize),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.touch_app_rounded,
+                        color: AppTheme.accentPurple,
+                        size: AppTheme.getSmallPadding(screenSize),
+                      ),
+                      SizedBox(
+                          width: AppTheme.getSmallPadding(screenSize) * 0.5),
+                      Text(
+                        'Toca para abrir cámara',
+                        style: AppTheme.getCaption(screenSize).copyWith(
+                          color: AppTheme.accentPurple,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
