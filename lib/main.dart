@@ -200,6 +200,7 @@ class _AppContentState extends State<_AppContent> {
                       "images/alertaescolar_logo.png",
                       width: MediaQuery.of(context).size.height * 0.045,
                       height: MediaQuery.of(context).size.height * 0.045,
+                      color: AppTheme.getTextPrimaryColor(context),
                     ),
                   ),
                   Center(

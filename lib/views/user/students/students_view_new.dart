@@ -83,16 +83,16 @@ class StudentsView extends StatelessWidget {
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.accentBlue,
+                          backgroundColor: AppTheme.accentPurple,
                           foregroundColor: Colors.white,
                           elevation: 0,
                           padding: EdgeInsets.symmetric(
                             horizontal: AppTheme.getMediumPadding(screenSize),
-                            vertical: AppTheme.getMediumPadding(screenSize),
+                            vertical: AppTheme.getSmallPadding(screenSize),
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(
-                              AppTheme.getLargeRadius(screenSize),
+                              AppTheme.getSmallRadius(screenSize),
                             ),
                           ),
                         ),

@@ -12,6 +12,7 @@ class ClassCard extends StatelessWidget {
     required this.clase,
     required this.index,
     required this.screenSize,
+    Materia? materia,
   });
 
   @override

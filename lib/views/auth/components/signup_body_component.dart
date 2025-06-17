@@ -397,10 +397,9 @@ class _GoogleSignUpButton extends StatelessWidget {
 
     return Container(
       width: size.width * 0.9,
-      height: size.height * 0.06,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
+        borderRadius: BorderRadius.circular(AppTheme.getSmallRadius(size)),
         boxShadow: [
           BoxShadow(
             color: AppTheme.getShadowColor(context),
@@ -482,10 +481,9 @@ class _AppleSignUpButton extends StatelessWidget {
 
     return Container(
       width: size.width * 0.9,
-      height: size.height * 0.06,
       decoration: BoxDecoration(
         color: Colors.black,
-        borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
+        borderRadius: BorderRadius.circular(AppTheme.getSmallRadius(size)),
         boxShadow: [
           BoxShadow(
             color: AppTheme.getShadowColor(context),

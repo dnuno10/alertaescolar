@@ -182,7 +182,7 @@ class ScheduleProvider with ChangeNotifier {
       // Process the schedules and organize by group
       for (var horario in horariosList) {
         final claseHorario = _mapToClaseHorario(horario);
-        final grupo = await _getGrupoById(horario['id_grupo']);
+        final grupo = await getGrupoById(horario['id_grupo']);
         final grupoKey = grupo?['grupo'] ?? 'sin_grupo';
 
         if (!_horarios.containsKey(grupoKey)) {
@@ -205,7 +205,7 @@ class ScheduleProvider with ChangeNotifier {
   }
 
   // Get group by ID (improved helper method)
-  Future<Map<String, dynamic>?> _getGrupoById(String grupoId) async {
+  Future<Map<String, dynamic>?> getGrupoById(String grupoId) async {
     try {
       // First check in already loaded groups
       final cachedGrupo =
@@ -234,41 +234,121 @@ class ScheduleProvider with ChangeNotifier {
     }
   }
 
-  // Convert map from DB to ClaseHorario object
   ClaseHorario _mapToClaseHorario(Map<String, dynamic> data) {
     // Map the days of the week to DiaSemana enum
     DiaSemana? getDia() {
-      if (data['lunes'] == true) return DiaSemana.lunes;
-      if (data['martes'] == true) return DiaSemana.martes;
-      if (data['miercoles'] == true) return DiaSemana.miercoles;
-      if (data['jueves'] == true) return DiaSemana.jueves;
-      if (data['viernes'] == true) return DiaSemana.viernes;
-      if (data['sabado'] == true) return DiaSemana.sabado;
-      if (data['domingo'] == true) return DiaSemana.domingo;
-      return DiaSemana.lunes; // Default
-    }
-
-    // Format time from timestamp
-    String formatTimeFromTimestamp(dynamic timestamp) {
-      if (timestamp == null) return '';
       try {
-        final DateTime dateTime = DateTime.parse(timestamp);
-        return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+        if (data['lunes'] == true) return DiaSemana.lunes;
+        if (data['martes'] == true) return DiaSemana.martes;
+        if (data['miercoles'] == true) return DiaSemana.miercoles;
+        if (data['jueves'] == true) return DiaSemana.jueves;
+        if (data['viernes'] == true) return DiaSemana.viernes;
+        if (data['sabado'] == true) return DiaSemana.sabado;
+        if (data['domingo'] == true) return DiaSemana.domingo;
+        return DiaSemana.lunes; // Default
       } catch (e) {
-        return '';
+        debugPrint('Error mapping day: $e');
+        return DiaSemana.lunes;
       }
     }
 
-    return ClaseHorario(
-      id: data['id'] ?? '',
-      materiaId: data['id_materia'] ?? '',
-      escuelaId: data['id_escuela'] ?? '',
-      grupo: data['id_grupo'] ?? '',
-      dia: getDia()!,
-      horaInicio: formatTimeFromTimestamp(data['hora_inicio']),
-      horaFin: formatTimeFromTimestamp(data['hora_fin']),
-      aula: data['aula'] ?? '',
-    );
+    // Format timetz from PostgreSQL (time with timezone)
+    String formatTimeFromTimetz(dynamic timetz) {
+      try {
+        if (timetz == null) return '00:00';
+
+        String timeStr = timetz.toString();
+        debugPrint('Formatting timetz: $timeStr');
+
+        // Handle timetz format: "08:00:00+00" or "08:00:00-05:00"
+        if (timeStr.contains('+') ||
+            (timeStr.contains('-') && timeStr.lastIndexOf('-') > 2)) {
+          // Remove timezone part
+          String timePart;
+          if (timeStr.contains('+')) {
+            timePart = timeStr.split('+')[0];
+          } else {
+            final lastDashIndex = timeStr.lastIndexOf('-');
+            timePart = timeStr.substring(0, lastDashIndex);
+          }
+
+          // Parse time components
+          final timeComponents = timePart.split(':');
+          if (timeComponents.length >= 2) {
+            final hour = int.parse(timeComponents[0]);
+            final minute = int.parse(timeComponents[1]);
+            final formattedTime =
+                '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+            debugPrint('Formatted time: $formattedTime');
+            return formattedTime;
+          }
+        }
+
+        // Handle simple time format: "08:00:00" or "08:00"
+        else if (timeStr.contains(':') &&
+            !timeStr.contains('T') &&
+            !timeStr.contains(' ')) {
+          final parts = timeStr.split(':');
+          if (parts.length >= 2) {
+            final hour = int.parse(parts[0]);
+            final minute = int.parse(parts[1]);
+            final formattedTime =
+                '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+            debugPrint('Formatted simple time: $formattedTime');
+            return formattedTime;
+          }
+        }
+
+        // Fallback: try to extract time pattern
+        final timePattern = RegExp(r'(\d{1,2}):(\d{2})');
+        final match = timePattern.firstMatch(timeStr);
+        if (match != null) {
+          final hour = int.parse(match.group(1)!);
+          final minute = int.parse(match.group(2)!);
+          final formattedTime =
+              '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+          debugPrint('Formatted pattern time: $formattedTime');
+          return formattedTime;
+        }
+
+        debugPrint('Could not format time, returning default: $timeStr');
+        return '00:00';
+      } catch (e) {
+        debugPrint('Error formatting timetz: $timetz, error: $e');
+        return '00:00';
+      }
+    }
+
+    try {
+      final claseHorario = ClaseHorario(
+        id: data['id'] ?? '',
+        materiaId: data['id_materia'] ?? '',
+        escuelaId: data['id_escuela'] ?? '',
+        grupo: data['id_grupo'] ?? '',
+        dia: getDia() ?? DiaSemana.lunes,
+        horaInicio: formatTimeFromTimetz(data['hora_inicio']),
+        horaFin: formatTimeFromTimetz(data['hora_fin']),
+        aula: data['aula'] ?? '',
+      );
+
+      debugPrint('Created ClaseHorario: ${claseHorario.toString()}');
+      return claseHorario;
+    } catch (e) {
+      debugPrint('Error creating ClaseHorario: $e');
+      debugPrint('Data: $data');
+
+      // Return a default ClaseHorario to prevent crashes
+      return ClaseHorario(
+        id: data['id'] ?? 'unknown',
+        materiaId: data['id_materia'] ?? '',
+        escuelaId: data['id_escuela'] ?? '',
+        grupo: data['id_grupo'] ?? '',
+        dia: DiaSemana.lunes,
+        horaInicio: '00:00',
+        horaFin: '00:00',
+        aula: data['aula'] ?? '',
+      );
+    }
   }
 
   // Get schedules for a specific group

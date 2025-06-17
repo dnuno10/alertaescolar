@@ -1,10 +1,12 @@
+import 'package:alertaescolar/components/admin/students/class_card_schedule.dart';
 import 'package:alertaescolar/components/headers/nav_header.dart';
+import 'package:alertaescolar/components/schedule/class_card.dart';
 import 'package:alertaescolar/components/schedule/schedule_student_card.dart';
 import 'package:alertaescolar/components/schedule/day_selector.dart';
 import 'package:alertaescolar/components/schedule/schedule_loading_state.dart';
 import 'package:alertaescolar/components/schedule/schedule_empty_state.dart';
-import 'package:alertaescolar/components/schedule/class_card.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
+import 'package:alertaescolar/managers/schedule_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
@@ -30,6 +32,7 @@ class _ScheduleViewState extends State<ScheduleView>
   Map<DiaSemana, List<ClaseHorario>> _schedule = {};
   bool _isLoading = true;
   int _selectedDayIndex = 0;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -41,7 +44,12 @@ class _ScheduleViewState extends State<ScheduleView>
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
-    _loadSchedule();
+
+    // Use post frame callback to avoid build issues
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSchedule();
+    });
+
     _animationController.forward();
   }
 
@@ -52,40 +60,87 @@ class _ScheduleViewState extends State<ScheduleView>
   }
 
   Future<void> _loadSchedule() async {
-    try {
-      // final schedule =
-      //     await _scheduleService.getStudentSchedule(widget.student.id);
-      // final organizedSchedule =
-      //     _scheduleService.organizeScheduleByDay(schedule);
+    if (!mounted) return;
 
+    try {
       setState(() {
-        // _schedule = organizedSchedule;
-        _isLoading = false;
+        _isLoading = true;
+        _errorMessage = null;
       });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
+
+      final scheduleProvider =
+          Provider.of<ScheduleProvider>(context, listen: false);
+
+      // Load materias without showing loading dialog
+      await scheduleProvider.loadMaterias(
+        escuelaId: widget.student.id_escuela,
+        context: null, // Don't show loading dialog
+      );
+
+      // Load schedules without showing loading dialog
+      await scheduleProvider.loadHorarios(
+        escuelaId: widget.student.id_escuela,
+        grupoId: widget.student.id_grupo,
+        context: null, // Don't show loading dialog
+      );
+
+      // Get the group name to access the schedule
+      final grupo =
+          await scheduleProvider.getGrupoById(widget.student.id_grupo);
+      final grupoName = grupo?['grupo'] ?? '';
+
       if (mounted) {
-        final l10n = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${l10n.errorLoadingSchedule}: $e',
-              style: AppTheme.getCaption(MediaQuery.of(context).size).copyWith(
-                color: AppTheme.onPrimaryColor,
-              ),
-            ),
-            backgroundColor: AppTheme.errorColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(
-                  AppTheme.getSmallRadius(MediaQuery.of(context).size)),
-            ),
-          ),
-        );
+        if (grupoName.isNotEmpty) {
+          final horarios = scheduleProvider.getHorariosForGroup(grupoName);
+
+          // Organize schedule by day
+          final organizedSchedule = _organizeScheduleByDay(horarios);
+
+          setState(() {
+            _schedule = organizedSchedule;
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _schedule = {};
+            _isLoading = false;
+            _errorMessage =
+                'No se encontró información del grupo del estudiante';
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Error al cargar el horario: $e';
+        });
       }
     }
+  }
+
+  Map<DiaSemana, List<ClaseHorario>> _organizeScheduleByDay(
+      List<ClaseHorario> horarios) {
+    final Map<DiaSemana, List<ClaseHorario>> organizedSchedule = {};
+
+    // Initialize all days with empty lists
+    for (final dia in DiaSemana.values) {
+      organizedSchedule[dia] = [];
+    }
+
+    // Group schedules by day
+    for (final horario in horarios) {
+      organizedSchedule[horario.dia]?.add(horario);
+    }
+
+    // Sort each day's schedule by start time
+    for (final dia in DiaSemana.values) {
+      organizedSchedule[dia]?.sort((a, b) {
+        return a.horaInicio.compareTo(b.horaInicio);
+      });
+    }
+
+    return organizedSchedule;
   }
 
   @override
@@ -109,27 +164,67 @@ class _ScheduleViewState extends State<ScheduleView>
                       screenSize: screenSize,
                     ),
                     SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                    DaySelector(
-                      selectedDayIndex: _selectedDayIndex,
-                      onDaySelected: (index) {
-                        setState(() {
-                          _selectedDayIndex = index;
-                        });
-                      },
-                      screenSize: screenSize,
-                    ),
+                    if (!_isLoading) ...[
+                      DaySelector(
+                        selectedDayIndex: _selectedDayIndex,
+                        onDaySelected: (index) {
+                          setState(() {
+                            _selectedDayIndex = index;
+                          });
+                        },
+                        screenSize: screenSize,
+                      ),
+                    ],
                   ],
                 ),
               ),
-              _isLoading
-                  ? SliverToBoxAdapter(
-                      child: ScheduleLoadingState(screenSize: screenSize),
-                    )
-                  : _buildScheduleContent(context, l10n, screenSize),
+              if (_isLoading)
+                SliverToBoxAdapter(
+                  child: ScheduleLoadingState(screenSize: screenSize),
+                )
+              else if (_errorMessage != null)
+                SliverToBoxAdapter(
+                  child: _buildErrorState(context, screenSize),
+                )
+              else
+                _buildScheduleContent(context, l10n, screenSize),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context, Size screenSize) {
+    return Padding(
+      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+      child: Column(
+        children: [
+          SizedBox(height: AppTheme.getLargePadding(screenSize)),
+          Icon(
+            Icons.error_outline,
+            size: 64,
+            color: AppTheme.errorColor,
+          ),
+          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+          Text(
+            _errorMessage ?? 'Error desconocido',
+            style: AppTheme.getSubtitle1(screenSize).copyWith(
+              color: AppTheme.errorColor,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+          ElevatedButton(
+            onPressed: _loadSchedule,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: AppTheme.onPrimaryColor,
+            ),
+            child: Text('Reintentar'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -157,10 +252,19 @@ class _ScheduleViewState extends State<ScheduleView>
                   return Padding(
                     padding: EdgeInsets.only(
                         bottom: AppTheme.getSmallPadding(screenSize)),
-                    child: ClassCard(
-                      clase: clase,
-                      index: index,
-                      screenSize: screenSize,
+                    child: Consumer<ScheduleProvider>(
+                      builder: (context, scheduleProvider, child) {
+                        // Get materia information
+                        final materia =
+                            scheduleProvider.getMateriaById(clase.materiaId);
+
+                        return ClassCardSchedule(
+                          clase: clase,
+                          materia: materia,
+                          index: index,
+                          screenSize: screenSize,
+                        );
+                      },
                     ),
                   );
                 },
