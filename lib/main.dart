@@ -181,6 +181,8 @@ class _AppContentState extends State<_AppContent> {
     }
   }
 
+// ...existing code...
+
   @override
   Widget build(BuildContext context) {
     // Show a loading indicator until we've checked login state
@@ -225,8 +227,8 @@ class _AppContentState extends State<_AppContent> {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeProvider.themeMode,
-          // Use home instead of initialRoute to ensure direct navigation
-          home: _getInitialWidget(),
+          // Use initialRoute instead of home
+          initialRoute: _initialRoute,
           onGenerateRoute: AppRoutes.onGenerateRoute,
           // Add navigation observer to debug navigation
           navigatorObservers: [
@@ -237,6 +239,7 @@ class _AppContentState extends State<_AppContent> {
     );
   }
 
+  // Remove the _getInitialWidget method as we're using initialRoute now
   Widget _getInitialWidget() {
     debugPrint("_getInitialWidget: Creating widget for route: $_initialRoute");
     switch (_initialRoute) {

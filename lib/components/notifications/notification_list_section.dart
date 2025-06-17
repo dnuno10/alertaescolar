@@ -1,10 +1,8 @@
-import 'package:alertaescolar/components/loading_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../managers/notification_provider.dart';
-import '../../widgets/custom_snack_bar.dart';
 import '../../models/models.dart';
 
 class NotificationsListSection extends StatelessWidget {
@@ -37,19 +35,9 @@ class NotificationsListSection extends StatelessWidget {
       sliver: Consumer<NotificationProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {
-            // Show LoadingDialog for notifications loading
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              final l10n = AppLocalizations.of(context);
-              LoadingDialog.show(
-                context,
-                message:
-                    l10n.loadingNotifications ?? 'Cargando notificaciones...',
-              );
-            });
-
             return SliverToBoxAdapter(
               child: Container(
-                height: screenSize.height * 0.25,
+                height: screenSize.height * 0.3,
                 decoration: BoxDecoration(
                   color: AppTheme.getCardColor(context),
                   borderRadius: BorderRadius.circular(
@@ -60,8 +48,8 @@ class NotificationsListSection extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       CircularProgressIndicator(
-                        color: AppTheme.getTextPrimaryColor(context),
-                        strokeWidth: 2,
+                        color: AppTheme.accentPurple,
+                        strokeWidth: 3,
                       ),
                       SizedBox(height: AppTheme.getMediumPadding(screenSize)),
                       Text(
@@ -77,17 +65,6 @@ class NotificationsListSection extends StatelessWidget {
                 ),
               ),
             );
-          } else {
-            // Hide LoadingDialog when not loading
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              try {
-                if (Navigator.of(context).canPop()) {
-                  LoadingDialog.hide(context);
-                }
-              } catch (e) {
-                // LoadingDialog might not be showing, ignore error
-              }
-            });
           }
 
           final filteredNotifications =

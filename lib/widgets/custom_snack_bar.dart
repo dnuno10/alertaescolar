@@ -8,37 +8,46 @@ class CustomSnackBar {
     bool isError = false,
     Duration duration = const Duration(seconds: 3),
   }) {
-    final snackBar = SnackBar(
-      content: Row(
-        children: [
-          Icon(
-            isError ? Icons.error : Icons.check_circle,
-            color: Colors.white,
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-      backgroundColor: isError ? Colors.red[600] : Colors.green[600],
-      duration: duration,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      margin: const EdgeInsets.all(16),
-    );
+    // Check if context is still valid
+    if (!context.mounted) return;
 
-    //ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    try {
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+      scaffoldMessenger.hideCurrentSnackBar();
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                isError ? Icons.error : Icons.check_circle,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  message,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: isError ? Colors.red[600] : Colors.green[600],
+          duration: duration,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+    } catch (e) {
+      // Context was deactivated, safely ignore
+      debugPrint('Failed to show snackbar: $e');
+    }
   }
 }

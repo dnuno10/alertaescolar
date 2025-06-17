@@ -22,11 +22,6 @@ class LogoutDialog extends StatelessWidget {
 
     return CustomAlertDialog(
       title: l10n.signOut,
-      // titleIcon: Icon(
-      //   Icons.logout_rounded,
-      //   color: AppTheme.errorColor,
-      //   size: 28,
-      // ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -62,48 +57,37 @@ class LogoutDialog extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
           textColor: AppTheme.getTextSecondaryColor(context),
           screenSize: screenSize,
-          // borderRadius: borderRadius,
-          // // Add hover/press effect
-          // hoverColor: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
-          // // Add leading icon for better visual hierarchy
-          // icon: Icons.close_rounded,
         ),
         DialogActionButton(
           label: l10n.signOut,
-          onPressed: () {
-            Navigator.of(context).pop();
-            // Implement logout logic by calling the Logout manager
-            logout.signOut(context);
-          },
+          onPressed: () => _handleLogout(context, logout),
           backgroundColor: AppTheme.errorColor,
           screenSize: screenSize,
-          // borderRadius: borderRadius,
-          // // Add hover/press effect for better feedback
-          // splashColor: Colors.red.shade700,
-          // // Add leading icon for visual consistency
-          // icon: Icons.logout_rounded,
-          // // Add slight elevation for button
-          // elevation: 2,
-          // // Add subtle shadow for depth
-          // boxShadow: [
-          //   BoxShadow(
-          //     color: AppTheme.errorColor.withOpacity(0.4),
-          //     blurRadius: 8,
-          //     offset: const Offset(0, 2),
-          //   ),
-          // ],
         ),
       ],
       screenSize: screenSize,
-      // Add rounded corners to the dialog
-      // borderRadius: BorderRadius.circular(24),
-      // // Add subtle animation when appearing
-      // animationDuration: const Duration(milliseconds: 250),
-      // // Add slight elevation for depth
-      // elevation: 5,
-      // // Add background blur effect for modern look
-      // barrierColor: Colors.black54,
     );
+  }
+
+  // Separate method to handle logout safely
+  void _handleLogout(BuildContext context, Logout logout) {
+    // Check if the widget is still mounted before proceeding
+    if (!context.mounted) return;
+
+    // Get the navigator before closing the dialog
+    final navigator = Navigator.of(context);
+
+    // Close the dialog first
+    navigator.pop();
+
+    // Use a post-frame callback to ensure the dialog is fully closed
+    // before attempting logout
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Double-check that context is still valid
+      if (context.mounted) {
+        logout.signOut(context);
+      }
+    });
   }
 
   static void show(BuildContext context) {

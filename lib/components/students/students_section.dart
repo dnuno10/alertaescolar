@@ -1,4 +1,3 @@
-import 'package:alertaescolar/components/loading_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:alertaescolar/components/buttons/solid_button.dart';
 import 'package:provider/provider.dart';
@@ -34,46 +33,33 @@ class StudentsSection extends StatelessWidget {
       child: Consumer<StudentProvider>(
         builder: (context, studentProvider, child) {
           if (studentProvider.isLoading) {
-            // Show LoadingDialog when loading students
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              LoadingDialog.show(
-                context,
-                message: l10n.loadingStudents,
-              );
-            });
-
-            // Return a minimal placeholder while the dialog is showing
             return Container(
-              height: screenSize.height * 0.3,
+              height: screenSize.height * 0.4,
+              decoration: BoxDecoration(
+                color: AppTheme.getCardColor(context),
+                borderRadius:
+                    BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+              ),
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     CircularProgressIndicator(
-                      color: AppTheme.getTextPrimaryColor(context),
+                      color: AppTheme.accentPurple,
+                      strokeWidth: 3,
                     ),
-                    SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+                    SizedBox(height: AppTheme.getMediumPadding(screenSize)),
                     Text(
                       l10n.loadingStudents,
                       style: AppTheme.getBodyMedium(screenSize).copyWith(
                         color: AppTheme.getTextPrimaryColor(context),
                       ),
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
               ),
             );
-          } else {
-            // Hide LoadingDialog when not loading
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              try {
-                if (Navigator.of(context).canPop()) {
-                  LoadingDialog.hide(context);
-                }
-              } catch (e) {
-                // LoadingDialog might not be showing, ignore error
-              }
-            });
           }
 
           if (studentProvider.error != null) {

@@ -118,13 +118,19 @@ class VerifyMagicLink {
 
   void _showSuccessAndNavigate(
       BuildContext context, String message, String route) {
+    LoadingDialog.hide(context);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      CustomSnackBar.show(
-        context: context,
-        message: message,
-        isError: false,
-      );
-      Navigator.pushReplacementNamed(context, route);
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: message,
+          isError: false,
+        );
+
+        // Use pushNamedAndRemoveUntil to clear navigation stack
+        Navigator.pushNamedAndRemoveUntil(context, route, (route) => false);
+      }
     });
   }
 }

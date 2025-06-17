@@ -67,7 +67,13 @@ class _HomeViewState extends State<HomeView> {
       body: IndexedStack(
         index: _selectedIndex,
         children: [
-          _buildHomeContent(context, screenSize),
+          CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              HomeHeader(screenSize: screenSize),
+              SliverToBoxAdapter(child: _buildMainContent(context, screenSize)),
+            ],
+          ),
           const StudentsView(),
           const NotificationsView(),
           const ProfileView(),
@@ -81,75 +87,53 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  Widget _buildHomeContent(BuildContext context, Size screenSize) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth >= screenSize.width * 2.25;
-        final isTablet = constraints.maxWidth >= screenSize.width * 1.5;
+  Widget _buildMainContent(BuildContext context, Size screenSize) {
+    return Padding(
+      padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Consumer<NotificationProvider>(
+            builder: (context, provider, child) {
+              return RecentNotificationsSection(
+                screenSize: screenSize,
+                onTapSeeAll: () => setState(() => _selectedIndex = 2),
+                notifications: provider.notifications,
+              );
+            },
+          ),
+          SizedBox(height: AppTheme.getLargePadding(screenSize) * 1.5),
+          AttendanceStatisticsCard(
+            screenSize: screenSize,
+            selectedPeriod: _selectedPeriod,
+            onPeriodChanged: (value) => setState(() => _selectedPeriod = value),
+            selectedStudentId: _selectedStudentIdForStats,
+            onStudentSelected: (id) =>
+                setState(() => _selectedStudentIdForStats = id),
+          ),
 
-        return CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            HomeHeader(screenSize: screenSize),
-            _buildMainContent(context, isWide, isTablet, screenSize),
-          ],
-        );
-      },
-    );
-  }
+          SizedBox(height: AppTheme.getLargePadding(screenSize) * 1.5),
+          StudentsOverviewSection(
+            screenSize: screenSize,
+            onTapViewAll: () => setState(() => _selectedIndex = 1),
+          ),
 
-  Widget _buildMainContent(
-      BuildContext context, bool isWide, bool isTablet, Size screenSize) {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Consumer<NotificationProvider>(
-              builder: (context, provider, child) {
-                return RecentNotificationsSection(
-                  screenSize: screenSize,
-                  onTapSeeAll: () => setState(() => _selectedIndex = 2),
-                  notifications: provider.notifications,
-                );
-              },
-            ),
-            SizedBox(height: AppTheme.getLargePadding(screenSize) * 1.5),
-            AttendanceStatisticsCard(
-              screenSize: screenSize,
-              selectedPeriod: _selectedPeriod,
-              onPeriodChanged: (value) =>
-                  setState(() => _selectedPeriod = value),
-              selectedStudentId: _selectedStudentIdForStats,
-              onStudentSelected: (id) =>
-                  setState(() => _selectedStudentIdForStats = id),
-            ),
-
-            SizedBox(height: AppTheme.getLargePadding(screenSize) * 1.5),
-            StudentsOverviewSection(
-              screenSize: screenSize,
-              onTapViewAll: () => setState(() => _selectedIndex = 1),
-            ),
-
-            SizedBox(height: AppTheme.getLargePadding(screenSize) * 1.5),
-            TodayScheduleSection(
-              screenSize: screenSize,
-              selectedStudentId: _selectedStudentIdForSchedule,
-              onStudentSelected: (id) =>
-                  setState(() => _selectedStudentIdForSchedule = id),
-            ),
-            SizedBox(height: AppTheme.getLargePadding(screenSize) * 1.5),
-            QuickActionsSection(
-              screenSize: screenSize,
-              onActionSelected: (index) =>
-                  setState(() => _selectedIndex = index),
-            ),
-            SizedBox(
-                height:
-                    screenSize.height * 0.12), // Bottom padding for navigation
-          ],
-        ),
+          SizedBox(height: AppTheme.getLargePadding(screenSize) * 1.5),
+          TodayScheduleSection(
+            screenSize: screenSize,
+            selectedStudentId: _selectedStudentIdForSchedule,
+            onStudentSelected: (id) =>
+                setState(() => _selectedStudentIdForSchedule = id),
+          ),
+          SizedBox(height: AppTheme.getLargePadding(screenSize) * 1.5),
+          QuickActionsSection(
+            screenSize: screenSize,
+            onActionSelected: (index) => setState(() => _selectedIndex = index),
+          ),
+          SizedBox(
+              height:
+                  screenSize.height * 0.12), // Bottom padding for navigation
+        ],
       ),
     );
   }
