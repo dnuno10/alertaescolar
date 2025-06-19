@@ -1,6 +1,7 @@
 import 'package:alertaescolar/managers/family_provider.dart';
 import 'package:alertaescolar/providers/language_provider.dart';
 import 'package:alertaescolar/managers/schedule_provider.dart'; // Add ScheduleProvider import
+import 'package:alertaescolar/providers/attendance_scanner_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -25,6 +26,8 @@ class ProviderManager {
       SchoolProvider(); // Add SchoolProvider instance
   static final ScheduleProvider _scheduleProvider =
       ScheduleProvider(); // Add ScheduleProvider instance
+  static final AttendanceScannerProvider _attendanceScannerProvider =
+      AttendanceScannerProvider();
 
   // Add initialization status flags
   static bool _isInitialized = false;
@@ -44,6 +47,8 @@ class ProviderManager {
         ChangeNotifierProvider<SchoolProvider>.value(value: _schoolProvider),
         ChangeNotifierProvider<ScheduleProvider>.value(
             value: _scheduleProvider),
+        ChangeNotifierProvider<AttendanceScannerProvider>.value(
+            value: _attendanceScannerProvider),
       ],
       child: child,
     );

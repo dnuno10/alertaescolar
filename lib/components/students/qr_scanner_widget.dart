@@ -40,7 +40,7 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // QR Scanner
+          // QR Scanner with proper key handling
           QRView(
             key: qrKey,
             onQRViewCreated: _onQRViewCreated,
@@ -51,6 +51,11 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
               borderWidth: 10,
               cutOutSize: screenSize.width * 0.8,
             ),
+            formatsAllowed: const [
+              BarcodeFormat.qrcode,
+              BarcodeFormat.code128,
+              BarcodeFormat.code39,
+            ],
           ),
 
           // Top controls
@@ -176,7 +181,7 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
     });
 
     controller.scannedDataStream.listen((scanData) {
-      if (scanData.code != null) {
+      if (scanData.code != null && scanData.code!.isNotEmpty) {
         controller.pauseCamera();
         widget.onCodeScanned(scanData.code!);
       }
