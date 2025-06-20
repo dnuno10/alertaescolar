@@ -80,7 +80,6 @@ class ScannerService {
       }
 
       // Step 6: Return success with complete student and access information
-      // Step 6: Return success with complete student and access information
       return {
         'success': true,
         'student': {
