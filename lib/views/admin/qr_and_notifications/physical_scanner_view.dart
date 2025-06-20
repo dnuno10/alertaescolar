@@ -1,12 +1,14 @@
 import 'package:alertaescolar/components/headers/nav_header.dart';
+import 'package:alertaescolar/managers/user_provider.dart';
+import 'package:alertaescolar/services/scanner_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../../app/app_theme.dart';
-import '../../../components/admin/qr_and_notifications/attendance_control_header.dart';
 
 class PhysicalScannerView extends StatefulWidget {
   final Function(String) onCodeScanned;
-  final AccessType? accessType;
+  final ScannerAccessType? accessType;
   final bool? isDefaultEntryConfig;
 
   const PhysicalScannerView({
@@ -38,15 +40,18 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
   late Animation<double> _slideAnimation;
   late Animation<double> _cardSlideAnimation;
   late Animation<double> _cardOpacityAnimation;
-  late Animation<double> _accessTypePulseAnimation;
-  late Animation<double> _accessTypeFadeAnimation;
 
   bool _isListening = true;
   bool _hasScanned = false;
   bool _showStudentData = false;
   String? _scannedCode;
+  String? _errorMessage;
+  Map<String, dynamic>? _accessData; // Store access information
 
-  // Mock student data
+  // Scanner service
+  final ScannerService _scannerService = ScannerService();
+
+  // Student data from real scanning
   Map<String, dynamic>? _studentData;
 
   @override
@@ -148,22 +153,6 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
       curve: Curves.easeOut,
     ));
 
-    _accessTypePulseAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.05,
-    ).animate(CurvedAnimation(
-      parent: _accessTypeAnimationController,
-      curve: Curves.easeInOut,
-    ));
-
-    _accessTypeFadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _accessTypeAnimationController,
-      curve: Interval(0.0, 0.3, curve: Curves.easeOut),
-    ));
-
     _pulseAnimationController.repeat(reverse: true);
     _scanLineAnimationController.repeat();
     _rotationAnimationController.repeat();
@@ -179,85 +168,136 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
   }
 
   void _simulateScan(String code) {
-    if (!_hasScanned) {
-      HapticFeedback.lightImpact();
+    _processScannedCode(code);
+  }
 
-      setState(() {
-        _hasScanned = true;
-        _isListening = false;
-        _scannedCode = code;
-        _studentData = _generateMockStudentData(code);
-      });
+  /// Process a scanned QR code using the scanner service
+  Future<void> _processScannedCode(String code) async {
+    if (_hasScanned) return;
 
-      _stopScanningAnimations();
-      _successAnimationController.forward();
+    setState(() {
+      _hasScanned = true;
+      _isListening = false;
+      _scannedCode = code;
+    });
 
-      widget.onCodeScanned(code);
+    try {
+      // Get current user (admin) ID
+      final userProvider = context.read<UserProvider>();
+      final adminId = userProvider.currentUser?.id;
 
-      // Show slide animation and student data
-      Future.delayed(const Duration(milliseconds: 400), () {
-        if (mounted) {
-          _slideAnimationController.forward();
-          setState(() {
-            _showStudentData = true;
+      if (adminId == null) {
+        _showError('Error: Usuario no autenticado');
+        return;
+      }
+
+      // Process the scanned code
+      final result = await _scannerService.processScannedCode(
+        scannedCode: code,
+        adminId: adminId,
+        accessType: widget.accessType ?? ScannerAccessType.automatic,
+        isDefaultEntryConfig: widget.isDefaultEntryConfig ?? true,
+      );
+
+      if (result['success']) {
+        // Success - show student data and play animation
+        setState(() {
+          _studentData = result['student'];
+          _accessData = result['access'];
+        });
+
+        HapticFeedback.lightImpact();
+        _stopScanningAnimations();
+        _successAnimationController.forward();
+        widget.onCodeScanned(code);
+
+        // Show slide animation and student data
+        Future.delayed(const Duration(milliseconds: 400), () {
+          if (mounted) {
+            _slideAnimationController.forward();
+            setState(() {
+              _showStudentData = true;
+            });
+            _cardAnimationController.forward();
+          }
+        });
+
+        // Hide student data after 3 seconds
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) {
+            _hideStudentData();
+          }
+        });
+      } else {
+        // Error - show error message
+        _showError(result['error'] ?? 'Error desconocido');
+
+        if (result['shouldTerminate'] == true) {
+          // Critical error - return to previous screen
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) {
+              Navigator.of(context).pop();
+            }
           });
-          _cardAnimationController.forward();
+        } else {
+          // Non-critical error - reset for next scan
+          _resetForNextScan();
         }
-      });
-
-      // Hide student data after 3 seconds
-      Future.delayed(const Duration(seconds: 3), () {
-        if (mounted) {
-          _hideStudentData();
-        }
-      });
+      }
+    } catch (e) {
+      _showError('Error interno: $e');
+      _resetForNextScan();
     }
   }
 
-  Map<String, dynamic> _generateMockStudentData(String code) {
-    final names = [
-      'Ana García',
-      'Carlos López',
-      'María Rodríguez',
-      'José Martín',
-      'Sofía Hernández'
-    ];
-    final grades = ['5to Grado', '6to Grado', '4to Grado', '3er Grado'];
-    final sections = ['A', 'B', 'C'];
+  void _showError(String message) {
+    setState(() {
+      _errorMessage = message;
+    });
 
-    return {
-      'name': names[DateTime.now().millisecond % names.length],
-      'code': code,
-      'grade': grades[DateTime.now().millisecond % grades.length],
-      'section': sections[DateTime.now().millisecond % sections.length],
-      'time': DateTime.now(),
-      'status': 'Presente',
-    };
+    // Show error snackbar
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _resetForNextScan() {
+    setState(() {
+      _hasScanned = false;
+      _showStudentData = false;
+      _isListening = true;
+      _scannedCode = null;
+      _studentData = null;
+      _accessData = null;
+      _errorMessage = null;
+    });
+
+    _successAnimationController.reset();
+    _slideAnimationController.reset();
+    _cardAnimationController.reset();
+    _startScanningAnimations();
+    _startListening();
+  }
+
+  void _startScanningAnimations() {
+    _pulseAnimationController.repeat(reverse: true);
+    _scanLineAnimationController.repeat();
+    _rotationAnimationController.repeat();
+    _accessTypeAnimationController.repeat(reverse: true);
   }
 
   void _hideStudentData() {
     _cardAnimationController.reverse().then((_) {
       _slideAnimationController.reverse().then((_) {
         if (mounted) {
-          setState(() {
-            _showStudentData = false;
-            _hasScanned = false;
-            _isListening = true;
-            _scannedCode = null;
-            _studentData = null;
-          });
-          _resetAnimations();
+          _resetForNextScan();
         }
       });
     });
-  }
-
-  void _resetAnimations() {
-    _successAnimationController.reset();
-    _pulseAnimationController.repeat(reverse: true);
-    _scanLineAnimationController.repeat();
-    _rotationAnimationController.repeat();
-    _startListening();
   }
 
   void _stopScanningAnimations() {
@@ -279,45 +319,45 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
   }
 
   String _getAccessTypeText() {
-    final accessType = widget.accessType ?? AccessType.default_config;
+    final accessType = widget.accessType ?? ScannerAccessType.automatic;
     final isDefaultEntry = widget.isDefaultEntryConfig ?? true;
 
     switch (accessType) {
-      case AccessType.default_config:
+      case ScannerAccessType.automatic:
         return isDefaultEntry
             ? 'Modo Automático - Entrada'
             : 'Modo Automático - Salida';
-      case AccessType.entry:
+      case ScannerAccessType.entry:
         return 'Entrada Fija';
-      case AccessType.exit:
+      case ScannerAccessType.exit:
         return 'Salida Fija';
     }
   }
 
   Color _getAccessTypeColor() {
-    final accessType = widget.accessType ?? AccessType.default_config;
+    final accessType = widget.accessType ?? ScannerAccessType.automatic;
     final isDefaultEntry = widget.isDefaultEntryConfig ?? true;
 
     switch (accessType) {
-      case AccessType.default_config:
+      case ScannerAccessType.automatic:
         return isDefaultEntry ? AppTheme.successColor : AppTheme.errorColor;
-      case AccessType.entry:
+      case ScannerAccessType.entry:
         return AppTheme.successColor;
-      case AccessType.exit:
+      case ScannerAccessType.exit:
         return AppTheme.errorColor;
     }
   }
 
   IconData _getAccessTypeIcon() {
-    final accessType = widget.accessType ?? AccessType.default_config;
+    final accessType = widget.accessType ?? ScannerAccessType.automatic;
     final isDefaultEntry = widget.isDefaultEntryConfig ?? true;
 
     switch (accessType) {
-      case AccessType.default_config:
+      case ScannerAccessType.automatic:
         return isDefaultEntry ? Icons.login_rounded : Icons.logout_rounded;
-      case AccessType.entry:
+      case ScannerAccessType.entry:
         return Icons.login_rounded;
-      case AccessType.exit:
+      case ScannerAccessType.exit:
         return Icons.logout_rounded;
     }
   }

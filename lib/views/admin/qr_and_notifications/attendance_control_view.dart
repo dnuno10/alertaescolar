@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:alertaescolar/components/buttons/solid_button.dart';
 import 'package:alertaescolar/managers/user_provider.dart';
+import 'package:alertaescolar/services/scanner_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../app/app_theme.dart';
@@ -657,6 +658,18 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
         ));
   }
 
+  // Convert AccessType to ScannerAccessType for scanner views
+  ScannerAccessType _convertToScannerAccessType(AccessType accessType) {
+    switch (accessType) {
+      case AccessType.default_config:
+        return ScannerAccessType.automatic;
+      case AccessType.entry:
+        return ScannerAccessType.entry;
+      case AccessType.exit:
+        return ScannerAccessType.exit;
+    }
+  }
+
   // Navigation methods
   void _navigateToCameraScanner() {
     Navigator.push(
@@ -664,7 +677,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
       MaterialPageRoute(
         builder: (context) => CameraScannerView(
           onCodeScanned: _handleScannedCode,
-          accessType: _selectedAccessType,
+          accessType: _convertToScannerAccessType(_selectedAccessType),
           isDefaultEntryConfig: _isDefaultEntryConfig,
         ),
       ),
@@ -677,7 +690,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
       MaterialPageRoute(
         builder: (context) => PhysicalScannerView(
           onCodeScanned: _handleScannedCode,
-          accessType: _selectedAccessType,
+          accessType: _convertToScannerAccessType(_selectedAccessType),
           isDefaultEntryConfig: _isDefaultEntryConfig,
         ),
       ),
