@@ -2,14 +2,18 @@ import 'package:alertaescolar/components/headers/nav_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../app/app_theme.dart';
-import '../../../l10n/app_localizations.dart';
+import '../../../components/admin/qr_and_notifications/attendance_control_header.dart';
 
 class PhysicalScannerView extends StatefulWidget {
   final Function(String) onCodeScanned;
+  final AccessType? accessType;
+  final bool? isDefaultEntryConfig;
 
   const PhysicalScannerView({
     super.key,
     required this.onCodeScanned,
+    this.accessType,
+    this.isDefaultEntryConfig,
   });
 
   @override
@@ -25,6 +29,7 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
   late AnimationController _successAnimationController;
   late AnimationController _slideAnimationController;
   late AnimationController _cardAnimationController;
+  late AnimationController _accessTypeAnimationController;
 
   late Animation<double> _pulseAnimation;
   late Animation<double> _scanLineAnimation;
@@ -33,6 +38,8 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
   late Animation<double> _slideAnimation;
   late Animation<double> _cardSlideAnimation;
   late Animation<double> _cardOpacityAnimation;
+  late Animation<double> _accessTypePulseAnimation;
+  late Animation<double> _accessTypeFadeAnimation;
 
   bool _isListening = true;
   bool _hasScanned = false;
@@ -77,6 +84,11 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
 
     _cardAnimationController = AnimationController(
       duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+
+    _accessTypeAnimationController = AnimationController(
+      duration: const Duration(seconds: 3),
       vsync: this,
     );
 
@@ -136,9 +148,26 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
       curve: Curves.easeOut,
     ));
 
+    _accessTypePulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.05,
+    ).animate(CurvedAnimation(
+      parent: _accessTypeAnimationController,
+      curve: Curves.easeInOut,
+    ));
+
+    _accessTypeFadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _accessTypeAnimationController,
+      curve: Interval(0.0, 0.3, curve: Curves.easeOut),
+    ));
+
     _pulseAnimationController.repeat(reverse: true);
     _scanLineAnimationController.repeat();
     _rotationAnimationController.repeat();
+    _accessTypeAnimationController.repeat(reverse: true);
   }
 
   void _startListening() {
@@ -245,13 +274,57 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
     _successAnimationController.dispose();
     _slideAnimationController.dispose();
     _cardAnimationController.dispose();
+    _accessTypeAnimationController.dispose();
     super.dispose();
+  }
+
+  String _getAccessTypeText() {
+    final accessType = widget.accessType ?? AccessType.default_config;
+    final isDefaultEntry = widget.isDefaultEntryConfig ?? true;
+
+    switch (accessType) {
+      case AccessType.default_config:
+        return isDefaultEntry
+            ? 'Modo Automático - Entrada'
+            : 'Modo Automático - Salida';
+      case AccessType.entry:
+        return 'Entrada Fija';
+      case AccessType.exit:
+        return 'Salida Fija';
+    }
+  }
+
+  Color _getAccessTypeColor() {
+    final accessType = widget.accessType ?? AccessType.default_config;
+    final isDefaultEntry = widget.isDefaultEntryConfig ?? true;
+
+    switch (accessType) {
+      case AccessType.default_config:
+        return isDefaultEntry ? AppTheme.successColor : AppTheme.errorColor;
+      case AccessType.entry:
+        return AppTheme.successColor;
+      case AccessType.exit:
+        return AppTheme.errorColor;
+    }
+  }
+
+  IconData _getAccessTypeIcon() {
+    final accessType = widget.accessType ?? AccessType.default_config;
+    final isDefaultEntry = widget.isDefaultEntryConfig ?? true;
+
+    switch (accessType) {
+      case AccessType.default_config:
+        return isDefaultEntry ? Icons.login_rounded : Icons.logout_rounded;
+      case AccessType.entry:
+        return Icons.login_rounded;
+      case AccessType.exit:
+        return Icons.logout_rounded;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
-    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
@@ -263,354 +336,412 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
             slivers: [
               NavHeader(title: "Escáner Físico"),
 
-              // Main Content
+              // Clean Access Type Indicator
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
-                  child: Column(
+                child: Container(
+                  margin: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+                  padding:
+                      EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+                  decoration: BoxDecoration(
+                    color: AppTheme.getCardColor(context),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: _getAccessTypeColor().withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
                     children: [
-                      // Status indicator with improved animation
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 600),
-                        curve: Curves.easeInOut,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: AppTheme.getLargePadding(screenSize),
-                          vertical: AppTheme.getMediumPadding(screenSize),
-                        ),
+                      // Status indicator dot
+                      Container(
+                        width: 12,
+                        height: 12,
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: _hasScanned
-                                ? [
-                                    Colors.green.withOpacity(0.15),
-                                    Colors.green.withOpacity(0.08),
-                                  ]
-                                : [
-                                    AppTheme.accentOrange.withOpacity(0.15),
-                                    AppTheme.accentOrange.withOpacity(0.08),
-                                  ],
-                          ),
-                          borderRadius: BorderRadius.circular(25),
-                          border: Border.all(
-                            color: _hasScanned
-                                ? Colors.green.withOpacity(0.4)
-                                : AppTheme.accentOrange.withOpacity(0.4),
-                            width: 2,
-                          ),
+                          color: _getAccessTypeColor(),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: _getAccessTypeColor().withOpacity(0.3),
+                              blurRadius: 4,
+                              spreadRadius: 1,
+                            ),
+                          ],
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                      ),
+                      SizedBox(width: AppTheme.getMediumPadding(screenSize)),
+
+                      // Access type info
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (_hasScanned)
-                              AnimatedBuilder(
-                                animation: _successScaleAnimation,
-                                builder: (context, child) {
-                                  return Transform.scale(
-                                    scale: _successScaleAnimation.value,
-                                    child: Icon(
-                                      Icons.check_circle_rounded,
-                                      color: Colors.green,
-                                      size: 28,
-                                    ),
-                                  );
-                                },
-                              )
-                            else
-                              AnimatedBuilder(
-                                animation: _rotationAnimation,
-                                builder: (context, child) {
-                                  return Transform.rotate(
-                                    angle:
-                                        _rotationAnimation.value * 2 * 3.14159,
-                                    child: Icon(
-                                      Icons.bluetooth_searching_rounded,
-                                      color: AppTheme.accentOrange,
-                                      size: 28,
-                                    ),
-                                  );
-                                },
+                            Text(
+                              'Modo Activo',
+                              style:
+                                  AppTheme.getCaptionSmall(screenSize).copyWith(
+                                color: AppTheme.getTextSecondaryColor(context),
+                                fontWeight: FontWeight.w500,
                               ),
-                            SizedBox(
-                                width: AppTheme.getSmallPadding(screenSize)),
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 300),
-                              child: Text(
-                                _hasScanned
-                                    ? '¡Estudiante detectado!'
-                                    : 'Esperando estudiante...',
-                                key: ValueKey(_hasScanned),
-                                style:
-                                    AppTheme.getBodyLarge(screenSize).copyWith(
-                                  color: _hasScanned
-                                      ? Colors.green
-                                      : AppTheme.accentOrange,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              _getAccessTypeText(),
+                              style:
+                                  AppTheme.getBodyMedium(screenSize).copyWith(
+                                color: AppTheme.getTextPrimaryColor(context),
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
                         ),
                       ),
 
-                      SizedBox(
-                          height: AppTheme.getLargePadding(screenSize) * 5),
-
-                      // Enhanced scanner animation
-                      AnimatedBuilder(
-                        animation: _slideAnimation,
-                        builder: (context, child) {
-                          return Transform.translate(
-                              offset: Offset(0, _slideAnimation.value * -100),
-                              child: AnimatedOpacity(
-                                duration: const Duration(milliseconds: 300),
-                                opacity: _showStudentData ? 0.3 : 1.0,
-                                child: Container(
-                                  width: screenSize.width * 0.75,
-                                  height: screenSize.width * 0.75,
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      // Multiple pulse rings
-                                      for (int i = 0; i < 3; i++)
-                                        AnimatedBuilder(
-                                          animation: _pulseAnimation,
-                                          builder: (context, child) {
-                                            return Transform.scale(
-                                              scale: _pulseAnimation.value *
-                                                  (1.0 - i * 0.15),
-                                              child: Container(
-                                                decoration: BoxDecoration(
-                                                  shape: BoxShape.circle,
-                                                  border: Border.all(
-                                                    color: AppTheme.accentOrange
-                                                        .withOpacity(
-                                                            0.2 + i * 0.1),
-                                                    width: 2.0 + i,
-                                                  ),
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                        ),
-
-                                      // Inner scanner area with gradient
-                                      Container(
-                                        width: screenSize.width * 0.5,
-                                        height: screenSize.width * 0.5,
-                                        decoration: BoxDecoration(
-                                          gradient: RadialGradient(
-                                            colors: _hasScanned
-                                                ? [
-                                                    Colors.green
-                                                        .withOpacity(0.2),
-                                                    Colors.green
-                                                        .withOpacity(0.1),
-                                                    Colors.green
-                                                        .withOpacity(0.05),
-                                                    Colors.transparent,
-                                                  ]
-                                                : [
-                                                    AppTheme.accentOrange
-                                                        .withOpacity(0.2),
-                                                    AppTheme.accentOrange
-                                                        .withOpacity(0.1),
-                                                    AppTheme.accentOrange
-                                                        .withOpacity(0.05),
-                                                    Colors.transparent,
-                                                  ],
-                                          ),
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: _hasScanned
-                                                ? Colors.green
-                                                : AppTheme.accentOrange,
-                                            width: 4,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: (_hasScanned
-                                                      ? Colors.green
-                                                      : AppTheme.accentOrange)
-                                                  .withOpacity(0.2),
-                                              blurRadius: 20,
-                                              spreadRadius: 10,
-                                            ),
-                                          ],
-                                        ),
-                                        child: Stack(
-                                          children: [
-                                            // Main icon with animation
-                                            Center(
-                                              child: AnimatedSwitcher(
-                                                duration: const Duration(
-                                                    milliseconds: 400),
-                                                child: _hasScanned
-                                                    ? AnimatedBuilder(
-                                                        animation:
-                                                            _successScaleAnimation,
-                                                        builder:
-                                                            (context, child) {
-                                                          return Transform
-                                                              .scale(
-                                                            scale:
-                                                                _successScaleAnimation
-                                                                    .value,
-                                                            child: Icon(
-                                                              Icons
-                                                                  .person_add_alt_1,
-                                                              key: const ValueKey(
-                                                                  'success'),
-                                                              size: screenSize
-                                                                      .width *
-                                                                  0.18,
-                                                              color:
-                                                                  Colors.green,
-                                                            ),
-                                                          );
-                                                        },
-                                                      )
-                                                    : Icon(
-                                                        Icons
-                                                            .qr_code_scanner_rounded,
-                                                        key: const ValueKey(
-                                                            'scanning'),
-                                                        size: screenSize.width *
-                                                            0.18,
-                                                        color: AppTheme
-                                                            .accentOrange,
-                                                      ),
-                                              ),
-                                            ),
-
-                                            if (!_hasScanned)
-                                              AnimatedBuilder(
-                                                animation: _scanLineAnimation,
-                                                builder: (context, child) {
-                                                  return Positioned(
-                                                    top: (screenSize.width *
-                                                                    0.55 -
-                                                                60) *
-                                                            _scanLineAnimation
-                                                                .value +
-                                                        30,
-                                                    left: 40,
-                                                    right: 40,
-                                                    child: Container(
-                                                      height: 6,
-                                                      decoration: BoxDecoration(
-                                                        gradient:
-                                                            LinearGradient(
-                                                          colors: [
-                                                            Colors.transparent,
-                                                            AppTheme
-                                                                .accentOrange
-                                                                .withOpacity(
-                                                                    0.5),
-                                                            AppTheme
-                                                                .accentOrange,
-                                                            AppTheme
-                                                                .accentOrange,
-                                                            AppTheme
-                                                                .accentOrange
-                                                                .withOpacity(
-                                                                    0.5),
-                                                            Colors.transparent,
-                                                          ],
-                                                        ),
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(3),
-                                                        boxShadow: [
-                                                          BoxShadow(
-                                                            color: AppTheme
-                                                                .accentOrange
-                                                                .withOpacity(
-                                                                    0.8),
-                                                            blurRadius: 15,
-                                                            spreadRadius: 3,
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  );
-                                                },
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ));
-                        },
+                      // Access type icon
+                      Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: _getAccessTypeColor().withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          _getAccessTypeIcon(),
+                          color: _getAccessTypeColor(),
+                          size: 20,
+                        ),
                       ),
+                    ],
+                  ),
+                ),
+              ),
 
-                      SizedBox(
-                          height: AppTheme.getLargePadding(screenSize) * 2),
-
-                      // Enhanced connection status
-                      if (!_hasScanned)
-                        Container(
-                          padding: EdgeInsets.all(
-                              AppTheme.getMediumPadding(screenSize)),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                AppTheme.accentOrange.withOpacity(0.1),
-                                AppTheme.accentOrange.withOpacity(0.05),
-                              ],
+              // Main Content
+              SliverToBoxAdapter(
+                child: Column(
+                  children: [
+                    // Status indicator with improved animation
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 600),
+                      curve: Curves.easeInOut,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppTheme.getLargePadding(screenSize),
+                        vertical: AppTheme.getMediumPadding(screenSize),
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: _hasScanned
+                              ? [
+                                  Colors.green.withOpacity(0.15),
+                                  Colors.green.withOpacity(0.08),
+                                ]
+                              : [
+                                  AppTheme.accentOrange.withOpacity(0.15),
+                                  AppTheme.accentOrange.withOpacity(0.08),
+                                ],
+                        ),
+                        borderRadius: BorderRadius.circular(25),
+                        border: Border.all(
+                          color: _hasScanned
+                              ? Colors.green.withOpacity(0.4)
+                              : AppTheme.accentOrange.withOpacity(0.4),
+                          width: 2,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_hasScanned)
+                            AnimatedBuilder(
+                              animation: _successScaleAnimation,
+                              builder: (context, child) {
+                                return Transform.scale(
+                                  scale: _successScaleAnimation.value,
+                                  child: Icon(
+                                    Icons.check_circle_rounded,
+                                    color: Colors.green,
+                                    size: 28,
+                                  ),
+                                );
+                              },
+                            )
+                          else
+                            AnimatedBuilder(
+                              animation: _rotationAnimation,
+                              builder: (context, child) {
+                                return Transform.rotate(
+                                  angle: _rotationAnimation.value * 2 * 3.14159,
+                                  child: Icon(
+                                    Icons.bluetooth_searching_rounded,
+                                    color: AppTheme.accentOrange,
+                                    size: 28,
+                                  ),
+                                );
+                              },
                             ),
-                            borderRadius: BorderRadius.circular(
-                                AppTheme.getMediumRadius(screenSize)),
-                            border: Border.all(
-                              color: AppTheme.accentOrange.withOpacity(0.3),
-                              width: 1,
+                          SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 300),
+                            child: Text(
+                              _hasScanned
+                                  ? '¡Estudiante detectado!'
+                                  : 'Esperando estudiante...',
+                              key: ValueKey(_hasScanned),
+                              style: AppTheme.getBodyLarge(screenSize).copyWith(
+                                color: _hasScanned
+                                    ? Colors.green
+                                    : AppTheme.accentOrange,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
-                          child: Row(
-                            children: [
-                              AnimatedBuilder(
-                                animation: _pulseAnimation,
-                                builder: (context, child) {
-                                  return Transform.scale(
-                                    scale: 0.7 + (0.6 * _pulseAnimation.value),
-                                    child: Container(
-                                      width: 14,
-                                      height: 14,
+                        ],
+                      ),
+                    ),
+
+                    SizedBox(height: AppTheme.getLargePadding(screenSize) * 5),
+
+                    // Enhanced scanner animation
+                    AnimatedBuilder(
+                      animation: _slideAnimation,
+                      builder: (context, child) {
+                        return Transform.translate(
+                            offset: Offset(0, _slideAnimation.value * -100),
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 300),
+                              opacity: _showStudentData ? 0.3 : 1.0,
+                              child: Container(
+                                width: screenSize.width * 0.75,
+                                height: screenSize.width * 0.75,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    // Multiple pulse rings
+                                    for (int i = 0; i < 3; i++)
+                                      AnimatedBuilder(
+                                        animation: _pulseAnimation,
+                                        builder: (context, child) {
+                                          return Transform.scale(
+                                            scale: _pulseAnimation.value *
+                                                (1.0 - i * 0.15),
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: AppTheme.accentOrange
+                                                      .withOpacity(
+                                                          0.2 + i * 0.1),
+                                                  width: 2.0 + i,
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+
+                                    // Inner scanner area with gradient
+                                    Container(
+                                      width: screenSize.width * 0.5,
+                                      height: screenSize.width * 0.5,
                                       decoration: BoxDecoration(
-                                        color: AppTheme.accentOrange,
+                                        gradient: RadialGradient(
+                                          colors: _hasScanned
+                                              ? [
+                                                  Colors.green.withOpacity(0.2),
+                                                  Colors.green.withOpacity(0.1),
+                                                  Colors.green
+                                                      .withOpacity(0.05),
+                                                  Colors.transparent,
+                                                ]
+                                              : [
+                                                  AppTheme.accentOrange
+                                                      .withOpacity(0.2),
+                                                  AppTheme.accentOrange
+                                                      .withOpacity(0.1),
+                                                  AppTheme.accentOrange
+                                                      .withOpacity(0.05),
+                                                  Colors.transparent,
+                                                ],
+                                        ),
                                         shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: _hasScanned
+                                              ? Colors.green
+                                              : AppTheme.accentOrange,
+                                          width: 4,
+                                        ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: AppTheme.accentOrange
-                                                .withOpacity(0.5),
-                                            blurRadius: 8,
-                                            spreadRadius: 2,
+                                            color: (_hasScanned
+                                                    ? Colors.green
+                                                    : AppTheme.accentOrange)
+                                                .withOpacity(0.2),
+                                            blurRadius: 20,
+                                            spreadRadius: 10,
                                           ),
                                         ],
                                       ),
+                                      child: Stack(
+                                        children: [
+                                          // Main icon with animation
+                                          Center(
+                                            child: AnimatedSwitcher(
+                                              duration: const Duration(
+                                                  milliseconds: 400),
+                                              child: _hasScanned
+                                                  ? AnimatedBuilder(
+                                                      animation:
+                                                          _successScaleAnimation,
+                                                      builder:
+                                                          (context, child) {
+                                                        return Transform.scale(
+                                                          scale:
+                                                              _successScaleAnimation
+                                                                  .value,
+                                                          child: Icon(
+                                                            Icons
+                                                                .person_add_alt_1,
+                                                            key: const ValueKey(
+                                                                'success'),
+                                                            size: screenSize
+                                                                    .width *
+                                                                0.18,
+                                                            color: Colors.green,
+                                                          ),
+                                                        );
+                                                      },
+                                                    )
+                                                  : Icon(
+                                                      Icons
+                                                          .qr_code_scanner_rounded,
+                                                      key: const ValueKey(
+                                                          'scanning'),
+                                                      size: screenSize.width *
+                                                          0.18,
+                                                      color:
+                                                          AppTheme.accentOrange,
+                                                    ),
+                                            ),
+                                          ),
+
+                                          if (!_hasScanned)
+                                            AnimatedBuilder(
+                                              animation: _scanLineAnimation,
+                                              builder: (context, child) {
+                                                return Positioned(
+                                                  top:
+                                                      (screenSize.width * 0.55 -
+                                                                  60) *
+                                                              _scanLineAnimation
+                                                                  .value +
+                                                          30,
+                                                  left: 40,
+                                                  right: 40,
+                                                  child: Container(
+                                                    height: 6,
+                                                    decoration: BoxDecoration(
+                                                      gradient: LinearGradient(
+                                                        colors: [
+                                                          Colors.transparent,
+                                                          AppTheme.accentOrange
+                                                              .withOpacity(0.5),
+                                                          AppTheme.accentOrange,
+                                                          AppTheme.accentOrange,
+                                                          AppTheme.accentOrange
+                                                              .withOpacity(0.5),
+                                                          Colors.transparent,
+                                                        ],
+                                                      ),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              3),
+                                                      boxShadow: [
+                                                        BoxShadow(
+                                                          color: AppTheme
+                                                              .accentOrange
+                                                              .withOpacity(0.8),
+                                                          blurRadius: 15,
+                                                          spreadRadius: 3,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                        ],
+                                      ),
                                     ),
-                                  );
-                                },
-                              ),
-                              SizedBox(
-                                  width: AppTheme.getMediumPadding(screenSize)),
-                              Expanded(
-                                child: Text(
-                                  'Dispositivo listo • Escuchando escáner...',
-                                  style: AppTheme.getBodyMedium(screenSize)
-                                      .copyWith(
-                                    color: AppTheme.accentOrange,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  ],
                                 ),
                               ),
+                            ));
+                      },
+                    ),
+
+                    SizedBox(height: AppTheme.getLargePadding(screenSize) * 2),
+
+                    // Enhanced connection status
+                    if (!_hasScanned)
+                      Container(
+                        padding: EdgeInsets.all(
+                            AppTheme.getMediumPadding(screenSize)),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppTheme.accentOrange.withOpacity(0.1),
+                              AppTheme.accentOrange.withOpacity(0.05),
                             ],
                           ),
+                          borderRadius: BorderRadius.circular(
+                              AppTheme.getMediumRadius(screenSize)),
+                          border: Border.all(
+                            color: AppTheme.accentOrange.withOpacity(0.3),
+                            width: 1,
+                          ),
                         ),
-                    ],
-                  ),
+                        child: Row(
+                          children: [
+                            AnimatedBuilder(
+                              animation: _pulseAnimation,
+                              builder: (context, child) {
+                                return Transform.scale(
+                                  scale: 0.7 + (0.6 * _pulseAnimation.value),
+                                  child: Container(
+                                    width: 14,
+                                    height: 14,
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.accentOrange,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppTheme.accentOrange
+                                              .withOpacity(0.5),
+                                          blurRadius: 8,
+                                          spreadRadius: 2,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            SizedBox(
+                                width: AppTheme.getMediumPadding(screenSize)),
+                            Expanded(
+                              child: Text(
+                                'Dispositivo listo • Escuchando escáner...',
+                                style:
+                                    AppTheme.getBodyMedium(screenSize).copyWith(
+                                  color: AppTheme.accentOrange,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ],
@@ -853,7 +984,242 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
               },
             ),
 
-// ...existing code...
+          // Student data overlay - Fixed positioning to prevent overflow
+
+          if (_showStudentData && _studentData != null)
+            AnimatedBuilder(
+              animation: _cardSlideAnimation,
+              builder: (context, child) {
+                return Positioned.fill(
+                  child: Container(
+                    color: Colors.black
+                        .withOpacity(0.3), // Semi-transparent backdrop
+                    child: AnimatedBuilder(
+                      animation: _cardOpacityAnimation,
+                      builder: (context, child) {
+                        return Opacity(
+                          opacity: _cardOpacityAnimation.value,
+                          child: Column(
+                            children: [
+                              // Spacer to push content down
+                              Expanded(
+                                flex: 2,
+                                child: GestureDetector(
+                                  onTap: () =>
+                                      _hideStudentData(), // Optional: tap to close
+                                  child: Container(color: Colors.transparent),
+                                ),
+                              ),
+                              // Student data card
+                              Expanded(
+                                flex: 3,
+                                child: Transform.translate(
+                                  offset: Offset(
+                                      0, _cardSlideAnimation.value * 500),
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: EdgeInsets.all(
+                                        AppTheme.getLargePadding(screenSize)),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          Colors.green.withOpacity(0.95),
+                                          Colors.green.shade600
+                                              .withOpacity(0.95),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.only(
+                                        topLeft: Radius.circular(
+                                            AppTheme.getLargeRadius(
+                                                    screenSize) *
+                                                1.5),
+                                        topRight: Radius.circular(
+                                            AppTheme.getLargeRadius(
+                                                    screenSize) *
+                                                1.5),
+                                      ),
+                                    ),
+                                    child: SingleChildScrollView(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          // Success animation icon
+                                          AnimatedBuilder(
+                                            animation: _successScaleAnimation,
+                                            builder: (context, child) {
+                                              return Transform.scale(
+                                                scale: _successScaleAnimation
+                                                            .value *
+                                                        0.8 +
+                                                    0.2,
+                                                child: Container(
+                                                  padding: EdgeInsets.all(
+                                                      AppTheme.getMediumPadding(
+                                                          screenSize)),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white
+                                                        .withOpacity(0.2),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: Icon(
+                                                    Icons.qr_code_2_rounded,
+                                                    color: Colors.white,
+                                                    size: 40,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+
+                                          SizedBox(
+                                              height: AppTheme.getMediumPadding(
+                                                  screenSize)),
+
+                                          // Student info header
+                                          Text(
+                                            'ESCANEO EXITOSO',
+                                            style: AppTheme.getBodyMedium(
+                                                    screenSize)
+                                                .copyWith(
+                                              color:
+                                                  Colors.white.withOpacity(0.9),
+                                              fontWeight: FontWeight.w600,
+                                              letterSpacing: 1.2,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+
+                                          SizedBox(
+                                              height: AppTheme.getSmallPadding(
+                                                  screenSize)),
+
+                                          // Student name
+                                          Text(
+                                            _studentData!['name'],
+                                            style: AppTheme.getH1(screenSize)
+                                                .copyWith(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize:
+                                                  screenSize.height * 0.028,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+
+                                          SizedBox(
+                                              height: AppTheme.getMediumPadding(
+                                                  screenSize)),
+
+                                          // Student details
+                                          Container(
+                                            width: double.infinity,
+                                            padding: EdgeInsets.all(
+                                                AppTheme.getMediumPadding(
+                                                    screenSize)),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white
+                                                  .withOpacity(0.15),
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                      AppTheme.getMediumRadius(
+                                                          screenSize)),
+                                            ),
+                                            child: Column(
+                                              children: [
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceEvenly,
+                                                  children: [
+                                                    _buildDataItem(
+                                                        'Grado',
+                                                        _studentData!['grade'],
+                                                        screenSize),
+                                                    _buildDataItem(
+                                                        'Sección',
+                                                        _studentData![
+                                                            'section'],
+                                                        screenSize),
+                                                    _buildDataItem(
+                                                        'Estado',
+                                                        _studentData!['status'],
+                                                        screenSize),
+                                                  ],
+                                                ),
+                                                SizedBox(
+                                                    height: AppTheme
+                                                        .getMediumPadding(
+                                                            screenSize)),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceEvenly,
+                                                  children: [
+                                                    _buildDataItem(
+                                                        'Código',
+                                                        _studentData!['code'],
+                                                        screenSize),
+                                                    _buildDataItem(
+                                                        'Hora',
+                                                        '${_studentData!['time'].hour}:${_studentData!['time'].minute.toString().padLeft(2, '0')}',
+                                                        screenSize),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+
+                                          SizedBox(
+                                              height: AppTheme.getMediumPadding(
+                                                  screenSize)),
+
+                                          // Continue scanning hint
+                                          Container(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal:
+                                                  AppTheme.getMediumPadding(
+                                                      screenSize),
+                                              vertical:
+                                                  AppTheme.getSmallPadding(
+                                                      screenSize),
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  Colors.white.withOpacity(0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            child: Text(
+                                              'Listo para el siguiente estudiante',
+                                              style: AppTheme.getBodyMedium(
+                                                      screenSize)
+                                                  .copyWith(
+                                                color: Colors.white
+                                                    .withOpacity(0.8),
+                                                fontWeight: FontWeight.w400,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
         ],
       ),
     );

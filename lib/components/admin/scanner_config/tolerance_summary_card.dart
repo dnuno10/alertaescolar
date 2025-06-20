@@ -52,7 +52,7 @@ class ToleranceSummaryCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  l10n.studentsHaveToleranceAfterEntryTime(tolerance),
+                  'Los estudiantes tienen $tolerance minutos de tolerancia después de la hora de entrada',
                   style: AppTheme.getCaption(screenSize).copyWith(
                     color: AppTheme.getTextSecondaryColor(context),
                   ),

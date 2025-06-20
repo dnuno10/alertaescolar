@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import '../../../app/app_theme.dart';
-import '../../../l10n/app_localizations.dart';
+import '../../../components/admin/qr_and_notifications/attendance_control_header.dart';
 
 class CameraScannerView extends StatefulWidget {
   final Function(String) onCodeScanned;
+  final AccessType? accessType;
+  final bool? isDefaultEntryConfig;
 
   const CameraScannerView({
     super.key,
     required this.onCodeScanned,
+    this.accessType,
+    this.isDefaultEntryConfig,
   });
 
   @override
@@ -28,16 +32,20 @@ class _CameraScannerViewState extends State<CameraScannerView>
   // Animation controllers
   late AnimationController _successAnimationController;
   late AnimationController _slideInAnimationController;
+  late AnimationController _accessTypeAnimationController;
 
   late Animation<double> _successScaleAnimation;
   late Animation<Offset> _slideInAnimation;
   late Animation<double> _overlayOpacityAnimation;
+  late Animation<double> _accessTypeFadeAnimation;
+  late Animation<Offset> _accessTypeSlideAnimation;
 
   @override
   void initState() {
     super.initState();
     _initAnimations();
     _simulateDelayedScan();
+    _showAccessTypeIndicator();
   }
 
   void _initAnimations() {
@@ -48,6 +56,11 @@ class _CameraScannerViewState extends State<CameraScannerView>
 
     _slideInAnimationController = AnimationController(
       duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    _accessTypeAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
       vsync: this,
     );
 
@@ -74,6 +87,77 @@ class _CameraScannerViewState extends State<CameraScannerView>
       parent: _slideInAnimationController,
       curve: Curves.easeOut,
     ));
+
+    _accessTypeFadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _accessTypeAnimationController,
+      curve: Interval(0.0, 0.6, curve: Curves.easeOut),
+    ));
+
+    _accessTypeSlideAnimation = Tween<Offset>(
+      begin: const Offset(0.0, -1.0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _accessTypeAnimationController,
+      curve: Interval(0.0, 0.8, curve: Curves.easeOutBack),
+    ));
+  }
+
+  void _showAccessTypeIndicator() {
+    _accessTypeAnimationController.forward();
+
+    // Auto-hide after 4 seconds
+    Future.delayed(const Duration(seconds: 4), () {
+      if (mounted && !_hasScanned) {
+        _accessTypeAnimationController.reverse();
+      }
+    });
+  }
+
+  String _getAccessTypeText() {
+    final accessType = widget.accessType ?? AccessType.default_config;
+    final isDefaultEntry = widget.isDefaultEntryConfig ?? true;
+
+    switch (accessType) {
+      case AccessType.default_config:
+        return isDefaultEntry
+            ? 'Modo Automático - Entrada'
+            : 'Modo Automático - Salida';
+      case AccessType.entry:
+        return 'Entrada Fija';
+      case AccessType.exit:
+        return 'Salida Fija';
+    }
+  }
+
+  Color _getAccessTypeColor() {
+    final accessType = widget.accessType ?? AccessType.default_config;
+    final isDefaultEntry = widget.isDefaultEntryConfig ?? true;
+
+    switch (accessType) {
+      case AccessType.default_config:
+        return isDefaultEntry ? AppTheme.successColor : AppTheme.errorColor;
+      case AccessType.entry:
+        return AppTheme.successColor;
+      case AccessType.exit:
+        return AppTheme.errorColor;
+    }
+  }
+
+  IconData _getAccessTypeIcon() {
+    final accessType = widget.accessType ?? AccessType.default_config;
+    final isDefaultEntry = widget.isDefaultEntryConfig ?? true;
+
+    switch (accessType) {
+      case AccessType.default_config:
+        return isDefaultEntry ? Icons.login_rounded : Icons.logout_rounded;
+      case AccessType.entry:
+        return Icons.login_rounded;
+      case AccessType.exit:
+        return Icons.logout_rounded;
+    }
   }
 
   void _simulateDelayedScan() {
@@ -160,13 +244,13 @@ class _CameraScannerViewState extends State<CameraScannerView>
     _controller?.dispose();
     _successAnimationController.dispose();
     _slideInAnimationController.dispose();
+    _accessTypeAnimationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
-    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -185,7 +269,7 @@ class _CameraScannerViewState extends State<CameraScannerView>
             ),
           ),
 
-          // Minimal top controls - positioned to not interfere with camera
+          // Minimal top controls
           SafeArea(
             child: Padding(
               padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -306,12 +390,56 @@ class _CameraScannerViewState extends State<CameraScannerView>
                         textAlign: TextAlign.center,
                       ),
                       SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-                      Text(
-                        'Posiciona el código QR del estudiante\ndentro del marco',
-                        style: AppTheme.getBodyMedium(screenSize).copyWith(
-                          color: Colors.white.withOpacity(0.8),
+                      SafeArea(
+                        child: Container(
+                          width: double.infinity,
+                          margin: EdgeInsets.only(
+                            top: AppTheme.getSmallPadding(screenSize),
+                            left: AppTheme.getMediumPadding(screenSize),
+                            right: AppTheme.getMediumPadding(screenSize),
+                          ),
+                          child: Center(
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal:
+                                    AppTheme.getMediumPadding(screenSize),
+                                vertical: AppTheme.getSmallPadding(screenSize),
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.8),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: _getAccessTypeColor().withOpacity(0.6),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: BoxDecoration(
+                                      color: _getAccessTypeColor(),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                      width:
+                                          AppTheme.getSmallPadding(screenSize)),
+                                  Text(
+                                    _getAccessTypeText(),
+                                    style: AppTheme.getCaption(screenSize)
+                                        .copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
-                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),

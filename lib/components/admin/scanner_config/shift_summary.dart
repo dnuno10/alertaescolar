@@ -26,9 +26,17 @@ class ShiftSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+
+    // Properly calculate tolerance end time handling minutes overflow
+    final totalStartMinutes =
+        startTime.hour * 60 + startTime.minute + tolerance;
+    final toleranceEndHour =
+        (totalStartMinutes ~/ 60) % 24; // Handle day overflow
+    final toleranceEndMinute = totalStartMinutes % 60;
+
     final toleranceEnd = TimeOfDay(
-      hour: startTime.hour,
-      minute: startTime.minute + tolerance,
+      hour: toleranceEndHour,
+      minute: toleranceEndMinute,
     );
 
     return Container(

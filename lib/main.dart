@@ -1,6 +1,7 @@
 import 'package:alertaescolar/providers/language_provider.dart';
 import 'package:alertaescolar/models/usuario.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
@@ -22,6 +23,10 @@ import 'views/admin/home/admin_dashboard_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
   await dotenv.load();
 
   await Supabase.initialize(

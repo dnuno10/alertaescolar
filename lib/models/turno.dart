@@ -5,6 +5,7 @@ class Turno {
   final String horaFin;
   final DateTime fechaRegistro;
   final String idEscuela;
+  final int tolerancia;
 
   const Turno({
     required this.id,
@@ -13,18 +14,42 @@ class Turno {
     required this.horaFin,
     required this.fechaRegistro,
     required this.idEscuela,
+    this.tolerancia = 15, // Default tolerance of 15 minutes
   });
 
   factory Turno.fromJson(Map<String, dynamic> json) {
+    // Parse time with timezone format to extract just HH:MM
+    String parseTime(String? timeString) {
+      if (timeString == null || timeString.isEmpty) return '00:00';
+
+      // If it contains timezone part (+/-), extract just the time part
+      if (timeString.contains('+') ||
+          (timeString.contains('-') && timeString.lastIndexOf('-') > 2)) {
+        final timePart = timeString.split(RegExp(r'[+-]'))[0];
+        return timePart.substring(0, 5); // Take just HH:MM
+      }
+
+      // Handle simple time format (HH:MM:SS or HH:MM)
+      if (timeString.contains(':')) {
+        final parts = timeString.split(':');
+        if (parts.length >= 2) {
+          return '${parts[0].padLeft(2, '0')}:${parts[1].padLeft(2, '0')}';
+        }
+      }
+
+      return '00:00';
+    }
+
     return Turno(
       id: json['id'] ?? '',
       turno: json['turno'] ?? '',
-      horaInicio: json['hora_inicio'] ?? '',
-      horaFin: json['hora_fin'] ?? '',
+      horaInicio: parseTime(json['hora_inicio']),
+      horaFin: parseTime(json['hora_fin']),
       fechaRegistro: DateTime.parse(json['fecha-registro'] ??
           json['fecha_registro'] ??
           DateTime.now().toIso8601String()),
       idEscuela: json['id_escuela'] ?? '',
+      tolerancia: json['tolerancia']?.toInt() ?? 15,
     );
   }
 
@@ -36,6 +61,7 @@ class Turno {
       'hora_fin': horaFin,
       'fecha-registro': fechaRegistro.toIso8601String(),
       'id_escuela': idEscuela,
+      'tolerancia': tolerancia,
     };
   }
 
@@ -46,6 +72,7 @@ class Turno {
     String? horaFin,
     DateTime? fechaRegistro,
     String? idEscuela,
+    int? tolerancia,
   }) {
     return Turno(
       id: id ?? this.id,
@@ -54,6 +81,7 @@ class Turno {
       horaFin: horaFin ?? this.horaFin,
       fechaRegistro: fechaRegistro ?? this.fechaRegistro,
       idEscuela: idEscuela ?? this.idEscuela,
+      tolerancia: tolerancia ?? this.tolerancia,
     );
   }
 
@@ -61,7 +89,7 @@ class Turno {
 
   @override
   String toString() {
-    return 'Turno(id: $id, turno: $turno, horario: $horarioCompleto)';
+    return 'Turno(id: $id, turno: $turno, horario: $horarioCompleto, tolerancia: $tolerancia)';
   }
 
   @override

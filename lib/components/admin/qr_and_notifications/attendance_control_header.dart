@@ -1,15 +1,24 @@
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
-import 'scanning_status_indicator.dart';
 import 'action_button.dart';
 import '../../../widgets/custom_snack_bar.dart';
+
+// Define enum for access types
+enum AccessType {
+  default_config,
+  entry,
+  exit,
+}
 
 class AttendanceControlHeader extends StatelessWidget {
   final bool isScanning;
   final Size screenSize;
   final VoidCallback onConfigurationTap;
   final VoidCallback onNotificationTap;
+  final AccessType selectedAccessType;
+  final bool isDefaultEntryConfig; // true for entry, false for exit as default
+  final Function(AccessType) onAccessTypeChanged;
 
   const AttendanceControlHeader({
     super.key,
@@ -17,6 +26,9 @@ class AttendanceControlHeader extends StatelessWidget {
     required this.screenSize,
     required this.onConfigurationTap,
     required this.onNotificationTap,
+    required this.selectedAccessType,
+    required this.isDefaultEntryConfig,
+    required this.onAccessTypeChanged,
   });
 
   @override
@@ -63,15 +75,9 @@ class AttendanceControlHeader extends StatelessWidget {
                   ],
                 ),
               ),
-              // Status indicator
-              Row(
-                children: [
-                  SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-                  // Status indicator
-                  ScanningStatusIndicator(
-                      isScanning: isScanning, screenSize: screenSize),
-                ],
-              ),
+
+              // Access Type Dropdown
+              _buildAccessTypeDropdown(context, l10n),
             ],
           ),
 
@@ -96,6 +102,140 @@ class AttendanceControlHeader extends StatelessWidget {
             ],
           )
         ],
+      ),
+    );
+  }
+
+  Widget _buildAccessTypeDropdown(BuildContext context, AppLocalizations l10n) {
+    final String defaultText =
+        isDefaultEntryConfig ? 'Auto - Entrada' : 'Auto - Salida';
+
+    return Container(
+      height: AppTheme.getMediumRadius(screenSize) * 3,
+      padding: EdgeInsets.symmetric(
+        horizontal: AppTheme.getSmallPadding(screenSize),
+        vertical: AppTheme.getSmallPadding(screenSize) * 0.5,
+      ),
+      decoration: BoxDecoration(
+        color: AppTheme.getSurfaceColor(context),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+        border: Border.all(
+          color: AppTheme.getBorderColor(context),
+          width: 1.0,
+        ),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<AccessType>(
+          value: selectedAccessType,
+          isDense: true,
+          icon: Icon(
+            Icons.arrow_drop_down_rounded,
+            color: AppTheme.getTextSecondaryColor(context),
+          ),
+          items: [
+            DropdownMenuItem(
+              value: AccessType.default_config,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: Icon(
+                      isDefaultEntryConfig
+                          ? Icons.login_rounded
+                          : Icons.logout_rounded,
+                      color: isDefaultEntryConfig
+                          ? AppTheme.successColor
+                          : AppTheme.errorColor,
+                      size: 18,
+                      key: ValueKey(isDefaultEntryConfig),
+                    ),
+                  ),
+                  SizedBox(width: AppTheme.getSmallPadding(screenSize) * 0.5),
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          defaultText,
+                          style: AppTheme.getBodyMedium(screenSize).copyWith(
+                            color: AppTheme.getTextPrimaryColor(context),
+                            fontSize: screenSize.height * 0.016,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          'Basado en horario',
+                          style: AppTheme.getCaption(screenSize).copyWith(
+                            color: AppTheme.getTextSecondaryColor(context),
+                            fontSize: screenSize.height * 0.012,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            DropdownMenuItem(
+              value: AccessType.entry,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.login_rounded,
+                    color: AppTheme.successColor,
+                    size: 18,
+                  ),
+                  SizedBox(width: AppTheme.getSmallPadding(screenSize) * 0.5),
+                  Text(
+                    'Entrada Fija',
+                    style: AppTheme.getBodyMedium(screenSize).copyWith(
+                      color: AppTheme.getTextPrimaryColor(context),
+                      fontSize: screenSize.height * 0.016,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            DropdownMenuItem(
+              value: AccessType.exit,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.logout_rounded,
+                    color: AppTheme.errorColor,
+                    size: 18,
+                  ),
+                  SizedBox(width: AppTheme.getSmallPadding(screenSize) * 0.5),
+                  Text(
+                    'Salida Fija',
+                    style: AppTheme.getBodyMedium(screenSize).copyWith(
+                      color: AppTheme.getTextPrimaryColor(context),
+                      fontSize: screenSize.height * 0.016,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          onChanged: (AccessType? newValue) {
+            if (newValue != null) {
+              onAccessTypeChanged(newValue);
+            }
+          },
+          borderRadius:
+              BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+          dropdownColor: AppTheme.getSurfaceColor(context),
+          elevation: 3,
+        ),
       ),
     );
   }
