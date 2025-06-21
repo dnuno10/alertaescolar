@@ -3,6 +3,7 @@ import 'package:alertaescolar/providers/language_provider.dart';
 import 'package:alertaescolar/managers/schedule_provider.dart'; // Add ScheduleProvider import
 import 'package:alertaescolar/providers/attendance_scanner_provider.dart';
 import 'package:alertaescolar/managers/turno_provider.dart'; // Add TurnoProvider import
+import 'package:alertaescolar/managers/group_provider.dart'; // Add GroupProvider import
 import 'package:alertaescolar/managers/student_scanner_provider.dart'; // Add StudentScannerProvider import
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -32,6 +33,8 @@ class ProviderManager {
       AttendanceScannerProvider();
   static final TurnoProvider _turnoProvider =
       TurnoProvider(); // Add TurnoProvider instance
+  static final GroupProvider _groupProvider =
+      GroupProvider(); // Add GroupProvider instance
   static final StudentScannerProvider _studentScannerProvider =
       StudentScannerProvider(); // Add StudentScannerProvider instance
 
@@ -57,6 +60,8 @@ class ProviderManager {
             value: _attendanceScannerProvider),
         ChangeNotifierProvider<TurnoProvider>.value(
             value: _turnoProvider), // Add TurnoProvider
+        ChangeNotifierProvider<GroupProvider>.value(
+            value: _groupProvider), // Add GroupProvider
         ChangeNotifierProvider<StudentScannerProvider>.value(
             value: _studentScannerProvider), // Add StudentScannerProvider
       ],

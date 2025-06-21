@@ -85,6 +85,7 @@ class SelectableStudentItem extends StatelessWidget {
                           height: AppTheme.getSmallPadding(screenSize) * 0.5),
                       Wrap(
                         spacing: AppTheme.getSmallPadding(screenSize) * 0.5,
+                        runSpacing: AppTheme.getSmallPadding(screenSize) * 0.25,
                         children: [
                           StatusChip(
                             text: gradeGroup,
@@ -98,11 +99,14 @@ class SelectableStudentItem extends StatelessWidget {
                             color: statusColor,
                             screenSize: screenSize,
                           ),
-                          StatusChip(
-                            text: '${l10n.id}: ${student.id}',
-                            color: AppTheme.getTextSecondaryColor(context),
-                            screenSize: screenSize,
-                          ),
+                          student.matricula.isNotEmpty
+                              ? StatusChip(
+                                  text: student.matricula,
+                                  color:
+                                      AppTheme.getTextSecondaryColor(context),
+                                  screenSize: screenSize,
+                                )
+                              : Container(),
                         ],
                       ),
                     ],

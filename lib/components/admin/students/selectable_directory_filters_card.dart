@@ -5,7 +5,6 @@ import '../../../managers/student_provider.dart';
 import '../../../components/textfield/custom_input_field.dart';
 import 'filter_dropdown.dart';
 import 'student_empty_state.dart';
-import 'selectable_student_item.dart';
 
 class SelectableDirectoryFiltersCard extends StatelessWidget {
   final Size screenSize;
@@ -290,15 +289,144 @@ class SelectableDirectoryFiltersCard extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               itemCount: students.length,
               itemBuilder: (context, index) {
-                return SelectableStudentItem(
-                  student: students[index],
-                  isLast: index == students.length - 1,
-                  onSelected: onStudentSelected,
-                  screenSize: screenSize,
-                );
+                return _buildStudentItem(
+                    context, students[index], index == students.length - 1);
               },
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildStudentItem(
+      BuildContext context, StudentDetails student, bool isLast) {
+    final l10n = AppLocalizations.of(context);
+    final statusColor =
+        student.llaveActiva ? AppTheme.successColor : AppTheme.errorColor;
+    final gradeGroup = student.grupo;
+
+    return Container(
+      margin: EdgeInsets.only(
+        bottom: isLast ? 0 : AppTheme.getSmallPadding(screenSize),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => onStudentSelected(student),
+          borderRadius:
+              BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+          child: Container(
+            padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+            decoration: BoxDecoration(
+              color: AppTheme.getBackgroundColor(context),
+              borderRadius:
+                  BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+              border: Border.all(color: AppTheme.getBorderColor(context)),
+            ),
+            child: Row(
+              children: [
+                // Student Avatar
+                Container(
+                  width: screenSize.width * 0.12,
+                  height: screenSize.width * 0.12,
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    borderRadius: BorderRadius.circular(
+                        AppTheme.getSmallRadius(screenSize)),
+                  ),
+                  child: Center(
+                    child: Text(
+                      student.nombre.isNotEmpty
+                          ? student.nombre[0].toUpperCase()
+                          : 'E',
+                      style: AppTheme.getBodyMedium(screenSize).copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+
+                SizedBox(width: AppTheme.getMediumPadding(screenSize)),
+
+                // Student Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        student.nombre,
+                        style: AppTheme.getBodyMedium(screenSize).copyWith(
+                          color: AppTheme.getTextPrimaryColor(context),
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                      SizedBox(
+                          height: AppTheme.getSmallPadding(screenSize) * 0.5),
+                      Wrap(
+                        spacing: AppTheme.getSmallPadding(screenSize) * 0.5,
+                        runSpacing: AppTheme.getSmallPadding(screenSize) * 0.25,
+                        children: [
+                          _buildChip(gradeGroup, AppTheme.accentBlue),
+                          _buildChip(
+                              student.llaveActiva ? l10n.active : l10n.inactive,
+                              statusColor),
+                          student.matricula.isNotEmpty
+                              ? _buildChip(student.matricula,
+                                  AppTheme.getTextSecondaryColor(context))
+                              : Container(),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+
+                // Selection indicator - different from main directory
+                Container(
+                  padding: EdgeInsets.all(
+                      AppTheme.getSmallPadding(screenSize) * 0.6),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentOrange.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(
+                        AppTheme.getSmallRadius(screenSize)),
+                  ),
+                  child: Icon(
+                    Icons.touch_app_rounded,
+                    color: AppTheme.accentOrange,
+                    size: screenSize.height * 0.022,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChip(String text, Color color) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppTheme.getSmallPadding(screenSize) * 0.6,
+        vertical: AppTheme.getSmallPadding(screenSize) * 0.2,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getSmallRadius(screenSize) * 0.6),
+      ),
+      child: Text(
+        text,
+        style: AppTheme.getCaptionSmall(screenSize).copyWith(
+          color: color,
+          fontWeight: FontWeight.w600,
+          fontSize: screenSize.height * 0.014,
+        ),
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }

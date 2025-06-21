@@ -69,16 +69,22 @@ class _SelectableStudentsDirectoryViewState
 
   void _selectStudent(StudentDetails student) {
     if (widget.selectionMode) {
-      // Convert Alumno to the expected format for notifications
+      // Convert StudentDetails to the expected format for notifications
       final selectedStudentData = {
         'id': student.id,
         'name': student.nombre,
-        'grade': student.grupo,
-        'section': student.grupo,
-        'active': student.llaveActiva,
-        'llave': student.llaveId ?? '',
-        'escuelaId': student.escuelaId,
+        'group': student.grupo,
+        'nivelEducativo': student.nivelEducativo,
         'matricula': student.matricula,
+        'active': student.llaveActiva,
+        'keyCode': student.llaveCodigo ?? '',
+        'keyId': student.llaveId ?? '',
+        'escuelaId': student.escuelaId,
+        'turno': student.turno ?? '',
+        'turnoId': student.turnoId ?? '',
+        // Additional information for display
+        'status': student.llaveActiva ? 'Activo' : 'Inactivo',
+        'statusColor': student.llaveActiva ? 'active' : 'inactive',
       };
 
       Navigator.pop(context, selectedStudentData);

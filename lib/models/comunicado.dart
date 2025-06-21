@@ -21,6 +21,7 @@ class Comunicado {
   final String id;
   final String titulo;
   final String mensaje;
+  final TipoComunicado tipo;
   final DateTime fechaCreacion;
   final DateTime? fechaEnvio;
   final DateTime? fechaProgramada;
@@ -36,6 +37,7 @@ class Comunicado {
     required this.id,
     required this.titulo,
     required this.mensaje,
+    required this.tipo,
     required this.fechaCreacion,
     this.fechaEnvio,
     this.fechaProgramada,
@@ -62,6 +64,10 @@ class Comunicado {
       id: json['id'] ?? '',
       titulo: json['titulo'] ?? '',
       mensaje: json['mensaje'] ?? '',
+      tipo: TipoComunicado.values.firstWhere(
+        (e) => e.name == json['tipo'],
+        orElse: () => TipoComunicado.informativo,
+      ),
       fechaCreacion: DateTime.parse(json['fechaCreacion']),
       fechaEnvio: json['fechaEnvio'] != null
           ? DateTime.parse(json['fechaEnvio'])
@@ -86,6 +92,7 @@ class Comunicado {
       'id': id,
       'titulo': titulo,
       'mensaje': mensaje,
+      'tipo': tipo.name,
       'fechaCreacion': fechaCreacion.toIso8601String(),
       'fechaEnvio': fechaEnvio?.toIso8601String(),
       'fechaProgramada': fechaProgramada?.toIso8601String(),
@@ -102,6 +109,7 @@ class Comunicado {
     String? id,
     String? titulo,
     String? mensaje,
+    TipoComunicado? tipo,
     DateTime? fechaCreacion,
     DateTime? fechaEnvio,
     DateTime? fechaProgramada,
@@ -116,6 +124,7 @@ class Comunicado {
       id: id ?? this.id,
       titulo: titulo ?? this.titulo,
       mensaje: mensaje ?? this.mensaje,
+      tipo: tipo ?? this.tipo,
       fechaCreacion: fechaCreacion ?? this.fechaCreacion,
       fechaEnvio: fechaEnvio ?? this.fechaEnvio,
       fechaProgramada: fechaProgramada ?? this.fechaProgramada,

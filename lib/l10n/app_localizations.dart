@@ -1152,7 +1152,7 @@ abstract class AppLocalizations {
   String get viewAllRecords => 'View All Records';
   String get adminActions => 'Admin Actions';
   String get primaryActions => 'Primary Actions';
-  String get communicationActions => 'Communication Actions';
+  String get communicationActions => 'Announcement Actions';
   String get administrativeActions => 'Administrative Actions';
   String get emergencyActions => 'Emergency Actions';
   String get sendMessage => 'Send Message';
@@ -2155,14 +2155,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Request a special permission for a student';
 
   @override
-  String get communication => 'Communication';
+  String get communication => 'Announcement';
 
   @override
   String get sendOfficialCommunicationDesc =>
-      'Send official communication to parents';
+      'Send official announcement to parents';
 
   @override
-  String get communicationType => 'Communication Type';
+  String get communicationType => 'Announcement Type';
 
   @override
   String get recipients => 'Recipients';
@@ -2199,7 +2199,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Send immediate notification to device';
 
   @override
-  String get sendCommunication => 'Send Communication';
+  String get sendCommunication => 'Send Announcement';
 
   @override
   String get sendNow => 'Send Now';
@@ -3898,7 +3898,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get primaryActions => 'Primary Actions';
 
   @override
-  String get communicationActions => 'Communication Actions';
+  String get communicationActions => 'Announcement Actions';
 
   @override
   String get administrativeActions => 'Administrative Actions';
@@ -4138,17 +4138,17 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get critical => 'Critical';
   @override
-  String get exampleCommunicationTitle => 'Example Communication Title';
+  String get exampleCommunicationTitle => 'Example Announcement Title';
   @override
   String get examplePermissionTitle => 'Example Permission Title';
   @override
   String get message => 'Message';
   @override
-  String get communicationContentHint => 'Enter communication content here...';
+  String get communicationContentHint => 'Enter announcement content here...';
   @override
   String get messageContentHint => 'Enter message content here...';
   @override
-  String get communicationTip => 'Communication Tip';
+  String get communicationTip => 'Announcement Tip';
   @override
   String get messageTip => 'Message Tip';
   @override
@@ -5167,14 +5167,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Solicitar un permiso especial para un estudiante';
 
   @override
-  String get communication => 'Comunicación';
+  String get communication => 'Comunicado';
 
   @override
   String get sendOfficialCommunicationDesc =>
-      'Enviar comunicación oficial a los padres';
+      'Enviar comunicado oficial a los padres';
 
   @override
-  String get communicationType => 'Tipo de Comunicación';
+  String get communicationType => 'Tipo de Comunicado';
 
   @override
   String get recipients => 'Destinatarios';
@@ -5211,7 +5211,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Enviar notificación inmediata al dispositivo';
 
   @override
-  String get sendCommunication => 'Enviar Comunicación';
+  String get sendCommunication => 'Enviar Comunicado';
 
   @override
   String get sendNow => 'Enviar Ahora';
@@ -5267,7 +5267,7 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get event => 'Evento';
   @override
-  String get exampleCommunicationTitle => 'Ejemplo de Título de Comunicación';
+  String get exampleCommunicationTitle => 'Ejemplo de Título de Comunicado';
   @override
   String get examplePermissionTitle => 'Ejemplo de Título de Permiso';
   @override
@@ -5401,9 +5401,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get classSuspension => 'Suspensión de Clase';
   @override
   String get communicationContentHint =>
-      'Ingresa el contenido de la comunicación aquí...';
+      'Ingresa el contenido de la comunicado aquí...';
   @override
-  String get communicationTip => 'Consejo de Comunicación';
+  String get communicationTip => 'Consejo de Comunicado';
   @override
   String get contentRequired => 'El contenido es obligatorio';
   @override
@@ -7114,7 +7114,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get primaryActions => 'Acciones Principales';
 
   @override
-  String get communicationActions => 'Acciones de Comunicación';
+  String get communicationActions => 'Acciones de Comunicado';
 
   @override
   String get administrativeActions => 'Acciones Administrativas';

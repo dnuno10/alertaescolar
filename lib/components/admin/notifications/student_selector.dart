@@ -120,14 +120,47 @@ class StudentSelector extends StatelessWidget {
                       ),
                       SizedBox(
                           height: AppTheme.getSmallPadding(screenSize) * 0.3),
-                      Text(
-                        selectedStudent != null
-                            ? '${l10n.grade}: ${selectedStudent!['grade']} - ${selectedStudent!['section']}'
-                            : l10n.navigateToStudentDirectory,
-                        style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                          color: AppTheme.getTextSecondaryColor(context),
+                      if (selectedStudent != null) ...[
+                        // Student Name with better spacing
+                        SizedBox(
+                            height: AppTheme.getSmallPadding(screenSize) * 0.2),
+
+                        // Chips Row with same style as directory
+                        Wrap(
+                          spacing: AppTheme.getSmallPadding(screenSize) * 0.5,
+                          runSpacing:
+                              AppTheme.getSmallPadding(screenSize) * 0.25,
+                          children: [
+                            _buildChip(
+                              context,
+                              selectedStudent!['group'] ?? 'N/A',
+                              AppTheme.accentBlue,
+                            ),
+                            _buildChip(
+                              context,
+                              selectedStudent!['active'] == true
+                                  ? 'Activo'
+                                  : 'Inactivo',
+                              selectedStudent!['active'] == true
+                                  ? AppTheme.successColor
+                                  : AppTheme.errorColor,
+                            ),
+                            if (selectedStudent!['matricula']?.isNotEmpty ==
+                                true)
+                              _buildChip(
+                                context,
+                                selectedStudent!['matricula'],
+                                AppTheme.getTextSecondaryColor(context),
+                              ),
+                          ],
                         ),
-                      ),
+                      ] else
+                        Text(
+                          l10n.navigateToStudentDirectory,
+                          style: AppTheme.getCaptionSmall(screenSize).copyWith(
+                            color: AppTheme.getTextSecondaryColor(context),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -157,6 +190,29 @@ class StudentSelector extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildChip(BuildContext context, String text, Color color) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppTheme.getSmallPadding(screenSize) * 0.6,
+        vertical: AppTheme.getSmallPadding(screenSize) * 0.2,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getSmallRadius(screenSize) * 0.6),
+      ),
+      child: Text(
+        text,
+        style: AppTheme.getCaptionSmall(screenSize).copyWith(
+          color: color,
+          fontWeight: FontWeight.w600,
+          fontSize: screenSize.height * 0.014,
+        ),
+        overflow: TextOverflow.ellipsis,
+      ),
     );
   }
 }
