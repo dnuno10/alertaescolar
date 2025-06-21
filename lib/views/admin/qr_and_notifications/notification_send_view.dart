@@ -23,6 +23,7 @@ import '../students/selectable_students_directory_view.dart';
 import '../../../widgets/custom_snack_bar.dart';
 import '../../../models/grupo.dart';
 import '../../../models/turno.dart';
+import 'notification_review_view.dart';
 
 class NotificationSendView extends StatefulWidget {
   final String? preselectedType;
@@ -47,7 +48,6 @@ class _NotificationSendViewState extends State<NotificationSendView>
   // Comunicado specific fields
   TipoComunicado _selectedComunicadoType = TipoComunicado.informativo;
   PrioridadComunicado _selectedPriority = PrioridadComunicado.media;
-  DateTime? _scheduledDate;
 
   // Selection variables
   Map<String, dynamic>? _selectedStudent;
@@ -123,264 +123,277 @@ class _NotificationSendViewState extends State<NotificationSendView>
         StudentProvider>(
       builder: (context, themeProvider, groupProvider, turnoProvider,
           studentProvider, child) {
-        return Scaffold(
-          backgroundColor: AppTheme.getBackgroundColor(context),
-          body: FadeTransition(
-            opacity: _fadeAnimation,
-            child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                NavHeader(
-                  title: l10n.sendNotification,
-                ),
+        return GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Scaffold(
+            backgroundColor: AppTheme.getBackgroundColor(context),
+            body: FadeTransition(
+              opacity: _fadeAnimation,
+              child: CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  NavHeader(
+                    title: l10n.sendNotification,
+                  ),
 
-                // Main content
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding:
-                        EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Message Type Section
-                        SectionContainer(
-                          title: l10n.messageType,
-                          screenSize: screenSize,
-                          child: Column(
-                            children: [
-                              MessageTypeOption(
-                                title: l10n.specialPermission,
-                                value: 'permiso',
-                                icon: Icons.assignment_turned_in_rounded,
-                                color: AppTheme.accentBlue,
-                                description: l10n.requestSpecialPermissionDesc,
-                                screenSize: screenSize,
-                                selectedType: _selectedType,
-                                onSelect: (type) =>
-                                    setState(() => _selectedType = type),
-                              ),
-                              SizedBox(
-                                  height:
-                                      AppTheme.getMediumPadding(screenSize)),
-                              MessageTypeOption(
-                                title: l10n.communication,
-                                value: 'comunicado',
-                                icon: Icons.campaign_rounded,
-                                color: AppTheme.warningColor,
-                                description: l10n.sendOfficialCommunicationDesc,
-                                screenSize: screenSize,
-                                selectedType: _selectedType,
-                                onSelect: (type) =>
-                                    setState(() => _selectedType = type),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        SizedBox(height: AppTheme.getLargePadding(screenSize)),
-
-                        // Comunicado Type Section (only show when comunicado is selected)
-                        if (_selectedType == 'comunicado') ...[
+                  // Main content
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding:
+                          EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Message Type Section
                           SectionContainer(
-                            title: l10n.communicationType,
+                            title: l10n.messageType,
                             screenSize: screenSize,
-                            child: ComunicadoTypeSelector(
-                              selectedType: _selectedComunicadoType,
-                              onTypeSelected: (type) => setState(
-                                  () => _selectedComunicadoType = type),
-                              screenSize: screenSize,
-                            ),
-                          ),
-                          SizedBox(
-                              height: AppTheme.getLargePadding(screenSize)),
-
-                          // Priority Section
-                          SectionContainer(
-                            title: l10n.priority,
-                            screenSize: screenSize,
-                            child: PrioritySelector(
-                              selectedPriority: _selectedPriority,
-                              onPriorityChanged: (priority) =>
-                                  setState(() => _selectedPriority = priority),
-                              screenSize: screenSize,
-                            ),
-                          ),
-                          SizedBox(
-                              height: AppTheme.getLargePadding(screenSize)),
-                        ],
-
-                        // Recipients Section
-                        SectionContainer(
-                          title: l10n.recipients,
-                          screenSize: screenSize,
-                          child: Column(
-                            children: [
-                              RecipientOption(
-                                title: l10n.individualStudent,
-                                value: 'individual',
-                                icon: Icons.person_rounded,
-                                description: l10n.selectSpecificStudent,
-                                screenSize: screenSize,
-                                selectedRecipient: _selectedRecipient,
-                                onSelect: (recipient) => setState(
-                                    () => _selectedRecipient = recipient),
-                              ),
-                              SizedBox(
-                                  height: AppTheme.getSmallPadding(screenSize)),
-                              RecipientOption(
-                                title: l10n.groupClass,
-                                value: 'grupo',
-                                icon: Icons.group_rounded,
-                                description: l10n.sendToEntireClass,
-                                screenSize: screenSize,
-                                selectedRecipient: _selectedRecipient,
-                                onSelect: (recipient) => setState(
-                                    () => _selectedRecipient = recipient),
-                              ),
-                              SizedBox(
-                                  height: AppTheme.getSmallPadding(screenSize)),
-                              RecipientOption(
-                                title: l10n.entireShift,
-                                value: 'turno',
-                                icon: Icons.schedule_rounded,
-                                description: l10n.allStudentsInShift,
-                                screenSize: screenSize,
-                                selectedRecipient: _selectedRecipient,
-                                onSelect: (recipient) => setState(
-                                    () => _selectedRecipient = recipient),
-                              ),
-                              SizedBox(
-                                  height: AppTheme.getSmallPadding(screenSize)),
-                              RecipientOption(
-                                title: l10n.allStudents,
-                                value: 'todos',
-                                icon: Icons.school_rounded,
-                                description: l10n.entireEducationalInstitution,
-                                screenSize: screenSize,
-                                selectedRecipient: _selectedRecipient,
-                                onSelect: (recipient) => setState(
-                                    () => _selectedRecipient = recipient),
-                              ),
-
-                              // Dynamic selection based on recipient type
-                              if (_selectedRecipient == 'individual') ...[
+                            child: Column(
+                              children: [
+                                MessageTypeOption(
+                                  title: l10n.specialPermission,
+                                  value: 'permiso',
+                                  icon: Icons.assignment_turned_in_rounded,
+                                  color: AppTheme.accentBlue,
+                                  description:
+                                      l10n.requestSpecialPermissionDesc,
+                                  screenSize: screenSize,
+                                  selectedType: _selectedType,
+                                  onSelect: (type) =>
+                                      setState(() => _selectedType = type),
+                                ),
                                 SizedBox(
                                     height:
                                         AppTheme.getMediumPadding(screenSize)),
-                                StudentSelector(
-                                  selectedStudent: _selectedStudent,
+                                MessageTypeOption(
+                                  title: l10n.communication,
+                                  value: 'comunicado',
+                                  icon: Icons.campaign_rounded,
+                                  color: AppTheme.warningColor,
+                                  description:
+                                      l10n.sendOfficialCommunicationDesc,
                                   screenSize: screenSize,
-                                  onSelectStudent: _navigateToStudentDirectory,
+                                  selectedType: _selectedType,
+                                  onSelect: (type) =>
+                                      setState(() => _selectedType = type),
                                 ),
                               ],
-                              if (_selectedRecipient == 'grupo') ...[
-                                SizedBox(
-                                    height:
-                                        AppTheme.getMediumPadding(screenSize)),
-                                _buildGroupSelector(context, screenSize),
-                              ],
-                              if (_selectedRecipient == 'turno') ...[
-                                SizedBox(
-                                    height:
-                                        AppTheme.getMediumPadding(screenSize)),
-                                _buildShiftSelector(context, screenSize),
-                              ],
-                            ],
+                            ),
                           ),
-                        ),
 
-                        SizedBox(height: AppTheme.getLargePadding(screenSize)),
+                          SizedBox(
+                              height: AppTheme.getLargePadding(screenSize)),
 
-                        // Message Content Section
-                        SectionContainer(
-                          title: l10n.messageContent,
-                          screenSize: screenSize,
-                          child: MessageContentForm(
-                            titleController: _titleController,
-                            messageController: _messageController,
-                            selectedType: _selectedType,
-                            screenSize: screenSize,
-                          ),
-                        ),
-
-                        SizedBox(height: AppTheme.getLargePadding(screenSize)),
-
-                        // Delivery Options Section
-                        SectionContainer(
-                          title: l10n.deliveryOptions,
-                          screenSize: screenSize,
-                          child: Column(
-                            children: [
-                              SwitchOptionCard(
-                                title: l10n.pushNotification,
-                                description:
-                                    l10n.sendImmediateNotificationToDevice,
-                                icon: Icons.notifications_active_rounded,
-                                value: _sendPushNotification,
-                                onChanged: (value) => setState(
-                                    () => _sendPushNotification = value),
-                                color: AppTheme.accentOrange,
+                          // Comunicado Type Section (only show when comunicado is selected)
+                          if (_selectedType == 'comunicado') ...[
+                            SectionContainer(
+                              title: l10n.communicationType,
+                              screenSize: screenSize,
+                              child: ComunicadoTypeSelector(
+                                selectedType: _selectedComunicadoType,
+                                onTypeSelected: (type) => setState(
+                                    () => _selectedComunicadoType = type),
                                 screenSize: screenSize,
                               ),
-                            ],
-                          ),
-                        ),
+                            ),
+                            SizedBox(
+                                height: AppTheme.getLargePadding(screenSize)),
 
-                        SizedBox(
-                            height: AppTheme.getLargePadding(screenSize) * 2),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          bottomNavigationBar: Container(
-            padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-            decoration: BoxDecoration(
-              color: AppTheme.getCardColor(context),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.getShadowColor(context),
-                  blurRadius: 12,
-                  offset: const Offset(0, -4),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: CustomOutlineButton(
-                      color: AppTheme.getTextPrimaryColor(context)
-                          .withOpacity(0.5),
-                      label: l10n.cancel,
-                      onPressed: () => Navigator.pop(context),
-                      screenSize: screenSize,
-                    ),
-                  ),
-                  SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-                  Expanded(
-                    flex: 2,
-                    child: SolidButton(
-                      label: _selectedType == 'comunicado'
-                          ? l10n.sendCommunication
-                          : l10n.sendNow,
-                      onPressed: _sendNotification,
-                      screenSize: screenSize,
-                      icon: Icons.send_rounded,
-                      backgroundColor: _canSendMessage()
-                          ? AppTheme.accentPurple
-                          : AppTheme.accentPurple.withOpacity(0.5),
+                            // Priority Section
+                            SectionContainer(
+                              title: l10n.priority,
+                              screenSize: screenSize,
+                              child: PrioritySelector(
+                                selectedPriority: _selectedPriority,
+                                onPriorityChanged: (priority) => setState(
+                                    () => _selectedPriority = priority),
+                                screenSize: screenSize,
+                              ),
+                            ),
+                            SizedBox(
+                                height: AppTheme.getLargePadding(screenSize)),
+                          ],
+
+                          // Recipients Section
+                          SectionContainer(
+                            title: l10n.recipients,
+                            screenSize: screenSize,
+                            child: Column(
+                              children: [
+                                RecipientOption(
+                                  title: l10n.individualStudent,
+                                  value: 'individual',
+                                  icon: Icons.person_rounded,
+                                  description: l10n.selectSpecificStudent,
+                                  screenSize: screenSize,
+                                  selectedRecipient: _selectedRecipient,
+                                  onSelect: (recipient) => setState(
+                                      () => _selectedRecipient = recipient),
+                                ),
+                                SizedBox(
+                                    height:
+                                        AppTheme.getSmallPadding(screenSize)),
+                                RecipientOption(
+                                  title: l10n.groupClass,
+                                  value: 'grupo',
+                                  icon: Icons.group_rounded,
+                                  description: l10n.sendToEntireClass,
+                                  screenSize: screenSize,
+                                  selectedRecipient: _selectedRecipient,
+                                  onSelect: (recipient) => setState(
+                                      () => _selectedRecipient = recipient),
+                                ),
+                                SizedBox(
+                                    height:
+                                        AppTheme.getSmallPadding(screenSize)),
+                                RecipientOption(
+                                  title: l10n.entireShift,
+                                  value: 'turno',
+                                  icon: Icons.schedule_rounded,
+                                  description: l10n.allStudentsInShift,
+                                  screenSize: screenSize,
+                                  selectedRecipient: _selectedRecipient,
+                                  onSelect: (recipient) => setState(
+                                      () => _selectedRecipient = recipient),
+                                ),
+                                SizedBox(
+                                    height:
+                                        AppTheme.getSmallPadding(screenSize)),
+                                RecipientOption(
+                                  title: l10n.allStudents,
+                                  value: 'todos',
+                                  icon: Icons.school_rounded,
+                                  description:
+                                      l10n.entireEducationalInstitution,
+                                  screenSize: screenSize,
+                                  selectedRecipient: _selectedRecipient,
+                                  onSelect: (recipient) => setState(
+                                      () => _selectedRecipient = recipient),
+                                ),
+
+                                // Dynamic selection based on recipient type
+                                if (_selectedRecipient == 'individual') ...[
+                                  SizedBox(
+                                      height: AppTheme.getMediumPadding(
+                                          screenSize)),
+                                  StudentSelector(
+                                    selectedStudent: _selectedStudent,
+                                    screenSize: screenSize,
+                                    onSelectStudent:
+                                        _navigateToStudentDirectory,
+                                  ),
+                                ],
+                                if (_selectedRecipient == 'grupo') ...[
+                                  SizedBox(
+                                      height: AppTheme.getMediumPadding(
+                                          screenSize)),
+                                  _buildGroupSelector(context, screenSize),
+                                ],
+                                if (_selectedRecipient == 'turno') ...[
+                                  SizedBox(
+                                      height: AppTheme.getMediumPadding(
+                                          screenSize)),
+                                  _buildShiftSelector(context, screenSize),
+                                ],
+                              ],
+                            ),
+                          ),
+
+                          SizedBox(
+                              height: AppTheme.getLargePadding(screenSize)),
+
+                          // Message Content Section
+                          SectionContainer(
+                            title: l10n.messageContent,
+                            screenSize: screenSize,
+                            child: MessageContentForm(
+                              titleController: _titleController,
+                              messageController: _messageController,
+                              selectedType: _selectedType,
+                              screenSize: screenSize,
+                            ),
+                          ),
+
+                          SizedBox(
+                              height: AppTheme.getLargePadding(screenSize)),
+
+                          // Delivery Options Section
+                          SectionContainer(
+                            title: l10n.deliveryOptions,
+                            screenSize: screenSize,
+                            child: Column(
+                              children: [
+                                SwitchOptionCard(
+                                  title: l10n.pushNotification,
+                                  description:
+                                      l10n.sendImmediateNotificationToDevice,
+                                  icon: Icons.notifications_active_rounded,
+                                  value: _sendPushNotification,
+                                  onChanged: (value) => setState(
+                                      () => _sendPushNotification = value),
+                                  color: AppTheme.accentOrange,
+                                  screenSize: screenSize,
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          SizedBox(
+                              height: AppTheme.getLargePadding(screenSize) * 2),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-        );
-      },
-    );
+            bottomNavigationBar: Container(
+              padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+              decoration: BoxDecoration(
+                color: AppTheme.getCardColor(context),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.getShadowColor(context),
+                    blurRadius: 12,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: CustomOutlineButton(
+                        color: AppTheme.getTextPrimaryColor(context)
+                            .withOpacity(0.5),
+                        label: l10n.cancel,
+                        onPressed: () => Navigator.pop(context),
+                        screenSize: screenSize,
+                      ),
+                    ),
+                    SizedBox(width: AppTheme.getMediumPadding(screenSize)),
+                    Expanded(
+                      flex: 2,
+                      child: SolidButton(
+                        label: _selectedType == 'comunicado'
+                            ? 'Revisar Comunicado'
+                            : 'Revisar Permiso',
+                        onPressed: _sendNotification,
+                        screenSize: screenSize,
+                        icon: Icons.preview_rounded,
+                        backgroundColor: _canSendMessage()
+                            ? AppTheme.accentPurple
+                            : AppTheme.accentPurple.withOpacity(0.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ), // Cierre del GestureDetector
+        ); // Cierre del Scaffold
+      }, // Cierre del Consumer builder
+    ); // Cierre del Consumer
   }
 
   Widget _buildGroupSelector(BuildContext context, Size screenSize) {
@@ -1111,18 +1124,91 @@ class _NotificationSendViewState extends State<NotificationSendView>
         hasValidRecipient;
   }
 
-  void _sendNotification() {
-    final l10n = AppLocalizations.of(context);
-    final messageType = _selectedType == 'comunicado'
-        ? l10n.communication
-        : l10n.specialPermission;
+  void _sendNotification() async {
+    // Validar que todos los campos requeridos estén completos
+    if (!_validateForm()) {
+      return;
+    }
 
-    CustomSnackBar.show(
-      context: context,
-      message:
-          '$messageType ${_scheduledDate != null ? l10n.scheduled : l10n.sentSuccessfully}',
-      isError: false,
+    // Navegar a la vista de revisión en lugar de enviar directamente
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NotificationReviewView(
+          tipoMensaje: _selectedType,
+          tipoDestinatario: _selectedRecipient,
+          titulo: _titleController.text.trim(),
+          mensaje: _messageController.text.trim(),
+          tipoComunicado:
+              _selectedType == 'comunicado' ? _selectedComunicadoType : null,
+          prioridadComunicado:
+              _selectedType == 'comunicado' ? _selectedPriority : null,
+          selectedStudent: _selectedStudent,
+          selectedGroups: _selectedGroups,
+          selectedShift: _selectedShift,
+        ),
+      ),
     );
-    Navigator.pop(context);
+  }
+
+  bool _validateForm() {
+    // Validar título
+    if (_titleController.text.trim().isEmpty) {
+      CustomSnackBar.show(
+        context: context,
+        message: 'Por favor ingresa un título para el mensaje',
+        isError: true,
+      );
+      return false;
+    }
+
+    // Validar mensaje
+    if (_messageController.text.trim().isEmpty) {
+      CustomSnackBar.show(
+        context: context,
+        message: 'Por favor ingresa el contenido del mensaje',
+        isError: true,
+      );
+      return false;
+    }
+
+    // Validar selección de destinatario
+    switch (_selectedRecipient) {
+      case 'individual':
+        if (_selectedStudent == null) {
+          CustomSnackBar.show(
+            context: context,
+            message: 'Por favor selecciona un estudiante',
+            isError: true,
+          );
+          return false;
+        }
+        break;
+      case 'grupo':
+        if (_selectedGroups.isEmpty) {
+          CustomSnackBar.show(
+            context: context,
+            message: 'Por favor selecciona al menos un grupo',
+            isError: true,
+          );
+          return false;
+        }
+        break;
+      case 'turno':
+        if (_selectedShift == null) {
+          CustomSnackBar.show(
+            context: context,
+            message: 'Por favor selecciona un turno',
+            isError: true,
+          );
+          return false;
+        }
+        break;
+      case 'todos':
+        // No requiere validación adicional
+        break;
+    }
+
+    return true;
   }
 }

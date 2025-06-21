@@ -391,13 +391,20 @@ class ScannerService {
       }
 
       // Step 2: Validate student has tutor registration and valid key
+      debugPrint('Validating student registration for ID: $studentId');
       final validationResult = await _validateStudentKeyAndTutor(studentId);
+      debugPrint('Validation result: $validationResult');
+
       if (!validationResult['isValid']) {
+        debugPrint('Student validation failed: ${validationResult['error']}');
         return {
           'success': false,
           'error': validationResult['error'],
         };
       }
+
+      debugPrint(
+          'Student validation passed, proceeding with notification creation');
 
       // Step 3: Validate data consistency - group belongs to same school
       final String? groupId = studentData['id_grupo']?.toString();
@@ -598,6 +605,8 @@ class ScannerService {
   Future<Map<String, dynamic>> _validateStudentKeyAndTutor(
       String studentId) async {
     try {
+      debugPrint('Checking tutor registration for student ID: $studentId');
+
       // Check if student has any tutor registration
       final tutorResponse = await _supabase
           .from('alumno_tutores')
@@ -605,12 +614,18 @@ class ScannerService {
           .eq('id_alumno', studentId)
           .maybeSingle();
 
+      debugPrint('Tutor registration query result: $tutorResponse');
+
       if (tutorResponse == null) {
+        debugPrint('No tutor registration found for student ID: $studentId');
         return {
           'isValid': false,
           'error': 'El alumno aún no ha sido registrado por un familiar',
         };
       }
+
+      debugPrint(
+          'Tutor registration found, checking key validity for student ID: $studentId');
 
       // Check if student has a valid (not expired) key
       final currentDateTime = DateTime.now();

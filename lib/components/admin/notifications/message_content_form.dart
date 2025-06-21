@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../widgets/custom_snack_bar.dart';
 
 class MessageContentForm extends StatelessWidget {
   final TextEditingController titleController;
@@ -35,6 +34,8 @@ class MessageContentForm extends StatelessWidget {
           ),
           child: TextField(
             controller: titleController,
+            textInputAction: TextInputAction.next,
+            onSubmitted: (_) => FocusScope.of(context).nextFocus(),
             style: AppTheme.getBodyMedium(screenSize).copyWith(
               color: AppTheme.getTextPrimaryColor(context),
             ),
@@ -99,6 +100,8 @@ class MessageContentForm extends StatelessWidget {
           child: TextField(
             controller: messageController,
             maxLines: 6,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => FocusScope.of(context).unfocus(),
             style: AppTheme.getBodyMedium(screenSize).copyWith(
               color: AppTheme.getTextPrimaryColor(context),
               height: 1.5,
