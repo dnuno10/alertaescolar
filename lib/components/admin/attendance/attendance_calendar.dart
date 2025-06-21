@@ -8,6 +8,7 @@ class AttendanceCalendar extends StatelessWidget {
   final DateTime selectedDay;
   final DateTime focusedDay;
   final Function(DateTime, DateTime) onDaySelected;
+  final List<Map<String, dynamic>> notifications;
 
   const AttendanceCalendar({
     super.key,
@@ -15,13 +16,14 @@ class AttendanceCalendar extends StatelessWidget {
     required this.selectedDay,
     required this.focusedDay,
     required this.onDaySelected,
+    this.notifications = const [],
   });
 
   @override
   Widget build(BuildContext context) {
-    // Mock attendance data for calendar
-    final attendanceData = _generateMockAttendanceData();
-    final l10n = AppLocalizations.of(context)!;
+    // Process notification data for calendar
+    final attendanceData = _processNotificationData();
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -153,29 +155,59 @@ class AttendanceCalendar extends StatelessWidget {
     );
   }
 
-  Map<String, Map<String, dynamic>> _generateMockAttendanceData() {
+  Map<String, Map<String, dynamic>> _processNotificationData() {
     final data = <String, Map<String, dynamic>>{};
-    final now = DateTime.now();
 
-    // Generate data for the current month
-    for (int i = 1; i <= 30; i++) {
-      final date = DateTime(now.year, now.month, i);
-      if (date.isAfter(now)) continue; // Don't generate future dates
+    // Group notifications by date
+    final notificationsByDate = <String, List<Map<String, dynamic>>>{};
 
-      final attendanceRate = 0.7 + (i % 3) * 0.1; // Mock attendance rate
-      final totalStudents = 250;
-      final presentStudents = (totalStudents * attendanceRate).round();
-      final lateStudents = (totalStudents * 0.05).round();
+    for (final notification in notifications) {
+      try {
+        final fechaRegistro = DateTime.parse(notification['fecha_registro']);
+        final dateKey = _getDateKey(fechaRegistro);
 
-      data[_getDateKey(date)] = {
-        'date': date,
-        'totalStudents': totalStudents,
-        'presentStudents': presentStudents,
-        'lateStudents': lateStudents,
-        'absentStudents': totalStudents - presentStudents - lateStudents,
-        'attendanceRate': attendanceRate,
-      };
+        if (!notificationsByDate.containsKey(dateKey)) {
+          notificationsByDate[dateKey] = [];
+        }
+        notificationsByDate[dateKey]!.add(notification);
+      } catch (e) {
+        // Skip invalid dates
+        continue;
+      }
     }
+
+    // Process each date's notifications
+    notificationsByDate.forEach((dateKey, dayNotifications) {
+      final date = DateTime.parse('${dateKey}T00:00:00');
+
+      final entradaCount = dayNotifications
+          .where((n) => n['tipo_notificacion'] == 'entrada')
+          .length;
+      final salidaCount = dayNotifications
+          .where((n) => n['tipo_notificacion'] == 'salida')
+          .length;
+      final retrasoCount = dayNotifications
+          .where((n) => n['tipo_notificacion'] == 'retraso')
+          .length;
+
+      final totalNotifications = dayNotifications.length;
+
+      // Calculate a simple "activity level" for the day
+      double activityLevel = 0.0;
+      if (totalNotifications > 0) {
+        // More notifications = higher activity (but cap at 1.0)
+        activityLevel = (totalNotifications / 50.0).clamp(0.0, 1.0);
+      }
+
+      data[dateKey] = {
+        'date': date,
+        'totalNotifications': totalNotifications,
+        'entradaCount': entradaCount,
+        'salidaCount': salidaCount,
+        'retrasoCount': retrasoCount,
+        'activityLevel': activityLevel,
+      };
+    });
 
     return data;
   }
@@ -187,14 +219,13 @@ class AttendanceCalendar extends StatelessWidget {
   double _getAttendanceRate(
       DateTime day, Map<String, Map<String, dynamic>> data) {
     final key = _getDateKey(day);
-    return data[key]?['attendanceRate'] ?? 0.0;
+    return data[key]?['activityLevel'] ?? 0.0;
   }
 
   Color _getAttendanceColor(double rate) {
-    if (rate >= 0.9) return AppTheme.successColor;
-    if (rate >= 0.7) return AppTheme.warningColor;
-    if (rate >= 0.5) return AppTheme.errorColor;
-    return Colors
-        .grey; // Use a default color instead of trying to access context
+    if (rate >= 0.8) return AppTheme.successColor;
+    if (rate >= 0.5) return AppTheme.warningColor;
+    if (rate >= 0.2) return AppTheme.errorColor;
+    return Colors.grey;
   }
 }
