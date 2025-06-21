@@ -1,5 +1,4 @@
 import 'package:alertaescolar/components/textfield/custom_input_field.dart';
-import 'package:alertaescolar/widgets/custom_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -11,8 +10,8 @@ import '../../../managers/group_provider.dart';
 import '../../../managers/turno_provider.dart';
 import '../../../managers/student_provider.dart';
 import '../../../components/headers/nav_header.dart';
-import '../../../components/admin/attendance/attendance_calendar.dart';
 import '../../../components/admin/attendance/calendar_explanation_header.dart';
+import '../../../components/loading_dialog.dart';
 import '../students/student_profile_admin_view.dart';
 
 class AttendanceCalendarView extends StatefulWidget {
@@ -36,7 +35,6 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
   // Data lists
   List<Map<String, dynamic>> _notifications = [];
   List<Map<String, dynamic>> _filteredNotifications = [];
-  bool _isLoading = false;
   String? _error;
 
   @override
@@ -69,8 +67,10 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
     final escuelaId = userProvider.currentUser?.escuelaId;
     if (escuelaId == null) return;
 
+    // Show loading dialog
+    LoadingDialog.show(context, message: 'Cargando datos de asistencia...');
+
     setState(() {
-      _isLoading = true;
       _error = null;
     });
 
@@ -83,16 +83,17 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
         _loadNotifications(escuelaId),
       ]);
 
-      _filterNotifications();
+      await _filterNotifications();
     } catch (e) {
       debugPrint('Error loading initial data: $e');
       setState(() {
         _error = e.toString();
       });
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      // Hide loading dialog
+      if (mounted) {
+        LoadingDialog.hide(context);
+      }
     }
   }
 
@@ -101,6 +102,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
       final supabase = Supabase.instance.client;
 
       // Query notifications with student data, ensuring only students from the same school
+      // Only include attendance-related notifications (entrada, salida, retraso)
       final response = await supabase
           .from('notificaciones')
           .select('''
@@ -122,6 +124,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
             )
           ''')
           .eq('alumnos.id_escuela', escuelaId)
+          .inFilter('tipo_notificacion', ['entrada', 'salida', 'retraso'])
           .order('fecha_registro', ascending: false);
 
       setState(() {
@@ -136,61 +139,79 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
     }
   }
 
-  void _filterNotifications() {
+  Future<void> _filterNotifications() async {
     if (!mounted) return;
+    
+    // Show loading dialog
+    LoadingDialog.show(context, message: 'Filtrando registros...');
 
-    List<Map<String, dynamic>> filtered = List.from(_notifications);
+    try {
+      List<Map<String, dynamic>> filtered = List.from(_notifications);
 
-    // Filter by search query (student name)
-    if (_searchController.text.isNotEmpty) {
-      final query = _searchController.text.toLowerCase();
+      // Filter by search query (student name)
+      if (_searchController.text.isNotEmpty) {
+        final query = _searchController.text.toLowerCase();
+        filtered = filtered.where((notification) {
+          final studentName =
+              notification['alumnos']['nombre']?.toString().toLowerCase() ?? '';
+          return studentName.contains(query);
+        }).toList();
+      }
+
+      // Filter by group
+      if (_selectedGroup != 'all') {
+        filtered = filtered.where((notification) {
+          final grupo =
+              notification['alumnos']['grupos']['grupo']?.toString() ?? '';
+          return grupo == _selectedGroup;
+        }).toList();
+      }
+
+      // Filter by nivel educativo
+      if (_selectedNivelEducativo != 'all') {
+        filtered = filtered.where((notification) {
+          final nivelEducativo =
+              notification['alumnos']['grupos']['nivel_educativo']?.toString() ??
+                  '';
+          return nivelEducativo == _selectedNivelEducativo;
+        }).toList();
+      }
+
+      // Filter by turno
+      if (_selectedTurno != 'all') {
+        filtered = filtered.where((notification) {
+          final turno =
+              notification['alumnos']['turnos']['turno']?.toString() ?? '';
+          return turno == _selectedTurno;
+        }).toList();
+      }
+
+      // Filter by access type (entrada, salida, retraso)
+      if (_selectedAccess != 'all') {
+        filtered = filtered.where((notification) {
+          final tipoNotificacion =
+              notification['tipo_notificacion']?.toString() ?? '';
+          return tipoNotificacion == _selectedAccess;
+        }).toList();
+      }
+
+      // Filter by selected date
       filtered = filtered.where((notification) {
-        final studentName =
-            notification['alumnos']['nombre']?.toString().toLowerCase() ?? '';
-        return studentName.contains(query);
+        final fechaRegistro = DateTime.parse(notification['fecha_registro']);
+        return fechaRegistro.year == selectedDate.year &&
+            fechaRegistro.month == selectedDate.month &&
+            fechaRegistro.day == selectedDate.day;
       }).toList();
-    }
 
-    // Filter by group
-    if (_selectedGroup != 'all') {
-      filtered = filtered.where((notification) {
-        final grupo =
-            notification['alumnos']['grupos']['grupo']?.toString() ?? '';
-        return grupo == _selectedGroup;
-      }).toList();
+      setState(() {
+        _filteredNotifications = filtered;
+      });
+    } finally {
+      // Hide loading dialog
+      if (mounted) {
+        LoadingDialog.hide(context);
+      }
     }
-
-    // Filter by nivel educativo
-    if (_selectedNivelEducativo != 'all') {
-      filtered = filtered.where((notification) {
-        final nivelEducativo =
-            notification['alumnos']['grupos']['nivel_educativo']?.toString() ??
-                '';
-        return nivelEducativo == _selectedNivelEducativo;
-      }).toList();
-    }
-
-    // Filter by turno
-    if (_selectedTurno != 'all') {
-      filtered = filtered.where((notification) {
-        final turno =
-            notification['alumnos']['turnos']['turno']?.toString() ?? '';
-        return turno == _selectedTurno;
-      }).toList();
-    }
-
-    // Filter by access type (entrada, salida, retraso)
-    if (_selectedAccess != 'all') {
-      filtered = filtered.where((notification) {
-        final tipoNotificacion =
-            notification['tipo_notificacion']?.toString() ?? '';
-        return tipoNotificacion == _selectedAccess;
-      }).toList();
-    }
-
-    setState(() {
-      _filteredNotifications = filtered;
-    });
   }
 
   // Get notifications for a specific date
@@ -266,8 +287,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
 
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-          // Filter dropdowns in row
-          // Replace the Wrap widget with this structure for exactly 2 filters per row
+          // Filter dropdowns - exactly 2 filters per row
           Column(
             children: [
               // First row: Group and Nivel Educativo
@@ -358,6 +378,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
               ),
             ],
           ),
+
           // Results summary
           if (_notifications.isNotEmpty) ...[
             SizedBox(height: AppTheme.getMediumPadding(screenSize)),
@@ -665,46 +686,194 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
     );
   }
 
-  void _clearAllFilters() {
+  Future<void> _clearAllFilters() async {
     setState(() {
       _selectedGroup = 'all';
       _selectedNivelEducativo = 'all';
       _selectedTurno = 'all';
       _selectedAccess = 'all';
       _searchController.clear();
+      // We don't reset the date because the date picker is now the main way to select date
     });
-    _filterNotifications();
+    await _filterNotifications();
   }
 
+  // This method is no longer needed as we're using LoadingDialog instead
+  // Keeping an empty block to preserve line numbers for easier debugging
+  
+
   // Convert notification student data to StudentDetails for navigation
-  StudentDetails _convertToStudentDetails(Map<String, dynamic> studentData) {
-    return StudentDetails(
-      id: studentData['id'] ?? '',
-      nombre: studentData['nombre'] ?? '',
-      matricula: studentData['matricula'] ?? '',
-      escuelaId: studentData['id_escuela'] ?? '',
-      grupoId: studentData['id_grupo'] ?? '',
-      grupo: studentData['grupos']['grupo'] ?? '',
-      nivelEducativo: studentData['grupos']['nivel_educativo'] ?? '',
-      turnoId: studentData['id_turno'],
-      turno: studentData['turnos']['turno'] ?? '',
-      llaveActiva:
-          true, // We assume student is active if they have notifications
-      fechaRegistro: DateTime.parse(
-          studentData['fecha_registro'] ?? DateTime.now().toIso8601String()),
-      tutores: const [],
-      familyContacts: const [],
-    );
+  Future<StudentDetails> _convertToStudentDetailsWithKeys(
+      Map<String, dynamic> studentData) async {
+    try {
+      final supabase = Supabase.instance.client;
+
+      // Query key information from llaves table
+      final keyResponse = await supabase
+          .from('llaves')
+          .select('*')
+          .eq('id_alumno', studentData['id'])
+          .maybeSingle();
+
+      return StudentDetails(
+        id: studentData['id'] ?? '',
+        nombre: studentData['nombre'] ?? '',
+        matricula: studentData['matricula'] ?? '',
+        escuelaId: studentData['id_escuela'] ?? '',
+        grupoId: studentData['id_grupo'] ?? '',
+        grupo: studentData['grupos']['grupo'] ?? '',
+        nivelEducativo: studentData['grupos']['nivel_educativo'] ?? '',
+        turnoId: studentData['id_turno'],
+        turno: studentData['turnos']['turno'] ?? '',
+        llaveId: keyResponse?['id'],
+        llaveCodigo: keyResponse?['codigo'],
+        llaveActiva: keyResponse?['activo'] ?? false,
+        fechaRegistro: DateTime.parse(
+            studentData['fecha_registro'] ?? DateTime.now().toIso8601String()),
+        fechaRegistroLlave: keyResponse?['fecha_registro'] != null
+            ? DateTime.parse(keyResponse!['fecha_registro'])
+            : null,
+        fechaDesactivacionLlave: keyResponse?['fecha_desactivacion'] != null
+            ? DateTime.parse(keyResponse!['fecha_desactivacion'])
+            : null,
+        limiteVinculacion: keyResponse?['limite_vinculacion'],
+        tutores: const [],
+        familyContacts: const [],
+      );
+    } catch (e) {
+      debugPrint('Error loading key data: $e');
+      // Fallback to basic student details without key info
+      return StudentDetails(
+        id: studentData['id'] ?? '',
+        nombre: studentData['nombre'] ?? '',
+        matricula: studentData['matricula'] ?? '',
+        escuelaId: studentData['id_escuela'] ?? '',
+        grupoId: studentData['id_grupo'] ?? '',
+        grupo: studentData['grupos']['grupo'] ?? '',
+        nivelEducativo: studentData['grupos']['nivel_educativo'] ?? '',
+        turnoId: studentData['id_turno'],
+        turno: studentData['turnos']['turno'] ?? '',
+        llaveActiva: false,
+        fechaRegistro: DateTime.parse(
+            studentData['fecha_registro'] ?? DateTime.now().toIso8601String()),
+        tutores: const [],
+        familyContacts: const [],
+      );
+    }
   }
 
   void _navigateToStudentProfile(
-      BuildContext context, Map<String, dynamic> studentData) {
-    final studentDetails = _convertToStudentDetails(studentData);
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => StudentProfileAdminView(student: studentDetails),
-      ),
+      BuildContext context, Map<String, dynamic> studentData) async {
+    final studentDetails = await _convertToStudentDetailsWithKeys(studentData);
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) =>
+              StudentProfileAdminView(student: studentDetails),
+        ),
+      );
+    }
+  }
+
+  Widget _buildDateSelector(BuildContext context, Size screenSize) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Fecha de Asistencia',
+          style: AppTheme.getBodyMedium(screenSize).copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppTheme.getTextSecondaryColor(context),
+          ),
+        ),
+        SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.8),
+        InkWell(
+          onTap: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: selectedDate,
+              firstDate: DateTime.now().subtract(const Duration(days: 365)),
+              lastDate: DateTime.now().add(const Duration(days: 30)),
+              builder: (context, child) {
+                return Theme(
+                  data: Theme.of(context).copyWith(
+                    colorScheme: ColorScheme.light(
+                      primary: AppTheme.accentPurple,
+                      onPrimary: Colors.white,
+                      surface: AppTheme.getCardColor(context),
+                      onSurface: AppTheme.getTextPrimaryColor(context),
+                    ),
+                  ),
+                  child: child!,
+                );
+              },
+            );
+            if (picked != null) {
+              setState(() {
+                selectedDate = picked;
+                focusedDay = picked;
+              });
+            }
+          },
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              vertical: AppTheme.getSmallPadding(screenSize),
+              horizontal: AppTheme.getMediumPadding(screenSize),
+            ),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppTheme.accentPurple.withOpacity(0.1),
+                  AppTheme.accentBlue.withOpacity(0.05),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+              border: Border.all(color: AppTheme.accentPurple.withOpacity(0.3)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.6),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentPurple.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
+                        ),
+                        child: Icon(
+                          Icons.calendar_today_rounded,
+                          color: AppTheme.accentPurple,
+                          size: screenSize.height * 0.02,
+                        ),
+                      ),
+                      SizedBox(width: AppTheme.getSmallPadding(screenSize) * 0.8),
+                      Flexible(
+                        child: Text(
+                          '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                          style: AppTheme.getBodyMedium(screenSize).copyWith(
+                            color: AppTheme.getTextPrimaryColor(context),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_drop_down_rounded,
+                  color: AppTheme.accentPurple,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -716,18 +885,13 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
     return Consumer4<ThemeProvider, UserProvider, GroupProvider, TurnoProvider>(
       builder: (context, themeProvider, userProvider, groupProvider,
           turnoProvider, child) {
-        // Show loading state
-        if (_isLoading && _notifications.isEmpty) {
-          return Scaffold(
-            backgroundColor: AppTheme.getBackgroundColor(context),
-            body: const Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-
         // Show error state
         if (_error != null && _notifications.isEmpty) {
+          // Make sure loading dialog is hidden in error case
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            LoadingDialog.hide(context);
+          });
+          
           return Scaffold(
             backgroundColor: AppTheme.getBackgroundColor(context),
             body: Center(
@@ -755,6 +919,8 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
             ),
           );
         }
+        
+        // We don't show the loading state separately anymore because we use LoadingDialog
 
         return Scaffold(
           backgroundColor: AppTheme.getBackgroundColor(context),
@@ -773,25 +939,14 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
 
                       SizedBox(height: AppTheme.getLargePadding(screenSize)),
 
-                      // Filters Section
+                      // Filters Section with Date Selector
                       _buildFiltersSection(
                           context, screenSize, groupProvider, turnoProvider),
 
                       SizedBox(height: AppTheme.getLargePadding(screenSize)),
 
-                      // Attendance Calendar
-                      AttendanceCalendar(
-                        screenSize: screenSize,
-                        selectedDay: selectedDate,
-                        focusedDay: focusedDay,
-                        notifications: _filteredNotifications,
-                        onDaySelected: (selectedDay, focusedDay) {
-                          setState(() {
-                            selectedDate = selectedDay;
-                            this.focusedDay = focusedDay;
-                          });
-                        },
-                      ),
+                      // Date Selector (Dialog Calendar)
+                      _buildDateSelector(context, screenSize),
 
                       SizedBox(height: AppTheme.getLargePadding(screenSize)),
 

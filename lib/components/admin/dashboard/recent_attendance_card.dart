@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../models/models.dart';
+import '../../../managers/user_provider.dart';
 import '../../../views/admin/qr_and_notifications/attendance_calendar_view.dart';
 
-class RecentAttendanceCard extends StatelessWidget {
+class RecentAttendanceCard extends StatefulWidget {
   final Size screenSize;
 
   const RecentAttendanceCard({
@@ -13,62 +15,71 @@ class RecentAttendanceCard extends StatelessWidget {
   });
 
   @override
+  State<RecentAttendanceCard> createState() => _RecentAttendanceCardState();
+}
+
+class _RecentAttendanceCardState extends State<RecentAttendanceCard> {
+  List<Map<String, dynamic>> _recentNotifications = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecentNotifications();
+  }
+
+  Future<void> _loadRecentNotifications() async {
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final escuelaId = userProvider.currentUser?.escuelaId;
+
+      if (escuelaId == null) {
+        setState(() {
+          _error = 'No se pudo obtener la escuela del usuario';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final supabase = Supabase.instance.client;
+
+      // Get the last 3 attendance notifications
+      final response = await supabase
+          .from('notificaciones')
+          .select('''
+            *,
+            alumnos!inner(
+              id,
+              nombre,
+              matricula,
+              grupos!inner(
+                grupo,
+                nivel_educativo
+              )
+            )
+          ''')
+          .eq('alumnos.id_escuela', escuelaId)
+          .inFilter('tipo_notificacion', ['entrada', 'salida', 'retraso'])
+          .order('fecha_registro', ascending: false)
+          .limit(3);
+
+      setState(() {
+        _recentNotifications = List<Map<String, dynamic>>.from(response);
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading recent notifications: $e');
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-
-    // Mock data for recent attendance notifications
-    final recentNotifications = [
-      Notificacion(
-        id: 'notif_001',
-        alumnoId: 'std_001',
-        titulo: l10n.entryRegistered,
-        mensaje:
-            '${l10n.studentName} Ana García Martínez ${l10n.arrivedAt} 8:00 AM',
-        tipo: TipoNotificacion.entrada,
-        estado: EstadoNotificacion.nueva,
-        fechaHora: DateTime.now().subtract(const Duration(minutes: 15)),
-        datosAdicionales: {
-          'alumnoNombre': 'Ana García Martínez',
-          'alumnoGrado': '3°A',
-          'alumnoGrupo': 'A',
-          'escaneadoPor': 'María López',
-          'ubicacion': l10n.mainEntrance,
-        },
-      ),
-      Notificacion(
-        id: 'notif_002',
-        alumnoId: 'std_002',
-        titulo: 'Llegada tardía',
-        mensaje: 'Carlos Rodríguez Silva llegó tarde a las 8:15 AM',
-        tipo: TipoNotificacion.retraso,
-        estado: EstadoNotificacion.nueva,
-        fechaHora:
-            DateTime.now().subtract(const Duration(hours: 1, minutes: 15)),
-        datosAdicionales: {
-          'alumnoNombre': 'Carlos Rodríguez Silva',
-          'alumnoGrado': '2°B',
-          'alumnoGrupo': 'B',
-          'escaneadoPor': 'María López',
-          'retraso_minutos': 15,
-        },
-      ),
-      Notificacion(
-        id: 'notif_003',
-        alumnoId: 'std_003',
-        titulo: 'Salida registrada',
-        mensaje: 'Sofía González Pérez ha salido de la escuela a las 2:30 PM',
-        tipo: TipoNotificacion.salida,
-        estado: EstadoNotificacion.leida,
-        fechaHora: DateTime.now().subtract(const Duration(days: 1, hours: 8)),
-        datosAdicionales: {
-          'alumnoNombre': 'Sofía González Pérez',
-          'alumnoGrado': '1°A',
-          'alumnoGrupo': 'A',
-          'escaneadoPor': 'Juan Hernández',
-          'ubicacion': 'Entrada Principal',
-        },
-      ),
-    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,13 +89,12 @@ class RecentAttendanceCard extends StatelessWidget {
           children: [
             Text(
               l10n.recentAttendance,
-              style: AppTheme.getH2(screenSize).copyWith(
+              style: AppTheme.getH2(widget.screenSize).copyWith(
                 color: AppTheme.getTextPrimaryColor(context),
               ),
             ),
             TextButton(
               onPressed: () {
-                // Use Navigator.push instead of direct construction to ensure proper context setup
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => const AttendanceCalendarView(),
@@ -93,7 +103,7 @@ class RecentAttendanceCard extends StatelessWidget {
               },
               child: Text(
                 l10n.viewAll,
-                style: AppTheme.getBodyMedium(screenSize).copyWith(
+                style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
                   color: AppTheme.accentPurple,
                   fontWeight: FontWeight.w600,
                 ),
@@ -101,41 +111,81 @@ class RecentAttendanceCard extends StatelessWidget {
             ),
           ],
         ),
-        SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+        SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
         Container(
-          padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+          padding: EdgeInsets.all(AppTheme.getMediumPadding(widget.screenSize)),
           decoration: BoxDecoration(
             color: AppTheme.getCardColor(context),
-            borderRadius:
-                BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
+            borderRadius: BorderRadius.circular(
+                AppTheme.getLargeRadius(widget.screenSize)),
             boxShadow: [
               BoxShadow(
                 color: AppTheme.getShadowColor(context),
-                blurRadius: screenSize.height * 0.015,
-                offset: Offset(0, screenSize.height * 0.005),
+                blurRadius: widget.screenSize.height * 0.015,
+                offset: Offset(0, widget.screenSize.height * 0.005),
               ),
             ],
           ),
+          child: _buildContent(context, l10n),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContent(BuildContext context, AppLocalizations l10n) {
+    if (_isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20.0),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
           child: Column(
             children: [
-              if (recentNotifications.isEmpty)
-                _EmptyState(screenSize: screenSize, l10n: l10n)
-              else
-                ...recentNotifications.map((notification) => _AttendanceItem(
-                      notification: notification,
-                      screenSize: screenSize,
-                      isLast: notification == recentNotifications.last,
-                    )),
+              Icon(
+                Icons.error_outline,
+                size: widget.screenSize.height * 0.05,
+                color: AppTheme.errorColor,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Error al cargar datos',
+                style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
+                  color: AppTheme.errorColor,
+                ),
+              ),
             ],
           ),
         ),
-      ],
+      );
+    }
+
+    if (_recentNotifications.isEmpty) {
+      return _EmptyState(screenSize: widget.screenSize, l10n: l10n);
+    }
+
+    return Column(
+      children: _recentNotifications
+          .asMap()
+          .entries
+          .map((entry) => _AttendanceItem(
+                notification: entry.value,
+                screenSize: widget.screenSize,
+                isLast: entry.key == _recentNotifications.length - 1,
+              ))
+          .toList(),
     );
   }
 }
 
 class _AttendanceItem extends StatelessWidget {
-  final Notificacion notification;
+  final Map<String, dynamic> notification;
   final Size screenSize;
   final bool isLast;
 
@@ -148,14 +198,14 @@ class _AttendanceItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final statusColor = _getStatusColor(notification.tipo);
-    final statusIcon = _getStatusIcon(notification.tipo);
-    final timeAgo = _getTimeAgo(notification.fechaHora, l10n);
-    final alumnoNombre =
-        notification.datosAdicionales?['alumnoNombre'] ?? 'Estudiante';
-    final alumnoGrado = notification.datosAdicionales?['alumnoGrado'] ?? '';
-    final escaneadoPor =
-        notification.datosAdicionales?['escaneadoPor'] ?? l10n.unknown;
+    final tipoNotificacion = notification['tipo_notificacion'] ?? '';
+    final statusColor = _getStatusColor(tipoNotificacion);
+    final statusIcon = _getStatusIcon(tipoNotificacion);
+    final fechaRegistro = DateTime.parse(notification['fecha_registro']);
+    final timeAgo = _getTimeAgo(fechaRegistro, l10n);
+    final alumnoNombre = notification['alumnos']['nombre'] ?? 'Estudiante';
+    final alumnoGrado =
+        '${notification['alumnos']['grupos']['nivel_educativo']} - ${notification['alumnos']['grupos']['grupo']}';
 
     return Container(
       margin: EdgeInsets.only(
@@ -230,7 +280,7 @@ class _AttendanceItem extends StatelessWidget {
                     SizedBox(width: AppTheme.getSmallPadding(screenSize)),
                     Expanded(
                       child: Text(
-                        '${l10n.scannedBy}: Amira', // Replaced hardcoded text
+                        _getStatusText(tipoNotificacion, l10n),
                         style: AppTheme.getCaptionSmall(screenSize).copyWith(
                           color: AppTheme.getTextSecondaryColor(context),
                         ),
@@ -248,37 +298,42 @@ class _AttendanceItem extends StatelessWidget {
     );
   }
 
-  Color _getStatusColor(TipoNotificacion tipo) {
-    switch (tipo) {
-      case TipoNotificacion.entrada:
+  Color _getStatusColor(String tipoNotificacion) {
+    switch (tipoNotificacion) {
+      case 'entrada':
         return AppTheme.successColor;
-      case TipoNotificacion.salida:
+      case 'salida':
         return AppTheme.accentBlue;
-      case TipoNotificacion.retraso:
+      case 'retraso':
         return AppTheme.warningColor;
-      case TipoNotificacion.ausencia:
-        return AppTheme.errorColor;
-      case TipoNotificacion.permisoEspecial:
-        return AppTheme.accentPurple;
       default:
         return AppTheme.accentBlue;
     }
   }
 
-  IconData _getStatusIcon(TipoNotificacion tipo) {
-    switch (tipo) {
-      case TipoNotificacion.entrada:
+  IconData _getStatusIcon(String tipoNotificacion) {
+    switch (tipoNotificacion) {
+      case 'entrada':
         return Icons.check_circle_rounded;
-      case TipoNotificacion.salida:
+      case 'salida':
         return Icons.logout_rounded;
-      case TipoNotificacion.retraso:
+      case 'retraso':
         return Icons.schedule_rounded;
-      case TipoNotificacion.ausencia:
-        return Icons.cancel_rounded;
-      case TipoNotificacion.permisoEspecial:
-        return Icons.verified_user_rounded;
       default:
         return Icons.check_circle_rounded;
+    }
+  }
+
+  String _getStatusText(String tipoNotificacion, AppLocalizations l10n) {
+    switch (tipoNotificacion) {
+      case 'entrada':
+        return 'Entrada registrada';
+      case 'salida':
+        return 'Salida registrada';
+      case 'retraso':
+        return 'Llegada tardía';
+      default:
+        return 'Acceso registrado';
     }
   }
 
@@ -327,8 +382,7 @@ class _EmptyState extends StatelessWidget {
           ),
           SizedBox(height: screenSize.height * 0.01),
           Text(
-            l10n.startScanningToSeeRecords ??
-                l10n.startScanningDefaultMessage, // Provided fallback with localization
+            l10n.startScanningToSeeRecords,
             style: AppTheme.getCaption(screenSize).copyWith(
               color: AppTheme.getTextSecondaryColor(context),
             ),
