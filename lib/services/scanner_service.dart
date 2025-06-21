@@ -9,6 +9,20 @@ class ScannerService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
   /// Process a scanned QR code with complete validation and notification creation
+  ///
+  /// Comprehensive validation includes:
+  /// 1. Basic input validation (non-empty code)
+  /// 2. Student existence validation by matricula
+  /// 3. Student data completeness (turno, escuela, grupo, etc.)
+  /// 4. Admin user existence and school assignment validation
+  /// 5. School association validation (student belongs to admin's school)
+  /// 6. Student-tutor relationship validation (student registered by family)
+  /// 7. Student key validation (active and not expired)
+  /// 8. Data consistency validation (group and turno belong to same school)
+  /// 9. Student status validation (if 'activo' field exists)
+  /// 10. Duplicate scan prevention (no recent notifications within 2 minutes)
+  /// 11. Time-based access validation and tardiness detection
+  ///
   /// Returns a map with success status and student data or error message
   Future<Map<String, dynamic>> processScannedCode({
     required String scannedCode,
@@ -135,13 +149,12 @@ class ScannerService {
         return null;
       }
 
-      // Fix validation - check the actual fields that exist
+      // Validate essential student fields
       if (response['id'] == null ||
           response['nombre'] == null ||
           response['matricula'] == null ||
           response['id_escuela'] == null ||
           response['id_turno'] == null) {
-        // This field exists in the response
         debugPrint('Student data incomplete: missing required fields');
         debugPrint('Available fields: ${response.keys.toList()}');
         return null;
@@ -321,7 +334,7 @@ class ScannerService {
     }
   }
 
-  /// Create notification with proper type and content
+  /// Create notification with proper type and content and comprehensive validation
   Future<Map<String, dynamic>> _createNotification({
     required Map<String, dynamic> studentData,
     required String adminId,
@@ -332,11 +345,106 @@ class ScannerService {
       final String studentName =
           studentData['nombre']?.toString() ?? 'Estudiante';
       final String? studentId = studentData['id']?.toString();
+      final String? studentSchoolId = studentData['id_escuela']?.toString();
 
       if (studentId == null || studentId.isEmpty) {
         return {
           'success': false,
           'error': 'ID del estudiante no válido',
+        };
+      }
+
+      if (studentSchoolId == null || studentSchoolId.isEmpty) {
+        return {
+          'success': false,
+          'error': 'Escuela del estudiante no válida',
+        };
+      }
+
+      // Step 1: Validate admin user and school association
+      final adminInfo = await _getAdminUserInfo(adminId);
+      if (adminInfo == null) {
+        return {
+          'success': false,
+          'error': 'Usuario administrador no encontrado',
+        };
+      }
+
+      final String? adminSchoolId = adminInfo['id_escuela']?.toString();
+      final String? userType = adminInfo['tipo']?.toString();
+
+      // Validate admin has school assigned (if is admin type)
+      if (userType == 'administrador' &&
+          (adminSchoolId == null || adminSchoolId.isEmpty)) {
+        return {
+          'success': false,
+          'error': 'El administrador no tiene escuela asignada',
+        };
+      }
+
+      // Validate student belongs to admin's school
+      if (userType == 'administrador' && adminSchoolId != studentSchoolId) {
+        return {
+          'success': false,
+          'error': 'La escuela del alumno escaneado no pertenece a la actual',
+        };
+      }
+
+      // Step 2: Validate student has tutor registration and valid key
+      final validationResult = await _validateStudentKeyAndTutor(studentId);
+      if (!validationResult['isValid']) {
+        return {
+          'success': false,
+          'error': validationResult['error'],
+        };
+      }
+
+      // Step 3: Validate data consistency - group belongs to same school
+      final String? groupId = studentData['id_grupo']?.toString();
+      if (groupId != null) {
+        final groupValidation = await _validateStudentGroupConsistency(
+            studentId, studentSchoolId, groupId);
+        if (!groupValidation['isValid']) {
+          return {
+            'success': false,
+            'error': groupValidation['error'],
+          };
+        }
+      }
+
+      // Step 4: Validate turno belongs to same school
+      final String? turnoId = studentData['id_turno']?.toString();
+      if (turnoId != null) {
+        final turnoValidation =
+            await _validateTurnoSchoolConsistency(turnoId, studentSchoolId);
+        if (!turnoValidation['isValid']) {
+          return {
+            'success': false,
+            'error': turnoValidation['error'],
+          };
+        }
+      }
+
+      // Step 5: Additional validation - check if student is active (if field exists)
+      if (studentData['activo'] != null && studentData['activo'] == false) {
+        return {
+          'success': false,
+          'error': 'El alumno está inactivo en el sistema',
+        };
+      }
+
+      // Step 6: Validate no duplicate notification in short time window (prevent double scans)
+      final recentNotification =
+          await _checkRecentNotification(studentId, timestamp);
+      if (recentNotification != null) {
+        final minutes = recentNotification['minutes'] as int;
+        final displayMinutes =
+            minutes <= 0 ? 1 : minutes; // Show minimum 1 minute
+
+        return {
+          'success': false,
+          'error':
+              'Ya existe un registro reciente para este alumno (hace $displayMinutes minuto${displayMinutes == 1 ? '' : 's'})',
         };
       }
 
@@ -384,7 +492,8 @@ class ScannerService {
             'mensaje': mensaje,
             'tipo_notificacion': notificationType.name,
             'estado': 'nueva',
-            'fecha_registro': timestamp.toIso8601String(),
+            'fecha_registro':
+                timestamp.toUtc().toIso8601String(), // Ensure UTC storage
           })
           .select()
           .single();
@@ -461,6 +570,223 @@ class ScannerService {
         return Icons.login_rounded;
       case ScannerAccessType.exit:
         return Icons.logout_rounded;
+    }
+  }
+
+  /// Get admin user information for validation
+  Future<Map<String, dynamic>?> _getAdminUserInfo(String adminId) async {
+    try {
+      final response = await _supabase
+          .from('usuarios')
+          .select('id, id_escuela, tipo, tipo_administrador')
+          .eq('id', adminId)
+          .maybeSingle();
+
+      if (response == null) {
+        debugPrint('Admin user not found with ID: $adminId');
+        return null;
+      }
+
+      return response;
+    } catch (e) {
+      debugPrint('Error getting admin user info: $e');
+      return null;
+    }
+  }
+
+  /// Validate if student has valid key registration
+  Future<Map<String, dynamic>> _validateStudentKeyAndTutor(
+      String studentId) async {
+    try {
+      // Check if student has any tutor registration
+      final tutorResponse = await _supabase
+          .from('alumno_tutores')
+          .select('id')
+          .eq('id_alumno', studentId)
+          .maybeSingle();
+
+      if (tutorResponse == null) {
+        return {
+          'isValid': false,
+          'error': 'El alumno aún no ha sido registrado por un familiar',
+        };
+      }
+
+      // Check if student has a valid (not expired) key
+      final currentDateTime = DateTime.now();
+      final keyResponse = await _supabase
+          .from('llaves')
+          .select('id, fecha_registro, fecha_desactivacion, activo')
+          .eq('id_alumno', studentId)
+          .eq('activo', true)
+          .maybeSingle();
+
+      if (keyResponse == null) {
+        return {
+          'isValid': false,
+          'error': 'El alumno no tiene una llave activa asignada',
+        };
+      }
+
+      // Parse dates and validate key is not expired
+      try {
+        final fechaRegistro = DateTime.parse(keyResponse['fecha_registro']);
+        final fechaDesactivacion =
+            DateTime.parse(keyResponse['fecha_desactivacion']);
+
+        if (currentDateTime.isBefore(fechaRegistro) ||
+            currentDateTime.isAfter(fechaDesactivacion)) {
+          return {
+            'isValid': false,
+            'error': 'La llave del alumno está vencida',
+          };
+        }
+      } catch (e) {
+        debugPrint('Error parsing key dates: $e');
+        return {
+          'isValid': false,
+          'error': 'Error al validar fechas de la llave del alumno',
+        };
+      }
+
+      return {
+        'isValid': true,
+      };
+    } catch (e) {
+      debugPrint('Error validating student key and tutor: $e');
+      return {
+        'isValid': false,
+        'error': 'Error interno al validar registro del alumno: $e',
+      };
+    }
+  }
+
+  /// Check for recent notifications to prevent duplicate scans
+  Future<Map<String, dynamic>?> _checkRecentNotification(
+      String studentId, DateTime currentTime) async {
+    try {
+      // Check for notifications in the last 2 minutes to prevent duplicate scans
+      final twoMinutesAgo = currentTime.subtract(const Duration(minutes: 2));
+
+      final response = await _supabase
+          .from('notificaciones')
+          .select('id, fecha_registro')
+          .eq('id_alumno', studentId)
+          .gte('fecha_registro',
+              twoMinutesAgo.toUtc().toIso8601String()) // Convert to UTC
+          .order('fecha_registro', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      if (response != null) {
+        // Parse the timestamp and ensure it's in UTC, then convert to local
+        final notificationTimeStr = response['fecha_registro'].toString();
+
+        DateTime notificationTime;
+        if (notificationTimeStr.endsWith('Z') ||
+            notificationTimeStr.contains('+')) {
+          // Already has timezone info
+          notificationTime = DateTime.parse(notificationTimeStr).toLocal();
+        } else {
+          // Assume it's UTC and convert to local
+          notificationTime =
+              DateTime.parse('${notificationTimeStr}Z').toLocal();
+        }
+
+        // Calculate difference using local times
+        final diffInMinutes =
+            currentTime.difference(notificationTime).inMinutes;
+
+        // Debug information
+        debugPrint('Current time (local): ${currentTime.toIso8601String()}');
+        debugPrint(
+            'Notification time (parsed to local): ${notificationTime.toIso8601String()}');
+        debugPrint('Difference in minutes: $diffInMinutes');
+
+        return {
+          'minutes': diffInMinutes,
+          'notification_id': response['id'],
+        };
+      }
+
+      return null;
+    } catch (e) {
+      debugPrint('Error checking recent notifications: $e');
+      return null; // Allow registration if we can't check (fail-open for better UX)
+    }
+  }
+
+  /// Validate student group belongs to the same school
+  Future<Map<String, dynamic>> _validateStudentGroupConsistency(
+      String studentId, String studentSchoolId, String groupId) async {
+    try {
+      final response = await _supabase
+          .from('grupos')
+          .select('id_escuela')
+          .eq('id', groupId)
+          .maybeSingle();
+
+      if (response == null) {
+        return {
+          'isValid': false,
+          'error': 'El grupo del estudiante no existe en el sistema',
+        };
+      }
+
+      final String? groupSchoolId = response['id_escuela']?.toString();
+      if (groupSchoolId != studentSchoolId) {
+        return {
+          'isValid': false,
+          'error': 'El grupo del estudiante no pertenece a la escuela correcta',
+        };
+      }
+
+      return {
+        'isValid': true,
+      };
+    } catch (e) {
+      debugPrint('Error validating student group consistency: $e');
+      return {
+        'isValid': false,
+        'error': 'Error interno al validar grupo del estudiante: $e',
+      };
+    }
+  }
+
+  /// Validate turno belongs to the same school as student
+  Future<Map<String, dynamic>> _validateTurnoSchoolConsistency(
+      String turnoId, String studentSchoolId) async {
+    try {
+      final response = await _supabase
+          .from('turnos')
+          .select('id_escuela')
+          .eq('id', turnoId)
+          .maybeSingle();
+
+      if (response == null) {
+        return {
+          'isValid': false,
+          'error': 'El turno del estudiante no existe en el sistema',
+        };
+      }
+
+      final String? turnoSchoolId = response['id_escuela']?.toString();
+      if (turnoSchoolId != studentSchoolId) {
+        return {
+          'isValid': false,
+          'error': 'El turno del estudiante no pertenece a la escuela correcta',
+        };
+      }
+
+      return {
+        'isValid': true,
+      };
+    } catch (e) {
+      debugPrint('Error validating turno school consistency: $e');
+      return {
+        'isValid': false,
+        'error': 'Error interno al validar turno del estudiante: $e',
+      };
     }
   }
 }

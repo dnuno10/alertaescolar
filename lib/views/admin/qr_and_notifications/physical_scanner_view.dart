@@ -33,7 +33,8 @@ class PhysicalScannerView extends StatefulWidget {
   State<PhysicalScannerView> createState() => _PhysicalScannerViewState();
 }
 
-class _PhysicalScannerViewState extends State<PhysicalScannerView> {
+class _PhysicalScannerViewState extends State<PhysicalScannerView>
+    with SingleTickerProviderStateMixin {
   bool _isListening = true;
   bool _hasScanned = false;
 
@@ -42,9 +43,44 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
   String _currentInput = '';
   DateTime? _lastInputTime;
 
+  // Single animation controller for smooth listening effect
+  late AnimationController _animationController;
+  late Animation<double> _pulseAnimation;
+  late Animation<double> _scanAnimation;
+
   @override
   void initState() {
     super.initState();
+
+    // Initialize smooth animations
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+
+    // Pulse animation for the icon (subtle)
+    _pulseAnimation = Tween<double>(
+      begin: 0.95,
+      end: 1.05,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Scan line animation (smooth horizontal movement)
+    _scanAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Start animation if listening
+    if (_isListening) {
+      _animationController.repeat(reverse: true);
+    }
+
     // Request focus for keyboard input with delay to ensure widget is ready
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -134,6 +170,9 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
       _isListening = false;
     });
 
+    // Pause animation during processing
+    _animationController.stop();
+
     // Get current user (admin) ID
     final userProvider = context.read<UserProvider>();
     final adminId = userProvider.currentUser?.id;
@@ -181,6 +220,11 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
       });
       _currentInput = '';
 
+      // Restart animation smoothly when ready to listen again
+      if (_isListening) {
+        _animationController.repeat(reverse: true);
+      }
+
       // Refocus for next scan
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -194,6 +238,7 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
 
   @override
   void dispose() {
+    _animationController.dispose();
     _focusNode.dispose();
     super.dispose();
   }
@@ -208,6 +253,7 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
       child: Scaffold(
         backgroundColor: AppTheme.getBackgroundColor(context),
         body: CustomScrollView(
+          physics: const NeverScrollableScrollPhysics(),
           slivers: [
             // Header
             NavHeader(
@@ -263,27 +309,379 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
                     Expanded(
                       child: Center(
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.start,
                           children: [
-                            // Scanner icon (static - no animation)
-                            Container(
-                              width: 120,
-                              height: 120,
-                              decoration: BoxDecoration(
-                                color: AppTheme.accentOrange.withOpacity(0.1),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppTheme.accentOrange.withOpacity(0.3),
-                                  width: 2,
+                            if (_isListening) ...[
+                              // Enhanced animated scanning area with corrected opacity values
+                              Container(
+                                width: 280,
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color:
+                                        AppTheme.accentOrange.withOpacity(0.2),
+                                    width: 1,
+                                  ),
+                                  color:
+                                      AppTheme.accentOrange.withOpacity(0.03),
+                                ),
+                                child: Stack(
+                                  children: [
+                                    // Corner indicators with clamped opacity values
+                                    ...List.generate(4, (index) {
+                                      return AnimatedBuilder(
+                                        animation: _pulseAnimation,
+                                        builder: (context, child) {
+                                          final opacityValue = (0.3 +
+                                                  (0.4 * _pulseAnimation.value))
+                                              .clamp(0.0, 1.0);
+                                          return Positioned(
+                                            top: index < 2 ? 8 : null,
+                                            bottom: index >= 2 ? 8 : null,
+                                            left: index % 2 == 0 ? 8 : null,
+                                            right: index % 2 == 1 ? 8 : null,
+                                            child: Container(
+                                              width: 20,
+                                              height: 20,
+                                              decoration: BoxDecoration(
+                                                border: Border(
+                                                  top: index < 2
+                                                      ? BorderSide(
+                                                          color: AppTheme
+                                                              .accentOrange
+                                                              .withOpacity(
+                                                                  opacityValue),
+                                                          width: 3,
+                                                        )
+                                                      : BorderSide.none,
+                                                  bottom: index >= 2
+                                                      ? BorderSide(
+                                                          color: AppTheme
+                                                              .accentOrange
+                                                              .withOpacity(
+                                                                  opacityValue),
+                                                          width: 3,
+                                                        )
+                                                      : BorderSide.none,
+                                                  left: index % 2 == 0
+                                                      ? BorderSide(
+                                                          color: AppTheme
+                                                              .accentOrange
+                                                              .withOpacity(
+                                                                  opacityValue),
+                                                          width: 3,
+                                                        )
+                                                      : BorderSide.none,
+                                                  right: index % 2 == 1
+                                                      ? BorderSide(
+                                                          color: AppTheme
+                                                              .accentOrange
+                                                              .withOpacity(
+                                                                  opacityValue),
+                                                          width: 3,
+                                                        )
+                                                      : BorderSide.none,
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    }),
+
+                                    // Main scanning line with enhanced effects
+                                    Center(
+                                      child: Container(
+                                        width: 240,
+                                        height: 4,
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(30),
+                                          color: AppTheme.accentOrange
+                                              .withOpacity(0.1),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: AppTheme.accentOrange
+                                                  .withOpacity(0.1),
+                                              blurRadius: 8,
+                                              spreadRadius: 1,
+                                            ),
+                                          ],
+                                        ),
+                                        child: AnimatedBuilder(
+                                          animation: _scanAnimation,
+                                          builder: (context, child) {
+                                            return Stack(
+                                              children: [
+                                                // Main scanning beam
+                                                Align(
+                                                  alignment: Alignment(
+                                                    -1 +
+                                                        (2 *
+                                                            _scanAnimation
+                                                                .value),
+                                                    0,
+                                                  ),
+                                                  child: Container(
+                                                    width: 80,
+                                                    height: 4,
+                                                    decoration: BoxDecoration(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              30),
+                                                      gradient: LinearGradient(
+                                                        colors: [
+                                                          AppTheme.accentOrange
+                                                              .withOpacity(0.0),
+                                                          AppTheme.accentOrange
+                                                              .withOpacity(0.3),
+                                                          AppTheme.accentOrange
+                                                              .withOpacity(0.8),
+                                                          AppTheme.accentOrange
+                                                              .withOpacity(0.8),
+                                                          AppTheme.accentOrange
+                                                              .withOpacity(0.3),
+                                                          AppTheme.accentOrange
+                                                              .withOpacity(0.0),
+                                                        ],
+                                                        stops: const [
+                                                          0.0,
+                                                          0.2,
+                                                          0.4,
+                                                          0.6,
+                                                          0.8,
+                                                          1.0
+                                                        ],
+                                                      ),
+                                                      boxShadow: [
+                                                        BoxShadow(
+                                                          color: AppTheme
+                                                              .accentOrange
+                                                              .withOpacity(0.4),
+                                                          blurRadius: 12,
+                                                          spreadRadius: 2,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+
+                                                // Leading light effect
+                                                Align(
+                                                  alignment: Alignment(
+                                                    -1 +
+                                                        (2 *
+                                                            _scanAnimation
+                                                                .value),
+                                                    0,
+                                                  ),
+                                                  child: Transform.translate(
+                                                    offset: const Offset(40, 0),
+                                                    child: Container(
+                                                      width: 20,
+                                                      height: 8,
+                                                      decoration: BoxDecoration(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(30),
+                                                        gradient:
+                                                            RadialGradient(
+                                                          colors: [
+                                                            AppTheme
+                                                                .accentOrange
+                                                                .withOpacity(
+                                                                    0.8),
+                                                            AppTheme
+                                                                .accentOrange
+                                                                .withOpacity(
+                                                                    0.3),
+                                                            AppTheme
+                                                                .accentOrange
+                                                                .withOpacity(
+                                                                    0.0),
+                                                          ],
+                                                        ),
+                                                        boxShadow: [
+                                                          BoxShadow(
+                                                            color: AppTheme
+                                                                .accentOrange
+                                                                .withOpacity(
+                                                                    0.5),
+                                                            blurRadius: 15,
+                                                            spreadRadius: 3,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+
+                                                // Trailing particles effect
+                                                ...List.generate(3, (index) {
+                                                  return Align(
+                                                    alignment: Alignment(
+                                                      -1 +
+                                                          (2 *
+                                                              _scanAnimation
+                                                                  .value),
+                                                      0,
+                                                    ),
+                                                    child: Transform.translate(
+                                                      offset: Offset(
+                                                          -20.0 - (index * 8),
+                                                          0),
+                                                      child: AnimatedBuilder(
+                                                        animation:
+                                                            _pulseAnimation,
+                                                        builder:
+                                                            (context, child) {
+                                                          final particleOpacity = ((0.6 -
+                                                                      (index *
+                                                                          0.15)) *
+                                                                  _pulseAnimation
+                                                                      .value)
+                                                              .clamp(0.0, 1.0);
+                                                          return Container(
+                                                            width: 4 -
+                                                                (index * 0.5),
+                                                            height: 4 -
+                                                                (index * 0.5),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              shape: BoxShape
+                                                                  .circle,
+                                                              color: AppTheme
+                                                                  .accentOrange
+                                                                  .withOpacity(
+                                                                      particleOpacity),
+                                                              boxShadow: [
+                                                                BoxShadow(
+                                                                  color: AppTheme
+                                                                      .accentOrange
+                                                                      .withOpacity(
+                                                                          particleOpacity *
+                                                                              0.5),
+                                                                  blurRadius: 6,
+                                                                  spreadRadius:
+                                                                      1,
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          );
+                                                        },
+                                                      ),
+                                                    ),
+                                                  );
+                                                }),
+                                              ],
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
+
+                                    // Data stream lines
+                                    ...List.generate(2, (index) {
+                                      return Positioned(
+                                        top: 35 + (index * 45),
+                                        left: 20,
+                                        right: 20,
+                                        child: AnimatedBuilder(
+                                          animation: _scanAnimation,
+                                          builder: (context, child) {
+                                            final offset =
+                                                (_scanAnimation.value +
+                                                        (index * 0.3)) %
+                                                    1.0;
+                                            return Row(
+                                              children:
+                                                  List.generate(8, (dotIndex) {
+                                                final dotOpacity = (offset >
+                                                            (dotIndex / 8) &&
+                                                        offset <
+                                                            ((dotIndex + 2) /
+                                                                8))
+                                                    ? 0.6
+                                                    : 0.1;
+                                                return Expanded(
+                                                  child: Center(
+                                                    child: Container(
+                                                      width: 3,
+                                                      height: 3,
+                                                      margin: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 2),
+                                                      decoration: BoxDecoration(
+                                                        shape: BoxShape.circle,
+                                                        color: AppTheme
+                                                            .accentOrange
+                                                            .withOpacity(
+                                                                dotOpacity),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                );
+                                              }),
+                                            );
+                                          },
+                                        ),
+                                      );
+                                    }),
+
+                                    // Central focus indicator
+                                    Center(
+                                      child: AnimatedBuilder(
+                                        animation: _pulseAnimation,
+                                        builder: (context, child) {
+                                          final borderOpacity = (0.3 +
+                                                  (0.4 * _pulseAnimation.value))
+                                              .clamp(0.0, 1.0);
+                                          final fillOpacity = (0.1 +
+                                                  (0.2 * _pulseAnimation.value))
+                                              .clamp(0.0, 1.0);
+                                          final iconOpacity = (0.5 +
+                                                  (0.3 * _pulseAnimation.value))
+                                              .clamp(0.0, 1.0);
+
+                                          return Container(
+                                            width:
+                                                100, // Increased from 40 to 60
+                                            height:
+                                                100, // Increased from 40 to 60
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: AppTheme.accentOrange
+                                                    .withOpacity(borderOpacity),
+                                                width:
+                                                    3, // Increased border width from 2 to 3
+                                              ),
+                                            ),
+                                            child: Container(
+                                              margin: const EdgeInsets.all(
+                                                  10), // Increased margin from 8 to 10
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: AppTheme.accentOrange
+                                                    .withOpacity(fillOpacity),
+                                              ),
+                                              child: Icon(
+                                                Icons.qr_code_2,
+                                                size:
+                                                    49, // Increased icon size from 16 to 28
+                                                color: AppTheme.accentOrange
+                                                    .withOpacity(iconOpacity),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              child: Icon(
-                                Icons.qr_code_scanner,
-                                size: 60,
-                                color: AppTheme.accentOrange,
-                              ),
-                            ),
-
+                            ],
                             SizedBox(
                                 height: AppTheme.getLargePadding(screenSize)),
 
@@ -313,21 +711,6 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
                               ),
                               textAlign: TextAlign.center,
                             ),
-
-                            if (_isListening) ...[
-                              SizedBox(
-                                  height: AppTheme.getLargePadding(screenSize)),
-
-                              // Static scanning line indicator
-                              Container(
-                                width: 200,
-                                height: 4,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(2),
-                                  color: AppTheme.accentOrange.withOpacity(0.5),
-                                ),
-                              ),
-                            ],
 
                             if (_currentInput.isNotEmpty) ...[
                               SizedBox(
