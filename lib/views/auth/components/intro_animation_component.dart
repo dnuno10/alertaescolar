@@ -84,7 +84,7 @@ class _IntroAnimationComponentState extends State<IntroAnimationComponent>
       'images/alertaescolar_logo.png',
       width: screenSize.height * 0.08,
       height: screenSize.height * 0.08,
-      color: AppTheme.getOnPrimaryColor(context),
+      color: AppTheme.getTextPrimaryColor(context),
     );
   }
 

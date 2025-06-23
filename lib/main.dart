@@ -244,28 +244,6 @@ class _AppContentState extends State<_AppContent> {
       },
     );
   }
-
-  // Remove the _getInitialWidget method as we're using initialRoute now
-  Widget _getInitialWidget() {
-    debugPrint("_getInitialWidget: Creating widget for route: $_initialRoute");
-    switch (_initialRoute) {
-      case AppRoutes.adminDashboard:
-        debugPrint("_getInitialWidget: Returning AdminDashboardView directly");
-        return const AdminDashboardView();
-      case AppRoutes.home:
-        debugPrint("_getInitialWidget: Returning HomeView directly");
-        return const HomeView();
-      case AppRoutes.finishSettingUp:
-        debugPrint("_getInitialWidget: Returning FinishSettingUpView directly");
-        return const FinishSettingUpView();
-      case AppRoutes.intro:
-        debugPrint("_getInitialWidget: Returning IntroView directly");
-        return const IntroView();
-      default:
-        debugPrint("_getInitialWidget: Unknown route, returning IntroView");
-        return const IntroView();
-    }
-  }
 }
 
 // Add a navigation observer to debug navigation issues

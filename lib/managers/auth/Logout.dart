@@ -14,27 +14,39 @@ class Logout {
   Future<void> signOut(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
 
+    // Store the navigator before any operations that might affect context
+    final navigator = Navigator.of(context);
+
     try {
-      // Limpia los datos del usuario
+      // First clean up the user data
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       userProvider.logout();
 
+      // Then sign out from Supabase
       await _supabaseClient.auth.signOut();
-      // Navega a la pantalla de inicio de sesión después de cerrar sesión
-      CustomSnackBar.show(
-        context: context,
-        message: l10n.logoutSuccessful,
-        isError: false,
-      );
-      Navigator.pushNamedAndRemoveUntil(context, '/intro', (route) => false);
+
+      // If context is still valid, show success message
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: l10n.logoutSuccessful,
+          isError: false,
+        );
+      }
+
+      // Navigate using the previously stored navigator
+      navigator.pushNamedAndRemoveUntil('/intro', (route) => false);
     } catch (error) {
       debugPrint("Error signing out: $error");
-      // Opcional: Muestra un mensaje de error
-      CustomSnackBar.show(
-        context: context,
-        message: l10n.logoutError,
-        isError: true,
-      );
+
+      // Only show error if context is still valid
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: l10n.logoutError,
+          isError: true,
+        );
+      }
     }
   }
 }

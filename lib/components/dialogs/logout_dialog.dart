@@ -82,10 +82,14 @@ class LogoutDialog extends StatelessWidget {
 
     // Use a post-frame callback to ensure the dialog is fully closed
     // before attempting logout
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Double-check that context is still valid
-      if (context.mounted) {
-        logout.signOut(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        // Only proceed with signout if the context is still valid
+        if (context.mounted) {
+          await logout.signOut(context);
+        }
+      } catch (e) {
+        debugPrint('Error during logout: $e');
       }
     });
   }
