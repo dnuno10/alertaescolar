@@ -25,7 +25,15 @@ class NavItemWithBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Flexible(
       child: GestureDetector(
-        onTap: onTap,
+        onTap: () {
+          // Mark all notifications as read when navigating to notifications view
+          final provider =
+              Provider.of<NotificationProvider>(context, listen: false);
+          if (provider.unreadCount > 0) {
+            provider.markAllAsRead();
+          }
+          onTap();
+        },
         child: Container(
           padding: EdgeInsets.symmetric(
             horizontal: screenSize.width * 0.02,

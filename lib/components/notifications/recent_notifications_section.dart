@@ -11,11 +11,14 @@ class RecentNotificationsSection extends StatelessWidget {
   final Size screenSize;
   final VoidCallback onTapSeeAll;
   final List<Notificacion> notifications;
+  final Function(String)? onNotificationTap;
+
   const RecentNotificationsSection({
     super.key,
     required this.screenSize,
     required this.onTapSeeAll,
     required this.notifications,
+    this.onNotificationTap,
   });
 
   @override
@@ -128,11 +131,25 @@ class RecentNotificationsSection extends StatelessWidget {
                 clipBehavior: Clip.none,
                 itemCount: recentNotifications.length,
                 itemBuilder: (context, index) {
+                  final notification = recentNotifications[index];
+                  final studentName =
+                      notification.datosAdicionales?['alumno_nombre'] ??
+                          'Estudiante';
+                  final studentGroup =
+                      notification.datosAdicionales?['alumno_grupo'] ?? '';
+
                   return NotificationCard(
-                    notification: recentNotifications[index],
+                    notification: notification,
                     index: index,
                     screenSize: screenSize,
-                    onTap: onTapSeeAll,
+                    onTap: () {
+                      if (onNotificationTap != null) {
+                        onNotificationTap!(notification.id);
+                      } else {
+                        onTapSeeAll();
+                      }
+                    },
+                    subtitle: '$studentName - $studentGroup',
                   );
                 },
               );

@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../managers/student_provider.dart';
+import '../../managers/notification_provider.dart';
+import '../../models/models.dart';
 
 class AttendanceStatisticsCard extends StatelessWidget {
   final Size screenSize;
@@ -132,7 +134,7 @@ class AttendanceStatisticsCard extends StatelessWidget {
                       SizedBox(
                           width: AppTheme.getSmallPadding(screenSize) * 0.5),
                       Text(
-                        l10n.statisticsFor, // Replaced hardcoded text '${l10n.statistics} de: '
+                        l10n.statisticsFor,
                         style: AppTheme.getCaption(screenSize).copyWith(
                           color: AppTheme.getTextSecondaryColor(context),
                           fontWeight: FontWeight.w500,
@@ -185,169 +187,240 @@ class AttendanceStatisticsCard extends StatelessWidget {
 
           // Stats content
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-          Row(
-            children: [
-              Text(
-                selectedPeriod == 0 ? '98%' : '94%',
-                style: AppTheme.getH1(screenSize).copyWith(
-                  color: AppTheme.getTextPrimaryColor(context),
-                  letterSpacing: -0.5,
-                ),
-              ),
-              SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      selectedPeriod == 0
-                          ? l10n.weeklyAttendance
-                          : l10n.monthlyAttendance,
-                      style: AppTheme.getBodyMedium(screenSize).copyWith(
-                        color: AppTheme.getTextSecondaryColor(context),
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    SizedBox(height: screenSize.height * 0.005),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: screenSize.height * 0.008,
-                        vertical: screenSize.height * 0.004,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppTheme.successColor,
-                        borderRadius:
-                            BorderRadius.circular(screenSize.height * 0.008),
-                      ),
-                      child: Text(
-                        selectedPeriod == 0
-                            ? l10n.plusFivePercent
-                            : l10n.plusTwoPercent,
-                        style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
+          Consumer<NotificationProvider>(
+            builder: (context, notificationProvider, child) {
+              // Get student stats
+              final stats = _calculateStudentStats(
+                notificationProvider,
+                selectedStudentId ?? '',
+                selectedPeriod == 0 ? 7 : 30,
+              );
+
+              final attendanceRate = stats['attendanceRate'];
+              final attendanceChange = stats['attendanceChange'];
+              final isPositiveChange = attendanceChange >= 0;
+
+              return Column(
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        '${attendanceRate.toStringAsFixed(0)}%',
+                        style: AppTheme.getH1(screenSize).copyWith(
+                          color: AppTheme.getTextPrimaryColor(context),
+                          letterSpacing: -0.5,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+                      SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              selectedPeriod == 0
+                                  ? l10n.weeklyAttendance
+                                  : l10n.monthlyAttendance,
+                              style:
+                                  AppTheme.getBodyMedium(screenSize).copyWith(
+                                color: AppTheme.getTextSecondaryColor(context),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            SizedBox(height: screenSize.height * 0.005),
+                            if (attendanceChange != 0)
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: screenSize.height * 0.008,
+                                  vertical: screenSize.height * 0.004,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isPositiveChange
+                                      ? AppTheme.successColor
+                                      : AppTheme.warningColor,
+                                  borderRadius: BorderRadius.circular(
+                                      screenSize.height * 0.008),
+                                ),
+                                child: Text(
+                                  isPositiveChange
+                                      ? '+${attendanceChange.toStringAsFixed(0)}%'
+                                      : '${attendanceChange.toStringAsFixed(0)}%',
+                                  style: AppTheme.getCaptionSmall(screenSize)
+                                      .copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      // Asistencias
+                      Flexible(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: screenSize.height * 0.06,
+                              height: screenSize.height * 0.06,
+                              decoration: BoxDecoration(
+                                color: AppTheme.successColor,
+                                borderRadius: BorderRadius.circular(
+                                    screenSize.height * 0.015),
+                              ),
+                              child: Icon(
+                                Icons.login_rounded,
+                                color: Colors.white,
+                                size: screenSize.height * 0.035,
+                              ),
+                            ),
+                            SizedBox(
+                                height:
+                                    AppTheme.getSmallPadding(screenSize) / 1.2),
+                            Text(
+                              '${stats['attendances']}',
+                              style: AppTheme.getH2(screenSize).copyWith(
+                                color: AppTheme.getTextPrimaryColor(context),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              l10n.attendances,
+                              style: AppTheme.getCaption(screenSize).copyWith(
+                                color: AppTheme.getTextSecondaryColor(context),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
 
-          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+                      // Llegadas tardías
+                      Flexible(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: screenSize.height * 0.06,
+                              height: screenSize.height * 0.06,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFDCB5A),
+                                borderRadius: BorderRadius.circular(
+                                    screenSize.height * 0.015),
+                              ),
+                              child: Icon(
+                                Icons.schedule_rounded,
+                                color: Colors.white,
+                                size: screenSize.height * 0.035,
+                              ),
+                            ),
+                            SizedBox(
+                                height:
+                                    AppTheme.getSmallPadding(screenSize) / 1.2),
+                            Text(
+                              '${stats['lateArrivals']}',
+                              style: AppTheme.getH2(screenSize).copyWith(
+                                color: AppTheme.getTextPrimaryColor(context),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              l10n.lateArrivals,
+                              style: AppTheme.getCaption(screenSize).copyWith(
+                                color: AppTheme.getTextSecondaryColor(context),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              // Wrap each child in Flexible to allow them to resize based on available space
-              Flexible(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: screenSize.height * 0.06,
-                      height: screenSize.height * 0.06,
-                      decoration: BoxDecoration(
-                        color: AppTheme.successColor,
-                        borderRadius:
-                            BorderRadius.circular(screenSize.height * 0.015),
+                      // Salidas
+                      Flexible(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: screenSize.height * 0.06,
+                              height: screenSize.height * 0.06,
+                              decoration: BoxDecoration(
+                                color: AppTheme.accentBlue,
+                                borderRadius: BorderRadius.circular(
+                                    screenSize.height * 0.015),
+                              ),
+                              child: Icon(
+                                Icons.logout_rounded,
+                                color: Colors.white,
+                                size: screenSize.height * 0.035,
+                              ),
+                            ),
+                            SizedBox(
+                                height:
+                                    AppTheme.getSmallPadding(screenSize) / 1.2),
+                            Text(
+                              '${stats['exits']}',
+                              style: AppTheme.getH2(screenSize).copyWith(
+                                color: AppTheme.getTextPrimaryColor(context),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              l10n.exits,
+                              style: AppTheme.getCaption(screenSize).copyWith(
+                                color: AppTheme.getTextSecondaryColor(context),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
                       ),
-                      child: const Padding(padding: EdgeInsets.zero),
-                    ),
-                    SizedBox(
-                        height: AppTheme.getSmallPadding(screenSize) / 1.2),
-                    Text(
-                      selectedPeriod == 0 ? '7' : '28',
-                      style: AppTheme.getH2(screenSize).copyWith(
-                        color: AppTheme.getTextPrimaryColor(context),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Text(
-                      l10n.attendances,
-                      style: AppTheme.getCaption(screenSize).copyWith(
-                        color: AppTheme.getTextSecondaryColor(context),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-              Flexible(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: screenSize.height * 0.06,
-                      height: screenSize.height * 0.06,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFDCB5A),
-                        borderRadius:
-                            BorderRadius.circular(screenSize.height * 0.015),
-                      ),
-                      child: const Padding(padding: EdgeInsets.zero),
-                    ),
-                    SizedBox(
-                        height: AppTheme.getSmallPadding(screenSize) / 1.2),
-                    Text(
-                      selectedPeriod == 0 ? '0' : '3',
-                      style: AppTheme.getH2(screenSize).copyWith(
-                        color: AppTheme.getTextPrimaryColor(context),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Text(
-                      l10n.lateArrivals,
-                      style: AppTheme.getCaption(screenSize).copyWith(
-                        color: AppTheme.getTextSecondaryColor(context),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-              Flexible(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: screenSize.height * 0.06,
-                      height: screenSize.height * 0.06,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFF4757),
-                        borderRadius:
-                            BorderRadius.circular(screenSize.height * 0.015),
-                      ),
-                      child: const Padding(padding: EdgeInsets.zero),
-                    ),
-                    SizedBox(
-                        height: AppTheme.getSmallPadding(screenSize) / 1.2),
-                    Text(
-                      selectedPeriod == 0 ? '0' : '2',
-                      style: AppTheme.getH2(screenSize).copyWith(
-                        color: AppTheme.getTextPrimaryColor(context),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Text(
-                      l10n.absences,
-                      style: AppTheme.getCaption(screenSize).copyWith(
-                        color: AppTheme.getTextSecondaryColor(context),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+                    ],
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
     );
+  }
+
+  // Helper method to calculate attendance statistics for a student
+  Map<String, dynamic> _calculateStudentStats(
+      NotificationProvider notificationProvider,
+      String studentId,
+      int daysToCount) {
+    if (studentId.isEmpty) {
+      return {
+        'attendances': 0,
+        'lateArrivals': 0,
+        'exits': 0,
+        'attendanceRate': 0,
+        'attendanceChange': 0,
+      };
+    }
+
+    // Get notification statistics from the provider
+    final stats = notificationProvider.getNotificationStatsByStudent(
+        studentId, daysToCount);
+    final attendanceChange =
+        notificationProvider.getAttendanceRateChange(studentId, daysToCount);
+
+    return {
+      'attendances': stats['entries'],
+      'lateArrivals': stats['lateArrivals'],
+      'exits': stats['exits'],
+      'attendanceRate': stats['attendanceRate'],
+      'attendanceChange': attendanceChange,
+    };
   }
 }
 

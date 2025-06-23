@@ -141,7 +141,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
 
   Future<void> _filterNotifications() async {
     if (!mounted) return;
-    
+
     // Show loading dialog
     LoadingDialog.show(context, message: 'Filtrando registros...');
 
@@ -170,9 +170,10 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
       // Filter by nivel educativo
       if (_selectedNivelEducativo != 'all') {
         filtered = filtered.where((notification) {
-          final nivelEducativo =
-              notification['alumnos']['grupos']['nivel_educativo']?.toString() ??
-                  '';
+          final nivelEducativo = notification['alumnos']['grupos']
+                      ['nivel_educativo']
+                  ?.toString() ??
+              '';
           return nivelEducativo == _selectedNivelEducativo;
         }).toList();
       }
@@ -700,7 +701,6 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
 
   // This method is no longer needed as we're using LoadingDialog instead
   // Keeping an empty block to preserve line numbers for easier debugging
-  
 
   // Convert notification student data to StudentDetails for navigation
   Future<StudentDetails> _convertToStudentDetailsWithKeys(
@@ -830,7 +830,8 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                   AppTheme.accentBlue.withOpacity(0.05),
                 ],
               ),
-              borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+              borderRadius:
+                  BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
               border: Border.all(color: AppTheme.accentPurple.withOpacity(0.3)),
             ),
             child: Row(
@@ -841,10 +842,12 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.6),
+                        padding: EdgeInsets.all(
+                            AppTheme.getSmallPadding(screenSize) * 0.6),
                         decoration: BoxDecoration(
                           color: AppTheme.accentPurple.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
+                          borderRadius: BorderRadius.circular(
+                              AppTheme.getSmallRadius(screenSize)),
                         ),
                         child: Icon(
                           Icons.calendar_today_rounded,
@@ -852,7 +855,8 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                           size: screenSize.height * 0.02,
                         ),
                       ),
-                      SizedBox(width: AppTheme.getSmallPadding(screenSize) * 0.8),
+                      SizedBox(
+                          width: AppTheme.getSmallPadding(screenSize) * 0.8),
                       Flexible(
                         child: Text(
                           '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
@@ -891,7 +895,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             LoadingDialog.hide(context);
           });
-          
+
           return Scaffold(
             backgroundColor: AppTheme.getBackgroundColor(context),
             body: Center(
@@ -919,7 +923,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
             ),
           );
         }
-        
+
         // We don't show the loading state separately anymore because we use LoadingDialog
 
         return Scaffold(

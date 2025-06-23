@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/models.dart';
+import '../../../managers/notification_provider.dart';
 
 class NotificationCard extends StatelessWidget {
   final Notificacion notification;
   final int index;
   final Size screenSize;
   final VoidCallback onTap;
+  final String? subtitle;
 
   const NotificationCard({
     super.key,
@@ -15,6 +18,7 @@ class NotificationCard extends StatelessWidget {
     required this.index,
     required this.screenSize,
     required this.onTap,
+    this.subtitle,
   });
 
   @override
@@ -30,50 +34,48 @@ class NotificationCard extends StatelessWidget {
     final color = colors[index % colors.length];
     final isUnread = notification.estado != EstadoNotificacion.leida;
 
-    IconData icon;
-    String status;
-    Color statusColor;
+    // Define variables with default values
+    IconData icon = Icons.notifications_rounded;
+    String status = l10n.notifications;
+    Color statusColor = color;
 
-    switch (notification.tipo) {
-      case TipoNotificacion.entrada:
-        icon = Icons.login_rounded;
-        status = l10n.entryRegistered;
-        statusColor = AppTheme.successColor;
-        break;
-      case TipoNotificacion.salida:
-        icon = Icons.logout_rounded;
-        status = l10n.exitRegistered;
-        statusColor = AppTheme.accentBlue;
-        break;
-      case TipoNotificacion.retraso:
-        icon = Icons.schedule_rounded;
-        status = l10n.arrivedLate;
-        statusColor = AppTheme.warningColor;
-        break;
-      case TipoNotificacion.ausencia:
-        icon = Icons.cancel_rounded;
-        status = l10n.absent;
-        statusColor = AppTheme.errorColor;
-        break;
-      case TipoNotificacion.permisoEspecial:
-        icon = Icons.event_available_rounded;
-        status = l10n.specialPermission;
-        statusColor = AppTheme.accentPurple;
-        break;
-
-      case TipoNotificacion.comunicado:
-        icon = Icons.announcement_rounded;
-        status = l10n.announcement;
-        statusColor = AppTheme.accentBlue;
-        break;
-      default:
-        icon = Icons.notifications_rounded;
-        status = l10n.notifications;
-        statusColor = color;
+    // Assign appropriate values based on notification type
+    if (notification.tipo == TipoNotificacion.entrada) {
+      icon = Icons.login_rounded;
+      status = l10n.entryRegistered;
+      statusColor = AppTheme.successColor;
+    } else if (notification.tipo == TipoNotificacion.salida) {
+      icon = Icons.logout_rounded;
+      status = l10n.exitRegistered;
+      statusColor = AppTheme.accentBlue;
+    } else if (notification.tipo == TipoNotificacion.retraso) {
+      icon = Icons.schedule_rounded;
+      status = l10n.arrivedLate;
+      statusColor = AppTheme.warningColor;
+    } else if (notification.tipo == TipoNotificacion.ausencia) {
+      icon = Icons.cancel_rounded;
+      status = l10n.absent;
+      statusColor = AppTheme.errorColor;
+    } else if (notification.tipo == TipoNotificacion.permisoEspecial) {
+      icon = Icons.event_available_rounded;
+      status = l10n.specialPermission;
+      statusColor = AppTheme.accentPurple;
+    } else if (notification.tipo == TipoNotificacion.comunicado) {
+      icon = Icons.announcement_rounded;
+      status = l10n.announcement;
+      statusColor = AppTheme.accentBlue;
     }
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        // Mark notification as read when tapped
+        if (notification.estado == EstadoNotificacion.nueva) {
+          final provider =
+              Provider.of<NotificationProvider>(context, listen: false);
+          provider.markAsRead(notification.id);
+        }
+        onTap();
+      },
       child: Container(
         width: screenSize.width * 0.75,
         margin: EdgeInsets.only(right: AppTheme.getMediumPadding(screenSize)),
@@ -144,12 +146,39 @@ class NotificationCard extends StatelessWidget {
                           ),
                         ),
                         SizedBox(height: screenSize.height * 0.003),
-                        Text(
-                          _formatTime(notification.fechaHora, context),
-                          style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                            color: AppTheme.getTextSecondaryColor(context),
-                            fontWeight: FontWeight.w500,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              _formatTime(notification.fechaHora, context),
+                              style:
+                                  AppTheme.getCaptionSmall(screenSize).copyWith(
+                                color: AppTheme.getTextSecondaryColor(context),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            if (subtitle != null) ...[
+                              Text(
+                                ' • ',
+                                style: AppTheme.getCaptionSmall(screenSize)
+                                    .copyWith(
+                                  color:
+                                      AppTheme.getTextSecondaryColor(context),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  subtitle!,
+                                  style: AppTheme.getCaptionSmall(screenSize)
+                                      .copyWith(
+                                    color:
+                                        AppTheme.getTextSecondaryColor(context),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ],
                     ),

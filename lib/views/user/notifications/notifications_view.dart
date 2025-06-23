@@ -1,6 +1,7 @@
 // 🚀 Premium Notifications View - Following Fintech/EdTech Design References
 import 'package:alertaescolar/components/headers/notification_header.dart';
 import 'package:alertaescolar/components/notifications/enhanced_filter_section.dart';
+import 'package:alertaescolar/components/notifications/notification_detail_modal.dart';
 import 'package:alertaescolar/components/notifications/notification_list_section.dart';
 import 'package:alertaescolar/components/notifications/time_filter_section.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +22,7 @@ class _NotificationsViewViewState extends State<NotificationsView>
   late TabController _tabController;
   String _currentFilter = 'access_alerts';
   String _timeFilter = 'today';
+  late Size screenSize;
 
   @override
   void initState() {
@@ -28,8 +30,9 @@ class _NotificationsViewViewState extends State<NotificationsView>
     _tabController = TabController(length: 3, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<NotificationProvider>();
-      provider.loadNotifications();
-      provider.markAllAsRead(); // Auto-mark as read when entering notifications
+      provider.loadNotifications().then((_) {
+        provider.markAllAsRead();
+      });
     });
   }
 
@@ -41,7 +44,7 @@ class _NotificationsViewViewState extends State<NotificationsView>
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
+    screenSize = MediaQuery.of(context).size;
 
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
@@ -128,7 +131,9 @@ class _NotificationsViewViewState extends State<NotificationsView>
       case 'communications':
         filtered = notifications.where((n) {
           final type = n.tipo.toString().toLowerCase();
-          return type.contains('comunicado') || type.contains('evento');
+          return type.contains('comunicado') ||
+              type.contains('evento') ||
+              type.contains('permisoespecial');
         }).toList();
         break;
       default:
@@ -239,8 +244,32 @@ class _NotificationsViewViewState extends State<NotificationsView>
   }
 
   void _handleNotificationTap(String notificationId) {
-    // Just handle the tap, no need to mark as read since it's automatic
-    // You can add navigation to detail view here if needed
+    final provider = Provider.of<NotificationProvider>(context, listen: false);
+    final notification = provider.getNotificationById(notificationId);
+
+    if (notification != null) {
+      // Mark as read
+      provider.markAsRead(notificationId);
+
+      // Show detail modal
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (context) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: FractionallySizedBox(
+            heightFactor: 0.85,
+            child: NotificationDetailModal(
+              notification: notification,
+              screenSize: screenSize,
+            ),
+          ),
+        ),
+      );
+    }
   }
 
   Map<String, dynamic> _getNotificationType(String type) {
@@ -279,6 +308,11 @@ class _NotificationsViewViewState extends State<NotificationsView>
       case 'evento':
         return {
           'icon': Icons.event_outlined,
+          'color': AppTheme.accentPurple,
+        };
+      case 'permisoespecial':
+        return {
+          'icon': Icons.event_available_outlined,
           'color': AppTheme.accentPurple,
         };
       case 'acceso':

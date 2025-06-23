@@ -1,6 +1,6 @@
-import 'package:alertaescolar/components/attendance/attendance_statics_card.dart';
 import 'package:alertaescolar/components/headers/home_header.dart';
 import 'package:alertaescolar/components/navigation/custom_bottom_navigation_bar.dart';
+import 'package:alertaescolar/components/notifications/notification_detail_modal.dart';
 import 'package:alertaescolar/components/notifications/recent_notifications_section.dart';
 import 'package:alertaescolar/components/quick_actions_section.dart';
 import 'package:alertaescolar/components/schedule/today_schedule_section.dart';
@@ -25,9 +25,6 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   int _selectedIndex = 0;
-  int _selectedPeriod = 0; // 0: 7 días, 1: 1 mes
-  String? _selectedStudentIdForStats; // For statistics
-  String? _selectedStudentIdForSchedule; // For schedule
 
   @override
   void initState() {
@@ -99,19 +96,42 @@ class _HomeViewState extends State<HomeView> {
                 screenSize: screenSize,
                 onTapSeeAll: () => setState(() => _selectedIndex = 2),
                 notifications: provider.notifications,
+                onNotificationTap: (String notificationId) {
+                  // First navigate to the notifications view
+                  setState(() => _selectedIndex = 2);
+
+                  // After navigation, show the notification detail modal
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    final notification =
+                        provider.getNotificationById(notificationId);
+                    if (notification != null) {
+                      // Mark as read
+                      provider.markAsRead(notificationId);
+
+                      // Show detail modal
+                      showModalBottomSheet(
+                        context: context,
+                        backgroundColor: Colors.transparent,
+                        isScrollControlled: true,
+                        builder: (context) => Padding(
+                          padding: EdgeInsets.only(
+                            bottom: MediaQuery.of(context).viewInsets.bottom,
+                          ),
+                          child: FractionallySizedBox(
+                            heightFactor: 0.85,
+                            child: NotificationDetailModal(
+                              notification: notification,
+                              screenSize: screenSize,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                  });
+                },
               );
             },
           ),
-          SizedBox(height: AppTheme.getLargePadding(screenSize) * 1.5),
-          AttendanceStatisticsCard(
-            screenSize: screenSize,
-            selectedPeriod: _selectedPeriod,
-            onPeriodChanged: (value) => setState(() => _selectedPeriod = value),
-            selectedStudentId: _selectedStudentIdForStats,
-            onStudentSelected: (id) =>
-                setState(() => _selectedStudentIdForStats = id),
-          ),
-
           SizedBox(height: AppTheme.getLargePadding(screenSize) * 1.5),
           StudentsOverviewSection(
             screenSize: screenSize,
