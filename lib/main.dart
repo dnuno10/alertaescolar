@@ -197,6 +197,7 @@ class _AppContentState extends State<_AppContent> {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           home: Scaffold(
+            backgroundColor: Colors.white,
             body: Center(
               child: Stack(
                 children: [
@@ -205,12 +206,12 @@ class _AppContentState extends State<_AppContent> {
                       "images/alertaescolar_logo.png",
                       width: MediaQuery.of(context).size.height * 0.045,
                       height: MediaQuery.of(context).size.height * 0.045,
-                      color: AppTheme.getTextPrimaryColor(context),
+                      color: Colors.black,
                     ),
                   ),
                   Center(
                     child: LoadingAnimationWidget.twoRotatingArc(
-                      color: AppTheme.getTextPrimaryColor(context),
+                      color: Colors.black,
                       size: MediaQuery.of(context).size.height * 0.075,
                     ),
                   ),
