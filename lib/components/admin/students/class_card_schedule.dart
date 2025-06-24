@@ -1,6 +1,7 @@
 import 'package:alertaescolar/app/app_theme.dart';
 import 'package:alertaescolar/models/horario.dart';
 import 'package:flutter/material.dart';
+import '../../../utils/time_format.dart';
 
 class ClassCardSchedule extends StatefulWidget {
   final ClaseHorario clase;
@@ -142,7 +143,8 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
       // Handle full timestamp format (fallback for compatibility)
       else if (time.contains('T') && time.contains(':')) {
         DateTime dateTime = DateTime.parse(time);
-        return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+        return TimeFormat.format24to12(
+            '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}');
       }
 
       // Handle date with time format: "1970-01-01 08:00:00+00"
@@ -159,7 +161,8 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
       if (match != null) {
         final hour = int.parse(match.group(1)!);
         final minute = int.parse(match.group(2)!);
-        return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+        return TimeFormat.format24to12(
+            '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}');
       }
 
       return time; // Return original if can't parse

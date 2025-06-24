@@ -5,6 +5,7 @@ import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../textfield/custom_input_field.dart';
 import '../../../views/admin/students/student_profile_admin_view.dart';
+import '../../../utils/modern_dropdown.dart';
 
 class DirectoryFiltersCard extends StatefulWidget {
   final Size screenSize;
@@ -168,52 +169,116 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
           // Filter Dropdowns in responsive layout
           LayoutBuilder(
             builder: (context, constraints) {
+              final uniqueGrupos = [
+                'all',
+                ...studentProvider.getAvailableGrupoNames().toSet()
+              ];
+              final uniqueNiveles = [
+                'all',
+                ...studentProvider.getAvailableNivelesEducativos().toSet()
+              ];
+              final uniqueTurnos = [
+                'all',
+                ...studentProvider.getAvailableTurnoNames().toSet()
+              ];
+              final statusItems = ['all', 'active', 'inactive'];
               if (constraints.maxWidth > 600) {
                 // Desktop/Tablet layout - 4 columns
                 return Row(
                   children: [
                     Expanded(
-                        child: _buildFilterDropdown(
-                            'Grupo',
-                            widget.selectedGrade, // grupo filter
-                            availableGrupos)),
+                      child: ModernDropdown<String>(
+                        label: l10n.grade,
+                        value: widget.selectedGrade,
+                        items: uniqueGrupos,
+                        onChanged: (String? value) =>
+                            widget.onGradeChanged(value ?? 'all'),
+                        getLabel: (v) => v == 'all' ? l10n.all : v,
+                        screenSize: widget.screenSize,
+                      ),
+                    ),
                     SizedBox(
                         width: AppTheme.getSmallPadding(widget.screenSize)),
                     Expanded(
-                        child: _buildFilterDropdown(
-                            'Nivel Educativo',
-                            widget.selectedGroup, // nivel_educativo filter
-                            availableNiveles)),
+                      child: ModernDropdown<String>(
+                        label: l10n.educationalLevels,
+                        value: widget.selectedGroup,
+                        items: uniqueNiveles,
+                        onChanged: (String? value) =>
+                            widget.onGroupChanged(value ?? 'all'),
+                        getLabel: (v) => v == 'all' ? l10n.all : v,
+                        screenSize: widget.screenSize,
+                      ),
+                    ),
                     SizedBox(
                         width: AppTheme.getSmallPadding(widget.screenSize)),
                     Expanded(
-                        child: _buildFilterDropdown(
-                            'Turno',
-                            widget.selectedTurno, // turno filter
-                            availableTurnos)),
+                      child: ModernDropdown<String>(
+                        label: l10n.turn,
+                        value: widget.selectedTurno,
+                        items: uniqueTurnos,
+                        onChanged: (String? value) =>
+                            widget.onTurnoChanged(value ?? 'all'),
+                        getLabel: (v) => v == 'all' ? l10n.all : v,
+                        screenSize: widget.screenSize,
+                      ),
+                    ),
                     SizedBox(
                         width: AppTheme.getSmallPadding(widget.screenSize)),
                     Expanded(
-                        child: _buildFilterDropdown(
-                            'Estado',
-                            widget.selectedStatus,
-                            ['all', 'active', 'inactive'])),
+                      child: ModernDropdown<String>(
+                        label: l10n.status,
+                        value: widget.selectedStatus,
+                        items: statusItems,
+                        onChanged: (String? value) =>
+                            widget.onStatusChanged(value ?? 'all'),
+                        getLabel: (v) {
+                          switch (v) {
+                            case 'all':
+                              return l10n.all;
+                            case 'active':
+                              return l10n.activated;
+                            case 'inactive':
+                              return l10n.deactivated;
+                            default:
+                              return v;
+                          }
+                        },
+                        screenSize: widget.screenSize,
+                      ),
+                    ),
                   ],
                 );
               } else {
-                // Mobile layout - 2x2
+                // Mobile layout - 2 rows
                 return Column(
                   children: [
                     Row(
                       children: [
                         Expanded(
-                            child: _buildFilterDropdown('Grupo',
-                                widget.selectedGrade, availableGrupos)),
+                          child: ModernDropdown<String>(
+                            label: l10n.grade,
+                            value: widget.selectedGrade,
+                            items: uniqueGrupos,
+                            onChanged: (String? value) =>
+                                widget.onGradeChanged(value ?? 'all'),
+                            getLabel: (v) => v == 'all' ? l10n.all : v,
+                            screenSize: widget.screenSize,
+                          ),
+                        ),
                         SizedBox(
                             width: AppTheme.getSmallPadding(widget.screenSize)),
                         Expanded(
-                            child: _buildFilterDropdown('Nivel Educativo',
-                                widget.selectedGroup, availableNiveles)),
+                          child: ModernDropdown<String>(
+                            label: l10n.educationalLevels,
+                            value: widget.selectedGroup,
+                            items: uniqueNiveles,
+                            onChanged: (String? value) =>
+                                widget.onGroupChanged(value ?? 'all'),
+                            getLabel: (v) => v == 'all' ? l10n.all : v,
+                            screenSize: widget.screenSize,
+                          ),
+                        ),
                       ],
                     ),
                     SizedBox(
@@ -221,15 +286,40 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
                     Row(
                       children: [
                         Expanded(
-                            child: _buildFilterDropdown('Turno',
-                                widget.selectedTurno, availableTurnos)),
+                          child: ModernDropdown<String>(
+                            label: l10n.turn,
+                            value: widget.selectedTurno,
+                            items: uniqueTurnos,
+                            onChanged: (String? value) =>
+                                widget.onTurnoChanged(value ?? 'all'),
+                            getLabel: (v) => v == 'all' ? l10n.all : v,
+                            screenSize: widget.screenSize,
+                          ),
+                        ),
                         SizedBox(
                             width: AppTheme.getSmallPadding(widget.screenSize)),
                         Expanded(
-                            child: _buildFilterDropdown(
-                                'Estado',
-                                widget.selectedStatus,
-                                ['all', 'active', 'inactive'])),
+                          child: ModernDropdown<String>(
+                            label: l10n.status,
+                            value: widget.selectedStatus,
+                            items: statusItems,
+                            onChanged: (String? value) =>
+                                widget.onStatusChanged(value ?? 'all'),
+                            getLabel: (v) {
+                              switch (v) {
+                                case 'all':
+                                  return l10n.all;
+                                case 'active':
+                                  return l10n.activated;
+                                case 'inactive':
+                                  return l10n.deactivated;
+                                default:
+                                  return v;
+                              }
+                            },
+                            screenSize: widget.screenSize,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -541,98 +631,6 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
         overflow: TextOverflow.ellipsis,
       ),
     );
-  }
-
-  Widget _buildFilterDropdown(String label, String value, List<String> items) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTheme.getCaptionSmall(widget.screenSize).copyWith(
-            color: AppTheme.getTextPrimaryColor(context),
-            fontWeight: FontWeight.w600,
-          ),
-          overflow: TextOverflow.ellipsis,
-        ),
-        SizedBox(height: AppTheme.getSmallPadding(widget.screenSize) * 0.5),
-        Container(
-          padding: EdgeInsets.symmetric(
-              horizontal: AppTheme.getSmallPadding(widget.screenSize)),
-          decoration: BoxDecoration(
-            color: AppTheme.getBackgroundColor(context),
-            borderRadius: BorderRadius.circular(
-                AppTheme.getSmallRadius(widget.screenSize)),
-            border: Border.all(color: AppTheme.getBorderColor(context)),
-          ),
-          child: DropdownButton<String>(
-            value: value,
-            isExpanded: true,
-            underline: const SizedBox(),
-            onChanged: (newValue) {
-              switch (label) {
-                case 'Grupo':
-                  widget.onGradeChanged(newValue!); // Handle grupo changes
-                  break;
-                case 'Nivel Educativo':
-                  widget.onGroupChanged(
-                      newValue!); // Handle nivel_educativo changes
-                  break;
-                case 'Turno':
-                  widget.onTurnoChanged(newValue!); // Handle turno changes
-                  break;
-                case 'Estado':
-                  widget.onStatusChanged(newValue!);
-                  break;
-              }
-            },
-            style: AppTheme.getCaptionSmall(widget.screenSize).copyWith(
-              color: AppTheme.getTextPrimaryColor(context),
-            ),
-            items: items.map((item) {
-              return DropdownMenuItem(
-                value: item,
-                child: Text(
-                  _getDropdownLabel(item, label),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _getDropdownLabel(String value, String filterType) {
-    final l10n = AppLocalizations.of(context);
-
-    if (value == 'all') {
-      switch (filterType) {
-        case 'Grado':
-          return l10n.allGrades; // Replaced hardcoded text
-        case 'Grupo':
-          return l10n.allGroups; // Replaced hardcoded text
-        case 'Estado':
-          return l10n.allStatuses; // Replaced hardcoded text
-        default:
-          return l10n.all; // Replaced hardcoded text
-      }
-    }
-
-    // Specific labels for status
-    if (filterType == 'Estado') {
-      switch (value) {
-        case 'active':
-          return l10n.activeStudents; // Replaced hardcoded text
-        case 'inactive':
-          return l10n.inactiveStudents; // Replaced hardcoded text
-        default:
-          return value;
-      }
-    }
-
-    return value;
   }
 
   Widget _buildCompactStat(String label, int value, Color color) {

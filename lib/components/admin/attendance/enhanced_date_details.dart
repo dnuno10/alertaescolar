@@ -4,6 +4,7 @@ import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/models.dart';
 import '../../../views/admin/students/student_profile_admin_view.dart';
+import '../../../utils/time_format.dart';
 
 class EnhancedDateDetails extends StatefulWidget {
   final Size screenSize;
@@ -708,7 +709,8 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
                             ),
                           ),
                           Text(
-                            '${notification.fechaHora.hour.toString().padLeft(2, '0')}:${notification.fechaHora.minute.toString().padLeft(2, '0')}',
+                            TimeFormat.format24to12(
+                                '${notification.fechaHora.hour.toString().padLeft(2, '0')}:${notification.fechaHora.minute.toString().padLeft(2, '0')}'),
                             style: AppTheme.getCaptionSmall(widget.screenSize)
                                 .copyWith(
                               color: AppTheme.getTextSecondaryColor(context),

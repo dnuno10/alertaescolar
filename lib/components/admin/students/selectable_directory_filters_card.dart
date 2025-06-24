@@ -5,6 +5,8 @@ import '../../../managers/student_provider.dart';
 import '../../../components/textfield/custom_input_field.dart';
 import 'filter_dropdown.dart';
 import 'student_empty_state.dart';
+import '../../../utils/modern_dropdown.dart';
+import 'package:provider/provider.dart';
 
 class SelectableDirectoryFiltersCard extends StatelessWidget {
   final Size screenSize;
@@ -136,39 +138,64 @@ class SelectableDirectoryFiltersCard extends StatelessWidget {
           // Filter Dropdowns
           LayoutBuilder(
             builder: (context, constraints) {
+              final studentProvider =
+                  Provider.of<StudentProvider>(context, listen: false);
+              final gradeItems = [
+                'all',
+                ...studentProvider.getAvailableGrupoNames().toSet()
+              ];
+              final groupItems = [
+                'all',
+                ...studentProvider.getAvailableNivelesEducativos().toSet()
+              ];
+              final statusItems = ['all', 'active', 'inactive'];
               if (constraints.maxWidth > 600) {
                 return Row(
                   children: [
                     Expanded(
-                      child: FilterDropdown(
+                      child: ModernDropdown<String>(
                         label: l10n.grade,
                         value: selectedGrade,
-                        items: ['all', '1°', '2°', '3°', '4°', '5°', '6°'],
-                        onChanged: onGradeChanged,
+                        items: gradeItems,
+                        onChanged: (String? value) =>
+                            onGradeChanged(value ?? 'all'),
+                        getLabel: (v) => v == 'all' ? l10n.all : v,
                         screenSize: screenSize,
-                        filterType: 'grade',
                       ),
                     ),
                     SizedBox(width: AppTheme.getSmallPadding(screenSize)),
                     Expanded(
-                      child: FilterDropdown(
+                      child: ModernDropdown<String>(
                         label: l10n.group,
                         value: selectedGroup,
-                        items: ['all', 'A', 'B', 'C', 'D'],
-                        onChanged: onGroupChanged,
+                        items: groupItems,
+                        onChanged: (String? value) =>
+                            onGroupChanged(value ?? 'all'),
+                        getLabel: (v) => v == 'all' ? l10n.all : v,
                         screenSize: screenSize,
-                        filterType: 'group',
                       ),
                     ),
                     SizedBox(width: AppTheme.getSmallPadding(screenSize)),
                     Expanded(
-                      child: FilterDropdown(
+                      child: ModernDropdown<String>(
                         label: l10n.status,
                         value: selectedStatus,
-                        items: ['all', 'active', 'inactive'],
-                        onChanged: onStatusChanged,
+                        items: statusItems,
+                        onChanged: (String? value) =>
+                            onStatusChanged(value ?? 'all'),
+                        getLabel: (v) {
+                          switch (v) {
+                            case 'all':
+                              return l10n.all;
+                            case 'active':
+                              return l10n.activated;
+                            case 'inactive':
+                              return l10n.deactivated;
+                            default:
+                              return v;
+                          }
+                        },
                         screenSize: screenSize,
-                        filterType: 'status',
                       ),
                     ),
                   ],
@@ -179,36 +206,56 @@ class SelectableDirectoryFiltersCard extends StatelessWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: FilterDropdown(
+                          child: ModernDropdown<String>(
                             label: l10n.grade,
                             value: selectedGrade,
-                            items: ['all', '1°', '2°', '3°', '4°', '5°', '6°'],
-                            onChanged: onGradeChanged,
+                            items: gradeItems,
+                            onChanged: (String? value) =>
+                                onGradeChanged(value ?? 'all'),
+                            getLabel: (v) => v == 'all' ? l10n.all : v,
                             screenSize: screenSize,
-                            filterType: 'grade',
                           ),
                         ),
                         SizedBox(width: AppTheme.getSmallPadding(screenSize)),
                         Expanded(
-                          child: FilterDropdown(
+                          child: ModernDropdown<String>(
                             label: l10n.group,
                             value: selectedGroup,
-                            items: ['all', 'A', 'B', 'C', 'D'],
-                            onChanged: onGroupChanged,
+                            items: groupItems,
+                            onChanged: (String? value) =>
+                                onGroupChanged(value ?? 'all'),
+                            getLabel: (v) => v == 'all' ? l10n.all : v,
                             screenSize: screenSize,
-                            filterType: 'group',
                           ),
                         ),
                       ],
                     ),
                     SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-                    FilterDropdown(
-                      label: l10n.status,
-                      value: selectedStatus,
-                      items: ['all', 'active', 'inactive'],
-                      onChanged: onStatusChanged,
-                      screenSize: screenSize,
-                      filterType: 'status',
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ModernDropdown<String>(
+                            label: l10n.status,
+                            value: selectedStatus,
+                            items: statusItems,
+                            onChanged: (String? value) =>
+                                onStatusChanged(value ?? 'all'),
+                            getLabel: (v) {
+                              switch (v) {
+                                case 'all':
+                                  return l10n.all;
+                                case 'active':
+                                  return l10n.activated;
+                                case 'inactive':
+                                  return l10n.deactivated;
+                                default:
+                                  return v;
+                              }
+                            },
+                            screenSize: screenSize,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 );

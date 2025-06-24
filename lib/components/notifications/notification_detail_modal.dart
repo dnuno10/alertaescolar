@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/models.dart';
+import '../../utils/time_format.dart';
 
 class NotificationDetailModal extends StatelessWidget {
   final Notificacion notification;
@@ -160,7 +161,7 @@ class NotificationDetailModal extends StatelessWidget {
           _buildDetailRow(
             context,
             l10n.time,
-            _formatTime(notification.fechaHora),
+            TimeFormat.format24to12(_formatTime(notification.fechaHora)),
             Icons.access_time_rounded,
             screenSize,
           ),

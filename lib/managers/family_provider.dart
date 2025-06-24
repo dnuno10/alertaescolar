@@ -249,4 +249,11 @@ class FamilyProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
   }
+
+  void clearAllData() {
+    _familyContacts.clear();
+    _isLoading = false;
+    _error = null;
+    notifyListeners();
+  }
 }

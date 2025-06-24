@@ -133,4 +133,14 @@ class ProviderManager {
     _isInitialized = false;
     _isInitializing = false;
   }
+
+  static void clearAllProvidersData() {
+    _userProvider.logout();
+    _studentProvider.clearAllData();
+    _notificationProvider.clearAllData();
+    _familyProvider.clearAllData();
+    _groupProvider.clearAllData();
+    _turnoProvider.clearAllData();
+    // Agrega aquí otros providers que requieran limpieza
+  }
 }

@@ -4,6 +4,7 @@ import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../managers/student_provider.dart';
 import '../../../views/admin/students/student_attendance_history_view.dart';
+import '../../../utils/time_format.dart';
 
 class StudentAttendanceHistoryCard extends StatefulWidget {
   final StudentDetails student;
@@ -446,7 +447,8 @@ class _StudentAttendanceHistoryCardState
                 ),
               ),
               Text(
-                '${fechaRegistro.hour.toString().padLeft(2, '0')}:${fechaRegistro.minute.toString().padLeft(2, '0')}',
+                TimeFormat.format24to12(
+                    '${fechaRegistro.hour.toString().padLeft(2, '0')}:${fechaRegistro.minute.toString().padLeft(2, '0')}'),
                 style: AppTheme.getCaptionSmall(widget.screenSize).copyWith(
                   color: AppTheme.getTextSecondaryColor(context),
                 ),

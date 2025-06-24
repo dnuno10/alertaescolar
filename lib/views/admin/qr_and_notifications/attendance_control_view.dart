@@ -10,7 +10,6 @@ import '../../../providers/theme_provider.dart';
 import '../../../providers/attendance_scanner_provider.dart';
 import '../../../components/admin/qr_and_notifications/attendance_control_header.dart';
 import '../../../managers/turno_provider.dart';
-import '../../../models/turno.dart';
 import 'notification_send_view.dart';
 import 'scanner_configuration_view.dart';
 import 'camera_scanner_view.dart';
@@ -376,6 +375,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
 
   Widget _buildMainScannerSection(
       BuildContext context, Size screenSize, AppLocalizations l10n) {
+    final screenSize = MediaQuery.of(context).size;
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
@@ -383,9 +383,9 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
             BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+            color: AppTheme.getShadowColor(context).withValues(alpha: 0.1),
+            blurRadius: screenSize.height * 0.02,
+            offset: Offset(0, screenSize.height * 0.008),
           ),
         ],
       ),

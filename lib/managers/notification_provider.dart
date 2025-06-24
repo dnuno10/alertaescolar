@@ -358,4 +358,11 @@ class NotificationProvider extends ChangeNotifier {
     return (currentStats['attendanceRate']! - previousAttendanceRate)
         .toDouble();
   }
+
+  void clearAllData() {
+    _notifications.clear();
+    _isLoading = false;
+    _error = null;
+    notifyListeners();
+  }
 }

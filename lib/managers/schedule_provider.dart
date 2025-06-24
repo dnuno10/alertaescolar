@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
 import '../components/loading_dialog.dart';
+import '../utils/time_format.dart';
 
 class ScheduleProvider with ChangeNotifier {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -260,55 +261,14 @@ class ScheduleProvider with ChangeNotifier {
         String timeStr = timetz.toString();
         debugPrint('Formatting timetz: $timeStr');
 
-        // Handle timetz format: "08:00:00+00" or "08:00:00-05:00"
-        if (timeStr.contains('+') ||
-            (timeStr.contains('-') && timeStr.lastIndexOf('-') > 2)) {
-          // Remove timezone part
-          String timePart;
-          if (timeStr.contains('+')) {
-            timePart = timeStr.split('+')[0];
-          } else {
-            final lastDashIndex = timeStr.lastIndexOf('-');
-            timePart = timeStr.substring(0, lastDashIndex);
-          }
-
-          // Parse time components
-          final timeComponents = timePart.split(':');
-          if (timeComponents.length >= 2) {
-            final hour = int.parse(timeComponents[0]);
-            final minute = int.parse(timeComponents[1]);
-            final formattedTime =
-                '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
-            debugPrint('Formatted time: $formattedTime');
-            return formattedTime;
-          }
-        }
-
-        // Handle simple time format: "08:00:00" or "08:00"
-        else if (timeStr.contains(':') &&
-            !timeStr.contains('T') &&
-            !timeStr.contains(' ')) {
-          final parts = timeStr.split(':');
-          if (parts.length >= 2) {
-            final hour = int.parse(parts[0]);
-            final minute = int.parse(parts[1]);
-            final formattedTime =
-                '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
-            debugPrint('Formatted simple time: $formattedTime');
-            return formattedTime;
-          }
-        }
-
         // Fallback: try to extract time pattern
         final timePattern = RegExp(r'(\d{1,2}):(\d{2})');
         final match = timePattern.firstMatch(timeStr);
         if (match != null) {
           final hour = int.parse(match.group(1)!);
           final minute = int.parse(match.group(2)!);
-          final formattedTime =
-              '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
-          debugPrint('Formatted pattern time: $formattedTime');
-          return formattedTime;
+          return TimeFormat.format24to12(
+              '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}');
         }
 
         debugPrint('Could not format time, returning default: $timeStr');

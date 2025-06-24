@@ -4,6 +4,9 @@ import 'relation_dropdown.dart';
 import '../../models/contacto_familiar.dart';
 import '../../l10n/app_localizations.dart';
 import '../../app/app_theme.dart';
+import '../../utils/modern_dropdown.dart';
+import '../../views/user/profile/edit_family_contact_view.dart'
+    show TipoParentescoExtension;
 
 class NewContactForm extends StatelessWidget {
   final GlobalKey<FormState> formKey;
@@ -65,9 +68,12 @@ class NewContactForm extends StatelessWidget {
             SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
             // Relation Dropdown
-            RelationDropdown(
-              selectedRelation: selectedRelation,
-              onRelationChanged: onRelationChanged,
+            ModernDropdown<TipoParentesco>(
+              label: l10n.relationship,
+              value: selectedRelation,
+              items: TipoParentesco.values,
+              onChanged: onRelationChanged,
+              getLabel: (tipo) => tipo.getLocalizedName(l10n),
               screenSize: screenSize,
             ),
             SizedBox(height: AppTheme.getMediumPadding(screenSize)),

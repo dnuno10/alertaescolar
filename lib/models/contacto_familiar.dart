@@ -1,3 +1,5 @@
+import '../l10n/app_localizations.dart';
+
 enum TipoParentesco {
   padre,
   madre,
@@ -10,6 +12,38 @@ enum TipoParentesco {
   hermano,
   hermana,
   otroFamiliar,
+}
+
+// Extensión global para obtener el nombre localizado de TipoParentesco
+extension TipoParentescoExtension on TipoParentesco {
+  String getLocalizedName(AppLocalizations localizations) {
+    switch (this) {
+      case TipoParentesco.padre:
+        return localizations.father;
+      case TipoParentesco.madre:
+        return localizations.mother;
+      case TipoParentesco.abuelo:
+        return localizations.grandfather;
+      case TipoParentesco.abuela:
+        return localizations.grandmother;
+      case TipoParentesco.tutor:
+        return localizations.tutor;
+      case TipoParentesco.tutora:
+        return localizations.tutor;
+      case TipoParentesco.tio:
+        return localizations.uncle;
+      case TipoParentesco.tia:
+        return localizations.aunt;
+      case TipoParentesco.hermano:
+        return localizations.brother;
+      case TipoParentesco.hermana:
+        return localizations.sister;
+      case TipoParentesco.otroFamiliar:
+        return localizations.otherFamily;
+      default:
+        return localizations.relative;
+    }
+  }
 }
 
 class ContactoFamiliar {

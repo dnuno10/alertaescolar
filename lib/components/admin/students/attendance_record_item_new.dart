@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import 'status_chip.dart';
+import '../../../utils/time_format.dart';
 
 class AttendanceRecordItem extends StatelessWidget {
   final Map<String, dynamic> record;
@@ -76,7 +77,8 @@ class AttendanceRecordItem extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '${fechaRegistro.hour.toString().padLeft(2, '0')}:${fechaRegistro.minute.toString().padLeft(2, '0')}',
+                          TimeFormat.format24to12(
+                              '${fechaRegistro.hour.toString().padLeft(2, '0')}:${fechaRegistro.minute.toString().padLeft(2, '0')}'),
                           style: AppTheme.getCaptionSmall(screenSize).copyWith(
                             color: AppTheme.getTextSecondaryColor(context),
                             fontWeight: FontWeight.w500,

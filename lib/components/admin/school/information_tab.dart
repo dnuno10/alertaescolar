@@ -151,14 +151,7 @@ class InformationTab extends StatelessWidget {
               ],
             ),
             SizedBox(height: AppTheme.getLargePadding(screenSize)),
-            SolidButton(
-              onPressed: isLoading ? () {} : onSave,
-              label: isLoading ? l10n.saving : l10n.updateSettings,
-              icon: isLoading ? null : Icons.save_rounded,
-              backgroundColor: AppTheme.accentPurple,
-              screenSize: screenSize,
-              width: double.infinity,
-            ),
+            // El botón de guardar/actualizar ha sido removido para ser flotante en el view principal
             SizedBox(height: AppTheme.getLargePadding(screenSize) * 6),
           ],
         ),

@@ -1799,4 +1799,17 @@ class StudentProvider with ChangeNotifier {
       return false; // In case of error, allow the process to continue
     }
   }
+
+  void clearAllData() {
+    _students.clear();
+    _filteredStudents.clear();
+    _selectedStudent = null;
+    _availableGrupos.clear();
+    _availableTurnos.clear();
+    _isLoading = false;
+    _error = null;
+    _currentLoadingMode = null;
+    _lastConvertedCount = 0;
+    Future.microtask(() => notifyListeners());
+  }
 }

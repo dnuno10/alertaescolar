@@ -1,3 +1,5 @@
+import '../utils/time_format.dart';
+
 class Turno {
   final String id;
   final String turno;
@@ -85,7 +87,10 @@ class Turno {
     );
   }
 
-  String get horarioCompleto => '$horaInicio - $horaFin';
+  String get horaInicioAmPm => TimeFormat.format24to12(horaInicio);
+  String get horaFinAmPm => TimeFormat.format24to12(horaFin);
+
+  String get horarioCompleto => '[32m$horaInicioAmPm - $horaFinAmPm[0m';
 
   @override
   String toString() {

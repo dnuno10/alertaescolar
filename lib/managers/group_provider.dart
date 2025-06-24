@@ -379,4 +379,12 @@ class GroupProvider with ChangeNotifier {
 
     return true;
   }
+
+  void clearAllData() {
+    _grupos.clear();
+    _selectedGroup = null;
+    _isLoading = false;
+    _error = null;
+    notifyListeners();
+  }
 }

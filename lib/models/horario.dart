@@ -1,3 +1,5 @@
+import '../utils/time_format.dart';
+
 enum DiaSemana {
   lunes,
   martes,
@@ -143,7 +145,10 @@ class ClaseHorario {
     );
   }
 
-  String get horarioTexto => '$horaInicio - $horaFin';
+  String get horaInicioAmPm => TimeFormat.format24to12(horaInicio);
+  String get horaFinAmPm => TimeFormat.format24to12(horaFin);
+
+  String get horarioTexto => '[32m$horaInicioAmPm - $horaFinAmPm[0m';
 
   String get diaNombre {
     switch (dia) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/turno.dart';
 import '../components/loading_dialog.dart';
+import '../utils/time_format.dart';
 
 class TurnoProvider with ChangeNotifier {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -192,7 +193,8 @@ class TurnoProvider with ChangeNotifier {
 
   // Helper to format TimeOfDay to "HH:MM" string
   String _formatTimeOfDay(TimeOfDay time) {
-    return "${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}";
+    return TimeFormat.format24to12(
+        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}');
   }
 
   // Helper to convert "HH:MM" string to TimeOfDay
@@ -237,6 +239,14 @@ class TurnoProvider with ChangeNotifier {
   void clearTurnos() {
     _turnos.clear();
     _selectedTurno = null;
+    notifyListeners();
+  }
+
+  void clearAllData() {
+    _turnos.clear();
+    _selectedTurno = null;
+    _isLoading = false;
+    _error = null;
     notifyListeners();
   }
 }

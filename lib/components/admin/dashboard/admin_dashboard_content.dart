@@ -21,7 +21,7 @@ class AdminDashboardContent extends StatelessWidget {
         HomeHeader(screenSize: screenSize),
         SliverToBoxAdapter(
           child: Padding(
-            padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
+            padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

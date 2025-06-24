@@ -6,6 +6,8 @@ import '../../l10n/app_localizations.dart';
 import '../../managers/schedule_provider.dart';
 import '../../managers/student_provider.dart';
 import '../../models/models.dart';
+import '../../utils/modern_dropdown.dart';
+import '../../utils/time_format.dart';
 
 class TodayScheduleSection extends StatefulWidget {
   final Size screenSize;
@@ -502,61 +504,34 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
               color: AppTheme.primaryColor.withValues(alpha: 0.2),
             ),
           ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _selectedStudentId,
-              hint: Text(
-                'Seleccionar estudiante',
-                style: AppTheme.getSubtitle2(widget.screenSize).copyWith(
-                  color: AppTheme.getTextSecondaryColor(context),
+          child: ModernDropdown<String>(
+            value: _selectedStudentId ?? '',
+            items:
+                studentProvider.students.map((student) => student.id).toList(),
+            onChanged: (value) {
+              if (value != null) {
+                _onStudentSelected(value);
+              }
+            },
+            getLabel: (id) {
+              final student = studentProvider.students.firstWhere(
+                (s) => s.id == id,
+                orElse: () => StudentDetails(
+                  id: '',
+                  nombre: '',
+                  matricula: '',
+                  escuelaId: '',
+                  grupoId: '',
+                  grupo: '',
+                  nivelEducativo: '',
+                  llaveActiva: false,
+                  fechaRegistro: DateTime(2000, 1, 1),
+                  tutores: const [],
                 ),
-              ),
-              isExpanded: true,
-              icon: Icon(
-                Icons.arrow_drop_down,
-                color: AppTheme.primaryColor,
-              ),
-              items: studentProvider.students.map((student) {
-                return DropdownMenuItem<String>(
-                  value: student.id,
-                  child: Row(
-                    children: [
-                      // Visual indicator for selected student
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: _selectedStudentId == student.id
-                              ? AppTheme.primaryColor
-                              : Colors.transparent,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          student.nombre,
-                          style:
-                              AppTheme.getSubtitle2(widget.screenSize).copyWith(
-                            fontWeight: _selectedStudentId == student.id
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                            color: _selectedStudentId == student.id
-                                ? AppTheme.primaryColor
-                                : AppTheme.getTextPrimaryColor(context),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  _onStudentSelected(value);
-                }
-              },
-            ),
+              );
+              return student.nombre;
+            },
+            screenSize: widget.screenSize,
           ),
         );
       },
@@ -833,7 +808,7 @@ class _TodayClassCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      clase.horaInicio,
+                      TimeFormat.format24to12(clase.horaInicio),
                       style: AppTheme.getCaption(screenSize).copyWith(
                         color: statusColor,
                         fontWeight: FontWeight.bold,
@@ -847,7 +822,7 @@ class _TodayClassCard extends StatelessWidget {
                       margin: const EdgeInsets.symmetric(vertical: 1),
                     ),
                     Text(
-                      clase.horaFin,
+                      TimeFormat.format24to12(clase.horaFin),
                       style: AppTheme.getCaption(screenSize).copyWith(
                         color: statusColor.withValues(alpha: 0.8),
                         fontSize: 10,

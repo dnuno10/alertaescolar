@@ -5,10 +5,11 @@ import 'package:alertaescolar/components/textfield/custom_input_field.dart';
 import 'package:alertaescolar/components/profile/relation_dropdown.dart';
 import 'package:alertaescolar/l10n/app_localizations.dart';
 import 'package:alertaescolar/managers/family_provider.dart';
-import 'package:alertaescolar/models/contacto_familiar.dart';
+import '../../../models/contacto_familiar.dart';
 import 'package:alertaescolar/widgets/custom_snack_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../utils/modern_dropdown.dart';
 
 class EditFamilyContactView extends StatefulWidget {
   final ContactoFamiliar contact;
@@ -110,15 +111,18 @@ class _EditFamilyContactViewState extends State<EditFamilyContactView> {
             SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
             // Relation Dropdown
-            RelationDropdown(
-              selectedRelation: _selectedRelation,
-              onRelationChanged: (TipoParentesco? newValue) {
+            ModernDropdown<TipoParentesco>(
+              label: l10n.relationship,
+              value: _selectedRelation,
+              items: TipoParentesco.values,
+              onChanged: (TipoParentesco? newValue) {
                 if (newValue != null) {
                   setState(() {
                     _selectedRelation = newValue;
                   });
                 }
               },
+              getLabel: (tipo) => tipo.getLocalizedName(l10n),
               screenSize: screenSize,
             ),
 
@@ -237,35 +241,5 @@ class _EditFamilyContactViewState extends State<EditFamilyContactView> {
       message: message,
       isError: isError,
     );
-  }
-}
-
-// Keep the extension for backward compatibility
-extension TipoParentescoExtension on TipoParentesco {
-  String getLocalizedName(AppLocalizations localizations) {
-    switch (this) {
-      case TipoParentesco.padre:
-        return localizations.father;
-      case TipoParentesco.madre:
-        return localizations.mother;
-      case TipoParentesco.abuelo:
-        return localizations.grandfather;
-      case TipoParentesco.abuela:
-        return localizations.grandmother;
-      case TipoParentesco.tutor:
-        return localizations.tutor;
-      case TipoParentesco.tio:
-        return localizations.uncle;
-      case TipoParentesco.tia:
-        return localizations.aunt;
-      case TipoParentesco.hermano:
-        return localizations.brother;
-      case TipoParentesco.hermana:
-        return localizations.sister;
-      case TipoParentesco.otroFamiliar:
-        return localizations.otherFamily;
-      default:
-        return localizations.relative;
-    }
   }
 }
