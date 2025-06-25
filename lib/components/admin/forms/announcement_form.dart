@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../buttons/solid_button.dart';
@@ -116,6 +117,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
             SizedBox(height: AppTheme.getSmallPadding(widget.screenSize)),
             TextFormField(
               controller: _titleController,
+              textInputAction: TextInputAction.next,
               decoration: InputDecoration(
                 hintText: l10n.enterMessageTitle,
                 filled: true,
@@ -151,6 +153,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
             TextFormField(
               controller: _contentController,
               maxLines: 5,
+              textInputAction: TextInputAction.done,
               decoration: InputDecoration(
                 hintText: l10n.enterMessageContent,
                 filled: true,
@@ -273,7 +276,10 @@ class _RecipientTypeButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        onTap();
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: EdgeInsets.symmetric(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../app/app_theme.dart';
 
 class SettingsTile extends StatelessWidget {
@@ -24,7 +25,10 @@ class SettingsTile extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          onTap();
+        },
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
         child: Padding(

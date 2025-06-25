@@ -318,6 +318,7 @@ class _SignUpBodyComponentState extends State<SignUpBodyComponent>
                         ),
                         GestureDetector(
                           onTap: () {
+                            HapticFeedback.mediumImpact();
                             Navigator.pushNamed(context, '/privacy');
                           },
                           child: Text(

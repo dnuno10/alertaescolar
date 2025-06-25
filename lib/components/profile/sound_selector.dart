@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../l10n/app_localizations.dart';
 import '../../app/app_theme.dart';
 
@@ -76,7 +77,10 @@ class SoundSelector extends StatelessWidget {
                   ),
                 );
               }).toList(),
-              onChanged: onSoundSelected,
+              onChanged: (value) {
+                HapticFeedback.mediumImpact();
+                onSoundSelected(value);
+              },
             ),
           ),
         ),

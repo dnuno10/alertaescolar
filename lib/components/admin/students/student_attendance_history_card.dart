@@ -150,7 +150,7 @@ class _StudentAttendanceHistoryCardState
                       ),
                     ),
                     Text(
-                      'Últimos 5 registros',
+                      l10n.lastFiveRecords,
                       style:
                           AppTheme.getCaptionSmall(widget.screenSize).copyWith(
                         color: AppTheme.getTextSecondaryColor(context),
@@ -172,7 +172,7 @@ class _StudentAttendanceHistoryCardState
                       AppTheme.getSmallRadius(widget.screenSize)),
                 ),
                 child: Text(
-                  '${stats['rate']}%',
+                  '${stats['rate']}% ${l10n.attendance}',
                   style: AppTheme.getCaption(widget.screenSize).copyWith(
                     color: AppTheme.successColor,
                     fontWeight: FontWeight.w600,
@@ -198,10 +198,10 @@ class _StudentAttendanceHistoryCardState
                   EdgeInsets.all(AppTheme.getMediumPadding(widget.screenSize)),
               child: Column(
                 children: [
-                  Text('Error al cargar datos: $_error'),
+                  Text("Error al cargar los datos: $_error"),
                   ElevatedButton(
                     onPressed: _loadRecentNotifications,
-                    child: const Text('Reintentar'),
+                    child: Text(l10n.retry),
                   ),
                 ],
               ),
@@ -221,7 +221,7 @@ class _StudentAttendanceHistoryCardState
                     SizedBox(
                         height: AppTheme.getSmallPadding(widget.screenSize)),
                     Text(
-                      'No hay registros recientes',
+                      l10n.noAttendanceRecords,
                       style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
                         color: AppTheme.getTextSecondaryColor(context),
                       ),
@@ -265,7 +265,7 @@ class _StudentAttendanceHistoryCardState
                       icon: Icons.login_rounded,
                       color: AppTheme.successColor,
                       value: stats['entrada'].toString(),
-                      label: 'Entradas',
+                      label: l10n.entryRecords,
                       screenSize: widget.screenSize,
                     ),
                   ),
@@ -279,7 +279,7 @@ class _StudentAttendanceHistoryCardState
                       icon: Icons.schedule_rounded,
                       color: AppTheme.warningColor,
                       value: stats['retraso'].toString(),
-                      label: 'Retrasos',
+                      label: l10n.delayedEntries,
                       screenSize: widget.screenSize,
                     ),
                   ),
@@ -293,7 +293,7 @@ class _StudentAttendanceHistoryCardState
                       icon: Icons.logout_rounded,
                       color: AppTheme.errorColor,
                       value: stats['salida'].toString(),
-                      label: 'Salidas',
+                      label: l10n.exitRecords,
                       screenSize: widget.screenSize,
                     ),
                   ),
@@ -354,21 +354,23 @@ class _StudentAttendanceHistoryCardState
     IconData typeIcon;
     String typeText;
 
+    final l10n = AppLocalizations.of(context);
+
     switch (tipoNotificacion) {
       case 'entrada':
         typeColor = AppTheme.successColor;
         typeIcon = Icons.login_rounded;
-        typeText = 'Entrada';
+        typeText = l10n.entryTime;
         break;
       case 'salida':
         typeColor = AppTheme.errorColor;
         typeIcon = Icons.logout_rounded;
-        typeText = 'Salida';
+        typeText = l10n.exitTime;
         break;
       case 'retraso':
         typeColor = AppTheme.warningColor;
         typeIcon = Icons.schedule_rounded;
-        typeText = 'Retraso';
+        typeText = l10n.delayedEntry;
         break;
       default:
         typeColor = AppTheme.getTextSecondaryColor(context);

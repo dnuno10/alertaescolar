@@ -31,6 +31,7 @@ import '../views/auth/signup_view.dart';
 import '../views/auth/verify_magic_link_view.dart';
 import '../views/auth/finish_setting_up_view.dart';
 import '../views/user/students/student_confirmation_view.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class AppRoutes {
   // Auth routes
@@ -106,6 +107,7 @@ class AppRoutes {
         );
       case verifyMagicLink:
         final email = settings.arguments as String?;
+
         if (email == null) {
           return MaterialPageRoute(
             builder: (context) => Scaffold(
@@ -113,19 +115,20 @@ class AppRoutes {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Error: Email required for verification'),
+                    Text("Se requiere un correo electrónico para verificar"),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
                         CustomSnackBar.show(
                           context: context,
-                          message: 'Please provide email for verification',
+                          message:
+                              'Por favor ingresa un correo electrónico para verificar',
                           isError: true,
                         );
                         Navigator.pushReplacementNamed(
                             context, AppRoutes.login);
                       },
-                      child: const Text('Return to Login'),
+                      child: Text("Volver al inicio de sesión"),
                     ),
                   ],
                 ),
@@ -236,7 +239,7 @@ class AppRoutes {
           return MaterialPageRoute(
             builder: (context) => const Scaffold(
               body: Center(
-                child: Text('Error: Student data required'),
+                child: Text("Se requiere un correo electrónico para verificar"),
               ),
             ),
             settings: RouteSettings(name: adminStudentProfile),
@@ -267,7 +270,7 @@ class AppRoutes {
           return MaterialPageRoute(
             builder: (context) => const Scaffold(
               body: Center(
-                child: Text('Error: Student data required'),
+                child: Text("Se requiere un correo electrónico para verificar"),
               ),
             ),
             settings: RouteSettings(name: studentDetail),
@@ -284,7 +287,7 @@ class AppRoutes {
           return MaterialPageRoute(
             builder: (context) => const Scaffold(
               body: Center(
-                child: Text('Error: Student validation data required'),
+                child: Text("Se requiere un correo electrónico para verificar"),
               ),
             ),
             settings: RouteSettings(name: studentConfirmation),
@@ -302,7 +305,7 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (context) => const Scaffold(
             body: Center(
-              child: Text('Página no encontrada'),
+              child: Text("Página no encontrada"),
             ),
           ),
           settings: RouteSettings(name: 'not_found'),

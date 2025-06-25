@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -55,7 +56,10 @@ class ClassSelectorComponent extends StatelessWidget {
         SizedBox(height: AppTheme.getSmallPadding(screenSize)),
         // Class selector button
         GestureDetector(
-          onTap: onSelectClass,
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            onSelectClass();
+          },
           child: Container(
             padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
             decoration: BoxDecoration(

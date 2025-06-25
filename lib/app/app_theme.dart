@@ -1170,6 +1170,14 @@ class AppTheme {
         return Icons.notifications;
     }
   }
+
+  // Helper para convertir un string hex a Color
+  static Color hexToColor(String hex) {
+    final buffer = StringBuffer();
+    if (hex.length == 6 || hex.length == 7) buffer.write('ff');
+    buffer.write(hex.replaceFirst('#', ''));
+    return Color(int.parse(buffer.toString(), radix: 16));
+  }
 }
 
 // Custom theme extension for additional colors

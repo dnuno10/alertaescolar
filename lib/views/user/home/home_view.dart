@@ -1,5 +1,6 @@
 import 'package:alertaescolar/components/headers/home_header.dart';
 import 'package:alertaescolar/components/navigation/custom_bottom_navigation_bar.dart';
+import 'package:flutter/services.dart';
 import 'package:alertaescolar/components/notifications/notification_detail_modal.dart';
 import 'package:alertaescolar/components/notifications/recent_notifications_section.dart';
 import 'package:alertaescolar/components/quick_actions_section.dart';
@@ -78,7 +79,10 @@ class _HomeViewState extends State<HomeView> {
       ),
       bottomNavigationBar: CustomBottomNavigationBar(
         selectedIndex: _selectedIndex,
-        onItemSelected: (index) => setState(() => _selectedIndex = index),
+        onItemSelected: (index) {
+          HapticFeedback.mediumImpact();
+          setState(() => _selectedIndex = index);
+        },
         screenSize: screenSize,
       ),
     );
@@ -94,10 +98,16 @@ class _HomeViewState extends State<HomeView> {
             builder: (context, provider, child) {
               return RecentNotificationsSection(
                 screenSize: screenSize,
-                onTapSeeAll: () => setState(() => _selectedIndex = 2),
+                onTapSeeAll: () {
+                  HapticFeedback.mediumImpact();
+                  setState(() => _selectedIndex = 2);
+                },
                 notifications: provider.notifications,
                 onNotificationTap: (String notificationId) {
-                  // First navigate to the notifications view
+                  // First mark all notifications as read and navigate to notifications view
+                  if (provider.unreadCount > 0) {
+                    provider.markAllAsRead();
+                  }
                   setState(() => _selectedIndex = 2);
 
                   // After navigation, show the notification detail modal
@@ -105,9 +115,6 @@ class _HomeViewState extends State<HomeView> {
                     final notification =
                         provider.getNotificationById(notificationId);
                     if (notification != null) {
-                      // Mark as read
-                      provider.markAsRead(notificationId);
-
                       // Show detail modal
                       showModalBottomSheet(
                         context: context,
@@ -135,7 +142,10 @@ class _HomeViewState extends State<HomeView> {
           SizedBox(height: AppTheme.getLargePadding(screenSize) * 1.5),
           StudentsOverviewSection(
             screenSize: screenSize,
-            onTapViewAll: () => setState(() => _selectedIndex = 1),
+            onTapViewAll: () {
+              HapticFeedback.mediumImpact();
+              setState(() => _selectedIndex = 1);
+            },
           ),
 
           SizedBox(height: AppTheme.getLargePadding(screenSize) * 1.5),
@@ -145,7 +155,10 @@ class _HomeViewState extends State<HomeView> {
           SizedBox(height: AppTheme.getLargePadding(screenSize) * 1.5),
           QuickActionsSection(
             screenSize: screenSize,
-            onActionSelected: (index) => setState(() => _selectedIndex = index),
+            onActionSelected: (index) {
+              HapticFeedback.mediumImpact();
+              setState(() => _selectedIndex = index);
+            },
           ),
           SizedBox(
               height:

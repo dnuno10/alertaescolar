@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class CustomTextField extends StatelessWidget {
@@ -13,6 +14,7 @@ class CustomTextField extends StatelessWidget {
   final String? Function(String?)? validator;
   final void Function(String)? onChanged;
   final bool enabled;
+  final TextInputAction? textInputAction;
 
   const CustomTextField({
     super.key,
@@ -27,6 +29,7 @@ class CustomTextField extends StatelessWidget {
     this.validator,
     this.onChanged,
     this.enabled = true,
+    this.textInputAction,
   });
 
   @override
@@ -39,6 +42,7 @@ class CustomTextField extends StatelessWidget {
       focusNode: focusNode,
       obscureText: obscureText,
       keyboardType: keyboardType,
+      textInputAction: textInputAction ?? TextInputAction.done,
       validator: validator,
       onChanged: onChanged,
       enabled: enabled,
@@ -66,7 +70,12 @@ class CustomTextField extends StatelessWidget {
                   color: isDark ? Colors.grey[400] : Colors.grey[600],
                   size: size.height * 0.025,
                 ),
-                onPressed: suffixIconOnPressed,
+                onPressed: suffixIconOnPressed != null
+                    ? () {
+                        HapticFeedback.mediumImpact();
+                        suffixIconOnPressed!();
+                      }
+                    : null,
               )
             : null,
         filled: true,

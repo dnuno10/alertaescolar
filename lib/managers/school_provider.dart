@@ -18,6 +18,13 @@ class SchoolProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void clearAllData() {
+    _currentSchool = null;
+    _isLoading = false;
+    _error = null;
+    notifyListeners();
+  }
+
   Future<Escuela?> getSchoolById(String schoolId, BuildContext context) async {
     final l10n = AppLocalizations.of(context);
     // Remove LoadingDialog from here since it's already shown in the calling method

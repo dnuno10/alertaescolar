@@ -89,8 +89,8 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
         'Jiménez'
       ];
       final groups = ['A', 'B', 'C', 'D'];
-      final shifts = ['Matutino', 'Vespertino'];
-      final accessTypes = ['Entrada', 'Salida'];
+      final shifts = [l10n.morning, l10n.afternoon];
+      final accessTypes = [l10n.entry, l10n.exit];
       final tipos = [
         TipoNotificacion.entrada,
         TipoNotificacion.retraso,
@@ -205,17 +205,18 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
   }
 
   String _getStatusFromTipo(TipoNotificacion tipo) {
+    final l10n = AppLocalizations.of(context);
     switch (tipo) {
       case TipoNotificacion.entrada:
-        return 'presente';
+        return l10n.present;
       case TipoNotificacion.retraso:
-        return 'tarde';
+        return l10n.late;
       case TipoNotificacion.salida:
-        return 'salida';
+        return l10n.exit;
       case TipoNotificacion.ausencia:
-        return 'ausente';
+        return l10n.absent;
       default:
-        return 'presente';
+        return l10n.present;
     }
   }
 
@@ -555,6 +556,8 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
   }
 
   Widget _buildFilterDropdown(String label, String value, List<String> items) {
+    final l10n = AppLocalizations.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -583,16 +586,16 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
             onChanged: (newValue) {
               setState(() {
                 switch (label) {
-                  case 'Grupo':
+                  case 'group':
                     _selectedGroup = newValue!;
                     break;
-                  case 'Turno':
+                  case 'shift':
                     _selectedShift = newValue!;
                     break;
-                  case 'Acceso':
+                  case 'access':
                     _selectedAccessType = newValue!;
                     break;
-                  case 'Estado':
+                  case 'status':
                     _selectedStatus = newValue!;
                     break;
                 }
@@ -620,30 +623,49 @@ class _EnhancedDateDetailsState extends State<EnhancedDateDetails> {
   String _getDropdownLabel(String value, String filterType) {
     final l10n = AppLocalizations.of(context);
 
+    if (value == 'all') {
+      return l10n.all;
+    }
+
     switch (filterType) {
       case 'group':
-        return l10n.group;
+        return value;
       case 'shift':
-        return l10n.shift;
+        return value == l10n.morning ? l10n.morning : l10n.afternoon;
       case 'access':
-        return l10n.access;
+        return value == l10n.entry ? l10n.entry : l10n.exit;
       case 'status':
-        return l10n.status;
+        switch (value) {
+          case 'presente':
+            return l10n.present;
+          case 'tarde':
+            return l10n.late;
+          case 'salida':
+            return l10n.exit;
+          case 'ausente':
+            return l10n.absent;
+          default:
+            return value;
+        }
       default:
-        return filterType;
+        return value;
     }
   }
 
   Widget _buildStudentItem(Notificacion notification, bool isLast) {
+    final l10n = AppLocalizations.of(context);
     final statusColor = _getStatusColor(notification.tipo);
     final studentName =
-        notification.datosAdicionales?['alumnoNombre'] ?? 'Estudiante';
+        notification.datosAdicionales?['alumnoNombre'] ?? l10n.student;
     final grade = notification.datosAdicionales?['alumnoGrado'] ?? '';
     final group = notification.datosAdicionales?['alumnoGrupo'] ?? '';
-    final accessType = notification.datosAdicionales?['tipoAcceso'] ?? '';
-    final location = notification.datosAdicionales?['ubicacion'] ?? '';
-    final accessColor =
-        accessType == 'Entrada' ? AppTheme.successColor : AppTheme.warningColor;
+    final accessType =
+        notification.datosAdicionales?['tipoAcceso'] ?? l10n.notAvailable;
+    final location =
+        notification.datosAdicionales?['ubicacion'] ?? l10n.notAvailable;
+    final accessColor = accessType == l10n.entry
+        ? AppTheme.successColor
+        : AppTheme.warningColor;
 
     return Container(
       margin: EdgeInsets.only(

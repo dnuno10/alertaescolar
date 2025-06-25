@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../utils/modern_dropdown.dart';
+import '../../../utils/modern_dropdown.dart';
 
 class EducationLevelGroupSelector extends StatelessWidget {
   final String? selectedNivelEducativo;
   final String? selectedGrupo;
   final List<String> nivelesEducativos;
   final List<String> grupos;
-  final Function(String?) onNivelEducativoChanged;
-  final Function(String?) onGrupoChanged;
+  final ValueChanged<String?> onNivelEducativoChanged;
+  final ValueChanged<String?> onGrupoChanged;
   final Size screenSize;
 
   const EducationLevelGroupSelector({
@@ -29,216 +32,195 @@ class EducationLevelGroupSelector extends StatelessWidget {
     final formattedDate =
         '${currentDate.day.toString().padLeft(2, '0')}/${currentDate.month.toString().padLeft(2, '0')}/${currentDate.year}';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header with date
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                l10n.schedulesByGroup,
-                style: AppTheme.getH2(screenSize).copyWith(
-                  color: AppTheme.getTextPrimaryColor(context),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            Text(
-              formattedDate,
-              style: AppTheme.getSubtitle1(screenSize).copyWith(
-                color: AppTheme.getTextSecondaryColor(context),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-
-        SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-        // Education Level Selector
-        Container(
-          padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
-          decoration: BoxDecoration(
-            color: AppTheme.accentBlue.withValues(alpha: 0.1),
-            borderRadius:
-                BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-            border:
-                Border.all(color: AppTheme.accentBlue.withValues(alpha: 0.3)),
+    return Container(
+      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.getShadowColor(context).withOpacity(0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
-          child: Row(
+        ],
+        border: Border.all(
+          color: AppTheme.getBorderColor(context).withOpacity(0.1),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with date
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(
-                Icons.grade_rounded,
-                size: screenSize.height * 0.02,
-                color: AppTheme.accentBlue,
-              ),
-              SizedBox(width: AppTheme.getSmallPadding(screenSize) * 0.5),
-              Text(
-                'Nivel Educativo',
-                style: AppTheme.getCaption(screenSize).copyWith(
-                  color: AppTheme.getTextSecondaryColor(context),
-                  fontWeight: FontWeight.w500,
+              Expanded(
+                child: Text(
+                  l10n.schedulesByGroup,
+                  style: AppTheme.getH2(screenSize).copyWith(
+                    color: AppTheme.getTextPrimaryColor(context),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-              Expanded(
-                child: nivelesEducativos.isEmpty
-                    ? _buildNoDataContainer(
-                        'No existen niveles educativos',
-                        screenSize,
-                        context,
-                        false, // No mostrar flecha
-                      )
-                    : DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: selectedNivelEducativo,
-                          hint: Text(
-                            'Seleccionar nivel',
-                            style: AppTheme.getCaption(screenSize).copyWith(
-                              color: AppTheme.getTextSecondaryColor(context),
-                            ),
-                          ),
-                          dropdownColor: AppTheme.getCardColor(context),
-                          style: AppTheme.getCaption(screenSize).copyWith(
-                            color: AppTheme.getTextPrimaryColor(context),
-                            fontWeight: FontWeight.w600,
-                          ),
-                          isExpanded: true,
-                          items: nivelesEducativos.map((String nivel) {
-                            return DropdownMenuItem<String>(
-                              value: nivel,
-                              child: Text(nivel),
-                            );
-                          }).toList(),
-                          onChanged: onNivelEducativoChanged,
-                          icon: Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            color: AppTheme.accentBlue,
-                            size: screenSize.height * 0.018,
-                          ),
-                        ),
-                      ),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppTheme.getSmallPadding(screenSize),
+                  vertical: AppTheme.getSmallPadding(screenSize) * 0.5,
+                ),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentBlue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(
+                      AppTheme.getSmallRadius(screenSize)),
+                ),
+                child: Text(
+                  formattedDate,
+                  style: AppTheme.getCaption(screenSize).copyWith(
+                    color: AppTheme.accentBlue,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ],
           ),
-        ),
 
-        SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+          SizedBox(height: AppTheme.getLargePadding(screenSize)),
 
-        // Group Selector
-        Container(
-          padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
-          decoration: BoxDecoration(
-            color: AppTheme.accentPurple.withValues(alpha: 0.1),
-            borderRadius:
-                BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-            border:
-                Border.all(color: AppTheme.accentPurple.withValues(alpha: 0.3)),
-          ),
-          child: Row(
+          // Modern Dropdowns Row
+          Row(
             children: [
-              Icon(
-                Icons.school_rounded,
-                size: screenSize.height * 0.02,
-                color: AppTheme.accentPurple,
-              ),
-              SizedBox(width: AppTheme.getSmallPadding(screenSize) * 0.5),
-              Text(
-                l10n.group,
-                style: AppTheme.getCaption(screenSize).copyWith(
-                  color: AppTheme.getTextSecondaryColor(context),
-                  fontWeight: FontWeight.w500,
+              // Education Level Dropdown
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.grade_rounded,
+                          size: screenSize.height * 0.022,
+                          color: AppTheme.accentBlue,
+                        ),
+                        SizedBox(
+                            width: AppTheme.getSmallPadding(screenSize) * 0.5),
+                        Text(
+                          'Nivel Educativo',
+                          style: AppTheme.getBodyMedium(screenSize).copyWith(
+                            color: AppTheme.getTextPrimaryColor(context),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+                    nivelesEducativos.isEmpty
+                        ? _buildNoDataContainer(
+                            'No hay niveles disponibles',
+                            screenSize,
+                            context,
+                          )
+                        : ModernDropdown<String>(
+                            value: selectedNivelEducativo ??
+                                nivelesEducativos.first,
+                            items: nivelesEducativos,
+                            onChanged: (String? value) {
+                              HapticFeedback.mediumImpact();
+                              onNivelEducativoChanged(value);
+                            },
+                            getLabel: (String value) => value,
+                            screenSize: screenSize,
+                            backgroundColor:
+                                AppTheme.accentBlue.withOpacity(0.05),
+                          ),
+                  ],
                 ),
               ),
-              SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+
+              SizedBox(width: AppTheme.getMediumPadding(screenSize)),
+
+              // Group Dropdown
               Expanded(
-                child: grupos.isEmpty
-                    ? _buildNoDataContainer(
-                        selectedNivelEducativo != null
-                            ? 'No existen grupos'
-                            : 'Primero selecciona un nivel',
-                        screenSize,
-                        context,
-                        false, // No mostrar flecha
-                      )
-                    : DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: selectedGrupo,
-                          hint: Text(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.school_rounded,
+                          size: screenSize.height * 0.022,
+                          color: AppTheme.accentPurple,
+                        ),
+                        SizedBox(
+                            width: AppTheme.getSmallPadding(screenSize) * 0.5),
+                        Text(
+                          l10n.group,
+                          style: AppTheme.getBodyMedium(screenSize).copyWith(
+                            color: AppTheme.getTextPrimaryColor(context),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+                    grupos.isEmpty
+                        ? _buildNoDataContainer(
                             selectedNivelEducativo != null
-                                ? 'Seleccionar grupo'
-                                : 'Primero selecciona un nivel',
-                            style: AppTheme.getCaption(screenSize).copyWith(
-                              color: AppTheme.getTextSecondaryColor(context),
-                            ),
+                                ? 'No hay grupos disponibles'
+                                : 'Selecciona un nivel primero',
+                            screenSize,
+                            context,
+                          )
+                        : ModernDropdown<String>(
+                            value: selectedGrupo ??
+                                (grupos.isNotEmpty ? grupos.first : ''),
+                            items: grupos,
+                            onChanged: selectedNivelEducativo != null
+                                ? (String? value) {
+                                    HapticFeedback.mediumImpact();
+                                    onGrupoChanged(value);
+                                  }
+                                : (String?
+                                    value) {}, // Empty function when disabled
+                            getLabel: (String value) => value,
+                            screenSize: screenSize,
+                            backgroundColor:
+                                AppTheme.accentPurple.withOpacity(0.05),
                           ),
-                          dropdownColor: AppTheme.getCardColor(context),
-                          style: AppTheme.getCaption(screenSize).copyWith(
-                            color: AppTheme.getTextPrimaryColor(context),
-                            fontWeight: FontWeight.w600,
-                          ),
-                          isExpanded: true,
-                          items: grupos.map((String grupo) {
-                            return DropdownMenuItem<String>(
-                              value: grupo,
-                              child: Text(grupo),
-                            );
-                          }).toList(),
-                          onChanged: selectedNivelEducativo != null
-                              ? onGrupoChanged
-                              : null,
-                          icon: Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            color: AppTheme.accentPurple,
-                            size: screenSize.height * 0.018,
-                          ),
-                        ),
-                      ),
+                  ],
+                ),
               ),
             ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  /// Builds a container to show when there's no data available
   Widget _buildNoDataContainer(
-    String message,
-    Size screenSize,
-    BuildContext context,
-    bool showArrow,
-  ) {
+      String message, Size screenSize, BuildContext context) {
     return Container(
+      width: double.infinity,
       padding: EdgeInsets.symmetric(
-        horizontal: AppTheme.getSmallPadding(screenSize),
-        vertical: AppTheme.getSmallPadding(screenSize) * 0.75,
+        horizontal: AppTheme.getMediumPadding(screenSize),
+        vertical: AppTheme.getSmallPadding(screenSize),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Text(
-              message,
-              style: AppTheme.getCaption(screenSize).copyWith(
-                color: AppTheme.getTextSecondaryColor(context),
-                fontWeight: FontWeight.w500,
-                fontStyle: FontStyle.italic,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          if (showArrow) ...[
-            SizedBox(width: AppTheme.getSmallPadding(screenSize) * 0.5),
-            Icon(
-              Icons.keyboard_arrow_down_rounded,
-              color: AppTheme.getTextSecondaryColor(context),
-              size: screenSize.height * 0.018,
-            ),
-          ],
-        ],
+      decoration: BoxDecoration(
+        color: AppTheme.getTextSecondaryColor(context).withOpacity(0.05),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
+        border: Border.all(
+          color: AppTheme.getTextSecondaryColor(context).withOpacity(0.1),
+        ),
+      ),
+      child: Text(
+        message,
+        style: AppTheme.getCaption(screenSize).copyWith(
+          color: AppTheme.getTextSecondaryColor(context),
+          fontStyle: FontStyle.italic,
+        ),
+        textAlign: TextAlign.center,
       ),
     );
   }

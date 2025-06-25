@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
@@ -52,7 +53,10 @@ class AttendanceCalendar extends StatelessWidget {
           final key = _getDateKey(day);
           return attendanceData[key] != null ? [attendanceData[key]!] : [];
         },
-        onDaySelected: onDaySelected,
+        onDaySelected: (selectedDay, focusedDay) {
+          HapticFeedback.mediumImpact();
+          onDaySelected(selectedDay, focusedDay);
+        },
         startingDayOfWeek: StartingDayOfWeek.monday,
         calendarFormat: CalendarFormat.month,
         headerStyle: HeaderStyle(

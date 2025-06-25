@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../app/app_theme.dart';
 
 class ActionButton extends StatelessWidget {
@@ -20,7 +21,10 @@ class ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        onTap();
+      },
       child: Container(
         padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
         decoration: BoxDecoration(

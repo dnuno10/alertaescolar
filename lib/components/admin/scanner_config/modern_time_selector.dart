@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -23,7 +24,10 @@ class ModernTimeSelector extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return GestureDetector(
-      onTap: () => _showModernTimePicker(context, time, onTimeChanged),
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        _showModernTimePicker(context, time, onTimeChanged);
+      },
       child: Container(
         padding: EdgeInsets.symmetric(
             vertical: AppTheme.getMediumPadding(screenSize)),

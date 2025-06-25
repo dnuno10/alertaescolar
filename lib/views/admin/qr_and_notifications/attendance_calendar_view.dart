@@ -1,5 +1,6 @@
 import 'package:alertaescolar/components/textfield/custom_input_field.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../app/app_theme.dart';
@@ -227,16 +228,26 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
     }).toList();
   }
 
+  // Get available groups based on selected education level
+  List<String> _getAvailableGroups(GroupProvider groupProvider) {
+    if (_selectedNivelEducativo == 'all') {
+      // Show all groups when no specific education level is selected
+      return ['all', ...groupProvider.grupos.map((g) => g.grupo).toSet()];
+    } else {
+      // Show only groups for the selected education level
+      final filteredGroups =
+          groupProvider.getGroupsByNivelEducativo(_selectedNivelEducativo);
+      return ['all', ...filteredGroups.map((g) => g.grupo).toSet()];
+    }
+  }
+
   Widget _buildFiltersSection(BuildContext context, Size screenSize,
       GroupProvider groupProvider, TurnoProvider turnoProvider) {
     final l10n = AppLocalizations.of(context);
 
-    // Opciones dinámicas para los dropdowns
-    final grupos = ['all', ...groupProvider.grupos.map((g) => g.grupo).toSet()];
-    final niveles = [
-      'all',
-      ...groupProvider.grupos.map((g) => g.nivelEducativo).toSet()
-    ];
+    // Get dynamic options for dropdowns
+    final niveles = ['all', ...groupProvider.getAvailableNivelesEducativos()];
+    final grupos = _getAvailableGroups(groupProvider);
     final turnos = ['all', ...turnoProvider.turnos.map((t) => t.turno).toSet()];
     final accessTypes = ['all', 'entrada', 'salida', 'retraso'];
 
@@ -301,34 +312,44 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
 
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-          // Filtros con ModernDropdown
+          // Dynamic Filtros con ModernDropdown
           Row(
             children: [
-              Expanded(
-                child: ModernDropdown<String>(
-                  label: l10n.allGroups,
-                  value: _selectedGroup,
-                  items: grupos,
-                  onChanged: (val) {
-                    setState(() => _selectedGroup = val ?? 'all');
-                    _filterNotifications();
-                  },
-                  getLabel: (v) => v == 'all' ? l10n.allGroups : v,
-                  screenSize: screenSize,
-                ),
-              ),
-              SizedBox(width: 8),
+              // Education Level Dropdown
               Expanded(
                 child: ModernDropdown<String>(
                   label: l10n.educationalLevels,
                   value: _selectedNivelEducativo,
                   items: niveles,
                   onChanged: (val) {
-                    setState(() => _selectedNivelEducativo = val ?? 'all');
+                    HapticFeedback.mediumImpact();
+                    setState(() {
+                      _selectedNivelEducativo = val ?? 'all';
+                      // Reset group selection when education level changes
+                      _selectedGroup = 'all';
+                    });
                     _filterNotifications();
                   },
                   getLabel: (v) => v == 'all' ? l10n.all : v,
                   screenSize: screenSize,
+                  backgroundColor: AppTheme.accentBlue.withOpacity(0.05),
+                ),
+              ),
+              SizedBox(width: 8),
+              // Group Dropdown (filtered by education level)
+              Expanded(
+                child: ModernDropdown<String>(
+                  label: l10n.groups,
+                  value: _selectedGroup,
+                  items: grupos,
+                  onChanged: (val) {
+                    HapticFeedback.mediumImpact();
+                    setState(() => _selectedGroup = val ?? 'all');
+                    _filterNotifications();
+                  },
+                  getLabel: (v) => v == 'all' ? l10n.all : v,
+                  screenSize: screenSize,
+                  backgroundColor: AppTheme.accentPurple.withOpacity(0.05),
                 ),
               ),
             ],
@@ -342,6 +363,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                   value: _selectedTurno,
                   items: turnos,
                   onChanged: (val) {
+                    HapticFeedback.mediumImpact();
                     setState(() => _selectedTurno = val ?? 'all');
                     _filterNotifications();
                   },
@@ -356,6 +378,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                   value: _selectedAccess,
                   items: accessTypes,
                   onChanged: (val) {
+                    HapticFeedback.mediumImpact();
                     setState(() => _selectedAccess = val ?? 'all');
                     _filterNotifications();
                   },
@@ -527,7 +550,10 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
     }
 
     return GestureDetector(
-      onTap: () => _navigateToStudentProfile(context, student),
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        _navigateToStudentProfile(context, student);
+      },
       child: Container(
         margin: EdgeInsets.only(bottom: AppTheme.getSmallPadding(screenSize)),
         padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -767,13 +793,14 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppTheme.accentPurple.withOpacity(0.1),
-                  AppTheme.accentBlue.withOpacity(0.05),
+                  AppTheme.accentPurple.withValues(alpha: 0.1),
+                  AppTheme.accentBlue.withValues(alpha: 0.05),
                 ],
               ),
               borderRadius:
                   BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-              border: Border.all(color: AppTheme.accentPurple.withOpacity(0.3)),
+              border: Border.all(
+                  color: AppTheme.accentPurple.withValues(alpha: 0.3)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -786,7 +813,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                         padding: EdgeInsets.all(
                             AppTheme.getSmallPadding(screenSize) * 0.6),
                         decoration: BoxDecoration(
-                          color: AppTheme.accentPurple.withOpacity(0.2),
+                          color: AppTheme.accentPurple.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(
                               AppTheme.getSmallRadius(screenSize)),
                         ),
@@ -828,15 +855,6 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
     final screenSize = MediaQuery.of(context).size;
     final groupProvider = Provider.of<GroupProvider>(context);
     final turnoProvider = Provider.of<TurnoProvider>(context);
-
-    // Opciones dinámicas para los dropdowns
-    final grupos = ['all', ...groupProvider.grupos.map((g) => g.grupo).toSet()];
-    final niveles = [
-      'all',
-      ...groupProvider.grupos.map((g) => g.nivelEducativo).toSet()
-    ];
-    final turnos = ['all', ...turnoProvider.turnos.map((t) => t.turno).toSet()];
-    final accessTypes = ['all', 'entrada', 'salida', 'retraso'];
 
     return Consumer4<ThemeProvider, UserProvider, GroupProvider, TurnoProvider>(
       builder: (context, themeProvider, userProvider, groupProvider,

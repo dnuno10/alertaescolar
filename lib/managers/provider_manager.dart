@@ -141,6 +141,10 @@ class ProviderManager {
     _familyProvider.clearAllData();
     _groupProvider.clearAllData();
     _turnoProvider.clearAllData();
+    _scheduleProvider.clearAllData();
+    _schoolProvider.clearAllData();
+    _attendanceScannerProvider.clearAllData();
+    _studentScannerProvider.clearAllData();
     // Agrega aquí otros providers que requieran limpieza
   }
 }

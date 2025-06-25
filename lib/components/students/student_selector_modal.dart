@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/alumno.dart';
@@ -45,7 +46,10 @@ class StudentSelectorModal extends StatelessWidget {
                   ),
                   const Spacer(),
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      Navigator.pop(context);
+                    },
                     child: Container(
                       padding: EdgeInsets.all(screenSize.height * 0.008),
                       decoration: BoxDecoration(
@@ -85,6 +89,7 @@ class StudentSelectorModal extends StatelessWidget {
 
                   return GestureDetector(
                     onTap: () {
+                      HapticFeedback.mediumImpact();
                       onStudentSelected(student.id);
                       Navigator.pop(context);
                     },

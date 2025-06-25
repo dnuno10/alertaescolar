@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../app/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 import 'processing_view.dart';
 
 /// Physical Scanner View para lectores de QR conectados
@@ -92,14 +93,15 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
   String _getAccessTypeText() {
     final accessType = widget.accessType ?? ScannerAccessType.automatic;
     final isDefaultEntry = widget.isDefaultEntryConfig ?? true;
+    final l10n = AppLocalizations.of(context);
 
     switch (accessType) {
       case ScannerAccessType.automatic:
-        return isDefaultEntry ? 'Entrada Automática' : 'Salida Automática';
+        return isDefaultEntry ? l10n.automaticEntry : l10n.automaticExit;
       case ScannerAccessType.entry:
-        return 'Entrada';
+        return l10n.entry;
       case ScannerAccessType.exit:
-        return 'Salida';
+        return l10n.exit;
     }
   }
 
@@ -179,10 +181,10 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
 
     if (adminId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error: Usuario no autenticado'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).unauthenticatedUser),
           backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
+          duration: const Duration(seconds: 3),
         ),
       );
       _resetForNextScan();

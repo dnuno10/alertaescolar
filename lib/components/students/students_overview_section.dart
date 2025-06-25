@@ -1,5 +1,6 @@
 import 'package:alertaescolar/components/students/empty_students_card.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/time_format.dart';
@@ -7,6 +8,8 @@ import '../../utils/time_format.dart';
 import 'package:provider/provider.dart';
 
 import '../../managers/student_provider.dart';
+import '../../models/alumno.dart';
+import '../../views/user/students/student_detail_view.dart';
 
 class StudentsOverviewSection extends StatelessWidget {
   final Size screenSize;
@@ -36,7 +39,10 @@ class StudentsOverviewSection extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: onTapViewAll,
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                onTapViewAll();
+              },
               child: Text(
                 l10n.viewAll,
                 style: AppTheme.getBodyMedium(screenSize).copyWith(
@@ -52,6 +58,35 @@ class StudentsOverviewSection extends StatelessWidget {
         // Lista de estudiantes
         Consumer<StudentProvider>(
           builder: (context, provider, child) {
+            if (provider.isLoading) {
+              return Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+                decoration: BoxDecoration(
+                  color: AppTheme.getCardColor(context),
+                  borderRadius: BorderRadius.circular(
+                      AppTheme.getLargeRadius(screenSize)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.getShadowColor(context),
+                      blurRadius: screenSize.height * 0.015,
+                      offset: Offset(0, screenSize.height * 0.005),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                        vertical: AppTheme.getMediumPadding(screenSize)),
+                    child: CircularProgressIndicator(
+                      color: AppTheme.accentPurple,
+                      strokeWidth: 3,
+                    ),
+                  ),
+                ),
+              );
+            }
+
             final students = provider.students;
 
             if (students.isEmpty) {
@@ -76,11 +111,36 @@ class StudentsOverviewSection extends StatelessWidget {
               child: Column(
                 children: students.take(3).map((student) {
                   final index = students.indexOf(student);
-                  return StudentListItem(
-                    student: student,
-                    index: index,
-                    totalVisible: students.take(3).length,
-                    screenSize: screenSize,
+                  return GestureDetector(
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      // Convertir StudentDetails a Alumno
+                      final alumno = Alumno(
+                        id: student.id,
+                        nombre: student.nombre,
+                        id_grupo: student.grupoId,
+                        grupo: student.grupo,
+                        id_escuela: student.escuelaId,
+                        id_llave: student.llaveId ?? '',
+                        vinculado: student.llaveActiva,
+                        matricula: student.matricula,
+                        fecha_registro: student.fechaRegistro,
+                        turno: _mapStringToTurnoEnum(student.turno),
+                      );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              StudentDetailView(student: alumno),
+                        ),
+                      );
+                    },
+                    child: StudentListItem(
+                      student: student,
+                      index: index,
+                      totalVisible: students.take(3).length,
+                      screenSize: screenSize,
+                    ),
                   );
                 }).toList(),
               ),
@@ -88,6 +148,15 @@ class StudentsOverviewSection extends StatelessWidget {
           },
         ),
       ],
+    );
+  }
+
+  // Helper para convertir string a TurnoEnum
+  TurnoEnum _mapStringToTurnoEnum(String? turnoStr) {
+    if (turnoStr == null) return TurnoEnum.matutino;
+    return TurnoEnum.values.firstWhere(
+      (e) => e.name.toLowerCase() == turnoStr.toLowerCase(),
+      orElse: () => TurnoEnum.matutino,
     );
   }
 }
@@ -122,6 +191,7 @@ class StudentListItem extends StatelessWidget {
       margin: EdgeInsets.only(
         bottom: isLast ? 0 : AppTheme.getMediumPadding(screenSize),
       ),
+      color: Colors.transparent,
       child: Row(
         children: [
           Container(

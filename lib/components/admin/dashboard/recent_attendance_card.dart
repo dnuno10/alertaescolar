@@ -22,21 +22,32 @@ class _RecentAttendanceCardState extends State<RecentAttendanceCard> {
   List<Map<String, dynamic>> _recentNotifications = [];
   bool _isLoading = true;
   String? _error;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    _loadRecentNotifications();
+    // Don't load data here - move to didChangeDependencies
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized) {
+      _isInitialized = true;
+      _loadRecentNotifications();
+    }
   }
 
   Future<void> _loadRecentNotifications() async {
+    final l10n = AppLocalizations.of(context);
     try {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       final escuelaId = userProvider.currentUser?.escuelaId;
 
       if (escuelaId == null) {
         setState(() {
-          _error = 'No se pudo obtener la escuela del usuario';
+          _error = l10n.couldNotGetUserSchool;
           _isLoading = false;
         });
         return;
@@ -155,7 +166,7 @@ class _RecentAttendanceCardState extends State<RecentAttendanceCard> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Error al cargar datos',
+                l10n.errorLoadingData,
                 style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
                   color: AppTheme.errorColor,
                 ),

@@ -1,6 +1,7 @@
 import 'package:alertaescolar/l10n/app_localizations.dart';
 import 'package:alertaescolar/views/user/students/student_detail_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../models/models.dart';
 import '../../app/app_theme.dart';
 import '../custom_card.dart';
@@ -43,7 +44,10 @@ class StudentCard extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _navigateToStudentDetail(context),
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            _navigateToStudentDetail(context);
+          },
           borderRadius:
               BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
           child: Padding(

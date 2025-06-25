@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../app/app_theme.dart';
 
 class ModernDropdown<T> extends StatefulWidget {
@@ -8,6 +9,7 @@ class ModernDropdown<T> extends StatefulWidget {
   final ValueChanged<T?> onChanged;
   final String Function(T) getLabel;
   final Size screenSize;
+  final Color? backgroundColor;
 
   const ModernDropdown({
     super.key,
@@ -17,6 +19,7 @@ class ModernDropdown<T> extends StatefulWidget {
     required this.onChanged,
     required this.getLabel,
     required this.screenSize,
+    this.backgroundColor,
   });
 
   @override
@@ -120,6 +123,7 @@ class _ModernDropdownState<T> extends State<ModernDropdown<T>>
                     final isSelected = item == widget.value;
                     return InkWell(
                       onTap: () {
+                        HapticFeedback.mediumImpact();
                         widget.onChanged(item);
                         _removeDropdown();
                       },
@@ -192,7 +196,10 @@ class _ModernDropdownState<T> extends State<ModernDropdown<T>>
               ),
             ),
           GestureDetector(
-            onTap: _toggleDropdown,
+            onTap: () {
+              HapticFeedback.mediumImpact();
+              _toggleDropdown();
+            },
             child: Container(
               width: double.infinity,
               padding: EdgeInsets.symmetric(
@@ -200,6 +207,7 @@ class _ModernDropdownState<T> extends State<ModernDropdown<T>>
                 vertical: widget.screenSize.height * 0.018,
               ),
               decoration: BoxDecoration(
+                color: widget.backgroundColor,
                 borderRadius: BorderRadius.circular(
                     AppTheme.getSmallRadius(widget.screenSize)),
                 border: Border.all(

@@ -1,6 +1,7 @@
 import 'package:alertaescolar/app/app_theme.dart';
 import 'package:alertaescolar/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class DangerZoneCard extends StatefulWidget {
   final AppLocalizations l10n;
@@ -82,7 +83,10 @@ class _DangerZoneCardState extends State<DangerZoneCard> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              Navigator.of(context).pop();
+            },
             child: Text(
               widget.l10n.cancel,
               style: AppTheme.getCaption(widget.screenSize).copyWith(
@@ -93,6 +97,7 @@ class _DangerZoneCardState extends State<DangerZoneCard> {
           ),
           ElevatedButton(
             onPressed: () async {
+              HapticFeedback.mediumImpact();
               Navigator.of(context).pop();
               if (widget.onDelete != null) {
                 setState(() => _isLoading = true);
@@ -213,7 +218,12 @@ class _DangerZoneCardState extends State<DangerZoneCard> {
                 ),
                 SizedBox(width: AppTheme.getSmallPadding(widget.screenSize)),
                 ElevatedButton(
-                  onPressed: _isLoading ? null : _showDeleteAccountDialog,
+                  onPressed: _isLoading
+                      ? null
+                      : () {
+                          HapticFeedback.mediumImpact();
+                          _showDeleteAccountDialog();
+                        },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.errorColor,
                     foregroundColor: Colors.white,

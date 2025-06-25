@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
@@ -68,12 +69,7 @@ class NotificationCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        // Mark notification as read when tapped
-        if (notification.estado == EstadoNotificacion.nueva) {
-          final provider =
-              Provider.of<NotificationProvider>(context, listen: false);
-          provider.markAsRead(notification.id);
-        }
+        HapticFeedback.mediumImpact();
         onTap();
       },
       child: Container(

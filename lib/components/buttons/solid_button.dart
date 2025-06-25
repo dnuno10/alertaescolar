@@ -1,5 +1,6 @@
 import 'package:alertaescolar/app/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class SolidButton extends StatelessWidget {
   final VoidCallback onPressed;
@@ -55,7 +56,10 @@ class SolidButton extends StatelessWidget {
       width: width,
       child: icon != null
           ? ElevatedButton.icon(
-              onPressed: onPressed,
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                onPressed();
+              },
               icon: Icon(
                 icon,
                 size: screenSize.width * 0.045,
@@ -65,7 +69,10 @@ class SolidButton extends StatelessWidget {
               style: buttonStyle,
             )
           : ElevatedButton(
-              onPressed: onPressed,
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                onPressed();
+              },
               child: textStyle,
               style: buttonStyle,
             ),

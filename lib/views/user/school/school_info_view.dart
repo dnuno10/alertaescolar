@@ -90,13 +90,18 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
       }
     } catch (e) {
       if (mounted) {
-        final l10n = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${l10n.errorLoadingSchoolInfo}: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        // Move AppLocalizations.of(context) call here to ensure context is available
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            final l10n = AppLocalizations.of(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('${l10n.errorLoadingSchoolInfo}: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        });
       }
     } finally {
       if (mounted) {

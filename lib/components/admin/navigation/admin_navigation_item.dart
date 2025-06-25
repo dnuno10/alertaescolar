@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../app/app_theme.dart';
 
 class AdminNavigationItem extends StatelessWidget {
@@ -25,7 +26,10 @@ class AdminNavigationItem extends StatelessWidget {
 
     return Flexible(
       child: GestureDetector(
-        onTap: () => onTap(index),
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          onTap(index);
+        },
         child: Container(
           padding: EdgeInsets.symmetric(
               horizontal: screenSize.width * 0.02,

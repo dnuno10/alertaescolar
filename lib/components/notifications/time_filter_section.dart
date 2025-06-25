@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -87,7 +88,10 @@ class _TimeFilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: GestureDetector(
-        onTap: () => onSelected(value),
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          onSelected(value);
+        },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           height: screenSize.height * 0.055,

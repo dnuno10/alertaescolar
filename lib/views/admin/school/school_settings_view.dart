@@ -1,5 +1,6 @@
 import 'package:alertaescolar/components/textfield/custom_input_field.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
@@ -20,11 +21,13 @@ class SchoolSettingsView extends StatefulWidget {
 }
 
 class _SchoolSettingsViewState extends State<SchoolSettingsView>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late TabController _tabController;
+  late ScrollController _scrollController;
 // Add a separate key for each tab
   final _informationFormKey = GlobalKey<FormState>();
   final _contactFormKey = GlobalKey<FormState>();
+  bool _isKeyboardVisible = false;
 
   // Form controllers
   final _nombreController = TextEditingController();
@@ -35,6 +38,16 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
   final _sitioWebController = TextEditingController();
   final _descripcionController = TextEditingController();
   final _yearFoundedController = TextEditingController();
+
+  // Focus nodes
+  final _nombreFocusNode = FocusNode();
+  final _codigoFocusNode = FocusNode();
+  final _descripcionFocusNode = FocusNode();
+  final _yearFoundedFocusNode = FocusNode();
+  final _direccionFocusNode = FocusNode();
+  final _telefonoFocusNode = FocusNode();
+  final _emailFocusNode = FocusNode();
+  final _sitioWebFocusNode = FocusNode();
 
   TipoEscuela _selectedTipo = TipoEscuela.publica;
 
@@ -51,6 +64,8 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _scrollController = ScrollController();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadSchoolData();
     });
@@ -58,7 +73,11 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _tabController.dispose();
+    _scrollController.dispose();
+
+    // Dispose controllers
     _nombreController.dispose();
     _codigoController.dispose();
     _direccionController.dispose();
@@ -67,7 +86,32 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
     _sitioWebController.dispose();
     _descripcionController.dispose();
     _yearFoundedController.dispose();
+
+    // Dispose focus nodes
+    _nombreFocusNode.dispose();
+    _codigoFocusNode.dispose();
+    _descripcionFocusNode.dispose();
+    _yearFoundedFocusNode.dispose();
+    _direccionFocusNode.dispose();
+    _telefonoFocusNode.dispose();
+    _emailFocusNode.dispose();
+    _sitioWebFocusNode.dispose();
+
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    final bottomInset = WidgetsBinding
+        .instance.platformDispatcher.views.first.viewInsets.bottom;
+    final newIsKeyboardVisible = bottomInset > 0;
+
+    if (newIsKeyboardVisible != _isKeyboardVisible) {
+      setState(() {
+        _isKeyboardVisible = newIsKeyboardVisible;
+      });
+    }
   }
 
   Future<void> _loadSchoolData() async {
@@ -150,6 +194,21 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
     }
   }
 
+  void _hideKeyboard() {
+    // Unfocus all focus nodes
+    _nombreFocusNode.unfocus();
+    _codigoFocusNode.unfocus();
+    _descripcionFocusNode.unfocus();
+    _yearFoundedFocusNode.unfocus();
+    _direccionFocusNode.unfocus();
+    _telefonoFocusNode.unfocus();
+    _emailFocusNode.unfocus();
+    _sitioWebFocusNode.unfocus();
+
+    // Alternative way to hide keyboard
+    FocusScope.of(context).unfocus();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -159,165 +218,178 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
       builder: (context, themeProvider, child) {
         return Scaffold(
           backgroundColor: AppTheme.getBackgroundColor(context),
-          body: Stack(
-            children: [
-              // Header fijo y tab bar
-              Container(
-                padding: EdgeInsets.only(
-                  top: MediaQuery.of(context).padding.top +
-                      AppTheme.getSmallPadding(screenSize),
-                  left: AppTheme.getMediumPadding(screenSize),
-                  right: AppTheme.getMediumPadding(screenSize),
-                  bottom: AppTheme.getLargePadding(screenSize),
-                ),
-                color: AppTheme.getCardColor(context),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title and Actions Row
-                    Text(
-                      l10n.schoolSettings,
-                      style: AppTheme.getH1(screenSize).copyWith(
-                        color: AppTheme.getTextPrimaryColor(context),
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    SizedBox(
-                        height: AppTheme.getSmallPadding(screenSize) * 0.5),
-                    Text(
-                      l10n.manageAndSearchStudents,
-                      style: AppTheme.getBodyMedium(screenSize).copyWith(
-                        color: AppTheme.getTextSecondaryColor(context),
-                        height: 1.3,
-                      ),
-                    ),
-                    SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppTheme.getCardColor(context),
-                        borderRadius: BorderRadius.circular(
-                            AppTheme.getLargeRadius(screenSize)),
-                        border:
-                            Border.all(color: AppTheme.getBorderColor(context)),
-                      ),
-                      child: TabBar(
-                        controller: _tabController,
-                        indicator: BoxDecoration(
-                          color: AppTheme.accentPurple,
-                          borderRadius: BorderRadius.circular(
-                              AppTheme.getMediumRadius(screenSize)),
-                        ),
-                        indicatorSize: TabBarIndicatorSize.tab,
-                        dividerColor: Colors.transparent,
-                        labelColor: Colors.white,
-                        unselectedLabelColor:
-                            AppTheme.getTextSecondaryColor(context),
-                        labelStyle: AppTheme.getCaption(screenSize).copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                        tabs: [
-                          Tab(
-                            icon: Icon(Icons.info_rounded,
-                                size: screenSize.height * 0.022),
-                            text: l10n.information,
-                          ),
-                          Tab(
-                            icon: Icon(Icons.contact_phone_rounded,
-                                size: screenSize.height * 0.022),
-                            text: l10n.contact,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Contenido scrolleable debajo del header fijo
-              Positioned.fill(
-                top: MediaQuery.of(context).padding.top +
-                    AppTheme.getSmallPadding(screenSize) +
-                    AppTheme.getLargePadding(screenSize) +
-                    AppTheme.getH1(screenSize).fontSize! +
-                    AppTheme.getBodyMedium(screenSize).fontSize! +
-                    AppTheme.getMediumPadding(screenSize) * 2 +
-                    48, // Altura aproximada del TabBar
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  child: TabBarView(
-                    controller: _tabController,
+          body: GestureDetector(
+            onTap: _hideKeyboard,
+            child: Stack(
+              children: [
+                // Header fijo y tab bar
+                Container(
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.of(context).padding.top +
+                        AppTheme.getSmallPadding(screenSize),
+                    left: AppTheme.getMediumPadding(screenSize),
+                    right: AppTheme.getMediumPadding(screenSize),
+                    bottom: AppTheme.getLargePadding(screenSize),
+                  ),
+                  color: AppTheme.getCardColor(context),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      InformationTab(
-                        formKey: _informationFormKey,
-                        nombreController: _nombreController,
-                        codigoController: _codigoController,
-                        descripcionController: _descripcionController,
-                        yearFoundedController: _yearFoundedController,
-                        selectedTipo: _selectedTipo,
-                        selectedNiveles: _selectedNiveles,
-                        onTipoChanged: (tipo) =>
-                            setState(() => _selectedTipo = tipo),
-                        onNivelesChanged: (niveles) =>
-                            setState(() => _selectedNiveles = niveles),
-                        hasPreescolar: _hasPreescolar,
-                        hasPrimaria: _hasPrimaria,
-                        hasSecundaria: _hasSecundaria,
-                        hasBachillerato: _hasBachillerato,
-                        onPreescolarChanged: (value) => setState(() {
-                          _hasPreescolar = value;
-                          _updateSelectedNivelesFromBooleans();
-                        }),
-                        onPrimariaChanged: (value) => setState(() {
-                          _hasPrimaria = value;
-                          _updateSelectedNivelesFromBooleans();
-                        }),
-                        onSecundariaChanged: (value) => setState(() {
-                          _hasSecundaria = value;
-                          _updateSelectedNivelesFromBooleans();
-                        }),
-                        onBachilleratoChanged: (value) => setState(() {
-                          _hasBachillerato = value;
-                          _updateSelectedNivelesFromBooleans();
-                        }),
-                        isLoading: _isLoading,
-                        onSave: _saveSettings,
-                        getTipoLabel: _getTipoLabel,
-                        getNivelLabel: _getNivelLabel,
+                      // Title and Actions Row
+                      Text(
+                        l10n.schoolSettings,
+                        style: AppTheme.getH1(screenSize).copyWith(
+                          color: AppTheme.getTextPrimaryColor(context),
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                      ContactTab(
-                        formKey: _contactFormKey,
-                        direccionController: _direccionController,
-                        telefonoController: _telefonoController,
-                        emailController: _emailController,
-                        sitioWebController: _sitioWebController,
-                        isLoading: _isLoading,
-                        onSave: _saveSettings,
+                      SizedBox(
+                          height: AppTheme.getSmallPadding(screenSize) * 0.5),
+                      Text(
+                        l10n.manageAndSearchStudents,
+                        style: AppTheme.getBodyMedium(screenSize).copyWith(
+                          color: AppTheme.getTextSecondaryColor(context),
+                          height: 1.3,
+                        ),
+                      ),
+                      SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppTheme.getCardColor(context),
+                          borderRadius: BorderRadius.circular(
+                              AppTheme.getLargeRadius(screenSize)),
+                          border: Border.all(
+                              color: AppTheme.getBorderColor(context)),
+                        ),
+                        child: TabBar(
+                          controller: _tabController,
+                          indicator: BoxDecoration(
+                            color: AppTheme.accentPurple,
+                            borderRadius: BorderRadius.circular(
+                                AppTheme.getMediumRadius(screenSize)),
+                          ),
+                          indicatorSize: TabBarIndicatorSize.tab,
+                          dividerColor: Colors.transparent,
+                          labelColor: Colors.white,
+                          unselectedLabelColor:
+                              AppTheme.getTextSecondaryColor(context),
+                          labelStyle: AppTheme.getCaption(screenSize).copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                          tabs: [
+                            Tab(
+                              icon: Icon(Icons.info_rounded,
+                                  size: screenSize.height * 0.022),
+                              text: l10n.information,
+                            ),
+                            Tab(
+                              icon: Icon(Icons.contact_phone_rounded,
+                                  size: screenSize.height * 0.022),
+                              text: l10n.contact,
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
-              ),
-              // Botón flotante
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: SafeArea(
-                  minimum:
-                      const EdgeInsets.only(bottom: 24, left: 24, right: 24),
-                  child: SolidButton(
-                    onPressed: _isLoading ? () {} : _saveSettings,
-                    label: _isLoading
-                        ? AppLocalizations.of(context).saving
-                        : AppLocalizations.of(context).updateSettings,
-                    icon: _isLoading ? null : Icons.save_rounded,
-                    backgroundColor: AppTheme.accentPurple,
-                    screenSize: screenSize,
-                    width: double.infinity,
+                // Contenido scrolleable debajo del header fijo
+                Positioned.fill(
+                  top: MediaQuery.of(context).padding.top +
+                      AppTheme.getSmallPadding(screenSize) +
+                      AppTheme.getLargePadding(screenSize) +
+                      AppTheme.getH1(screenSize).fontSize! +
+                      AppTheme.getBodyMedium(screenSize).fontSize! +
+                      AppTheme.getMediumPadding(screenSize) * 2 +
+                      48, // Altura aproximada del TabBar
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        InformationTab(
+                          formKey: _informationFormKey,
+                          nombreController: _nombreController,
+                          codigoController: _codigoController,
+                          descripcionController: _descripcionController,
+                          yearFoundedController: _yearFoundedController,
+                          selectedTipo: _selectedTipo,
+                          selectedNiveles: _selectedNiveles,
+                          onTipoChanged: (tipo) =>
+                              setState(() => _selectedTipo = tipo),
+                          onNivelesChanged: (niveles) =>
+                              setState(() => _selectedNiveles = niveles),
+                          hasPreescolar: _hasPreescolar,
+                          hasPrimaria: _hasPrimaria,
+                          hasSecundaria: _hasSecundaria,
+                          hasBachillerato: _hasBachillerato,
+                          onPreescolarChanged: (value) => setState(() {
+                            _hasPreescolar = value;
+                            _updateSelectedNivelesFromBooleans();
+                          }),
+                          onPrimariaChanged: (value) => setState(() {
+                            _hasPrimaria = value;
+                            _updateSelectedNivelesFromBooleans();
+                          }),
+                          onSecundariaChanged: (value) => setState(() {
+                            _hasSecundaria = value;
+                            _updateSelectedNivelesFromBooleans();
+                          }),
+                          onBachilleratoChanged: (value) => setState(() {
+                            _hasBachillerato = value;
+                            _updateSelectedNivelesFromBooleans();
+                          }),
+                          isLoading: _isLoading,
+                          onSave: _saveSettings,
+                          getTipoLabel: _getTipoLabel,
+                          getNivelLabel: _getNivelLabel,
+                          nombreFocusNode: _nombreFocusNode,
+                          codigoFocusNode: _codigoFocusNode,
+                          descripcionFocusNode: _descripcionFocusNode,
+                          yearFoundedFocusNode: _yearFoundedFocusNode,
+                        ),
+                        ContactTab(
+                          formKey: _contactFormKey,
+                          direccionController: _direccionController,
+                          telefonoController: _telefonoController,
+                          emailController: _emailController,
+                          sitioWebController: _sitioWebController,
+                          isLoading: _isLoading,
+                          onSave: _saveSettings,
+                          direccionFocusNode: _direccionFocusNode,
+                          telefonoFocusNode: _telefonoFocusNode,
+                          emailFocusNode: _emailFocusNode,
+                          sitioWebFocusNode: _sitioWebFocusNode,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+                // Botón flotante animado
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.fastOutSlowIn,
+                  left: 0,
+                  right: 0,
+                  bottom: _isKeyboardVisible ? -1000 : 0,
+                  child: SafeArea(
+                    minimum:
+                        const EdgeInsets.only(bottom: 24, left: 24, right: 24),
+                    child: SolidButton(
+                      onPressed: _isLoading ? () {} : _saveSettings,
+                      label: _isLoading
+                          ? AppLocalizations.of(context).saving
+                          : AppLocalizations.of(context).updateSettings,
+                      icon: _isLoading ? null : Icons.save_rounded,
+                      backgroundColor: AppTheme.accentPurple,
+                      screenSize: screenSize,
+                      width: double.infinity,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

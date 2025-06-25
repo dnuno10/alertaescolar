@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../managers/student_provider.dart';
@@ -31,7 +32,10 @@ class SelectableStudentItem extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => onSelected(student),
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            onSelected(student);
+          },
           borderRadius:
               BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
           child: Container(

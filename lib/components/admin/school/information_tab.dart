@@ -6,7 +6,7 @@ import '../../../components/buttons/solid_button.dart';
 import '../../../components/textfield/custom_input_field.dart';
 import '../../../components/textfield/custom_text_area_field.dart';
 import '../../../components/admin/school/section_card.dart';
-import '../../../components/dropdown/custom_dropdown_field.dart';
+import '../../../utils/modern_dropdown.dart';
 import '../../../components/admin/school/education_level_checkboxes.dart';
 
 class InformationTab extends StatelessWidget {
@@ -17,6 +17,12 @@ class InformationTab extends StatelessWidget {
   final TextEditingController yearFoundedController;
   final TipoEscuela selectedTipo;
   final ValueChanged<TipoEscuela> onTipoChanged;
+
+  // Focus nodes
+  final FocusNode? nombreFocusNode;
+  final FocusNode? codigoFocusNode;
+  final FocusNode? descripcionFocusNode;
+  final FocusNode? yearFoundedFocusNode;
 
   // Education level booleans
   final bool hasPreescolar;
@@ -60,6 +66,10 @@ class InformationTab extends StatelessWidget {
     required this.onPrimariaChanged,
     required this.onSecundariaChanged,
     required this.onBachilleratoChanged,
+    this.nombreFocusNode,
+    this.codigoFocusNode,
+    this.descripcionFocusNode,
+    this.yearFoundedFocusNode,
   });
 
   @override
@@ -83,6 +93,7 @@ class InformationTab extends StatelessWidget {
                   label: l10n.schoolName,
                   screenSize: screenSize,
                   icon: Icons.business_rounded,
+                  focusNode: nombreFocusNode,
                   validator: (value) =>
                       value?.isEmpty == true ? l10n.fieldRequired : null,
                 ),
@@ -95,6 +106,7 @@ class InformationTab extends StatelessWidget {
                         label: l10n.schoolCode,
                         screenSize: screenSize,
                         icon: Icons.tag_rounded,
+                        focusNode: codigoFocusNode,
                         validator: (value) =>
                             value?.isEmpty == true ? l10n.fieldRequired : null,
                       ),
@@ -107,6 +119,7 @@ class InformationTab extends StatelessWidget {
                         screenSize: screenSize,
                         icon: Icons.calendar_today_rounded,
                         keyboardType: TextInputType.number,
+                        focusNode: yearFoundedFocusNode,
                         validator: (value) =>
                             value?.isEmpty == true ? l10n.fieldRequired : null,
                       ),
@@ -115,10 +128,12 @@ class InformationTab extends StatelessWidget {
                 ),
                 SizedBox(height: AppTheme.getMediumPadding(screenSize)),
                 CustomTextAreaField(
+                  textInputAction: TextInputAction.done,
                   label: l10n.description,
                   controller: descripcionController,
                   icon: Icons.description_rounded,
                   maxLines: 3,
+                  focusNode: descripcionFocusNode,
                 ),
               ],
             ),
@@ -128,13 +143,15 @@ class InformationTab extends StatelessWidget {
               icon: Icons.settings_rounded,
               color: AppTheme.successColor,
               children: [
-                CustomDropdownField(
+                ModernDropdown<TipoEscuela>(
                   label: l10n.schoolType,
                   value: selectedTipo,
                   items: TipoEscuela.values,
                   onChanged: (value) =>
                       value != null ? onTipoChanged(value) : null,
                   getLabel: getTipoLabel,
+                  screenSize: screenSize,
+                  backgroundColor: AppTheme.getInputFillColor(context),
                 ),
                 SizedBox(height: AppTheme.getLargePadding(screenSize)),
                 EducationLevelCheckboxes(

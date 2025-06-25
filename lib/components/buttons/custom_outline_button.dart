@@ -1,5 +1,6 @@
 import 'package:alertaescolar/app/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class CustomOutlineButton extends StatelessWidget {
   final VoidCallback onPressed;
@@ -22,7 +23,10 @@ class CustomOutlineButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final button = OutlinedButton(
-      onPressed: onPressed,
+      onPressed: () {
+        HapticFeedback.mediumImpact();
+        onPressed();
+      },
       style: OutlinedButton.styleFrom(
         padding: EdgeInsets.symmetric(
           vertical: AppTheme.getSmallPadding(screenSize),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -59,7 +60,10 @@ class QuickToleranceSelector extends StatelessWidget {
               final isSelected = tolerance == minutes;
               return Expanded(
                 child: GestureDetector(
-                  onTap: () => onToleranceChanged(minutes),
+                  onTap: () {
+                    HapticFeedback.mediumImpact();
+                    onToleranceChanged(minutes);
+                  },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     margin: const EdgeInsets.symmetric(horizontal: 2),

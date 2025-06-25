@@ -1,5 +1,6 @@
 import 'package:alertaescolar/managers/student_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
@@ -141,7 +142,10 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
                 ),
               SizedBox(width: AppTheme.getSmallPadding(widget.screenSize)),
               TextButton(
-                onPressed: widget.onClearFilters,
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  widget.onClearFilters();
+                },
                 child: Text(
                   l10n.clear, // Replaced hardcoded text
                   style: AppTheme.getCaption(widget.screenSize).copyWith(
@@ -459,7 +463,10 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _navigateToStudentProfile(student),
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            _navigateToStudentProfile(student);
+          },
           borderRadius: BorderRadius.circular(
               AppTheme.getMediumRadius(widget.screenSize)),
           child: Container(
@@ -590,7 +597,10 @@ class _DirectoryFiltersCardState extends State<DirectoryFiltersCard> {
           if (_hasActiveFilters()) ...[
             SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
             TextButton.icon(
-              onPressed: widget.onClearFilters,
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                widget.onClearFilters();
+              },
               icon: Icon(
                 Icons.clear_all_rounded,
                 color: AppTheme.accentPurple,

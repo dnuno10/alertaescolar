@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../app/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 
 class ModernTimePicker extends StatefulWidget {
   final TimeOfDay initialTime;
@@ -46,6 +48,8 @@ class _ModernTimePickerState extends State<ModernTimePicker> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -80,7 +84,7 @@ class _ModernTimePickerState extends State<ModernTimePicker> {
                     ),
                   ),
 
-                  Text(":",
+                  Text(l10n.timeSeparator,
                       style:
                           TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
 
@@ -102,7 +106,7 @@ class _ModernTimePickerState extends State<ModernTimePicker> {
                   // AM/PM picker
                   Expanded(
                     child: _buildWheelPicker(
-                      items: ["AM", "PM"],
+                      items: [l10n.am, l10n.pm],
                       initialIndex: isAM ? 0 : 1,
                       onChanged: (index) {
                         setState(() {
@@ -138,7 +142,10 @@ class _ModernTimePickerState extends State<ModernTimePicker> {
         perspective: 0.005,
         diameterRatio: 1.2,
         physics: const FixedExtentScrollPhysics(),
-        onSelectedItemChanged: onChanged,
+        onSelectedItemChanged: (index) {
+          HapticFeedback.mediumImpact();
+          onChanged(index);
+        },
         childDelegate: ListWheelChildBuilderDelegate(
           childCount: items.length,
           builder: (context, index) {

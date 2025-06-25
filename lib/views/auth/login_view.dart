@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/language_provider.dart';
 import 'components/login_body_component.dart';
@@ -20,6 +21,7 @@ class _LoginViewState extends State<LoginView> {
       // Centramos el contenido y lo llevamos al final
       body: GestureDetector(
         onTap: () {
+          HapticFeedback.mediumImpact();
           FocusScope.of(context).unfocus();
         },
         child: Container(

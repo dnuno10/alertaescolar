@@ -4,6 +4,7 @@ import 'package:alertaescolar/components/profile/sound_vibration_card.dart';
 import 'package:alertaescolar/components/profile/notification_info_notice.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../app/app_theme.dart';

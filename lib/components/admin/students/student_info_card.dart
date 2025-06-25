@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 import '../../../managers/student_provider.dart';
+import '../../../l10n/app_localizations.dart';
 
 class StudentInfoCard extends StatelessWidget {
   final StudentDetails student;
@@ -14,6 +15,8 @@ class StudentInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
       decoration: BoxDecoration(
@@ -36,7 +39,7 @@ class StudentInfoCard extends StatelessWidget {
               child: Text(
                 student.nombre.isNotEmpty
                     ? student.nombre[0].toUpperCase()
-                    : 'A',
+                    : l10n.defaultStudentInitial,
                 style: AppTheme.getH1(screenSize).copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
@@ -58,7 +61,8 @@ class StudentInfoCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  '${student.nivelEducativo} - ${student.grupo}',
+                  l10n.studentGradeAndGroup(
+                      student.nivelEducativo, student.grupo),
                   style: AppTheme.getBodyMedium(screenSize).copyWith(
                     color: AppTheme.getTextSecondaryColor(context),
                   ),

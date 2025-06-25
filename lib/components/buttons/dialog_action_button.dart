@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../app/app_theme.dart';
 
 class DialogActionButton extends StatelessWidget {
@@ -20,7 +21,10 @@ class DialogActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextButton(
-      onPressed: onPressed,
+      onPressed: () {
+        HapticFeedback.mediumImpact();
+        onPressed();
+      },
       style: TextButton.styleFrom(
         backgroundColor: backgroundColor,
         foregroundColor: textColor ??

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -82,7 +83,10 @@ class ToleranceSliderControl extends StatelessWidget {
               max: 60,
               divisions: 12,
               label: '$tolerance ${l10n.min}',
-              onChanged: (value) => onToleranceChanged(value.round()),
+              onChanged: (value) {
+                HapticFeedback.mediumImpact();
+                onToleranceChanged(value.round());
+              },
             ),
           ),
         ],

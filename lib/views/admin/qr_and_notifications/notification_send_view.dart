@@ -10,6 +10,7 @@ import 'package:alertaescolar/components/buttons/custom_outline_button.dart';
 import 'package:alertaescolar/components/headers/nav_header.dart';
 import 'package:alertaescolar/components/buttons/solid_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../managers/student_provider.dart';
@@ -124,7 +125,10 @@ class _NotificationSendViewState extends State<NotificationSendView>
       builder: (context, themeProvider, groupProvider, turnoProvider,
           studentProvider, child) {
         return GestureDetector(
-          onTap: () => FocusScope.of(context).unfocus(),
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            FocusScope.of(context).unfocus();
+          },
           child: Scaffold(
             backgroundColor: AppTheme.getBackgroundColor(context),
             body: FadeTransition(
@@ -367,7 +371,10 @@ class _NotificationSendViewState extends State<NotificationSendView>
                         color: AppTheme.getTextPrimaryColor(context)
                             .withOpacity(0.5),
                         label: l10n.cancel,
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () {
+                          HapticFeedback.mediumImpact();
+                          Navigator.pop(context);
+                        },
                         screenSize: screenSize,
                       ),
                     ),
@@ -378,7 +385,10 @@ class _NotificationSendViewState extends State<NotificationSendView>
                         label: _selectedType == 'comunicado'
                             ? 'Revisar Comunicado'
                             : 'Revisar Permiso',
-                        onPressed: _sendNotification,
+                        onPressed: () {
+                          HapticFeedback.mediumImpact();
+                          _sendNotification();
+                        },
                         screenSize: screenSize,
                         icon: Icons.preview_rounded,
                         backgroundColor: _canSendMessage()
@@ -443,7 +453,10 @@ class _NotificationSendViewState extends State<NotificationSendView>
 
             // Group selector button
             GestureDetector(
-              onTap: () => _showGroupSelectionDialog(context, groupedByLevel),
+              onTap: () {
+                HapticFeedback.mediumImpact();
+                _showGroupSelectionDialog(context, groupedByLevel);
+              },
               child: Container(
                 padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
                 decoration: BoxDecoration(
@@ -595,8 +608,10 @@ class _NotificationSendViewState extends State<NotificationSendView>
 
             // Shift selector button
             GestureDetector(
-              onTap: () =>
-                  _showShiftSelectionDialog(context, turnoProvider.turnos),
+              onTap: () {
+                HapticFeedback.mediumImpact();
+                _showShiftSelectionDialog(context, turnoProvider.turnos);
+              },
               child: Container(
                 padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
                 decoration: BoxDecoration(

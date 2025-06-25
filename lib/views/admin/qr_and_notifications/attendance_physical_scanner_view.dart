@@ -322,6 +322,7 @@ class _AttendancePhysicalScannerViewState
               Expanded(
                 child: TextField(
                   controller: _manualInputController,
+                  textInputAction: TextInputAction.done,
                   decoration: InputDecoration(
                     hintText: 'Ingresa la matrícula del estudiante',
                     border: OutlineInputBorder(

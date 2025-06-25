@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -55,7 +56,10 @@ class StudentSelector extends StatelessWidget {
         SizedBox(height: AppTheme.getSmallPadding(screenSize)),
         // Student selector button
         GestureDetector(
-          onTap: onSelectStudent,
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            onSelectStudent();
+          },
           child: Container(
             padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
             decoration: BoxDecoration(
@@ -139,8 +143,8 @@ class StudentSelector extends StatelessWidget {
                             _buildChip(
                               context,
                               selectedStudent!['active'] == true
-                                  ? 'Activo'
-                                  : 'Inactivo',
+                                  ? l10n.active
+                                  : l10n.inactive,
                               selectedStudent!['active'] == true
                                   ? AppTheme.successColor
                                   : AppTheme.errorColor,

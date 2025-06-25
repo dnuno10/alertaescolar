@@ -1,5 +1,6 @@
 import 'package:alertaescolar/views/auth/components/signup_body_component.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/language_provider.dart';
@@ -20,6 +21,7 @@ class _SignUpViewState extends State<SignUpView> {
       // Centramos el contenido y lo llevamos al final
       body: GestureDetector(
         onTap: () {
+          HapticFeedback.mediumImpact();
           FocusScope.of(context).unfocus();
         },
         child: Container(

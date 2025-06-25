@@ -100,6 +100,8 @@ class _StudentAttendanceHistoryViewState
   }
 
   Widget _buildFiltersSection(BuildContext context, Size screenSize) {
+    final l10n = AppLocalizations.of(context);
+
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
       decoration: BoxDecoration(
@@ -127,7 +129,7 @@ class _StudentAttendanceHistoryViewState
               ),
               SizedBox(width: AppTheme.getSmallPadding(screenSize)),
               Text(
-                'Filtros',
+                l10n.filters,
                 style: AppTheme.getBodyLarge(screenSize).copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppTheme.getTextPrimaryColor(context),
@@ -161,7 +163,7 @@ class _StudentAttendanceHistoryViewState
                   _filterRecords();
                 });
               },
-              child: Text('Limpiar filtros'),
+              child: Text(l10n.clearFilters),
             ),
           ],
         ],
@@ -170,11 +172,13 @@ class _StudentAttendanceHistoryViewState
   }
 
   Widget _buildDateSelector(BuildContext context, Size screenSize) {
+    final l10n = AppLocalizations.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Fecha de Asistencia',
+          l10n.attendanceDate,
           style: AppTheme.getBodyMedium(screenSize).copyWith(
             fontWeight: FontWeight.w600,
             color: AppTheme.getTextSecondaryColor(context),
@@ -277,6 +281,8 @@ class _StudentAttendanceHistoryViewState
   }
 
   Widget _buildStatusFilter(BuildContext context, Size screenSize) {
+    final l10n = AppLocalizations.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

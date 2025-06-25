@@ -148,7 +148,8 @@ class ClaseHorario {
   String get horaInicioAmPm => TimeFormat.format24to12(horaInicio);
   String get horaFinAmPm => TimeFormat.format24to12(horaFin);
 
-  String get horarioTexto => '[32m$horaInicioAmPm - $horaFinAmPm[0m';
+  String get horarioTexto => '[32m$horaInicioAmPm - $horaFinAmPm[0m';
+  String get horarioLimpio => '$horaInicioAmPm - $horaFinAmPm';
 
   String get diaNombre {
     switch (dia) {

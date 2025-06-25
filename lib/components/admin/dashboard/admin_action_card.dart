@@ -1,5 +1,6 @@
 import 'package:alertaescolar/app/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../l10n/app_localizations.dart';
 
 class AdminActionCard extends StatelessWidget {
@@ -27,7 +28,10 @@ class AdminActionCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          onTap();
+        },
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
         child: Container(

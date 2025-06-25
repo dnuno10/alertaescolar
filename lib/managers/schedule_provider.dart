@@ -441,4 +441,14 @@ class ScheduleProvider with ChangeNotifier {
       notifyListeners();
     });
   }
+
+  void clearAllData() {
+    _materias.clear();
+    _grupos.clear();
+    _nivelesEducativos.clear();
+    _horarios.clear();
+    _isLoading = false;
+    _error = null;
+    _safeNotifyListeners();
+  }
 }

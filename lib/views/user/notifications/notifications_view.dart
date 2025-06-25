@@ -30,9 +30,7 @@ class _NotificationsViewViewState extends State<NotificationsView>
     _tabController = TabController(length: 3, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<NotificationProvider>();
-      provider.loadNotifications().then((_) {
-        provider.markAllAsRead();
-      });
+      provider.loadNotifications();
     });
   }
 
@@ -248,9 +246,6 @@ class _NotificationsViewViewState extends State<NotificationsView>
     final notification = provider.getNotificationById(notificationId);
 
     if (notification != null) {
-      // Mark as read
-      provider.markAsRead(notificationId);
-
       // Show detail modal
       showModalBottomSheet(
         context: context,

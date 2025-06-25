@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../app/app_theme.dart';
 
 class NavItem extends StatelessWidget {
@@ -23,7 +24,10 @@ class NavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Flexible(
       child: GestureDetector(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          onTap();
+        },
         child: Container(
           padding: EdgeInsets.symmetric(
             horizontal: screenSize.width * 0.02,

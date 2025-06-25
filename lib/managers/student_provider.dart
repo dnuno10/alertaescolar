@@ -135,11 +135,17 @@ class StudentDetails {
     final difference = expirationDate.difference(now);
 
     if (difference.inDays > 0) {
-      return '${difference.inDays} días restantes';
+      return difference.inDays == 1
+          ? '1 día restante'
+          : '${difference.inDays} días restantes';
     } else if (difference.inHours > 0) {
-      return '${difference.inHours} horas restantes';
+      return difference.inHours == 1
+          ? '1 hora restante'
+          : '${difference.inHours} horas restantes';
     } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes} minutos restantes';
+      return difference.inMinutes == 1
+          ? '1 minuto restante'
+          : '${difference.inMinutes} minutos restantes';
     } else {
       return 'Menos de 1 minuto restante';
     }

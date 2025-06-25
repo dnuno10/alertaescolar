@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../components/buttons/solid_button.dart';
 import '../../../managers/auth/Google.dart';
@@ -59,6 +60,7 @@ class IntroOptionsComponent extends StatelessWidget {
             screenSize: size,
             width: size.width * 0.9,
             onPressed: () {
+              HapticFeedback.mediumImpact();
               Navigator.pushNamed(context, '/signup');
             },
           ),
@@ -119,6 +121,7 @@ class IntroOptionsComponent extends StatelessWidget {
             screenSize: size,
             width: size.width * 0.9,
             onPressed: () {
+              HapticFeedback.mediumImpact();
               Navigator.pushNamed(context, '/login');
             },
           ),
@@ -154,8 +157,11 @@ class _GoogleSignInButton extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            _signInWithGoogle(context);
+          },
           borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
-          onTap: () => _signInWithGoogle(context),
           child: Padding(
             padding: EdgeInsets.symmetric(
               horizontal: AppTheme.getMediumPadding(size),

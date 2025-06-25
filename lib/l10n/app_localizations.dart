@@ -72,7 +72,86 @@ abstract class AppLocalizations {
   String get registering;
   String get settingUpAccount;
   String get loading;
+// Time related
+  String get timeSeparator;
+  String get am;
+  String get pm;
 
+// QR Scanner
+  String get qrScannerPointCamera;
+  String get qrScannerTitle;
+  String get qrScannerAutomatic;
+  String get scanAnother;
+  String get cameraScanner;
+
+// Student Records
+  String attendanceRecordOf(String name);
+  String get delayedEntry;
+  String get lastFiveRecords;
+  String get entryRecords;
+  String get delayedEntries;
+  String get exitRecords;
+
+// Class Schedule
+  String durationInMinutes(int minutes);
+  String get classroom;
+  String get classDetails;
+
+// Student Information
+  String get defaultStudentInitial;
+  String studentGradeAndGroup(String grade, String group);
+  String get linkedTutor;
+  String get linkedTutors;
+  String get informationNotAvailable;
+  String get noTimeLimit;
+  String get expired;
+  String get oneDayRemaining;
+  String daysRemaining(int days);
+  String get oneHourRemaining;
+  String hoursRemaining(int hours);
+  String get oneMinuteRemaining;
+  String minutesRemaining(int minutes);
+  String get lessThanOneMinuteRemaining;
+
+// School Subjects
+  String get break_;
+  String get mathematics;
+  String get naturalSciences;
+  String get history;
+  String get physicalEducation;
+  String get art;
+
+// Scanner Configuration
+  String get automaticEntry;
+  String get automaticExit;
+  String get unauthenticatedUser;
+  String get schoolNotIdentified;
+  String errorLoadingConfiguration(String error);
+
+// Notifications and Messages
+  String get reviewMessage;
+  String get officialCommunication;
+  String get reviewCarefullyBeforeContinuing;
+  String get communicationDetails;
+  String get type;
+
+// Error Messages
+  String internalError(String error);
+  String get couldNotGetUserSchool;
+  String get errorLoadingStats;
+  String get errorLoadingData;
+
+// Filters and Headers
+  String get filters;
+  String get attendanceDate;
+// Contact information
+  String get noFamilyContactsRegistered;
+  String get noName;
+  String get noRelationship;
+
+// General
+  String get date;
+  String get title;
   // QR Scanner related strings
   String get qrScannerPlaceholder;
   String get qrScannerInstructions;
@@ -1305,6 +1384,136 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loadingNotifications => 'Loading notifications...';
+
+  // Time related
+  @override
+  String get timeSeparator => ':';
+  @override
+  String get am => 'AM';
+  @override
+  String get pm => 'PM';
+
+// QR Scanner
+  @override
+  String get qrScannerPointCamera => 'Point camera at student\'s QR code';
+  @override
+  String get qrScannerTitle => 'Scan QR Code';
+  @override
+  String get qrScannerAutomatic =>
+      'Position QR code within frame to scan automatically';
+  @override
+  String get scanAnother => 'Scan Another';
+  @override
+  String get cameraScanner => 'Camera Scanner';
+
+// Student Records
+  @override
+  String attendanceRecordOf(String name) => 'Attendance record of $name';
+  @override
+  String get delayedEntry => 'Delayed Entry';
+  @override
+  String get lastFiveRecords => 'Last 5 Records';
+  @override
+  String get entryRecords => 'Entry Records';
+  @override
+  String get delayedEntries => 'Delayed Entries';
+  @override
+  String get exitRecords => 'Exit Records';
+
+// Class Schedule
+  @override
+  String durationInMinutes(int minutes) => '$minutes minutes';
+  @override
+  String get classroom => 'Classroom';
+  @override
+  String get classDetails => 'Class Details';
+
+// Student Information
+  @override
+  String get defaultStudentInitial => 'S';
+  @override
+  String studentGradeAndGroup(String grade, String group) =>
+      'Grade $grade Group $group';
+  @override
+  String get linkedTutor => 'Linked Tutor';
+  @override
+  String get linkedTutors => 'Linked Tutors';
+  @override
+  String get informationNotAvailable => 'Information not available';
+  @override
+  String get noTimeLimit => 'No time limit';
+  @override
+  String get expired => 'Expired';
+  @override
+  String get oneDayRemaining => 'One day remaining';
+  @override
+  String daysRemaining(int days) => '$days days remaining';
+  @override
+  String get oneHourRemaining => 'One hour remaining';
+  @override
+  String hoursRemaining(int hours) => '$hours hours remaining';
+  @override
+  String get oneMinuteRemaining => 'One minute remaining';
+  @override
+  String minutesRemaining(int minutes) => '$minutes minutes remaining';
+  @override
+  String get lessThanOneMinuteRemaining => 'Less than one minute remaining';
+
+// School Subjects
+  @override
+  String get break_ => 'Break';
+  @override
+  String get mathematics => 'Mathematics';
+  @override
+  String get naturalSciences => 'Natural Sciences';
+  @override
+  String get history => 'History';
+  @override
+  String get physicalEducation => 'Physical Education';
+  @override
+  String get art => 'Art';
+
+// Scanner Configuration
+  @override
+  String get automaticEntry => 'Automatic Entry';
+  @override
+  String get automaticExit => 'Automatic Exit';
+  @override
+  String get unauthenticatedUser => 'Unauthenticated User';
+  @override
+  String get schoolNotIdentified => 'School not identified';
+  @override
+  String errorLoadingConfiguration(String error) =>
+      'Error loading configuration: $error';
+
+// Notifications and Messages
+  @override
+  String get reviewMessage => 'Review Message';
+  @override
+  String get officialCommunication => 'Official Communication';
+  @override
+  String get reviewCarefullyBeforeContinuing =>
+      'Please review carefully before continuing';
+  @override
+  String get communicationDetails => 'Communication Details';
+  @override
+  String get type => 'Type';
+
+// Error Messages
+  @override
+  String internalError(String error) => 'Internal Error: $error';
+  @override
+  String get couldNotGetUserSchool => 'Could not get user\'s school';
+  @override
+  String get errorLoadingStats => 'Error loading statistics';
+  @override
+  String get errorLoadingData => 'Error loading data';
+
+// Filters and Headers
+  @override
+  String get filters => 'Filters';
+  @override
+  String get attendanceDate => 'Attendance Date';
 
   @override
   String get editContact => 'Edit Contact';
@@ -3718,9 +3927,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get schoolAddress => 'School Address';
   @override
-  String get schoolPhone => 'School Phone';
+  String get schoolPhone => 'Phone';
   @override
-  String get schoolEmail => 'School Email';
+  String get schoolEmail => 'School';
   @override
   String get principalName => 'Principal Name';
   @override
@@ -3817,10 +4026,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get schoolBranding => 'School Branding';
 
   @override
-  String get schoolCode => 'School Code';
+  String get schoolCode => 'Code';
 
   @override
-  String get foundedYear => 'Founded Year';
+  String get foundedYear => 'Founded';
 
   @override
   String get description => 'Description';
@@ -4195,10 +4404,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailedRecords => 'Detailed Records';
   @override
   String get searchStudent => 'Search Student';
+
+  @override
+  String get noFamilyContactsRegistered => 'No family contacts registered';
+
+  @override
+  String get noName => 'No name';
+
+  @override
+  String get noRelationship => 'No relationship specified';
+
+  @override
+  String get date => 'Date';
+
+  @override
+  String get title => 'Title';
 }
 
 class AppLocalizationsEs extends AppLocalizations {
   AppLocalizationsEs() : super('es');
+
+  @override
+  String get noFamilyContactsRegistered =>
+      'No hay contactos familiares registrados';
+
+  @override
+  String get noName => 'Sin nombre';
+
+  @override
+  String get noRelationship => 'Sin relación especificada';
+
+  @override
+  String get date => 'Fecha';
+
+  @override
+  String get title => 'Título';
 
   @override
   String get scanningActive => 'Escaneo activo';
@@ -4213,6 +4453,138 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get excelExportDesc => 'Hoja de cálculo Excel';
+
+  // Time related
+  @override
+  String get timeSeparator => ':';
+  @override
+  String get am => 'AM';
+  @override
+  String get pm => 'PM';
+
+// QR Scanner
+  @override
+  String get qrScannerPointCamera =>
+      'Apunta la cámara al código QR del estudiante';
+  @override
+  String get qrScannerTitle => 'Escanear Código QR';
+  @override
+  String get qrScannerAutomatic =>
+      'Posiciona el código QR dentro del marco para escanearlo automáticamente';
+  @override
+  String get scanAnother => 'Escanear Otro';
+  @override
+  String get cameraScanner => 'Escáner de Cámara';
+
+// Student Records
+  @override
+  String attendanceRecordOf(String name) => 'Registro de asistencia de $name';
+  @override
+  String get delayedEntry => 'Entrada Tardía';
+  @override
+  String get lastFiveRecords => 'Últimos 5 Registros';
+  @override
+  String get entryRecords => 'Registros de Entrada';
+  @override
+  String get delayedEntries => 'Entradas Tardías';
+  @override
+  String get exitRecords => 'Registros de Salida';
+
+// Class Schedule
+  @override
+  String durationInMinutes(int minutes) => '$minutes minutos';
+  @override
+  String get classroom => 'Aula';
+  @override
+  String get classDetails => 'Detalles de la Clase';
+
+// Student Information
+  @override
+  String get defaultStudentInitial => 'E';
+  @override
+  String studentGradeAndGroup(String grade, String group) =>
+      'Grado $grade Grupo $group';
+  @override
+  String get linkedTutor => 'Tutor Vinculado';
+  @override
+  String get linkedTutors => 'Tutores Vinculados';
+  @override
+  String get informationNotAvailable => 'Información no disponible';
+  @override
+  String get noTimeLimit => 'Sin límite de tiempo';
+  @override
+  String get expired => 'Expirado';
+  @override
+  String get oneDayRemaining => 'Un día restante';
+  @override
+  String daysRemaining(int days) => '$days días restantes';
+  @override
+  String get oneHourRemaining => 'Una hora restante';
+  @override
+  String hoursRemaining(int hours) => '$hours horas restantes';
+  @override
+  String get oneMinuteRemaining => 'Un minuto restante';
+  @override
+  String minutesRemaining(int minutes) => '$minutes minutos restantes';
+  @override
+  String get lessThanOneMinuteRemaining => 'Menos de un minuto restante';
+
+// School Subjects
+  @override
+  String get break_ => 'Receso';
+  @override
+  String get mathematics => 'Matemáticas';
+  @override
+  String get naturalSciences => 'Ciencias Naturales';
+  @override
+  String get history => 'Historia';
+  @override
+  String get physicalEducation => 'Educación Física';
+  @override
+  String get art => 'Arte';
+
+// Scanner Configuration
+  @override
+  String get automaticEntry => 'Entrada Automática';
+  @override
+  String get automaticExit => 'Salida Automática';
+  @override
+  String get unauthenticatedUser => 'Usuario no Autenticado';
+  @override
+  String get schoolNotIdentified => 'Escuela no identificada';
+  @override
+  String errorLoadingConfiguration(String error) =>
+      'Error al cargar la configuración: $error';
+
+// Notifications and Messages
+  @override
+  String get reviewMessage => 'Revisar Mensaje';
+  @override
+  String get officialCommunication => 'Comunicación Oficial';
+  @override
+  String get reviewCarefullyBeforeContinuing =>
+      'Por favor revisa cuidadosamente antes de continuar';
+  @override
+  String get communicationDetails => 'Detalles de la Comunicación';
+  @override
+  String get type => 'Tipo';
+
+// Error Messages
+  @override
+  String internalError(String error) => 'Error Interno: $error';
+  @override
+  String get couldNotGetUserSchool =>
+      'No se pudo obtener la escuela del usuario';
+  @override
+  String get errorLoadingStats => 'Error al cargar estadísticas';
+  @override
+  String get errorLoadingData => 'Error al cargar datos';
+
+// Filters and Headers
+  @override
+  String get filters => 'Filtros';
+  @override
+  String get attendanceDate => 'Fecha de Asistencia';
 
   @override
   String get shareReportDesc => 'Compartir informe directamente';
@@ -6889,10 +7261,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get schoolAddress => 'Dirección de la Escuela';
 
   @override
-  String get schoolPhone => 'Teléfono de la Escuela';
+  String get schoolPhone => 'Teléfono';
 
   @override
-  String get schoolEmail => 'Correo de la Escuela';
+  String get schoolEmail => 'Correo';
 
   @override
   String get principalName => 'Nombre del Director';
@@ -7030,10 +7402,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get schoolBranding => 'Marca de la Escuela';
 
   @override
-  String get schoolCode => 'Código de la Escuela';
+  String get schoolCode => 'Código';
 
   @override
-  String get foundedYear => 'Año de Fundación';
+  String get foundedYear => 'Fundación';
 
   @override
   String get description => 'Descripción';

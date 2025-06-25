@@ -15,6 +15,12 @@ class ContactTab extends StatelessWidget {
   final bool isLoading;
   final VoidCallback onSave;
 
+  // Focus nodes
+  final FocusNode? direccionFocusNode;
+  final FocusNode? telefonoFocusNode;
+  final FocusNode? emailFocusNode;
+  final FocusNode? sitioWebFocusNode;
+
   const ContactTab({
     super.key,
     required this.formKey,
@@ -24,6 +30,10 @@ class ContactTab extends StatelessWidget {
     required this.sitioWebController,
     required this.isLoading,
     required this.onSave,
+    this.direccionFocusNode,
+    this.telefonoFocusNode,
+    this.emailFocusNode,
+    this.sitioWebFocusNode,
   });
 
   @override
@@ -47,6 +57,8 @@ class ContactTab extends StatelessWidget {
                   controller: direccionController,
                   icon: Icons.location_on_rounded,
                   maxLines: 2,
+                  textInputAction: TextInputAction.done,
+                  focusNode: direccionFocusNode,
                   validator: (value) =>
                       value?.isEmpty == true ? l10n.fieldRequired : null,
                 ),
@@ -60,6 +72,7 @@ class ContactTab extends StatelessWidget {
                         screenSize: screenSize,
                         icon: Icons.phone_rounded,
                         keyboardType: TextInputType.phone,
+                        focusNode: telefonoFocusNode,
                         validator: (value) =>
                             value?.isEmpty == true ? l10n.fieldRequired : null,
                       ),
@@ -72,6 +85,7 @@ class ContactTab extends StatelessWidget {
                         screenSize: screenSize,
                         icon: Icons.email_rounded,
                         keyboardType: TextInputType.emailAddress,
+                        focusNode: emailFocusNode,
                         validator: (value) {
                           if (value?.isEmpty == true) return l10n.fieldRequired;
                           if (value != null && !value.contains('@'))
@@ -89,6 +103,7 @@ class ContactTab extends StatelessWidget {
                   screenSize: screenSize,
                   icon: Icons.language_rounded,
                   keyboardType: TextInputType.url,
+                  focusNode: sitioWebFocusNode,
                 ),
               ],
             ),

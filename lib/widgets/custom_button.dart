@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class CustomButton extends StatelessWidget {
@@ -32,7 +33,14 @@ class CustomButton extends StatelessWidget {
       width: width ?? size.width * 0.8,
       height: height ?? size.height * 0.06,
       child: ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
+        onPressed: isLoading
+            ? null
+            : () {
+                if (onPressed != null) {
+                  HapticFeedback.mediumImpact();
+                  onPressed!();
+                }
+              },
         style: ElevatedButton.styleFrom(
           backgroundColor: backgroundColor ?? Theme.of(context).primaryColor,
           foregroundColor: textColor ?? Colors.white,

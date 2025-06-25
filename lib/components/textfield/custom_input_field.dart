@@ -13,6 +13,7 @@ class CustomInputField extends StatefulWidget {
   final bool? obscureText;
   final Widget? suffixIcon;
   final TextCapitalization? textCapitalization;
+  final TextInputAction? textInputAction;
 
   const CustomInputField({
     super.key,
@@ -27,6 +28,7 @@ class CustomInputField extends StatefulWidget {
     this.obscureText,
     this.suffixIcon,
     this.textCapitalization,
+    this.textInputAction,
   });
 
   @override
@@ -59,6 +61,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
           keyboardType: widget.keyboardType,
           textCapitalization:
               widget.textCapitalization ?? TextCapitalization.none,
+          textInputAction: widget.textInputAction ?? TextInputAction.done,
           obscureText:
               widget.obscureText ?? (widget.isPassword ? _obscureText : false),
           style: AppTheme.getBodyMedium(widget.screenSize).copyWith(

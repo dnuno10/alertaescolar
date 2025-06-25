@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../models/models.dart';
 import '../../app/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 
 class ClassCard extends StatelessWidget {
   final ClaseHorario clase;
@@ -17,9 +19,11 @@ class ClassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String subjectName = _getSubjectNameFromId(clase.materiaId);
+    final l10n = AppLocalizations.of(context);
+    final String subjectName = _getSubjectNameFromId(context, clase.materiaId);
     final Color cardColor = _getSubjectColor(clase.materiaId);
-    final bool isReceso = subjectName.toLowerCase().contains('recreo');
+    final bool isReceso =
+        subjectName.toLowerCase().contains(l10n.break_.toLowerCase());
 
     return TweenAnimationBuilder<double>(
       duration: Duration(milliseconds: 300 + (index * 100)),
@@ -29,121 +33,128 @@ class ClassCard extends StatelessWidget {
           offset: Offset(0, 50 * (1 - value)),
           child: Opacity(
             opacity: value,
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppTheme.getSurfaceColor(context),
-                borderRadius:
-                    BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-                border: Border.all(
-                  color: AppTheme.getBorderColor(context),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.getShadowColor(context),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.mediumImpact();
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.getSurfaceColor(context),
                   borderRadius: BorderRadius.circular(
                       AppTheme.getMediumRadius(screenSize)),
-                  child: Padding(
-                    padding:
-                        EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-                    child: Column(
-                      children: [
-                        // Header con icono y nombre
-                        Row(
-                          children: [
-                            Container(
-                              width: screenSize.width * 0.12,
-                              height: screenSize.width * 0.12,
-                              decoration: BoxDecoration(
-                                color: cardColor.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(
-                                    AppTheme.getSmallRadius(screenSize)),
+                  border: Border.all(
+                    color: AppTheme.getBorderColor(context),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.getShadowColor(context),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(
+                        AppTheme.getMediumRadius(screenSize)),
+                    child: Padding(
+                      padding:
+                          EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+                      child: Column(
+                        children: [
+                          // Header con icono y nombre
+                          Row(
+                            children: [
+                              Container(
+                                width: screenSize.width * 0.12,
+                                height: screenSize.width * 0.12,
+                                decoration: BoxDecoration(
+                                  color: cardColor.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(
+                                      AppTheme.getSmallRadius(screenSize)),
+                                ),
+                                child: Icon(
+                                  isReceso
+                                      ? Icons.free_breakfast_outlined
+                                      : _getSubjectIcon(subjectName),
+                                  color: cardColor,
+                                  size: screenSize.width * 0.06,
+                                ),
                               ),
-                              child: Icon(
-                                isReceso
-                                    ? Icons.free_breakfast_outlined
-                                    : _getSubjectIcon(subjectName),
-                                color: cardColor,
-                                size: screenSize.width * 0.06,
-                              ),
-                            ),
-                            SizedBox(
-                                width: AppTheme.getSmallPadding(screenSize)),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    subjectName,
-                                    style: AppTheme.getSubtitle1(screenSize)
-                                        .copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color:
-                                          AppTheme.getTextPrimaryColor(context),
-                                      height: 1.2,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  SizedBox(height: screenSize.height * 0.003),
-                                  Text(
-                                    _getProfessorFromId(clase.materiaId),
-                                    style: AppTheme.getBodyMedium(screenSize)
-                                        .copyWith(
-                                      color: AppTheme.getTextSecondaryColor(
-                                          context),
-                                      height: 1.3,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        // Separador
-                        SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-
-                        // Información de tiempo y lugar
-                        Row(
-                          children: [
-                            Expanded(
-                              flex: clase.aula.isNotEmpty ? 1 : 2,
-                              child: _buildInfoChip(
-                                icon: Icons.access_time_rounded,
-                                text: clase.horarioTexto,
-                                color: cardColor,
-                                screenSize: screenSize,
-                              ),
-                            ),
-                            if (clase.aula.isNotEmpty) ...[
                               SizedBox(
-                                  width: AppTheme.getSmallPadding(screenSize) *
-                                      0.5),
+                                  width: AppTheme.getSmallPadding(screenSize)),
                               Expanded(
-                                flex: 1,
-                                child: _buildInfoChip(
-                                  icon: Icons.location_on_outlined,
-                                  text: clase.aula,
-                                  color:
-                                      AppTheme.getTextSecondaryColor(context),
-                                  screenSize: screenSize,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      subjectName,
+                                      style: AppTheme.getSubtitle1(screenSize)
+                                          .copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: AppTheme.getTextPrimaryColor(
+                                            context),
+                                        height: 1.2,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    SizedBox(height: screenSize.height * 0.003),
+                                    Text(
+                                      _getProfessorFromId(clase.materiaId),
+                                      style: AppTheme.getBodyMedium(screenSize)
+                                          .copyWith(
+                                        color: AppTheme.getTextSecondaryColor(
+                                            context),
+                                        height: 1.3,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
-                          ],
-                        ),
-                      ],
+                          ),
+
+                          // Separador
+                          SizedBox(
+                              height: AppTheme.getSmallPadding(screenSize)),
+
+                          // Información de tiempo y lugar
+                          Row(
+                            children: [
+                              Expanded(
+                                flex: clase.aula.isNotEmpty ? 1 : 2,
+                                child: _buildInfoChip(
+                                  icon: Icons.access_time_rounded,
+                                  text: clase.horarioTexto,
+                                  color: cardColor,
+                                  screenSize: screenSize,
+                                ),
+                              ),
+                              if (clase.aula.isNotEmpty) ...[
+                                SizedBox(
+                                    width:
+                                        AppTheme.getSmallPadding(screenSize) *
+                                            0.5),
+                                Expanded(
+                                  flex: 1,
+                                  child: _buildInfoChip(
+                                    icon: Icons.location_on_outlined,
+                                    text: clase.aula,
+                                    color:
+                                        AppTheme.getTextSecondaryColor(context),
+                                    screenSize: screenSize,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -192,18 +203,19 @@ class ClassCard extends StatelessWidget {
     );
   }
 
-  String _getSubjectNameFromId(String materiaId) {
+  String _getSubjectNameFromId(BuildContext context, String materiaId) {
+    final l10n = AppLocalizations.of(context);
     final Map<String, String> subjects = {
-      'mat_001': 'Matemáticas',
-      'mat_002': 'Español',
-      'mat_003': 'Ciencias Naturales',
-      'mat_004': 'Historia',
-      'mat_005': 'Educación Física',
-      'mat_006': 'Inglés',
-      'mat_007': 'Arte',
-      'mat_008': 'Recreo',
+      'mat_001': l10n.mathematics,
+      'mat_002': l10n.spanish,
+      'mat_003': l10n.naturalSciences,
+      'mat_004': l10n.history,
+      'mat_005': l10n.physicalEducation,
+      'mat_006': l10n.english,
+      'mat_007': l10n.art,
+      'mat_008': l10n.break_,
     };
-    return subjects[materiaId] ?? 'Materia';
+    return subjects[materiaId] ?? l10n.subject;
   }
 
   String _getProfessorFromId(String materiaId) {

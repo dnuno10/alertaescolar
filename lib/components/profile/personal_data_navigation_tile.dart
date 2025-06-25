@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../app/app_theme.dart';
 
 class PersonalDataNavigationTile extends StatelessWidget {
@@ -24,7 +25,10 @@ class PersonalDataNavigationTile extends StatelessWidget {
       child: InkWell(
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        onTap: () => Navigator.pushNamed(context, route),
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          Navigator.pushNamed(context, route);
+        },
         child: Padding(
           padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
           child: Row(

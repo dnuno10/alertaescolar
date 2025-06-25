@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
@@ -76,7 +77,10 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
                           ),
                         ),
                         child: IconButton(
-                          onPressed: widget.onClose,
+                          onPressed: () {
+                            HapticFeedback.mediumImpact();
+                            widget.onClose();
+                          },
                           icon: const Icon(
                             Icons.close_rounded,
                             color: Colors.white,
@@ -93,7 +97,10 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
                           ),
                         ),
                         child: IconButton(
-                          onPressed: _toggleFlash,
+                          onPressed: () {
+                            HapticFeedback.mediumImpact();
+                            _toggleFlash();
+                          },
                           icon: Icon(
                             flashOn ? Icons.flash_on : Icons.flash_off,
                             color: Colors.white,
@@ -116,7 +123,7 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
                       ),
                     ),
                     child: Text(
-                      'Apunta la cámara al código QR del estudiante',
+                      l10n.qrScannerPointCamera,
                       style: AppTheme.getBodyMedium(screenSize).copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w500,
@@ -150,7 +157,7 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Escanear Código QR',
+                      l10n.qrScannerTitle,
                       style: AppTheme.getH2(screenSize).copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -159,7 +166,7 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
                     ),
                     SizedBox(height: AppTheme.getSmallPadding(screenSize)),
                     Text(
-                      'Posiciona el código QR dentro del marco para escanearlo automáticamente',
+                      l10n.qrScannerInstructions,
                       style: AppTheme.getCaption(screenSize).copyWith(
                         color: Colors.white.withOpacity(0.8),
                       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../models/contacto_familiar.dart';
 import '../../l10n/app_localizations.dart';
 import '../../app/app_theme.dart';
@@ -70,6 +71,7 @@ class _RelationDropdownState extends State<RelationDropdown>
         // Custom Dropdown
         GestureDetector(
           onTap: () {
+            HapticFeedback.mediumImpact();
             setState(() {
               _isDropdownOpen = !_isDropdownOpen;
               if (_isDropdownOpen) {
@@ -174,6 +176,7 @@ class _RelationDropdownState extends State<RelationDropdown>
                     children: TipoParentesco.values.map((relation) {
                       return InkWell(
                         onTap: () {
+                          HapticFeedback.mediumImpact();
                           widget.onRelationChanged(relation);
                           setState(() {
                             _isDropdownOpen = false;

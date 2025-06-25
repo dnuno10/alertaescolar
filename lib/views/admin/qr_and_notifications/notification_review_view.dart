@@ -11,6 +11,7 @@ import '../../../components/headers/nav_header.dart';
 import '../../../components/buttons/solid_button.dart';
 import '../../../components/buttons/custom_outline_button.dart';
 import '../../../components/loading_dialog.dart';
+import '../../../l10n/app_localizations.dart';
 
 class NotificationReviewView extends StatefulWidget {
   final String tipoMensaje;
@@ -67,6 +68,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
@@ -76,7 +78,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
           physics: const BouncingScrollPhysics(),
           slivers: [
             NavHeader(
-              title: 'Revisar Mensaje',
+              title: l10n.reviewMessage,
             ),
             SliverToBoxAdapter(
               child: Padding(
@@ -119,8 +121,8 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                               height: AppTheme.getMediumPadding(screenSize)),
                           Text(
                             widget.tipoMensaje == 'permiso'
-                                ? 'Permiso Especial'
-                                : 'Comunicado Oficial',
+                                ? l10n.specialPermission
+                                : l10n.officialCommunication,
                             style: AppTheme.getH2(screenSize).copyWith(
                               color: AppTheme.getTextPrimaryColor(context),
                               fontWeight: FontWeight.bold,
@@ -130,7 +132,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                           SizedBox(
                               height: AppTheme.getSmallPadding(screenSize)),
                           Text(
-                            'Revisa cuidadosamente toda la información antes de continuar',
+                            l10n.reviewCarefullyBeforeContinuing,
                             style: AppTheme.getBodyMedium(screenSize).copyWith(
                               color: AppTheme.getTextSecondaryColor(context),
                             ),
@@ -155,14 +157,14 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                       _buildSection(
                         context: context,
                         screenSize: screenSize,
-                        title: 'Detalles del Comunicado',
+                        title: l10n.communicationDetails,
                         icon: Icons.info_rounded,
                         iconColor: AppTheme.warningColor,
                         children: [
                           _buildInfoRow(
                             context: context,
                             screenSize: screenSize,
-                            label: 'Tipo:',
+                            label: l10n.type,
                             value:
                                 _getComunicadoTypeText(widget.tipoComunicado!),
                           ),
@@ -171,7 +173,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                           _buildInfoRow(
                             context: context,
                             screenSize: screenSize,
-                            label: 'Prioridad:',
+                            label: l10n.priority,
                             value:
                                 _getPriorityText(widget.prioridadComunicado!),
                             valueColor:
@@ -186,7 +188,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                     _buildSection(
                       context: context,
                       screenSize: screenSize,
-                      title: 'Destinatarios',
+                      title: l10n.recipients,
                       icon: Icons.people_rounded,
                       iconColor: AppTheme.accentPurple,
                       children: [

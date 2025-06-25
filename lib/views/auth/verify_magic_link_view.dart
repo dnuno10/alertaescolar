@@ -365,7 +365,10 @@ class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         TextButton(
-          onPressed: _resendCode,
+          onPressed: () {
+            HapticFeedback.mediumImpact();
+            _resendCode();
+          },
           child: Text(
             l10n.resendCode,
             style: AppTheme.getBodyMedium(size).copyWith(

@@ -1,5 +1,6 @@
 import 'package:alertaescolar/components/notifications/empty_notifications_card.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
@@ -49,7 +50,17 @@ class RecentNotificationsSection extends StatelessWidget {
                 final showBadge = unreadCount > 0;
 
                 return GestureDetector(
-                  onTap: onTapSeeAll,
+                  onTap: () {
+                    HapticFeedback.mediumImpact();
+                    // Mark all notifications as read when navigating to notifications view
+                    if (showBadge) {
+                      final provider = Provider.of<NotificationProvider>(
+                          context,
+                          listen: false);
+                      provider.markAllAsRead();
+                    }
+                    onTapSeeAll();
+                  },
                   child: Container(
                     padding: EdgeInsets.symmetric(
                       horizontal: AppTheme.getSmallPadding(screenSize),

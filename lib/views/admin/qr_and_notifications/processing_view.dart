@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../app/app_theme.dart';
 import '../../../services/scanner_service.dart';
+import '../../../l10n/app_localizations.dart';
 
 class ProcessingView extends StatefulWidget {
   final String scannedCode;
@@ -114,6 +115,7 @@ class _ProcessingViewState extends State<ProcessingView>
   }
 
   Future<void> _startProcessing() async {
+    final l10n = AppLocalizations.of(context);
     // Start processing animation
     _processingAnimationController.repeat();
 
@@ -139,7 +141,7 @@ class _ProcessingViewState extends State<ProcessingView>
           _accessData = result['access'];
           HapticFeedback.mediumImpact();
         } else {
-          _errorMessage = result['error'] ?? 'Error desconocido';
+          _errorMessage = result['error'] ?? l10n.unknownError;
           HapticFeedback.heavyImpact();
         }
       });
@@ -162,7 +164,7 @@ class _ProcessingViewState extends State<ProcessingView>
         _isProcessing = false;
         _showResult = true;
         _isSuccess = false;
-        _errorMessage = 'Error interno: $e';
+        _errorMessage = l10n.internalError(e.toString());
       });
 
       HapticFeedback.heavyImpact();

@@ -37,6 +37,10 @@ class _ScheduleViewState extends State<ScheduleView>
   @override
   void initState() {
     super.initState();
+
+    // Set the current day of the week as the default selected day
+    _selectedDayIndex = _getCurrentDayIndex();
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -51,6 +55,15 @@ class _ScheduleViewState extends State<ScheduleView>
     });
 
     _animationController.forward();
+  }
+
+  /// Gets the current day of the week index (0 = Monday, 6 = Sunday)
+  /// Maps DateTime.weekday (1 = Monday, 7 = Sunday) to DiaSemana enum index
+  int _getCurrentDayIndex() {
+    final now = DateTime.now();
+    // DateTime.weekday: Monday = 1, Sunday = 7
+    // DiaSemana enum: lunes = 0, domingo = 6
+    return now.weekday - 1; // Convert to 0-based index
   }
 
   @override
@@ -249,23 +262,19 @@ class _ScheduleViewState extends State<ScheduleView>
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
                   final clase = daySchedule[index];
-                  return Padding(
-                    padding: EdgeInsets.only(
-                        bottom: AppTheme.getSmallPadding(screenSize)),
-                    child: Consumer<ScheduleProvider>(
-                      builder: (context, scheduleProvider, child) {
-                        // Get materia information
-                        final materia =
-                            scheduleProvider.getMateriaById(clase.materiaId);
+                  return Consumer<ScheduleProvider>(
+                    builder: (context, scheduleProvider, child) {
+                      // Get materia information
+                      final materia =
+                          scheduleProvider.getMateriaById(clase.materiaId);
 
-                        return ClassCardSchedule(
-                          clase: clase,
-                          materia: materia,
-                          index: index,
-                          screenSize: screenSize,
-                        );
-                      },
-                    ),
+                      return ClassCardSchedule(
+                        clase: clase,
+                        materia: materia,
+                        index: index,
+                        screenSize: screenSize,
+                      );
+                    },
                   );
                 },
                 childCount: daySchedule.length,

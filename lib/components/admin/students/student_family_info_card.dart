@@ -204,7 +204,7 @@ class _StudentFamilyInfoCardState extends State<StudentFamilyInfoCard> {
                 padding: EdgeInsets.all(
                     AppTheme.getMediumPadding(widget.screenSize)),
                 child: Text(
-                  'No hay contactos familiares registrados',
+                  l10n.noFamilyContactsRegistered,
                   style: AppTheme.getCaption(widget.screenSize).copyWith(
                     color: AppTheme.getTextSecondaryColor(context),
                   ),
@@ -263,7 +263,7 @@ class _FamilyMemberItem extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  member['nombre']?.toString() ?? 'Sin nombre',
+                  member['nombre']?.toString() ?? l10n.noName,
                   style: AppTheme.getSubtitle1(screenSize).copyWith(
                     color: AppTheme.getTextPrimaryColor(context),
                     fontWeight: FontWeight.w600,
@@ -287,7 +287,7 @@ class _FamilyMemberItem extends StatelessWidget {
                   AppTheme.getSmallRadius(screenSize) * 0.5),
             ),
             child: Text(
-              member['parentesco']?.toString() ?? 'Sin parentesco',
+              member['parentesco']?.toString() ?? l10n.noRelationship,
               style: AppTheme.getCaptionSmall(screenSize).copyWith(
                 color: AppTheme.accentBlue,
                 fontWeight: FontWeight.w600,

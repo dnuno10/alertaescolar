@@ -22,6 +22,17 @@ class AttendanceListSection extends StatefulWidget {
 
 class _AttendanceListSectionState extends State<AttendanceListSection> {
   String _selectedFilter = 'all'; // all, present, late, absent
+  TextEditingController _searchController = TextEditingController();
+  String _selectedGroup = 'all';
+  String _selectedShift = 'all';
+  String _selectedAccessType = 'all';
+  String _selectedStatus = 'all';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,85 +61,13 @@ class _AttendanceListSectionState extends State<AttendanceListSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with date picker and filter
-          Row(
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(
-                          AppTheme.getSmallPadding(widget.screenSize) * 0.5),
-                      decoration: BoxDecoration(
-                        color: AppTheme.successColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(
-                            AppTheme.getSmallRadius(widget.screenSize)),
-                      ),
-                      child: Icon(
-                        Icons.list_alt_rounded,
-                        color: AppTheme.successColor,
-                        size: widget.screenSize.height * 0.025,
-                      ),
-                    ),
-                    SizedBox(
-                        width: AppTheme.getSmallPadding(widget.screenSize)),
-                    Text(
-                      l10n.attendanceList,
-                      style: AppTheme.getH2(widget.screenSize).copyWith(
-                        color: AppTheme.getTextPrimaryColor(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              _DatePickerButton(
-                selectedDate: widget.selectedDate,
-                onDateChanged: widget.onDateChanged,
-                screenSize: widget.screenSize,
-              ),
-            ],
-          ),
-
+          _buildHeader(),
           SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
-
-          // Filter chips
-          _FilterChips(
-            selectedFilter: _selectedFilter,
-            onFilterChanged: (filter) {
-              setState(() {
-                _selectedFilter = filter;
-              });
-            },
-            screenSize: widget.screenSize,
-            l10n: l10n,
-          ),
-
+          _buildSearchBar(),
           SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
-
-          // Records count
-          Text(
-            '${filteredNotifications.length} ${l10n.studentsFound}',
-            style: AppTheme.getCaption(widget.screenSize).copyWith(
-              color: AppTheme.getTextSecondaryColor(context),
-            ),
-          ),
-
-          SizedBox(height: AppTheme.getSmallPadding(widget.screenSize)),
-
-          // Attendance list
-          if (filteredNotifications.isEmpty)
-            _EmptyState(screenSize: widget.screenSize, l10n: l10n)
-          else
-            ...filteredNotifications.asMap().entries.map((entry) {
-              final index = entry.key;
-              final notification = entry.value;
-              return _AttendanceListItem(
-                notification: notification,
-                screenSize: widget.screenSize,
-                isLast: index == filteredNotifications.length - 1,
-                l10n: l10n,
-              );
-            }),
+          _buildFilterSection(),
+          SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
+          _buildEmptyState(context),
         ],
       ),
     );
@@ -153,7 +92,7 @@ class _AttendanceListSectionState extends State<AttendanceListSection> {
             widget.selectedDate.add(const Duration(hours: 7, minutes: 30)),
         datosAdicionales: {
           'alumnoNombre': 'Ana García Martínez',
-          'alumnoGrado': '3°A',
+          'alumnoGrado': '3°',
           'alumnoGrupo': 'A',
           'escaneadoPor': 'María López',
           'ubicacion': l10n.mainEntrance,
@@ -170,7 +109,7 @@ class _AttendanceListSectionState extends State<AttendanceListSection> {
             widget.selectedDate.add(const Duration(hours: 8, minutes: 15)),
         datosAdicionales: {
           'alumnoNombre': 'Carlos Rodríguez Silva',
-          'alumnoGrado': '2°B',
+          'alumnoGrado': '2°',
           'alumnoGrupo': 'B',
           'escaneadoPor': 'Juan Hernández',
           'ubicacion': l10n.mainEntrance,
@@ -187,7 +126,7 @@ class _AttendanceListSectionState extends State<AttendanceListSection> {
             widget.selectedDate.add(const Duration(hours: 7, minutes: 25)),
         datosAdicionales: {
           'alumnoNombre': 'Sofía González Pérez',
-          'alumnoGrado': '1°A',
+          'alumnoGrado': '1°',
           'alumnoGrupo': 'A',
           'escaneadoPor': 'María López',
           'ubicacion': l10n.mainEntrance,
@@ -203,7 +142,7 @@ class _AttendanceListSectionState extends State<AttendanceListSection> {
             widget.selectedDate.add(const Duration(hours: 8, minutes: 10)),
         datosAdicionales: {
           'alumnoNombre': 'Miguel Torres López',
-          'alumnoGrado': '3°A',
+          'alumnoGrado': '3°',
           'alumnoGrupo': 'A',
           'escaneadoPor': 'Juan Hernández',
           'ubicacion': l10n.secondaryEntrance,
@@ -220,7 +159,7 @@ class _AttendanceListSectionState extends State<AttendanceListSection> {
             widget.selectedDate.add(const Duration(hours: 7, minutes: 35)),
         datosAdicionales: {
           'alumnoNombre': 'Isabella Hernández Cruz',
-          'alumnoGrado': '2°B',
+          'alumnoGrado': '2°',
           'alumnoGrupo': 'B',
           'escaneadoPor': 'María López',
           'ubicacion': l10n.mainEntrance,
@@ -230,22 +169,422 @@ class _AttendanceListSectionState extends State<AttendanceListSection> {
   }
 
   List<Notificacion> _filterNotifications(List<Notificacion> notifications) {
-    switch (_selectedFilter) {
-      case 'present':
-        return notifications
-            .where((n) =>
-                n.tipo == TipoNotificacion.entrada && n.fechaHora.hour < 8)
-            .toList();
-      case 'late':
-        return notifications
-            .where((n) => n.tipo == TipoNotificacion.retraso)
-            .toList();
-      case 'absent':
-        return notifications
-            .where((n) => n.tipo == TipoNotificacion.ausencia)
-            .toList();
+    final searchQuery = _searchController.text.toLowerCase();
+    final filteredBySearch = notifications.where((notification) {
+      final studentName = notification.datosAdicionales?['alumnoNombre']
+              ?.toString()
+              .toLowerCase() ??
+          '';
+      return studentName.contains(searchQuery);
+    }).toList();
+
+    if (_selectedGroup != 'all') {
+      filteredBySearch.removeWhere((notification) =>
+          notification.datosAdicionales?['alumnoGrupo'] != _selectedGroup);
+    }
+
+    if (_selectedShift != 'all') {
+      filteredBySearch.removeWhere((notification) =>
+          notification.datosAdicionales?['turno'] != _selectedShift);
+    }
+
+    if (_selectedAccessType != 'all') {
+      filteredBySearch.removeWhere((notification) =>
+          notification.datosAdicionales?['tipoAcceso'] != _selectedAccessType);
+    }
+
+    if (_selectedStatus != 'all') {
+      filteredBySearch.removeWhere((notification) {
+        final status = _getStatusText(notification.tipo);
+        return status != _selectedStatus;
+      });
+    }
+
+    return filteredBySearch;
+  }
+
+  String _getStatusText(TipoNotificacion tipo) {
+    final l10n = AppLocalizations.of(context);
+    switch (tipo) {
+      case TipoNotificacion.entrada:
+        return l10n.present;
+      case TipoNotificacion.retraso:
+        return l10n.late;
+      case TipoNotificacion.salida:
+        return l10n.exit;
+      case TipoNotificacion.ausencia:
+        return l10n.absent;
       default:
-        return notifications;
+        return l10n.present;
+    }
+  }
+
+  Widget _buildHeader() {
+    final l10n = AppLocalizations.of(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(
+                  AppTheme.getSmallPadding(widget.screenSize) * 0.5),
+              decoration: BoxDecoration(
+                color: AppTheme.successColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(
+                    AppTheme.getSmallRadius(widget.screenSize)),
+              ),
+              child: Icon(
+                Icons.list_alt_rounded,
+                color: AppTheme.successColor,
+                size: widget.screenSize.height * 0.025,
+              ),
+            ),
+            SizedBox(width: AppTheme.getSmallPadding(widget.screenSize)),
+            Text(
+              l10n.attendanceList,
+              style: AppTheme.getH2(widget.screenSize).copyWith(
+                color: AppTheme.getTextPrimaryColor(context),
+              ),
+            ),
+          ],
+        ),
+        _DatePickerButton(
+          selectedDate: widget.selectedDate,
+          onDateChanged: widget.onDateChanged,
+          screenSize: widget.screenSize,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchBar() {
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppTheme.getMediumPadding(widget.screenSize),
+        vertical: AppTheme.getSmallPadding(widget.screenSize),
+      ),
+      decoration: BoxDecoration(
+        color: AppTheme.getBackgroundColor(context),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getMediumRadius(widget.screenSize)),
+        border: Border.all(
+          color: AppTheme.getBorderColor(context),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.search_rounded,
+            color: AppTheme.getTextSecondaryColor(context),
+            size: widget.screenSize.width * 0.05,
+          ),
+          SizedBox(width: AppTheme.getSmallPadding(widget.screenSize)),
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              textInputAction: TextInputAction.done,
+              style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
+                color: AppTheme.getTextPrimaryColor(context),
+              ),
+              decoration: InputDecoration(
+                hintText: l10n.searchStudent,
+                hintStyle: AppTheme.getBodyMedium(widget.screenSize).copyWith(
+                  color: AppTheme.getTextSecondaryColor(context),
+                ),
+                border: InputBorder.none,
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _filterNotifications(_generateMockNotifications());
+                });
+              },
+            ),
+          ),
+          if (_searchController.text.isNotEmpty) ...[
+            SizedBox(width: AppTheme.getSmallPadding(widget.screenSize)),
+            IconButton(
+              onPressed: () {
+                setState(() {
+                  _searchController.clear();
+                  _filterNotifications(_generateMockNotifications());
+                });
+              },
+              icon: Icon(
+                Icons.clear_rounded,
+                color: AppTheme.getTextSecondaryColor(context),
+                size: widget.screenSize.width * 0.05,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterSection() {
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      padding: EdgeInsets.all(AppTheme.getMediumPadding(widget.screenSize)),
+      decoration: BoxDecoration(
+        color: AppTheme.getBackgroundColor(context),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getMediumRadius(widget.screenSize)),
+        border: Border.all(
+          color: AppTheme.getBorderColor(context),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Filtros',
+            style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
+              color: AppTheme.getTextPrimaryColor(context),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
+          Row(
+            children: [
+              Expanded(
+                child: _buildFilterDropdown(
+                  'group',
+                  _selectedGroup,
+                  ['all', 'A', 'B', 'C'],
+                ),
+              ),
+              SizedBox(width: AppTheme.getMediumPadding(widget.screenSize)),
+              Expanded(
+                child: _buildFilterDropdown(
+                  'shift',
+                  _selectedShift,
+                  ['all', l10n.morning, l10n.afternoon],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
+          Row(
+            children: [
+              Expanded(
+                child: _buildFilterDropdown(
+                  'access',
+                  _selectedAccessType,
+                  ['all', l10n.entry, l10n.exit],
+                ),
+              ),
+              SizedBox(width: AppTheme.getMediumPadding(widget.screenSize)),
+              Expanded(
+                child: _buildFilterDropdown(
+                  'status',
+                  _selectedStatus,
+                  ['all', l10n.present, l10n.late, l10n.exit, l10n.absent],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final notifications = _filterNotifications(_generateMockNotifications());
+
+    if (notifications.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(AppTheme.getLargePadding(widget.screenSize)),
+        decoration: BoxDecoration(
+          color: AppTheme.getBackgroundColor(context),
+          borderRadius: BorderRadius.circular(
+              AppTheme.getMediumRadius(widget.screenSize)),
+          border: Border.all(
+            color: AppTheme.getBorderColor(context),
+            style: BorderStyle.solid,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.qr_code_2_rounded,
+              size: widget.screenSize.width * 0.15,
+              color: AppTheme.getTextSecondaryColor(context),
+            ),
+            SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
+            Text(
+              l10n.noStudentsScanned,
+              style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
+                color: AppTheme.getTextPrimaryColor(context),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: AppTheme.getSmallPadding(widget.screenSize) * 0.5),
+            Text(
+              l10n.startScanningToSeeRecords,
+              style: AppTheme.getCaption(widget.screenSize).copyWith(
+                color: AppTheme.getTextSecondaryColor(context),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        Text(
+          '${notifications.length} ${l10n.studentsFound}',
+          style: AppTheme.getCaption(widget.screenSize).copyWith(
+            color: AppTheme.getTextSecondaryColor(context),
+          ),
+        ),
+        SizedBox(height: AppTheme.getSmallPadding(widget.screenSize)),
+        ...notifications.asMap().entries.map((entry) {
+          final index = entry.key;
+          final notification = entry.value;
+          return _AttendanceListItem(
+            notification: notification,
+            screenSize: widget.screenSize,
+            isLast: index == notifications.length - 1,
+            l10n: l10n,
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  Widget _buildFilterChip(String value, String label, IconData icon) {
+    final isSelected = _selectedFilter == value;
+    final color = isSelected
+        ? AppTheme.accentPurple
+        : AppTheme.getTextSecondaryColor(context);
+
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedFilter = value;
+          _filterNotifications(_generateMockNotifications());
+        });
+      },
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: AppTheme.getSmallPadding(widget.screenSize) * 0.75,
+          vertical: AppTheme.getSmallPadding(widget.screenSize) * 0.5,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(
+              AppTheme.getSmallRadius(widget.screenSize) * 0.75),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: widget.screenSize.width * 0.035,
+              color: color,
+            ),
+            SizedBox(width: widget.screenSize.width * 0.01),
+            Text(
+              label,
+              style: AppTheme.getCaptionSmall(widget.screenSize).copyWith(
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterDropdown(String label, String value, List<String> items) {
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _getFilterLabel(label),
+          style: AppTheme.getCaptionSmall(widget.screenSize).copyWith(
+            color: AppTheme.getTextPrimaryColor(context),
+            fontWeight: FontWeight.w600,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+        SizedBox(height: AppTheme.getSmallPadding(widget.screenSize) * 0.5),
+        Container(
+          padding: EdgeInsets.symmetric(
+              horizontal: AppTheme.getSmallPadding(widget.screenSize)),
+          decoration: BoxDecoration(
+            color: AppTheme.getBackgroundColor(context),
+            borderRadius: BorderRadius.circular(
+                AppTheme.getSmallRadius(widget.screenSize)),
+            border: Border.all(color: AppTheme.getBorderColor(context)),
+          ),
+          child: DropdownButton<String>(
+            value: value,
+            isExpanded: true,
+            underline: const SizedBox(),
+            onChanged: (newValue) {
+              setState(() {
+                switch (label) {
+                  case 'group':
+                    _selectedGroup = newValue!;
+                    break;
+                  case 'shift':
+                    _selectedShift = newValue!;
+                    break;
+                  case 'access':
+                    _selectedAccessType = newValue!;
+                    break;
+                  case 'status':
+                    _selectedStatus = newValue!;
+                    break;
+                }
+                _filterNotifications(_generateMockNotifications());
+              });
+            },
+            style: AppTheme.getCaptionSmall(widget.screenSize).copyWith(
+              color: AppTheme.getTextPrimaryColor(context),
+            ),
+            items: items.map((item) {
+              return DropdownMenuItem(
+                value: item,
+                child: Text(
+                  _getDropdownLabel(item, label),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getDropdownLabel(String value, String filterType) {
+    final l10n = AppLocalizations.of(context);
+    return value == 'all' ? l10n.all : value;
+  }
+
+  String _getFilterLabel(String filterType) {
+    final l10n = AppLocalizations.of(context);
+    switch (filterType) {
+      case 'group':
+        return l10n.group;
+      case 'shift':
+        return l10n.shift;
+      case 'access':
+        return l10n.access;
+      case 'status':
+        return l10n.status;
+      default:
+        return filterType;
     }
   }
 }
@@ -518,7 +857,6 @@ class _AttendanceListItem extends StatelessWidget {
 
   void _navigateToStudentProfile(BuildContext context) {
     // Remove mock student navigation since this is mock data
-    final l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Esta es información de demostración'),
@@ -555,40 +893,5 @@ class _AttendanceListItem extends StatelessWidget {
       default:
         return Icons.check_rounded;
     }
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  final Size screenSize;
-  final AppLocalizations l10n;
-
-  const _EmptyState({
-    required this.screenSize,
-    required this.l10n,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
-        child: Column(
-          children: [
-            Icon(
-              Icons.event_busy_rounded,
-              size: screenSize.height * 0.06,
-              color: AppTheme.getTextSecondaryColor(context),
-            ),
-            SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-            Text(
-              l10n.noAttendanceRecords,
-              style: AppTheme.getSubtitle1(screenSize).copyWith(
-                color: AppTheme.getTextSecondaryColor(context),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

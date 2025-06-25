@@ -23,21 +23,32 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
   int _lateStudents = 0;
   bool _isLoading = true;
   String? _error;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    _loadTodayStats();
+    // Don't load data here - move to didChangeDependencies
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized) {
+      _isInitialized = true;
+      _loadTodayStats();
+    }
   }
 
   Future<void> _loadTodayStats() async {
+    final l10n = AppLocalizations.of(context);
     try {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       final escuelaId = userProvider.currentUser?.escuelaId;
 
       if (escuelaId == null) {
         setState(() {
-          _error = 'No se pudo obtener la escuela del usuario';
+          _error = l10n.couldNotGetUserSchool;
           _isLoading = false;
         });
         return;
@@ -164,7 +175,7 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Error al cargar estadísticas',
+                      l10n.errorLoadingStats,
                       style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
                         color: AppTheme.errorColor,
                       ),

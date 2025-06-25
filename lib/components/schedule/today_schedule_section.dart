@@ -1,5 +1,6 @@
 import 'package:alertaescolar/views/user/schedule/schedule_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
@@ -228,10 +229,18 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
               .toList()
             ..sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
 
-          debugPrint('Today classes: ${todayClasses.length}');
+          // Eliminar duplicados por materiaId, horaInicio y horaFin
+          final uniqueTodayClasses = <String, ClaseHorario>{};
+          for (final clase in todayClasses) {
+            final key =
+                '${clase.materiaId}_${clase.horaInicio}_${clase.horaFin}';
+            uniqueTodayClasses[key] = clase;
+          }
+
+          debugPrint('Today classes: ${uniqueTodayClasses.length}');
 
           setState(() {
-            _todayClasses = todayClasses;
+            _todayClasses = uniqueTodayClasses.values.toList();
             _isLoading = false;
           });
         } else {
@@ -317,58 +326,35 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
             ],
           ),
         ),
-
-        // View Full Schedule Button
+        // Botón moderno 'Ver completo'
         if (_selectedStudentId != null)
           Container(
             margin: EdgeInsets.only(
                 left: AppTheme.getSmallPadding(widget.screenSize)),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _navigateToFullSchedule(context),
-                borderRadius: BorderRadius.circular(
-                    AppTheme.getMediumRadius(widget.screenSize)),
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppTheme.getMediumPadding(widget.screenSize),
-                    vertical: AppTheme.getSmallPadding(widget.screenSize),
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(
-                        AppTheme.getMediumRadius(widget.screenSize)),
-                    border: Border.all(
-                      color: AppTheme.primaryColor.withValues(alpha: 0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.calendar_view_week_rounded,
-                        color: AppTheme.primaryColor,
-                        size: 16,
-                      ),
-                      SizedBox(
-                          width: AppTheme.getSmallPadding(widget.screenSize) *
-                              0.5),
-                      Text(
-                        'Ver completo',
-                        style: AppTheme.getCaption(widget.screenSize).copyWith(
-                          color: AppTheme.primaryColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                _navigateToFullSchedule(context);
+              },
+              icon: Icon(Icons.calendar_view_week_rounded,
+                  color: Colors.white, size: 18),
+              label: Text(
+                'Ver completo',
+                style: AppTheme.getButton(widget.screenSize)
+                    .copyWith(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.accentBlue,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                      AppTheme.getMediumRadius(widget.screenSize)),
                 ),
+                elevation: 0,
               ),
             ),
           ),
-
-        // Schedule icon
         Container(
           margin: EdgeInsets.only(
               left: AppTheme.getSmallPadding(widget.screenSize)),
@@ -449,18 +435,6 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
   Widget _buildStudentSelector() {
     return Consumer<StudentProvider>(
       builder: (context, studentProvider, child) {
-        // Auto-select first student when students become available
-        if (studentProvider.students.isNotEmpty && _selectedStudentId == null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              setState(() {
-                _selectedStudentId = studentProvider.students.first.id;
-              });
-              _loadTodaySchedule();
-            }
-          });
-        }
-
         if (studentProvider.students.isEmpty) {
           return Container(
             padding:
@@ -468,8 +442,7 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
             decoration: BoxDecoration(
               color: AppTheme.getCardColor(context),
               borderRadius: BorderRadius.circular(
-                AppTheme.getMediumRadius(widget.screenSize),
-              ),
+                  AppTheme.getMediumRadius(widget.screenSize)),
             ),
             child: Row(
               children: [
@@ -489,50 +462,35 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
             ),
           );
         }
-
-        return Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: AppTheme.getMediumPadding(widget.screenSize),
-            vertical: AppTheme.getSmallPadding(widget.screenSize),
-          ),
-          decoration: BoxDecoration(
-            color: AppTheme.getCardColor(context),
-            borderRadius: BorderRadius.circular(
-              AppTheme.getMediumRadius(widget.screenSize),
-            ),
-            border: Border.all(
-              color: AppTheme.primaryColor.withValues(alpha: 0.2),
-            ),
-          ),
-          child: ModernDropdown<String>(
-            value: _selectedStudentId ?? '',
-            items:
-                studentProvider.students.map((student) => student.id).toList(),
-            onChanged: (value) {
-              if (value != null) {
-                _onStudentSelected(value);
-              }
-            },
-            getLabel: (id) {
-              final student = studentProvider.students.firstWhere(
-                (s) => s.id == id,
-                orElse: () => StudentDetails(
-                  id: '',
-                  nombre: '',
-                  matricula: '',
-                  escuelaId: '',
-                  grupoId: '',
-                  grupo: '',
-                  nivelEducativo: '',
-                  llaveActiva: false,
-                  fechaRegistro: DateTime(2000, 1, 1),
-                  tutores: const [],
-                ),
-              );
-              return student.nombre;
-            },
-            screenSize: widget.screenSize,
-          ),
+        return ModernDropdown<String>(
+          value: _selectedStudentId ?? '',
+          items: studentProvider.students.map((student) => student.id).toList(),
+          onChanged: (value) {
+            if (value != null) {
+              _onStudentSelected(value);
+            }
+          },
+          getLabel: (id) {
+            final student = studentProvider.students.firstWhere(
+              (s) => s.id == id,
+              orElse: () => StudentDetails(
+                id: '',
+                nombre: '',
+                matricula: '',
+                escuelaId: '',
+                grupoId: '',
+                grupo: '',
+                nivelEducativo: '',
+                llaveActiva: false,
+                fechaRegistro: DateTime(2000, 1, 1),
+                tutores: const [],
+              ),
+            );
+            return student.nombre;
+          },
+          screenSize: widget.screenSize,
+          backgroundColor:
+              AppTheme.getSecondaryBackgroundColor(context).withOpacity(0.9),
         );
       },
     );
@@ -600,6 +558,7 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
           SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
           ElevatedButton(
             onPressed: () {
+              HapticFeedback.mediumImpact();
               setState(() {
                 _error = null;
               });
@@ -687,34 +646,17 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
   }
 
   Widget _buildClassesList() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius: BorderRadius.circular(
-          AppTheme.getLargeRadius(widget.screenSize),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.shadowColor.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: _todayClasses.asMap().entries.map((entry) {
-          final index = entry.key;
-          final clase = entry.value;
-          final isLast = index == _todayClasses.length - 1;
-
-          return _TodayClassCard(
-            clase: clase,
-            screenSize: widget.screenSize,
-            status: _getClassStatus(clase),
-            isLast: isLast,
-          );
-        }).toList(),
-      ),
+    return Column(
+      children: _todayClasses.asMap().entries.map((entry) {
+        final index = entry.key;
+        final clase = entry.value;
+        return _TodayClassCard(
+          clase: clase,
+          screenSize: widget.screenSize,
+          status: _getClassStatus(clase),
+          isLast: index == _todayClasses.length - 1,
+        );
+      }).toList(),
     );
   }
 }
@@ -773,158 +715,176 @@ class _TodayClassCard extends StatelessWidget {
       builder: (context, scheduleProvider, child) {
         final materia = scheduleProvider.getMateriaById(clase.materiaId);
         final statusColor = _getStatusColor();
+        final cardColor = materia != null
+            ? AppTheme.hexToColor(materia.color)
+            : AppTheme.accentPurple;
 
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-          decoration: BoxDecoration(
-            color: status == ClaseStatus.inProgress
-                ? statusColor.withValues(alpha: 0.05)
-                : null,
-            border: !isLast
-                ? Border(
-                    bottom: BorderSide(
-                      color: AppTheme.getTextSecondaryColor(context)
-                          .withValues(alpha: 0.1),
-                      width: 1,
-                    ),
-                  )
-                : null,
-          ),
-          child: Row(
-            children: [
-              // Time indicator
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: status == ClaseStatus.inProgress
-                      ? Border.all(color: statusColor, width: 2)
-                      : null,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      TimeFormat.format24to12(clase.horaInicio),
-                      style: AppTheme.getCaption(screenSize).copyWith(
-                        color: statusColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                      ),
-                    ),
-                    Container(
-                      width: 15,
-                      height: 1,
-                      color: statusColor.withValues(alpha: 0.5),
-                      margin: const EdgeInsets.symmetric(vertical: 1),
-                    ),
-                    Text(
-                      TimeFormat.format24to12(clase.horaFin),
-                      style: AppTheme.getCaption(screenSize).copyWith(
-                        color: statusColor.withValues(alpha: 0.8),
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-
-              // Class details
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+        return TweenAnimationBuilder<double>(
+          duration: const Duration(milliseconds: 350),
+          tween: Tween(begin: 0.0, end: 1.0),
+          builder: (context, value, child) {
+            return Transform.translate(
+              offset: Offset(0, 30 * (1 - value)),
+              child: Opacity(
+                opacity: value,
+                child: Container(
+                  margin: EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.getSecondaryBackgroundColor(context),
+                    borderRadius: BorderRadius.circular(
+                        AppTheme.getMediumRadius(screenSize)),
+                    border: Border.all(
+                        color: cardColor.withOpacity(0.18), width: 1.2),
+                  ),
+                  child: Padding(
+                    padding:
+                        EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+                    child: Row(
                       children: [
-                        Expanded(
-                          child: Text(
-                            materia?.nombre ?? 'Materia',
-                            style: AppTheme.getSubtitle2(screenSize).copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.getTextPrimaryColor(context),
-                            ),
-                          ),
-                        ),
-                        // Status badge
+                        // Time indicator
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
+                          width: 60,
+                          height: 60,
                           decoration: BoxDecoration(
-                            color: statusColor.withValues(alpha: 0.1),
+                            color: cardColor.withOpacity(0.13),
                             borderRadius: BorderRadius.circular(12),
+                            border: status == ClaseStatus.inProgress
+                                ? Border.all(color: cardColor, width: 2)
+                                : null,
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(
-                                _getStatusIcon(),
-                                size: 12,
-                                color: statusColor,
-                              ),
-                              const SizedBox(width: 4),
                               Text(
-                                _getStatusText(),
+                                TimeFormat.format24to12(clase.horaInicio),
                                 style: AppTheme.getCaption(screenSize).copyWith(
-                                  color: statusColor,
-                                  fontWeight: FontWeight.w600,
+                                  color: cardColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              Container(
+                                width: 15,
+                                height: 1,
+                                color: cardColor.withOpacity(0.5),
+                                margin: const EdgeInsets.symmetric(vertical: 1),
+                              ),
+                              Text(
+                                TimeFormat.format24to12(clase.horaFin),
+                                style: AppTheme.getCaption(screenSize).copyWith(
+                                  color: cardColor.withOpacity(0.8),
                                   fontSize: 10,
                                 ),
                               ),
                             ],
                           ),
                         ),
+                        SizedBox(width: AppTheme.getMediumPadding(screenSize)),
+                        // Class details
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      materia?.nombre ?? 'Materia',
+                                      style: AppTheme.getSubtitle2(screenSize)
+                                          .copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.getTextPrimaryColor(
+                                            context),
+                                      ),
+                                    ),
+                                  ),
+                                  // Status badge
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: cardColor.withOpacity(0.13),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          _getStatusIcon(),
+                                          size: 12,
+                                          color: cardColor,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          _getStatusText(),
+                                          style: AppTheme.getCaption(screenSize)
+                                              .copyWith(
+                                            color: cardColor,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (materia?.profesor?.isNotEmpty == true) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.person_outline_rounded,
+                                      size: 14,
+                                      color: AppTheme.getTextSecondaryColor(
+                                          context),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      materia!.profesor!,
+                                      style: AppTheme.getCaption(screenSize)
+                                          .copyWith(
+                                        color: AppTheme.getTextSecondaryColor(
+                                            context),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                              if (clase.aula.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.room_outlined,
+                                      size: 14,
+                                      color: AppTheme.getTextSecondaryColor(
+                                          context),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Aula ${clase.aula}',
+                                      style: AppTheme.getCaption(screenSize)
+                                          .copyWith(
+                                        color: AppTheme.getTextSecondaryColor(
+                                            context),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                       ],
                     ),
-                    if (materia?.profesor?.isNotEmpty == true) ...[
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.person_outline_rounded,
-                            size: 14,
-                            color: AppTheme.getTextSecondaryColor(context),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            materia!.profesor!,
-                            style: AppTheme.getCaption(screenSize).copyWith(
-                              color: AppTheme.getTextSecondaryColor(context),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                    if (clase.aula.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.room_outlined,
-                            size: 14,
-                            color: AppTheme.getTextSecondaryColor(context),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Aula ${clase.aula}',
-                            style: AppTheme.getCaption(screenSize).copyWith(
-                              color: AppTheme.getTextSecondaryColor(context),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );

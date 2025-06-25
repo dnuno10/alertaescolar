@@ -66,7 +66,7 @@ class StudentKeyInfoCard extends StatelessWidget {
           StudentDetailRow(
             icon: Icons.schedule_rounded,
             label: l10n.remainingTime,
-            value: _calculateRemainingTime(),
+            value: _calculateRemainingTime(context),
             iconColor: AppTheme.accentBlue,
             screenSize: screenSize,
           ),
@@ -85,13 +85,14 @@ class StudentKeyInfoCard extends StatelessWidget {
       return l10n.activated;
     }
 
-    return '${l10n.activated} ($linkedTutorsCount ${linkedTutorsCount == 1 ? 'tutor vinculado' : 'tutores vinculados'})';
+    return '${l10n.activated} (${linkedTutorsCount} ${linkedTutorsCount == 1 ? l10n.linkedTutor : l10n.linkedTutors})';
   }
 
-  String _calculateRemainingTime() {
+  String _calculateRemainingTime(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     // Check if we have the required data from the llaves table
     if (student.fechaRegistroLlave == null) {
-      return 'Información no disponible';
+      return l10n.informationNotAvailable;
     }
 
     // Get the current time
@@ -99,7 +100,7 @@ class StudentKeyInfoCard extends StatelessWidget {
 
     // If fechaDesactivacionLlave is null, the key doesn't expire
     if (student.fechaDesactivacionLlave == null) {
-      return 'Sin límite de tiempo';
+      return l10n.noTimeLimit;
     }
 
     // The remaining time is the difference between now and fecha_desactivacion
@@ -107,7 +108,7 @@ class StudentKeyInfoCard extends StatelessWidget {
 
     // Check if already expired
     if (expirationDate.isBefore(now)) {
-      return 'Expirado';
+      return l10n.expired;
     }
 
     // Calculate remaining time
@@ -117,14 +118,17 @@ class StudentKeyInfoCard extends StatelessWidget {
       final days = difference.inDays;
       final hours = difference.inHours % 24;
 
-      if (days > 1) {
-        return '$days días restantes';
-      } else if (days == 1) {
-        if (hours > 0) {
-          return '1 día y $hours horas restantes';
-        } else {
-          return '1 día restante';
-        }
+      if (days > 0) {
+        return days == 1 ? l10n.oneDayRemaining : l10n.daysRemaining(days);
+      } else if (hours > 0) {
+        return hours == 1 ? l10n.oneHourRemaining : l10n.hoursRemaining(hours);
+      } else if (difference.inMinutes > 0) {
+        final minutes = difference.inMinutes;
+        return minutes == 1
+            ? l10n.oneMinuteRemaining
+            : l10n.minutesRemaining(minutes);
+      } else {
+        return l10n.lessThanOneMinuteRemaining;
       }
     }
 
@@ -132,22 +136,24 @@ class StudentKeyInfoCard extends StatelessWidget {
       final hours = difference.inHours;
       final minutes = difference.inMinutes % 60;
 
-      if (hours > 1) {
-        return '$hours horas restantes';
+      if (hours > 0) {
+        return hours == 1 ? l10n.oneHourRemaining : l10n.hoursRemaining(hours);
+      } else if (minutes > 0) {
+        return minutes == 1
+            ? l10n.oneMinuteRemaining
+            : l10n.minutesRemaining(minutes);
       } else {
-        if (minutes > 0) {
-          return '1 hora y $minutes minutos restantes';
-        } else {
-          return '1 hora restante';
-        }
+        return l10n.lessThanOneMinuteRemaining;
       }
     }
 
     if (difference.inMinutes > 0) {
       final minutes = difference.inMinutes;
-      return '$minutes minutos restantes';
+      return minutes == 1
+          ? l10n.oneMinuteRemaining
+          : l10n.minutesRemaining(minutes);
     }
 
-    return 'Menos de 1 minuto restante';
+    return l10n.lessThanOneMinuteRemaining;
   }
 }

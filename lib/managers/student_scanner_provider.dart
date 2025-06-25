@@ -17,6 +17,12 @@ class StudentScannerProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void clearAllData() {
+    _isLoading = false;
+    _error = null;
+    notifyListeners();
+  }
+
   /// Find student by matricula (QR code value)
   /// Returns the student with grupo information
   Future<Alumno?> findStudentByMatricula(String matricula) async {

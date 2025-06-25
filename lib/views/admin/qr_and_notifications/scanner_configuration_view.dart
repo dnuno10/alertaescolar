@@ -119,8 +119,9 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
       _escuelaId = userProvider.currentUser?.escuelaId;
 
       if (_escuelaId == null) {
+        final l10n = AppLocalizations.of(context);
         setState(() {
-          _errorMessage = 'No se pudo identificar la escuela del usuario.';
+          _errorMessage = l10n.schoolNotIdentified;
           _isLoadingData = false;
         });
         return;
@@ -160,8 +161,9 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
 
       setState(() => _isLoadingData = false);
     } catch (e) {
+      final l10n = AppLocalizations.of(context);
       setState(() {
-        _errorMessage = 'Error al cargar la configuración: $e';
+        _errorMessage = l10n.errorLoadingConfiguration(e.toString());
         _isLoadingData = false;
       });
     }

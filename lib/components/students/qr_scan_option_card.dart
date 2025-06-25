@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../l10n/app_localizations.dart';
 import '../../app/app_theme.dart';
 
@@ -33,7 +34,10 @@ class QRScanOptionCard extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTap,
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            onTap();
+          },
           borderRadius:
               BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
           child: Padding(

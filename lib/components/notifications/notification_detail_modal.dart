@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/models.dart';
@@ -113,7 +114,10 @@ class NotificationDetailModal extends StatelessWidget {
                 ),
               ),
               GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  Navigator.of(context).pop();
+                },
                 child: Container(
                   padding: EdgeInsets.all(
                       AppTheme.getSmallPadding(screenSize) * 0.5),
@@ -152,7 +156,7 @@ class NotificationDetailModal extends StatelessWidget {
 
           _buildDetailRow(
             context,
-            'Fecha',
+            l10n.date,
             _formatDate(notification.fechaHora),
             Icons.calendar_today_rounded,
             screenSize,
@@ -170,7 +174,7 @@ class NotificationDetailModal extends StatelessWidget {
 
           // Título (para todos los tipos de notificaciones)
           Text(
-            'Título',
+            l10n.title,
             style: AppTheme.getSubtitle1(screenSize).copyWith(
               color: AppTheme.getTextPrimaryColor(context),
               fontWeight: FontWeight.w600,

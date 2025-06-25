@@ -99,7 +99,10 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
       child: Row(
         children: [
           IconButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              Navigator.pop(context);
+            },
             icon: Icon(
               Icons.arrow_back_ios_new,
               color: AppTheme.getTextPrimaryColor(context),
@@ -197,7 +200,10 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
                     backgroundColor: AppTheme.accentPurple,
                     screenSize: size,
                     width: size.width * 0.9,
-                    onPressed: () => _handleLogin(),
+                    onPressed: () {
+                      HapticFeedback.mediumImpact();
+                      _handleLogin();
+                    },
                   ),
 
                   SizedBox(height: AppTheme.getMediumPadding(size)),
@@ -214,6 +220,7 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
                       ),
                       TextButton(
                         onPressed: () {
+                          HapticFeedback.mediumImpact();
                           Navigator.pushReplacementNamed(context, '/signup');
                         },
                         child: Text(
@@ -304,6 +311,7 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
                       children: [
                         GestureDetector(
                           onTap: () {
+                            HapticFeedback.mediumImpact();
                             Navigator.pushNamed(context, '/terms');
                           },
                           child: Text(
@@ -327,6 +335,7 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
                         ),
                         GestureDetector(
                           onTap: () {
+                            HapticFeedback.mediumImpact();
                             Navigator.pushNamed(context, '/privacy');
                           },
                           child: Text(
@@ -417,7 +426,10 @@ class _GoogleSignInButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
-          onTap: () => _signInWithGoogle(context),
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            _signInWithGoogle(context);
+          },
           child: Padding(
             padding: EdgeInsets.symmetric(
               horizontal: AppTheme.getMediumPadding(size),
@@ -501,7 +513,10 @@ class _AppleSignInButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
-          onTap: () => _signInWithApple(context),
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            _signInWithApple(context);
+          },
           child: Padding(
             padding: EdgeInsets.symmetric(
               horizontal: AppTheme.getMediumPadding(size),

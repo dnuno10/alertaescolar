@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../app/app_theme.dart';
 import '../../../widgets/custom_snack_bar.dart';
 
@@ -29,7 +30,10 @@ class MessageTypeOption extends StatelessWidget {
     final isSelected = selectedType == value;
 
     return GestureDetector(
-      onTap: () => onSelect(value),
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        onSelect(value);
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),

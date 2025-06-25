@@ -234,6 +234,18 @@ class AttendanceScannerProvider with ChangeNotifier {
     _lastScannedCode = null;
   }
 
+  void clearAllData() {
+    _state = ScannerState.idle;
+    _selectedScannerType = null;
+    _lastScannedCode = null;
+    _errorMessage = null;
+    _successMessage = null;
+    _isListeningToPhysicalScanner = false;
+    _cameraController = null;
+    _scannedHistory.clear();
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _cameraController?.dispose();

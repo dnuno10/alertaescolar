@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../app/app_theme.dart';
 import '../../../models/models.dart';
 
@@ -7,6 +8,7 @@ class ClassCard extends StatelessWidget {
   final int index;
   final Size screenSize;
   final Materia? subject;
+  final bool showDay;
 
   const ClassCard({
     super.key,
@@ -14,12 +16,14 @@ class ClassCard extends StatelessWidget {
     required this.index,
     required this.screenSize,
     this.subject,
+    this.showDay = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    final String subjectName = subject?.nombre ?? 'Materia';
-    final String professor = subject?.profesor ?? 'Profesor';
+    final String subjectName = subject?.nombre ?? 'Materia no especificada';
+    final String professor = subject?.profesor ?? 'Profesor no asignado';
+    final String description = ''; // Description not available in current model
     final Color cardColor = _getSubjectColor(subject?.color ?? '#9B5DE5');
 
     return TweenAnimationBuilder<double>(
@@ -34,50 +38,67 @@ class ClassCard extends StatelessWidget {
               margin:
                   EdgeInsets.only(bottom: AppTheme.getSmallPadding(screenSize)),
               decoration: BoxDecoration(
-                color: AppTheme.getSurfaceColor(context),
+                color: AppTheme.getCardColor(context),
                 borderRadius:
-                    BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+                    BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
                 border: Border.all(
-                  color: AppTheme.getBorderColor(context),
-                  width: 1,
+                  color: cardColor.withOpacity(0.2),
+                  width: 1.5,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.getShadowColor(context),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
               ),
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(
-                      AppTheme.getMediumRadius(screenSize)),
+                      AppTheme.getLargeRadius(screenSize)),
+                  onTap: () {
+                    HapticFeedback.mediumImpact();
+                    // Add functionality to view/edit class details
+                  },
                   child: Padding(
                     padding:
                         EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Header con icono y nombre
+                        // Header with subject icon and main info
                         Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Subject Icon
                             Container(
-                              width: screenSize.width * 0.12,
-                              height: screenSize.width * 0.12,
+                              width: screenSize.width * 0.14,
+                              height: screenSize.width * 0.14,
                               decoration: BoxDecoration(
-                                color: cardColor.withValues(alpha: 0.1),
+                                gradient: LinearGradient(
+                                  colors: [
+                                    cardColor.withOpacity(0.8),
+                                    cardColor.withOpacity(0.6),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
                                 borderRadius: BorderRadius.circular(
-                                    AppTheme.getSmallRadius(screenSize)),
+                                    AppTheme.getMediumRadius(screenSize)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: cardColor.withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
                               child: Icon(
                                 _getSubjectIcon(subjectName),
-                                color: cardColor,
-                                size: screenSize.width * 0.06,
+                                color: Colors.white,
+                                size: screenSize.width * 0.07,
                               ),
                             ),
+
                             SizedBox(
-                                width: AppTheme.getSmallPadding(screenSize)),
+                                width: AppTheme.getMediumPadding(screenSize)),
+
+                            // Subject Details
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,64 +107,146 @@ class ClassCard extends StatelessWidget {
                                     subjectName,
                                     style: AppTheme.getSubtitle1(screenSize)
                                         .copyWith(
-                                      fontWeight: FontWeight.w600,
+                                      fontWeight: FontWeight.w700,
                                       color:
                                           AppTheme.getTextPrimaryColor(context),
                                       height: 1.2,
                                     ),
-                                    maxLines: 1,
+                                    maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  SizedBox(height: screenSize.height * 0.003),
-                                  Text(
-                                    professor,
-                                    style: AppTheme.getBodyMedium(screenSize)
-                                        .copyWith(
-                                      color: AppTheme.getTextSecondaryColor(
-                                          context),
-                                      height: 1.3,
+                                  SizedBox(height: screenSize.height * 0.004),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.person_outline_rounded,
+                                        size: screenSize.width * 0.04,
+                                        color: AppTheme.getTextSecondaryColor(
+                                            context),
+                                      ),
+                                      SizedBox(width: screenSize.width * 0.01),
+                                      Expanded(
+                                        child: Text(
+                                          professor,
+                                          style:
+                                              AppTheme.getBodyMedium(screenSize)
+                                                  .copyWith(
+                                            color:
+                                                AppTheme.getTextSecondaryColor(
+                                                    context),
+                                            fontWeight: FontWeight.w500,
+                                            height: 1.3,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (description.isNotEmpty) ...[
+                                    SizedBox(height: screenSize.height * 0.006),
+                                    Text(
+                                      description,
+                                      style: AppTheme.getCaption(screenSize)
+                                          .copyWith(
+                                        color: AppTheme.getTextSecondaryColor(
+                                            context),
+                                        height: 1.4,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                                  ],
                                 ],
                               ),
                             ),
                           ],
                         ),
 
-                        // Separador
-                        SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+                        SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-                        // Información de tiempo y lugar
-                        Row(
-                          children: [
-                            Expanded(
-                              flex: clase.aula.isNotEmpty ? 1 : 2,
-                              child: _buildInfoChip(
-                                icon: Icons.access_time_rounded,
-                                text: clase.horarioTexto,
-                                color: cardColor,
-                                screenSize: screenSize,
-                              ),
+                        // Time and Location Info
+                        Container(
+                          padding: EdgeInsets.all(
+                              AppTheme.getSmallPadding(screenSize)),
+                          decoration: BoxDecoration(
+                            color: cardColor.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(
+                                AppTheme.getSmallRadius(screenSize)),
+                            border: Border.all(
+                              color: cardColor.withOpacity(0.1),
                             ),
-                            if (clase.aula.isNotEmpty) ...[
-                              SizedBox(
-                                  width: AppTheme.getSmallPadding(screenSize) *
-                                      0.5),
+                          ),
+                          child: Row(
+                            children: [
+                              // Time Information
                               Expanded(
-                                flex: 1,
+                                flex: clase.aula.isNotEmpty ? 3 : 2,
                                 child: _buildInfoChip(
-                                  icon: Icons.location_on_outlined,
-                                  text: clase.aula,
-                                  color:
-                                      AppTheme.getTextSecondaryColor(context),
+                                  icon: Icons.schedule_rounded,
+                                  label: 'Horario',
+                                  text: clase.horarioLimpio,
+                                  color: cardColor,
                                   screenSize: screenSize,
                                 ),
                               ),
+
+                              if (clase.aula.isNotEmpty) ...[
+                                SizedBox(
+                                    width:
+                                        AppTheme.getSmallPadding(screenSize)),
+                                // Location Information
+                                Expanded(
+                                  flex: 2,
+                                  child: _buildInfoChip(
+                                    icon: Icons.room_rounded,
+                                    label: 'Aula',
+                                    text: clase.aula,
+                                    color: AppTheme.accentBlue,
+                                    screenSize: screenSize,
+                                  ),
+                                ),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
+
+                        // Day indicator if needed and showDay is true
+                        if (showDay && clase.dia != null) ...[
+                          SizedBox(
+                              height: AppTheme.getSmallPadding(screenSize)),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: AppTheme.getSmallPadding(screenSize),
+                              vertical:
+                                  AppTheme.getSmallPadding(screenSize) * 0.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.accentPurple.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(
+                                  AppTheme.getSmallRadius(screenSize)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.calendar_today_rounded,
+                                  size: screenSize.width * 0.035,
+                                  color: AppTheme.accentPurple,
+                                ),
+                                SizedBox(width: screenSize.width * 0.01),
+                                Text(
+                                  _getDayName(clase.dia!),
+                                  style: AppTheme.getCaptionSmall(screenSize)
+                                      .copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.accentPurple,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -158,39 +261,62 @@ class ClassCard extends StatelessWidget {
 
   Widget _buildInfoChip({
     required IconData icon,
+    required String label,
     required String text,
     required Color color,
     required Size screenSize,
   }) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppTheme.getSmallPadding(screenSize) * 0.75,
-        vertical: AppTheme.getSmallPadding(screenSize) * 0.5,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: screenSize.width * 0.035,
-            color: color,
-          ),
-          SizedBox(width: screenSize.width * 0.01),
-          Text(
-            text,
-            style: AppTheme.getCaptionSmall(screenSize).copyWith(
-              fontWeight: FontWeight.w600,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              icon,
+              size: screenSize.width * 0.035,
               color: color,
             ),
+            SizedBox(width: screenSize.width * 0.01),
+            Text(
+              label,
+              style: AppTheme.getCaptionSmall(screenSize).copyWith(
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: screenSize.height * 0.002),
+        Text(
+          text,
+          style: AppTheme.getCaption(screenSize).copyWith(
+            fontWeight: FontWeight.w500,
+            color: color,
           ),
-        ],
-      ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
+  }
+
+  String _getDayName(DiaSemana day) {
+    switch (day) {
+      case DiaSemana.lunes:
+        return 'Lunes';
+      case DiaSemana.martes:
+        return 'Martes';
+      case DiaSemana.miercoles:
+        return 'Miércoles';
+      case DiaSemana.jueves:
+        return 'Jueves';
+      case DiaSemana.viernes:
+        return 'Viernes';
+      case DiaSemana.sabado:
+        return 'Sábado';
+      case DiaSemana.domingo:
+        return 'Domingo';
+    }
   }
 
   Color _getSubjectColor(String hexColor) {
@@ -202,25 +328,49 @@ class ClassCard extends StatelessWidget {
     }
   }
 
-  IconData _getSubjectIcon(String subject) {
-    final subjectLower = subject.toLowerCase();
-    if (subjectLower.contains('matemá')) return Icons.calculate_outlined;
-    if (subjectLower.contains('español') || subjectLower.contains('lengua'))
-      return Icons.menu_book_outlined;
-    if (subjectLower.contains('ciencia')) return Icons.science_outlined;
-    if (subjectLower.contains('historia')) return Icons.history_edu_outlined;
-    if (subjectLower.contains('física') || subjectLower.contains('deporte'))
-      return Icons.sports_soccer_outlined;
-    if (subjectLower.contains('inglés') || subjectLower.contains('idioma'))
-      return Icons.language_outlined;
-    if (subjectLower.contains('arte') || subjectLower.contains('dibujo'))
-      return Icons.palette_outlined;
-    if (subjectLower.contains('música')) return Icons.music_note_outlined;
-    if (subjectLower.contains('geografía')) return Icons.public_outlined;
-    if (subjectLower.contains('química')) return Icons.biotech_outlined;
-    if (subjectLower.contains('biología')) return Icons.eco_outlined;
-    if (subjectLower.contains('tecnología') ||
-        subjectLower.contains('informática')) return Icons.computer_outlined;
-    return Icons.school_outlined;
+  IconData _getSubjectIcon(String subjectName) {
+    final subject = subjectName.toLowerCase();
+
+    if (subject.contains('matemáticas') ||
+        subject.contains('matematicas') ||
+        subject.contains('math')) {
+      return Icons.calculate_rounded;
+    } else if (subject.contains('español') ||
+        subject.contains('lengua') ||
+        subject.contains('idioma')) {
+      return Icons.menu_book_rounded;
+    } else if (subject.contains('ciencias') ||
+        subject.contains('biología') ||
+        subject.contains('biologia') ||
+        subject.contains('química') ||
+        subject.contains('quimica')) {
+      return Icons.science_rounded;
+    } else if (subject.contains('historia') || subject.contains('sociales')) {
+      return Icons.history_edu_rounded;
+    } else if (subject.contains('educación física') ||
+        subject.contains('educacion fisica') ||
+        subject.contains('deporte')) {
+      return Icons.sports_soccer_rounded;
+    } else if (subject.contains('arte') ||
+        subject.contains('dibujo') ||
+        subject.contains('música') ||
+        subject.contains('musica')) {
+      return Icons.palette_rounded;
+    } else if (subject.contains('inglés') ||
+        subject.contains('ingles') ||
+        subject.contains('english')) {
+      return Icons.language_rounded;
+    } else if (subject.contains('informática') ||
+        subject.contains('informatica') ||
+        subject.contains('computación') ||
+        subject.contains('computacion')) {
+      return Icons.computer_rounded;
+    } else if (subject.contains('geografía') || subject.contains('geografia')) {
+      return Icons.public_rounded;
+    } else if (subject.contains('física') || subject.contains('fisica')) {
+      return Icons.science_rounded;
+    } else {
+      return Icons.school_rounded;
+    }
   }
 }

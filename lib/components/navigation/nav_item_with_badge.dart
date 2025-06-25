@@ -1,5 +1,6 @@
 import 'package:alertaescolar/managers/notification_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../app/app_theme.dart';
 import 'package:provider/provider.dart';
 
@@ -26,6 +27,7 @@ class NavItemWithBadge extends StatelessWidget {
     return Flexible(
       child: GestureDetector(
         onTap: () {
+          HapticFeedback.mediumImpact();
           // Mark all notifications as read when navigating to notifications view
           final provider =
               Provider.of<NotificationProvider>(context, listen: false);

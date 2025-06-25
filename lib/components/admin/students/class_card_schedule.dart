@@ -1,7 +1,9 @@
 import 'package:alertaescolar/app/app_theme.dart';
 import 'package:alertaescolar/models/horario.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../utils/time_format.dart';
+import '../../../l10n/app_localizations.dart';
 
 class ClassCardSchedule extends StatefulWidget {
   final ClaseHorario clase;
@@ -99,10 +101,6 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
     });
     _scaleController.reverse();
   }
-
-// ...existing code...
-
-// ...existing code...
 
   String _formatTime(String time) {
     try {
@@ -215,7 +213,8 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
 
   @override
   Widget build(BuildContext context) {
-    final String subjectName = widget.materia?.nombre ?? 'Materia';
+    final l10n = AppLocalizations.of(context);
+    final String subjectName = widget.materia?.nombre ?? l10n.subject;
     final String professor = widget.materia?.profesor ?? '';
     final Color cardColor =
         _getSubjectColor(widget.materia?.color ?? '#9B5DE5');
@@ -233,6 +232,7 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
             onTapUp: _onTapUp,
             onTapCancel: _onTapCancel,
             onTap: () {
+              HapticFeedback.mediumImpact();
               // You can add navigation or show details here
               _showClassDetails(context);
             },
@@ -367,6 +367,7 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
 
   Widget _buildClassDetails(BuildContext context, String subjectName,
       String professor, Duration duration) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -394,11 +395,10 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                '${duration.inMinutes}min',
+                l10n.durationInMinutes(duration.inMinutes),
                 style: AppTheme.getCaption(widget.screenSize).copyWith(
                   color: AppTheme.getOnPrimaryColor(context),
                   fontWeight: FontWeight.w600,
-                  fontSize: MediaQuery.of(context).size.height * 0.012,
                 ),
               ),
             ),
@@ -408,7 +408,7 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
         SizedBox(height: AppTheme.getSmallPadding(widget.screenSize) * 0.5),
 
         // Professor info with enhanced styling
-        if (professor.isNotEmpty && professor != 'Profesor') ...[
+        if (professor.isNotEmpty && professor != l10n.teacher) ...[
           Row(
             children: [
               Icon(
@@ -444,7 +444,7 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
               ),
               const SizedBox(width: 4),
               Text(
-                'Aula ${widget.clase.aula}',
+                l10n.classroom + ' ' + widget.clase.aula,
                 style: AppTheme.getCaption(widget.screenSize).copyWith(
                   color: AppTheme.getTextSecondaryColor(context),
                   fontWeight: FontWeight.w500,
@@ -479,6 +479,7 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
   }
 
   Widget _buildClassDetailModal() {
+    final l10n = AppLocalizations.of(context);
     final Color cardColor =
         _getSubjectColor(widget.materia?.color ?? '#9B5DE5');
 
@@ -505,7 +506,7 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
 
           // Class title
           Text(
-            widget.materia?.nombre ?? 'Detalles de la Clase',
+            widget.materia?.nombre ?? l10n.classDetails,
             style: AppTheme.getH2(widget.screenSize).copyWith(
               fontWeight: FontWeight.bold,
               color: cardColor,
@@ -516,7 +517,7 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
           // Class details
           _DetailRow(
             icon: Icons.access_time_rounded,
-            label: 'Horario',
+            label: l10n.schedule,
             value:
                 '${_formatTime(widget.clase.horaInicio)} - ${_formatTime(widget.clase.horaFin)}',
             color: cardColor,
@@ -526,7 +527,7 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
             const SizedBox(height: 12),
             _DetailRow(
               icon: Icons.person_outline_rounded,
-              label: 'Profesor',
+              label: l10n.teacher,
               value: widget.materia!.profesor!,
               color: cardColor,
             ),
@@ -536,7 +537,7 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
             const SizedBox(height: 12),
             _DetailRow(
               icon: Icons.room_outlined,
-              label: 'Aula',
+              label: l10n.classroom,
               value: widget.clase.aula,
               color: cardColor,
             ),
@@ -548,7 +549,10 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                Navigator.pop(context);
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: cardColor,
                 foregroundColor: Colors.white,
@@ -557,7 +561,7 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text('Cerrar'),
+              child: Text(l10n.close),
             ),
           ),
 

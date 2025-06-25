@@ -76,7 +76,7 @@ class NotificationProvider extends ChangeNotifier {
       // Convert to our Notificacion model
       _notifications = _mapNotificationsFromDb(response);
 
-      debugPrint('Loaded ${_notifications.length} notifications for user');
+      debugPrint('Loaded ${_notifications} notifications for user');
     } catch (e) {
       debugPrint('Error loading notifications: $e');
       _error = e.toString();
@@ -99,7 +99,7 @@ class NotificationProvider extends ChangeNotifier {
     return data.map((record) {
       final fechaRegistro = DateTime.parse(record['fecha_registro']);
       final tipoNotificacion = record['tipo_notificacion'] ?? '';
-      final estado = record['estado'] == 'leida'
+      final estado = record['estado'] == EstadoNotificacion.leida.name
           ? EstadoNotificacion.leida
           : EstadoNotificacion.nueva;
 
@@ -153,9 +153,8 @@ class NotificationProvider extends ChangeNotifier {
   Future<void> markAsRead(String notificationId) async {
     try {
       // Update the notification state in the database
-      await _supabase
-          .from('notificaciones')
-          .update({'estado': 'leida'}).eq('id', notificationId);
+      await _supabase.from('notificaciones').update(
+          {'estado': EstadoNotificacion.leida.name}).eq('id', notificationId);
 
       // Also update in the local state
       final index = _notifications.indexWhere((n) => n.id == notificationId);
@@ -202,9 +201,9 @@ class NotificationProvider extends ChangeNotifier {
         // Update all unread notifications for these children
         await _supabase
             .from('notificaciones')
-            .update({'estado': 'leida'})
+            .update({'estado': EstadoNotificacion.leida.name})
             .inFilter('id_alumno', childrenIds)
-            .eq('estado', 'nueva');
+            .eq('estado', EstadoNotificacion.nueva.name);
       }
 
       // Update local state

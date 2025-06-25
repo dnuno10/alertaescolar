@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../app/app_theme.dart';
 
 class NotificationSettingToggle extends StatelessWidget {
@@ -62,7 +63,10 @@ class NotificationSettingToggle extends StatelessWidget {
         ),
         Switch(
           value: value,
-          onChanged: onChanged,
+          onChanged: (value) {
+            HapticFeedback.mediumImpact();
+            onChanged(value);
+          },
           activeColor: AppTheme.accentPurple,
           activeTrackColor: AppTheme.accentPurple.withOpacity(0.3),
           inactiveThumbColor: AppTheme.getTextSecondaryColor(context),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../l10n/app_localizations.dart';
 import '../../app/app_theme.dart';
 
@@ -55,7 +56,10 @@ class DaySelector extends StatelessWidget {
                   padding: EdgeInsets.only(
                       right: AppTheme.getSmallPadding(screenSize)),
                   child: GestureDetector(
-                    onTap: () => onDaySelected(index),
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      onDaySelected(index);
+                    },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       padding: EdgeInsets.symmetric(

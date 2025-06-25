@@ -7,6 +7,8 @@ class CustomTextAreaField extends StatelessWidget {
   final IconData icon;
   final int maxLines;
   final String? Function(String?)? validator;
+  final TextInputAction? textInputAction;
+  final FocusNode? focusNode;
 
   const CustomTextAreaField({
     super.key,
@@ -15,6 +17,8 @@ class CustomTextAreaField extends StatelessWidget {
     required this.icon,
     this.maxLines = 1,
     this.validator,
+    this.textInputAction,
+    this.focusNode,
   });
 
   @override
@@ -36,6 +40,9 @@ class CustomTextAreaField extends StatelessWidget {
           controller: controller,
           maxLines: maxLines,
           validator: validator,
+          focusNode: focusNode,
+          textInputAction: textInputAction ??
+              (maxLines > 1 ? TextInputAction.newline : TextInputAction.done),
           style: AppTheme.getBodyMedium(screenSize).copyWith(
             fontWeight: FontWeight.w500,
             color: AppTheme.getTextPrimaryColor(context),

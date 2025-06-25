@@ -101,6 +101,7 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
         children: [
           IconButton(
             onPressed: () => {
+              HapticFeedback.mediumImpact(),
               Supabase.instance.client.auth.signOut(),
               Navigator.pop(context)
             },
@@ -230,6 +231,7 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
                         width: size.width * 0.9,
                         onPressed: _isFormValid
                             ? () {
+                                HapticFeedback.mediumImpact();
                                 _finishSetup();
                               }
                             : () {},
@@ -357,6 +359,7 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
         child: InkWell(
           borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
           onTap: () {
+            HapticFeedback.mediumImpact();
             setState(() {
               _selectedUserType = userType;
             });
@@ -423,6 +426,7 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
         ),
         TextButton(
           onPressed: () {
+            HapticFeedback.mediumImpact();
             Supabase.instance.client.auth.signOut();
             Navigator.pushReplacementNamed(context, '/intro');
           },

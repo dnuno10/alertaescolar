@@ -101,7 +101,7 @@ class AttendanceRecordItem extends StatelessWidget {
                           child: Text(
                             titulo.isNotEmpty
                                 ? titulo
-                                : 'Registro de $tipoNotificacion',
+                                : l10n.attendanceRecordOf(tipoNotificacion),
                             style:
                                 AppTheme.getCaptionSmall(screenSize).copyWith(
                               color: AppTheme.getTextSecondaryColor(context),
@@ -180,13 +180,14 @@ class AttendanceRecordItem extends StatelessWidget {
   }
 
   String _getStatusText(BuildContext context, String status) {
+    final l10n = AppLocalizations.of(context);
     switch (status) {
       case 'entrada':
-        return 'Entrada';
+        return l10n.entryTime;
       case 'retraso':
-        return 'Retraso';
+        return l10n.delayedEntry;
       case 'salida':
-        return 'Salida';
+        return l10n.exitTime;
       default:
         return status;
     }

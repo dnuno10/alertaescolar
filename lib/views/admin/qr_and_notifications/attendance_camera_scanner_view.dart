@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import '../../../app/app_theme.dart';
@@ -48,12 +49,13 @@ class _AttendanceCameraScannerViewState
                 color: AppTheme.getTextPrimaryColor(context),
               ),
               onPressed: () {
+                HapticFeedback.mediumImpact();
                 scannerProvider.stopCameraScanning();
                 Navigator.pop(context);
               },
             ),
             title: Text(
-              'Escáner de Cámara',
+              l10n.cameraScanner,
               style: AppTheme.getH2(screenSize).copyWith(
                 color: AppTheme.getTextPrimaryColor(context),
                 fontWeight: FontWeight.bold,
@@ -137,7 +139,7 @@ class _AttendanceCameraScannerViewState
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Posiciona el código QR dentro del marco',
+                        l10n.qrScannerInstructions,
                         style: AppTheme.getBodyLarge(screenSize).copyWith(
                           color: AppTheme.getTextPrimaryColor(context),
                           fontWeight: FontWeight.w500,
@@ -146,7 +148,7 @@ class _AttendanceCameraScannerViewState
                       ),
                       SizedBox(height: AppTheme.getSmallPadding(screenSize)),
                       Text(
-                        'El escaneo se realizará automáticamente',
+                        l10n.qrScannerAutomatic,
                         style: AppTheme.getBodyMedium(screenSize).copyWith(
                           color: AppTheme.getTextSecondaryColor(context),
                         ),
@@ -156,6 +158,7 @@ class _AttendanceCameraScannerViewState
                         SizedBox(height: AppTheme.getMediumPadding(screenSize)),
                         ElevatedButton.icon(
                           onPressed: () {
+                            HapticFeedback.mediumImpact();
                             scannerProvider.clearMessages();
                             scannerProvider.startCameraScanning();
                           },
@@ -172,7 +175,7 @@ class _AttendanceCameraScannerViewState
                             ),
                           ),
                           icon: const Icon(Icons.qr_code_scanner),
-                          label: const Text('Escanear Otro'),
+                          label: Text(l10n.scanAnother),
                         ),
                       ],
                     ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../l10n/app_localizations.dart';
 import '../../managers/student_provider.dart';
 import '../../app/app_theme.dart';
@@ -25,6 +26,7 @@ class StudentActionButtons extends StatelessWidget {
             icon: Icons.download_rounded,
             width: double.infinity,
             onPressed: () {
+              HapticFeedback.mediumImpact();
               _downloadCredential(context, l10n);
             },
             label: l10n.downloadDigitalCredential,
@@ -33,7 +35,10 @@ class StudentActionButtons extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: CustomOutlineButton(
-              onPressed: () => _deleteStudent(context, l10n),
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                _deleteStudent(context, l10n);
+              },
               label: l10n.delete,
               icon: Icons.delete,
               color: AppTheme.errorColor,
@@ -88,7 +93,10 @@ class StudentActionButtons extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              Navigator.pop(context);
+            },
             child: Text(
               l10n.cancel,
               style: AppTheme.getBodyMedium(screenSize).copyWith(
@@ -98,6 +106,7 @@ class StudentActionButtons extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () async {
+              HapticFeedback.mediumImpact();
               Navigator.pop(context); // Close dialog
 
               // For now, just show a message since we need the current user ID to unlink
