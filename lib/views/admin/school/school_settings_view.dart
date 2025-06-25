@@ -9,7 +9,6 @@ import '../../../components/buttons/solid_button.dart';
 import '../../../models/models.dart';
 import '../../../components/admin/school/information_tab.dart';
 import '../../../components/admin/school/contact_tab.dart';
-import '../../../components/admin/school/color_picker_bottom_sheet.dart';
 import '../../../managers/user_provider.dart';
 import '../../../managers/school_provider.dart';
 

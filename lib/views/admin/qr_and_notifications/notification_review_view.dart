@@ -5,7 +5,7 @@ import '../../../models/comunicado.dart';
 import '../../../models/grupo.dart';
 import '../../../models/turno.dart';
 import '../../../managers/user_provider.dart';
-import '../../../services/notification_service.dart';
+import '../../../services/notification_send_service.dart';
 import '../../../widgets/custom_snack_bar.dart';
 import '../../../components/headers/nav_header.dart';
 import '../../../components/buttons/solid_button.dart';
@@ -852,39 +852,21 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
       final adminId = currentUser.id;
       final escuelaId = currentUser.escuelaId!;
 
-      // Preparar datos para el envío
-      String? studentId;
-      List<String>? groupIds;
-      String? turnoId;
-
-      switch (widget.tipoDestinatario) {
-        case 'individual':
-          studentId = widget.selectedStudent?['id'];
-          break;
-        case 'grupo':
-          groupIds = widget.selectedGroups.map((grupo) => grupo.id).toList();
-          break;
-        case 'turno':
-          turnoId = widget.selectedShift?.id;
-          break;
-        case 'todos':
-          // No se necesitan parámetros adicionales
-          break;
-      }
-
-      // Enviar notificaciones
-      final result = await NotificationService.sendNotifications(
+      // Enviar notificaciones usando el nuevo servicio con FCM
+      final notificationSendService = NotificationSendService();
+      final result = await notificationSendService.sendNotification(
         adminId: adminId,
-        escuelaId: escuelaId,
-        titulo: widget.titulo,
-        mensaje: widget.mensaje,
-        tipoMensaje: widget.tipoMensaje,
-        tipoDestinatario: widget.tipoDestinatario,
-        studentId: studentId,
-        groupIds: groupIds,
-        turnoId: turnoId,
-        tipoComunicado: widget.tipoComunicado,
-        prioridadComunicado: widget.prioridadComunicado,
+        schoolId: escuelaId,
+        messageType: widget.tipoMensaje,
+        recipientType: widget.tipoDestinatario,
+        title: widget.titulo,
+        message: widget.mensaje,
+        comunicadoType: widget.tipoComunicado,
+        priority: widget.prioridadComunicado,
+        selectedStudent: widget.selectedStudent,
+        selectedGroups:
+            widget.selectedGroups.isNotEmpty ? widget.selectedGroups : null,
+        selectedShift: widget.selectedShift,
       );
 
       // Ocultar loading dialog
@@ -896,7 +878,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
       } else {
         CustomSnackBar.show(
           context: context,
-          message: result['message'],
+          message: result['error'] ?? 'Error desconocido',
           isError: true,
         );
       }
@@ -914,7 +896,8 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
 
   void _showSuccessDialog(BuildContext context, Map<String, dynamic> result) {
     final screenSize = MediaQuery.of(context).size;
-    final notificationsSent = result['notificationsSent'] as int? ?? 0;
+    final notificationsSent =
+        result['data']?['notifications_created'] as int? ?? 0;
 
     showDialog(
       context: context,
@@ -963,7 +946,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
               SizedBox(height: AppTheme.getSmallPadding(screenSize)),
 
               Text(
-                'Tu ${widget.tipoMensaje == 'permiso' ? 'permiso especial' : 'comunicado'} ha sido enviado exitosamente a $notificationsSent ${notificationsSent == 1 ? 'estudiante' : 'estudiantes'}.',
+                'Tu ${widget.tipoMensaje == 'permiso' ? 'permiso especial' : 'comunicado'} ha sido enviado exitosamente a $notificationsSent ${notificationsSent == 1 ? 'estudiante' : 'estudiantes'}.\n\nLas notificaciones push también fueron enviadas a los tutores.',
                 style: AppTheme.getBodyMedium(screenSize).copyWith(
                   color: AppTheme.getTextSecondaryColor(context),
                 ),

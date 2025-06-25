@@ -127,34 +127,69 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
         final character = event.character;
         final now = DateTime.now();
 
-        // Reset input if too much time has passed (new scan)
+        // Debug information más detallada
+        debugPrint(
+            'Key event: character="$character", code=${event.logicalKey.keyId}, physicalKey=${event.physicalKey.debugName}');
+
+        // Timeout más largo para computadoras (500ms en lugar de 100ms)
         if (_lastInputTime != null &&
-            now.difference(_lastInputTime!).inMilliseconds > 100) {
+            now.difference(_lastInputTime!).inMilliseconds > 500) {
+          debugPrint('Input timeout, resetting current input: $_currentInput');
           _currentInput = '';
         }
         _lastInputTime = now;
 
         if (character != null) {
-          if (character == '\n' || character == '\r') {
-            // Enter pressed - complete scan
+          // Manejo más amplio de caracteres de terminación
+          if (character == '\n' ||
+              character == '\r' ||
+              character == '\r\n' ||
+              event.logicalKey == LogicalKeyboardKey.enter ||
+              event.logicalKey == LogicalKeyboardKey.numpadEnter) {
+            debugPrint('End of input detected, final input: "$_currentInput"');
             if (_currentInput.isNotEmpty && _currentInput.length >= 3) {
               _processScannedCode(_currentInput.trim());
+            } else {
+              debugPrint(
+                  'Input too short or empty, ignoring: "$_currentInput"');
             }
             _currentInput = '';
-          } else if (character.codeUnitAt(0) >= 32) {
-            // Printable character
+          } else if (character.codeUnitAt(0) >= 32 &&
+              character.codeUnitAt(0) <= 126) {
+            // Solo caracteres ASCII imprimibles
             if (mounted) {
               setState(() {
                 _currentInput += character;
               });
-              debugPrint('Building input: $_currentInput');
+              debugPrint(
+                  'Building input: "$_currentInput" (length: ${_currentInput.length})');
             }
+          } else {
+            debugPrint(
+                'Non-printable character ignored: code=${character.codeUnitAt(0)}');
           }
+        } else {
+          // Manejo de teclas especiales sin representación de carácter
+          if (event.logicalKey == LogicalKeyboardKey.enter ||
+              event.logicalKey == LogicalKeyboardKey.numpadEnter) {
+            debugPrint(
+                'Enter key detected without character, final input: "$_currentInput"');
+            if (_currentInput.isNotEmpty && _currentInput.length >= 3) {
+              _processScannedCode(_currentInput.trim());
+            }
+            _currentInput = '';
+          }
+        }
+
+        // Auto-completar si el input se vuelve muy largo (medida de seguridad)
+        if (_currentInput.length > 100) {
+          debugPrint('Input too long, auto-completing: "$_currentInput"');
+          _processScannedCode(_currentInput.trim());
+          _currentInput = '';
         }
       }
     } catch (e) {
       debugPrint('Key event error: $e');
-      // Reset input on error
       if (mounted) {
         setState(() {
           _currentInput = '';

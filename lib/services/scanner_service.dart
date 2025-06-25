@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'fcm_service.dart';
 
 enum ScannerAccessType { entry, exit, automatic }
 
@@ -7,6 +8,7 @@ enum NotificationType { entrada, salida, retraso }
 
 class ScannerService {
   final SupabaseClient _supabase = Supabase.instance.client;
+  final FCMService _fcmService = FCMService();
 
   /// Process a scanned QR code with complete validation and notification creation
   ///
@@ -505,10 +507,30 @@ class ScannerService {
           .select()
           .single();
 
+      // Send push notification to student's tutors
+      final notificationId = response['id']?.toString() ?? '';
+      try {
+        await _fcmService.sendNotificationToStudentTutors(
+          studentId: studentId,
+          title: titulo,
+          body: mensaje,
+          notificationId: notificationId,
+          additionalData: {
+            'access_type': accessType.name,
+            'is_late': isLate.toString(),
+            'timestamp': timestamp.toIso8601String(),
+          },
+        );
+        debugPrint('FCM: Push notification sent successfully for attendance');
+      } catch (e) {
+        debugPrint('FCM: Error sending push notification for attendance: $e');
+        // Don't fail the whole process if push notification fails
+      }
+
       return {
         'success': true,
         'notification': {
-          'id': response['id']?.toString() ?? '',
+          'id': notificationId,
           'titulo': titulo,
           'mensaje': mensaje,
           'tipo': notificationType.name,

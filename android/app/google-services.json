@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "328996489325",
+    "project_id": "alerta-escolar-1e870",
+    "storage_bucket": "alerta-escolar-1e870.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:328996489325:android:c606bea66610aa1a375764",
+        "android_client_info": {
+          "package_name": "com.example.alertaescolarMb"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDf97wf-Iv8xhzZx9r2UHPvHFA5sGKPl84"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:328996489325:android:468129a94a82907a375764",
+        "android_client_info": {
+          "package_name": "com.example.alertaescolar_mb"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDf97wf-Iv8xhzZx9r2UHPvHFA5sGKPl84"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

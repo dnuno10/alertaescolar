@@ -14,15 +14,20 @@ import 'managers/user_provider.dart';
 import 'managers/notification_provider.dart';
 import 'providers/theme_provider.dart';
 import 'l10n/app_localizations.dart';
-
-// Import the required views for direct navigation
-import 'views/auth/intro_view.dart';
-import 'views/auth/finish_setting_up_view.dart';
-import 'views/user/home/home_view.dart';
-import 'views/admin/home/admin_dashboard_view.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'firebase_options.dart';
+import 'services/fcm_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Set up FCM background message handler
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -33,7 +38,66 @@ void main() async {
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
+
+  // Set up FCM auth state listener
+  _setupFCMAuthListener();
+
   runApp(const AlertaEscolarApp());
+}
+
+/// Set up FCM authentication state listener
+void _setupFCMAuthListener() {
+  supabase.auth.onAuthStateChange.listen((event) async {
+    if (event.event == AuthChangeEvent.signedIn) {
+      debugPrint('FCM: User signed in, initializing FCM service');
+
+      // Check if user is admin before initializing FCM
+      final user = supabase.auth.currentUser;
+      if (user != null) {
+        try {
+          final userData = await supabase
+              .from('usuarios')
+              .select('tipo')
+              .eq('id', user.id)
+              .maybeSingle();
+
+          if (userData != null) {
+            final tipoString = userData['tipo']?.toString() ?? '';
+            final isAdmin = tipoString == TipoUsuario.administrador.name;
+
+            if (!isAdmin) {
+              // Only initialize FCM for non-admin users
+              await FCMService().initializeFCM();
+            } else {
+              debugPrint('FCM: User is admin, skipping FCM initialization');
+            }
+          } else {
+            // If no user data found, check admin access list
+            final adminData = await supabase
+                .from('admin_access_list')
+                .select('*')
+                .eq('email', user.email ?? '')
+                .maybeSingle();
+
+            if (adminData == null) {
+              // Not in admin list, initialize FCM
+              await FCMService().initializeFCM();
+            } else {
+              debugPrint(
+                  'FCM: User is in admin access list, skipping FCM initialization');
+            }
+          }
+        } catch (e) {
+          debugPrint('FCM: Error checking user type: $e');
+          // On error, initialize FCM as a fallback for safety
+          await FCMService().initializeFCM();
+        }
+      }
+    } else if (event.event == AuthChangeEvent.signedOut) {
+      debugPrint('FCM: User signed out, removing FCM token');
+      await FCMService().removeFCMToken();
+    }
+  });
 }
 
 final supabase = Supabase.instance.client;

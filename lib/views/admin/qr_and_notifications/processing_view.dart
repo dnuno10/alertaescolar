@@ -33,6 +33,7 @@ class _ProcessingViewState extends State<ProcessingView>
   Map<String, dynamic>? _studentData;
   Map<String, dynamic>? _accessData;
   String? _errorMessage;
+  bool _hasStartedProcessing = false;
 
   // Animation controllers
   late AnimationController _processingAnimationController;
@@ -52,7 +53,15 @@ class _ProcessingViewState extends State<ProcessingView>
   void initState() {
     super.initState();
     _initAnimations();
-    _startProcessing();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasStartedProcessing) {
+      _hasStartedProcessing = true;
+      _startProcessing();
+    }
   }
 
   void _initAnimations() {
@@ -112,21 +121,35 @@ class _ProcessingViewState extends State<ProcessingView>
       parent: _slideInAnimationController,
       curve: Curves.easeOut,
     ));
+
+    // Start processing animation immediately
+    _processingAnimationController.repeat();
   }
 
   Future<void> _startProcessing() async {
+    if (!mounted) return;
+
     final l10n = AppLocalizations.of(context);
-    // Start processing animation
-    _processingAnimationController.repeat();
+    debugPrint(
+        'ProcessingView: Starting to process scanned code: ${widget.scannedCode}');
+    debugPrint('ProcessingView: Admin ID: ${widget.adminId}');
+    debugPrint('ProcessingView: Access Type: ${widget.accessType}');
+    debugPrint(
+        'ProcessingView: Is Default Entry Config: ${widget.isDefaultEntryConfig}');
 
     try {
       // Process the scanned code
+      debugPrint('ProcessingView: Calling ScannerService.processScannedCode');
       final result = await _scannerService.processScannedCode(
         scannedCode: widget.scannedCode,
         adminId: widget.adminId,
         accessType: widget.accessType,
         isDefaultEntryConfig: widget.isDefaultEntryConfig,
       );
+
+      if (!mounted) return;
+
+      debugPrint('ProcessingView: ScannerService returned result: $result');
 
       // Stop processing animation
       _processingAnimationController.stop();
@@ -157,6 +180,9 @@ class _ProcessingViewState extends State<ProcessingView>
         }
       });
     } catch (e) {
+      debugPrint('ProcessingView: Error processing code: $e');
+      if (!mounted) return;
+
       // Stop processing animation on error
       _processingAnimationController.stop();
 

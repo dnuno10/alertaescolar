@@ -26,6 +26,8 @@ class _CameraScannerViewState extends State<CameraScannerView>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   QRViewController? _controller;
   bool _hasScanned = false;
+  bool _isInitialized = false;
+  bool _hasError = false;
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
 
   // Access type indicator animation
@@ -48,13 +50,6 @@ class _CameraScannerViewState extends State<CameraScannerView>
 
   void _showAccessTypeIndicator() {
     _accessTypeAnimationController.forward();
-
-    // Auto-hide after 4 seconds
-    // Future.delayed(const Duration(seconds: 4), () {
-    //   if (mounted && !_hasScanned) {
-    //     _accessTypeAnimationController.reverse();
-    //   }
-    // });
   }
 
   String _getAccessTypeText() {
@@ -87,53 +82,93 @@ class _CameraScannerViewState extends State<CameraScannerView>
 
   /// Navigate to ProcessingView when QR code is detected
   Future<void> _processScannedCode(String code) async {
-    if (_hasScanned) return;
+    if (_hasScanned || !mounted) return;
 
-    setState(() {
-      _hasScanned = true;
-    });
+    try {
+      // Pause camera while processing
+      if (_controller != null) {
+        await _controller!.pauseCamera();
+      }
 
-    // Get current user (admin) ID
-    final userProvider = context.read<UserProvider>();
-    final adminId = userProvider.currentUser?.id;
+      setState(() {
+        _hasScanned = true;
+      });
 
-    if (adminId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error: Usuario no autenticado'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
+      // Get current user (admin) ID
+      final userProvider = context.read<UserProvider>();
+      final adminId = userProvider.currentUser?.id;
+
+      if (adminId == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error: Usuario no autenticado'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        _resetForNextScan();
+        return;
+      }
+
+      // Navigate to ProcessingView
+      final result = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (context) => ProcessingView(
+            scannedCode: code,
+            adminId: adminId,
+            accessType: widget.accessType ?? ScannerAccessType.automatic,
+            isDefaultEntryConfig: widget.isDefaultEntryConfig ?? true,
+          ),
         ),
       );
-      _resetForNextScan();
-      return;
-    }
 
-    // Navigate to ProcessingView
-    final result = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (context) => ProcessingView(
-          scannedCode: code,
-          adminId: adminId,
-          accessType: widget.accessType ?? ScannerAccessType.automatic,
-          isDefaultEntryConfig: widget.isDefaultEntryConfig ?? true,
-        ),
-      ),
-    );
+      // Reset scanner for next scan when returning
+      if (mounted) {
+        _resetForNextScan();
 
-    // Reset scanner for next scan when returning
-    _resetForNextScan();
-
-    // Call the callback if processing was successful
-    if (result == true) {
-      widget.onCodeScanned(code);
+        // Call the callback if processing was successful
+        if (result == true) {
+          widget.onCodeScanned(code);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error processing scanned code: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al procesar el código: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        _resetForNextScan();
+      }
     }
   }
 
   void _resetForNextScan() {
-    setState(() {
-      _hasScanned = false;
-    });
+    if (!mounted) return;
+
+    try {
+      setState(() {
+        _hasScanned = false;
+      });
+
+      // Resume camera with a small delay to ensure UI is ready
+      Future.delayed(const Duration(milliseconds: 300), () async {
+        if (mounted && _controller != null && _isInitialized) {
+          try {
+            await _controller!.resumeCamera();
+          } catch (e) {
+            debugPrint('Error resuming camera: $e');
+          }
+        }
+      });
+    } catch (e) {
+      debugPrint('Reset for next scan error: $e');
+    }
   }
 
   @override
@@ -162,13 +197,13 @@ class _CameraScannerViewState extends State<CameraScannerView>
 
     final isResumed = state == AppLifecycleState.resumed;
 
-    if (_controller != null) {
+    if (_controller != null && _isInitialized) {
       try {
         if (isBackgroundOrInactive) {
           _controller!.pauseCamera();
         } else if (isResumed) {
           // Add delay before resuming to ensure stability
-          Future.delayed(const Duration(milliseconds: 300), () {
+          Future.delayed(const Duration(milliseconds: 500), () {
             if (mounted && _controller != null) {
               _controller!.resumeCamera();
             }
@@ -184,10 +219,10 @@ class _CameraScannerViewState extends State<CameraScannerView>
   void reassemble() {
     super.reassemble();
     // Reassemble is called during hot reload - restart camera safely
-    if (_controller != null) {
+    if (_controller != null && _isInitialized) {
       try {
         _controller!.pauseCamera();
-        Future.delayed(const Duration(milliseconds: 100), () {
+        Future.delayed(const Duration(milliseconds: 200), () {
           if (mounted && _controller != null) {
             _controller!.resumeCamera();
           }
@@ -206,87 +241,168 @@ class _CameraScannerViewState extends State<CameraScannerView>
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // QR Camera View
-          QRView(
-            key: qrKey,
-            onQRViewCreated: _onQRViewCreated,
-            overlay: QrScannerOverlayShape(
-              borderColor: _hasScanned ? Colors.green : AppTheme.accentBlue,
-              borderRadius: 24,
-              borderLength: 80,
-              borderWidth: 4,
-              cutOutSize: screenSize.width * 0.7,
-            ),
-            cameraFacing: CameraFacing.back,
-            onPermissionSet: (ctrl, hasPermission) {
-              debugPrint('Camera permission: $hasPermission');
-              if (!hasPermission) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                            'Permisos de cámara requeridos para escanear códigos QR'),
-                        backgroundColor: Colors.red,
-                        duration: Duration(seconds: 4),
-                        action: SnackBarAction(
-                          label: 'Cerrar',
-                          textColor: Colors.white,
-                          onPressed: () {},
+          // QR Camera View with error handling
+          if (!_hasError)
+            QRView(
+              key: qrKey,
+              onQRViewCreated: _onQRViewCreated,
+              overlay: QrScannerOverlayShape(
+                borderColor: _hasScanned ? Colors.green : AppTheme.accentBlue,
+                borderRadius: 24,
+                borderLength: 80,
+                borderWidth: 4,
+                cutOutSize: screenSize.width * 0.7,
+              ),
+              cameraFacing: CameraFacing.back,
+              onPermissionSet: (ctrl, hasPermission) {
+                debugPrint('Camera permission: $hasPermission');
+                if (!hasPermission) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      setState(() {
+                        _hasError = true;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                              'Permisos de cámara requeridos para escanear códigos QR'),
+                          backgroundColor: Colors.red,
+                          duration: Duration(seconds: 4),
+                          action: SnackBarAction(
+                            label: 'Cerrar',
+                            textColor: Colors.white,
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                          ),
                         ),
+                      );
+                    }
+                  });
+                }
+              },
+            ),
+
+          // Error state
+          if (_hasError)
+            Container(
+              width: double.infinity,
+              height: double.infinity,
+              color: Colors.black,
+              child: SafeArea(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 64,
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Error al inicializar la cámara',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
                       ),
-                    );
-                    Navigator.of(context).pop();
-                  }
-                });
-              }
-            },
-          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Verifica los permisos de cámara',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text('Volver'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
 
           // Scanner overlay controls
-          _buildScannerOverlay(screenSize),
+          if (!_hasError) _buildScannerOverlay(screenSize),
         ],
       ),
     );
   }
 
   void _onQRViewCreated(QRViewController controller) {
-    setState(() {
-      _controller = controller;
-    });
+    if (!mounted) return;
 
-    // Setup scan listener first
-    controller.scannedDataStream.listen((scanData) {
-      if (scanData.code != null && !_hasScanned) {
-        _processScannedCode(scanData.code!);
+    try {
+      setState(() {
+        _controller = controller;
+      });
+
+      // Setup scan listener
+      controller.scannedDataStream.listen((scanData) {
+        if (scanData.code != null && !_hasScanned && _isInitialized) {
+          _processScannedCode(scanData.code!);
+        }
+      });
+
+      // Initialize camera safely with proper error handling
+      _initializeCamera();
+    } catch (e) {
+      debugPrint('QR View creation error: $e');
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+        });
       }
-    });
+    }
+  }
 
-    // Initialize camera safely with delay
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (mounted && _controller != null) {
-        try {
-          // Small delay to ensure camera is ready
-          await Future.delayed(const Duration(milliseconds: 500));
-          if (mounted && _controller != null) {
+  Future<void> _initializeCamera() async {
+    if (!mounted || _controller == null) return;
+
+    try {
+      // Wait for the widget to be fully built
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      if (!mounted || _controller == null) return;
+
+      // Try to resume camera
+      await _controller!.resumeCamera();
+
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
+
+      debugPrint('Camera initialized successfully');
+    } catch (e) {
+      debugPrint('Camera initialization error: $e');
+
+      if (mounted) {
+        // Try one more time after a longer delay
+        await Future.delayed(const Duration(milliseconds: 1000));
+
+        if (mounted && _controller != null) {
+          try {
             await _controller!.resumeCamera();
-          }
-        } catch (e) {
-          debugPrint('Camera initialization error: $e');
-          // Try to reinitialize after a longer delay
-          if (mounted) {
-            await Future.delayed(const Duration(milliseconds: 1000));
-            try {
-              if (mounted && _controller != null) {
-                await _controller!.resumeCamera();
-              }
-            } catch (e2) {
-              debugPrint('Camera retry failed: $e2');
-            }
+            setState(() {
+              _isInitialized = true;
+            });
+            debugPrint('Camera initialized on retry');
+          } catch (e2) {
+            debugPrint('Camera retry failed: $e2');
+            setState(() {
+              _hasError = true;
+            });
           }
         }
       }
-    });
+    }
   }
 
   Widget _buildScannerOverlay(Size screenSize) {
