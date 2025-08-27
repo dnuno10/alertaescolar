@@ -383,7 +383,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
             BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.getShadowColor(context).withValues(alpha: 0.1),
+            color: AppTheme.getShadowColor(context).withOpacity(0.1),
             blurRadius: screenSize.height * 0.02,
             offset: Offset(0, screenSize.height * 0.008),
           ),
@@ -735,9 +735,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
             ],
           ),
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-          ...scannerProvider.scannedHistory
-              .take(5)
-              .map(
+          ...scannerProvider.scannedHistory.take(5).map(
                 (code) => Padding(
                   padding: EdgeInsets.symmetric(
                       vertical: AppTheme.getSmallPadding(screenSize) / 2),
@@ -761,8 +759,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
                     ],
                   ),
                 ),
-              )
-              .toList(),
+              ),
         ],
       ),
     );
@@ -857,8 +854,9 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
         final afternoonEndTime =
             turnoProvider.parseTimeString(afternoonShift.horaFin);
 
-        if (afternoonStartTime != null)
+        if (afternoonStartTime != null) {
           _afternoonStartTime = afternoonStartTime;
+        }
         if (afternoonEndTime != null) _afternoonEndTime = afternoonEndTime;
       }
 

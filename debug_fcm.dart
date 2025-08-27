@@ -14,6 +14,8 @@ void main() async {
 }
 
 class FCMDebugApp extends StatelessWidget {
+  const FCMDebugApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -24,6 +26,8 @@ class FCMDebugApp extends StatelessWidget {
 }
 
 class FCMDebugScreen extends StatefulWidget {
+  const FCMDebugScreen({super.key});
+
   @override
   _FCMDebugScreenState createState() => _FCMDebugScreenState();
 }

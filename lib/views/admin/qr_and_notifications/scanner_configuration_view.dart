@@ -7,7 +7,6 @@ import '../../../providers/theme_provider.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../components/headers/nav_header.dart';
-import '../../../components/admin/scanner_config/modern_shift_section.dart';
 import '../../../components/admin/scanner_config/tolerance_display_card.dart';
 import '../../../components/admin/scanner_config/tolerance_slider_control.dart';
 import '../../../components/admin/scanner_config/quick_tolerance_selector.dart';
@@ -17,7 +16,6 @@ import '../../../components/admin/scanner_config/schedule_step_card.dart';
 import '../../../components/admin/scanner_config/shift_summary.dart';
 import '../../../components/admin/scanner_config/tolerance_summary_card.dart';
 import '../../../managers/turno_provider.dart';
-import '../../../models/turno.dart';
 import '../../../widgets/custom_snack_bar.dart';
 
 class ScannerConfigurationView extends StatefulWidget {

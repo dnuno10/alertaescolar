@@ -1,6 +1,5 @@
 import 'package:alertaescolar/components/admin/students/class_card_schedule.dart';
 import 'package:alertaescolar/components/headers/nav_header.dart';
-import 'package:alertaescolar/components/schedule/class_card.dart';
 import 'package:alertaescolar/components/schedule/schedule_student_card.dart';
 import 'package:alertaescolar/components/schedule/day_selector.dart';
 import 'package:alertaescolar/components/schedule/schedule_loading_state.dart';

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
-import '../../../widgets/custom_snack_bar.dart';
 
 class RecipientOption extends StatelessWidget {
   final String title;
@@ -33,7 +32,7 @@ class RecipientOption extends StatelessWidget {
         padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppTheme.accentOrange.withValues(alpha: 0.1)
+              ? AppTheme.accentOrange.withOpacity(0.1)
               : AppTheme.getBackgroundColor(context),
           borderRadius:
               BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
@@ -50,8 +49,8 @@ class RecipientOption extends StatelessWidget {
                   EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.8),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppTheme.accentOrange.withValues(alpha: 0.2)
-                    : AppTheme.getBorderColor(context).withValues(alpha: 0.1),
+                    ? AppTheme.accentOrange.withOpacity(0.2)
+                    : AppTheme.getBorderColor(context).withOpacity(0.1),
                 borderRadius:
                     BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
               ),

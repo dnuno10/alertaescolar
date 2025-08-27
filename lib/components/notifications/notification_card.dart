@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/models.dart';
-import '../../../managers/notification_provider.dart';
 
 class NotificationCard extends StatelessWidget {
   final Notificacion notification;

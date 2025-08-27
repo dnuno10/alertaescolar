@@ -17,7 +17,7 @@ class DaySelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final dayNames = [
       l10n.monday,
       l10n.tuesday,
@@ -81,8 +81,7 @@ class DaySelector extends StatelessWidget {
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
-                                  color: AppTheme.accentPurple
-                                      .withValues(alpha: 0.3),
+                                  color: AppTheme.accentPurple.withOpacity(0.3),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),

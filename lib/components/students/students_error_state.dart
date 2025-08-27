@@ -33,7 +33,7 @@ class StudentsErrorState extends StatelessWidget {
             width: screenSize.width * 0.16,
             height: screenSize.width * 0.16,
             decoration: BoxDecoration(
-              color: AppTheme.errorColor.withValues(alpha: 0.1),
+              color: AppTheme.errorColor.withOpacity(0.1),
               borderRadius:
                   BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
             ),

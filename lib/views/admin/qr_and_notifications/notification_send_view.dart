@@ -423,11 +423,10 @@ class _NotificationSendViewState extends State<NotificationSendView>
               width: double.infinity,
               padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
               decoration: BoxDecoration(
-                color: AppTheme.accentBlue.withValues(alpha: 0.05),
+                color: AppTheme.accentBlue.withOpacity(0.05),
                 borderRadius:
                     BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-                border: Border.all(
-                    color: AppTheme.accentBlue.withValues(alpha: 0.2)),
+                border: Border.all(color: AppTheme.accentBlue.withOpacity(0.2)),
               ),
               child: Row(
                 children: [
@@ -461,7 +460,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                 padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
                 decoration: BoxDecoration(
                   color: _selectedGroups.isNotEmpty
-                      ? AppTheme.accentBlue.withValues(alpha: 0.1)
+                      ? AppTheme.accentBlue.withOpacity(0.1)
                       : AppTheme.getCardColor(context),
                   borderRadius: BorderRadius.circular(
                       AppTheme.getMediumRadius(screenSize)),
@@ -488,7 +487,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                         color: (_selectedGroups.isNotEmpty
                                 ? AppTheme.accentBlue
                                 : AppTheme.getBorderColor(context))
-                            .withValues(alpha: 0.15),
+                            .withOpacity(0.15),
                         borderRadius: BorderRadius.circular(
                             AppTheme.getSmallRadius(screenSize)),
                       ),
@@ -540,9 +539,8 @@ class _NotificationSendViewState extends State<NotificationSendView>
                           AppTheme.getSmallPadding(screenSize) * 0.6),
                       decoration: BoxDecoration(
                         color: _selectedGroups.isNotEmpty
-                            ? AppTheme.accentBlue.withValues(alpha: 0.15)
-                            : AppTheme.getBorderColor(context)
-                                .withValues(alpha: 0.1),
+                            ? AppTheme.accentBlue.withOpacity(0.15)
+                            : AppTheme.getBorderColor(context).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(
                             AppTheme.getSmallRadius(screenSize)),
                       ),
@@ -578,11 +576,11 @@ class _NotificationSendViewState extends State<NotificationSendView>
               width: double.infinity,
               padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
               decoration: BoxDecoration(
-                color: AppTheme.accentOrange.withValues(alpha: 0.05),
+                color: AppTheme.accentOrange.withOpacity(0.05),
                 borderRadius:
                     BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-                border: Border.all(
-                    color: AppTheme.accentOrange.withValues(alpha: 0.2)),
+                border:
+                    Border.all(color: AppTheme.accentOrange.withOpacity(0.2)),
               ),
               child: Row(
                 children: [
@@ -616,7 +614,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                 padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
                 decoration: BoxDecoration(
                   color: _selectedShift != null
-                      ? AppTheme.accentOrange.withValues(alpha: 0.1)
+                      ? AppTheme.accentOrange.withOpacity(0.1)
                       : AppTheme.getCardColor(context),
                   borderRadius: BorderRadius.circular(
                       AppTheme.getMediumRadius(screenSize)),
@@ -643,7 +641,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                         color: (_selectedShift != null
                                 ? AppTheme.accentOrange
                                 : AppTheme.getBorderColor(context))
-                            .withValues(alpha: 0.15),
+                            .withOpacity(0.15),
                         borderRadius: BorderRadius.circular(
                             AppTheme.getSmallRadius(screenSize)),
                       ),
@@ -691,9 +689,8 @@ class _NotificationSendViewState extends State<NotificationSendView>
                           AppTheme.getSmallPadding(screenSize) * 0.6),
                       decoration: BoxDecoration(
                         color: _selectedShift != null
-                            ? AppTheme.accentOrange.withValues(alpha: 0.15)
-                            : AppTheme.getBorderColor(context)
-                                .withValues(alpha: 0.1),
+                            ? AppTheme.accentOrange.withOpacity(0.15)
+                            : AppTheme.getBorderColor(context).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(
                             AppTheme.getSmallRadius(screenSize)),
                       ),
@@ -757,7 +754,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                         padding: EdgeInsets.all(
                             AppTheme.getSmallPadding(screenSize) * 0.8),
                         decoration: BoxDecoration(
-                          color: AppTheme.accentBlue.withValues(alpha: 0.1),
+                          color: AppTheme.accentBlue.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(
                               AppTheme.getSmallRadius(screenSize)),
                         ),
@@ -893,7 +890,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                                     },
                                   ),
                                 );
-                              }).toList(),
+                              }),
 
                               SizedBox(
                                   height: AppTheme.getSmallPadding(screenSize)),
@@ -995,7 +992,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                     padding: EdgeInsets.all(
                         AppTheme.getSmallPadding(screenSize) * 0.8),
                     decoration: BoxDecoration(
-                      color: AppTheme.accentOrange.withValues(alpha: 0.1),
+                      color: AppTheme.accentOrange.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(
                           AppTheme.getSmallRadius(screenSize)),
                     ),
@@ -1056,8 +1053,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                             padding: EdgeInsets.all(
                                 AppTheme.getSmallPadding(screenSize)),
                             decoration: BoxDecoration(
-                              color:
-                                  AppTheme.accentOrange.withValues(alpha: 0.1),
+                              color: AppTheme.accentOrange.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(
                                   AppTheme.getSmallRadius(screenSize)),
                             ),

@@ -5,9 +5,7 @@ import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../managers/student_provider.dart';
 import '../../models/models.dart';
-import 'students_section_title.dart';
 import 'students_list.dart';
-import 'students_loading_state.dart';
 import 'students_error_state.dart';
 import 'students_empty_state.dart';
 
@@ -93,8 +91,15 @@ class _StudentsSectionState extends State<StudentsSection> {
 
         // Check if there are no students at all
         if (alumnosList.isEmpty) {
-          return StudentsEmptyState(
-            screenSize: widget.screenSize,
+          return Center(
+            child: Column(
+              children: [
+                SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
+                StudentsEmptyState(
+                  screenSize: widget.screenSize,
+                ),
+              ],
+            ),
           );
         }
 

@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../managers/notification_provider.dart';
-import '../../models/models.dart';
 
 class NotificationsListSection extends StatelessWidget {
   final Size screenSize;
@@ -150,7 +149,7 @@ class NotificationsListSection extends StatelessWidget {
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
         border: isUnread
             ? Border.all(
-                color: AppTheme.accentPurple.withValues(alpha: 0.3), width: 1.5)
+                color: AppTheme.accentPurple.withOpacity(0.3), width: 1.5)
             : null,
         boxShadow: [
           BoxShadow(
@@ -175,7 +174,7 @@ class NotificationsListSection extends StatelessWidget {
                   width: screenSize.height * 0.055,
                   height: screenSize.height * 0.055,
                   decoration: BoxDecoration(
-                    color: notificationType['color'].withValues(alpha: 0.1),
+                    color: notificationType['color'].withOpacity(0.1),
                     borderRadius: BorderRadius.circular(
                         AppTheme.getSmallRadius(screenSize) * 0.7),
                   ),
@@ -270,7 +269,7 @@ class NotificationsListSection extends StatelessWidget {
             width: screenSize.height * 0.1,
             height: screenSize.height * 0.1,
             decoration: BoxDecoration(
-              color: AppTheme.accentPurple.withValues(alpha: 0.1),
+              color: AppTheme.accentPurple.withOpacity(0.1),
               borderRadius:
                   BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
             ),

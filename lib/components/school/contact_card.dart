@@ -49,7 +49,7 @@ class ContactCard extends StatelessWidget {
                   padding: EdgeInsets.all(
                       AppTheme.getSmallPadding(screenSize) * 0.7),
                   decoration: BoxDecoration(
-                    color: AppTheme.successColor.withValues(alpha: 0.1),
+                    color: AppTheme.successColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(
                         AppTheme.getSmallRadius(screenSize)),
                   ),

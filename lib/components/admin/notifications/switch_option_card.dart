@@ -27,14 +27,13 @@ class SwitchOptionCard extends StatelessWidget {
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
       decoration: BoxDecoration(
         color: value
-            ? color.withValues(alpha: 0.05)
+            ? color.withOpacity(0.05)
             : AppTheme.getBackgroundColor(context),
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
         border: Border.all(
-          color: value
-              ? color.withValues(alpha: 0.3)
-              : AppTheme.getBorderColor(context),
+          color:
+              value ? color.withOpacity(0.3) : AppTheme.getBorderColor(context),
         ),
       ),
       child: Row(
@@ -43,8 +42,8 @@ class SwitchOptionCard extends StatelessWidget {
             padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.8),
             decoration: BoxDecoration(
               color: value
-                  ? color.withValues(alpha: 0.1)
-                  : AppTheme.getBorderColor(context).withValues(alpha: 0.1),
+                  ? color.withOpacity(0.1)
+                  : AppTheme.getBorderColor(context).withOpacity(0.1),
               borderRadius:
                   BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
             ),
@@ -80,7 +79,7 @@ class SwitchOptionCard extends StatelessWidget {
             value: value,
             onChanged: onChanged,
             activeColor: color,
-            activeTrackColor: color.withValues(alpha: 0.3),
+            activeTrackColor: color.withOpacity(0.3),
           ),
         ],
       ),

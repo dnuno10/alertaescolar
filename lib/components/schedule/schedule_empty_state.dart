@@ -17,7 +17,7 @@ class ScheduleEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return Container(
+    return SizedBox(
       height: screenSize.height * 0.4,
       child: Center(
         child: Column(
@@ -27,7 +27,7 @@ class ScheduleEmptyState extends StatelessWidget {
               width: screenSize.width * 0.2,
               height: screenSize.width * 0.2,
               decoration: BoxDecoration(
-                color: AppTheme.accentPurple.withValues(alpha: 0.1),
+                color: AppTheme.accentPurple.withOpacity(0.1),
                 borderRadius:
                     BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
               ),

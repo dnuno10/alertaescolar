@@ -112,7 +112,7 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
             BorderRadius.circular(AppTheme.getLargeRadius(widget.screenSize)),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.getShadowColor(context).withValues(alpha: 0.1),
+            color: AppTheme.getShadowColor(context).withOpacity(0.1),
             blurRadius: widget.screenSize.height * 0.02,
             offset: Offset(0, widget.screenSize.height * 0.008),
           ),
@@ -248,7 +248,7 @@ class _ModernStatItem extends StatelessWidget {
           width: screenSize.width * 0.15,
           height: screenSize.width * 0.15,
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.15),
+            color: color.withOpacity(0.15),
             shape: BoxShape.circle,
           ),
           child: Icon(

@@ -32,7 +32,7 @@ class ContactTile extends StatelessWidget {
             width: screenSize.width * 0.12,
             height: screenSize.width * 0.12,
             decoration: BoxDecoration(
-              color: AppTheme.accentPurple.withValues(alpha: 0.1),
+              color: AppTheme.accentPurple.withOpacity(0.1),
               borderRadius:
                   BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
             ),
@@ -64,7 +64,7 @@ class ContactTile extends StatelessWidget {
                           vertical: screenSize.height * 0.002,
                         ),
                         decoration: BoxDecoration(
-                          color: AppTheme.successColor.withValues(alpha: 0.1),
+                          color: AppTheme.successColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(
                               AppTheme.getSmallRadius(screenSize)),
                         ),

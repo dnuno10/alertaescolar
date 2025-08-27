@@ -2,7 +2,6 @@ import 'package:alertaescolar/app/app_theme.dart';
 import 'package:alertaescolar/components/buttons/action_buttons_row.dart';
 import 'package:alertaescolar/components/headers/nav_header.dart';
 import 'package:alertaescolar/components/textfield/custom_input_field.dart';
-import 'package:alertaescolar/components/profile/relation_dropdown.dart';
 import 'package:alertaescolar/l10n/app_localizations.dart';
 import 'package:alertaescolar/managers/family_provider.dart';
 import '../../../models/contacto_familiar.dart';

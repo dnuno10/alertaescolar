@@ -29,7 +29,7 @@ class MessageContentForm extends StatelessWidget {
             borderRadius:
                 BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
             border: Border.all(
-              color: AppTheme.getBorderColor(context).withValues(alpha: 0.3),
+              color: AppTheme.getBorderColor(context).withOpacity(0.3),
             ),
           ),
           child: TextField(
@@ -48,8 +48,7 @@ class MessageContentForm extends StatelessWidget {
                   ? l10n.exampleCommunicationTitle
                   : l10n.examplePermissionTitle,
               hintStyle: AppTheme.getCaptionSmall(screenSize).copyWith(
-                color: AppTheme.getTextSecondaryColor(context)
-                    .withValues(alpha: 0.7),
+                color: AppTheme.getTextSecondaryColor(context).withOpacity(0.7),
               ),
               prefixIcon: Container(
                 margin:
@@ -57,7 +56,7 @@ class MessageContentForm extends StatelessWidget {
                 padding:
                     EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.6),
                 decoration: BoxDecoration(
-                  color: AppTheme.accentOrange.withValues(alpha: 0.1),
+                  color: AppTheme.accentOrange.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(
                       AppTheme.getSmallRadius(screenSize)),
                 ),
@@ -94,7 +93,7 @@ class MessageContentForm extends StatelessWidget {
             borderRadius:
                 BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
             border: Border.all(
-              color: AppTheme.getBorderColor(context).withValues(alpha: 0.3),
+              color: AppTheme.getBorderColor(context).withOpacity(0.3),
             ),
           ),
           child: TextField(
@@ -115,8 +114,7 @@ class MessageContentForm extends StatelessWidget {
                   ? l10n.communicationContentHint
                   : l10n.messageContentHint,
               hintStyle: AppTheme.getCaptionSmall(screenSize).copyWith(
-                color: AppTheme.getTextSecondaryColor(context)
-                    .withValues(alpha: 0.7),
+                color: AppTheme.getTextSecondaryColor(context).withOpacity(0.7),
                 height: 1.4,
               ),
               alignLabelWithHint: true,
@@ -143,7 +141,7 @@ class MessageContentForm extends StatelessWidget {
           children: [
             Icon(
               Icons.lightbulb_outline_rounded,
-              color: AppTheme.accentOrange.withValues(alpha: 0.7),
+              color: AppTheme.accentOrange.withOpacity(0.7),
               size: screenSize.height * 0.018,
             ),
             SizedBox(width: AppTheme.getSmallPadding(screenSize) * 0.5),

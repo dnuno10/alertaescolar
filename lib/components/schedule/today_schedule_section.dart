@@ -533,6 +533,7 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
 
   Widget _buildErrorState() {
     return Container(
+      width: double.infinity,
       padding: EdgeInsets.all(AppTheme.getLargePadding(widget.screenSize)),
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
@@ -831,7 +832,7 @@ class _TodayClassCard extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                              if (materia?.profesor?.isNotEmpty == true) ...[
+                              if (materia?.profesor.isNotEmpty == true) ...[
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
@@ -843,7 +844,7 @@ class _TodayClassCard extends StatelessWidget {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      materia!.profesor!,
+                                      materia!.profesor,
                                       style: AppTheme.getCaption(screenSize)
                                           .copyWith(
                                         color: AppTheme.getTextSecondaryColor(

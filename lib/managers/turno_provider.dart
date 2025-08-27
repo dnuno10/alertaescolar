@@ -94,8 +94,8 @@ class TurnoProvider with ChangeNotifier {
 
       // Format time for PostgreSQL time with timezone
       // PostgreSQL expects: "HH:MM:SS+00"
-      final formattedHoraInicio = "${horaInicio}:00+00";
-      final formattedHoraFin = "${horaFin}:00+00";
+      final formattedHoraInicio = "$horaInicio:00+00";
+      final formattedHoraFin = "$horaFin:00+00";
 
       await _supabase.from('turnos').update({
         'hora_inicio': formattedHoraInicio,
@@ -160,15 +160,15 @@ class TurnoProvider with ChangeNotifier {
 
       // Update morning shift
       await _supabase.from('turnos').update({
-        'hora_inicio': "${morningStartFormatted}:00+00",
-        'hora_fin': "${morningEndFormatted}:00+00",
+        'hora_inicio': "$morningStartFormatted:00+00",
+        'hora_fin': "$morningEndFormatted:00+00",
         'tolerancia': tolerance,
       }).eq('id', morningTurnoId);
 
       // Update afternoon shift
       await _supabase.from('turnos').update({
-        'hora_inicio': "${afternoonStartFormatted}:00+00",
-        'hora_fin': "${afternoonEndFormatted}:00+00",
+        'hora_inicio': "$afternoonStartFormatted:00+00",
+        'hora_fin': "$afternoonEndFormatted:00+00",
         'tolerancia': tolerance,
       }).eq('id', afternoonTurnoId);
 

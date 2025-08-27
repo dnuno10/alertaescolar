@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../app/app_theme.dart';
-import '../../../widgets/custom_snack_bar.dart';
 
 class MessageTypeOption extends StatelessWidget {
   final String title;
@@ -39,7 +38,7 @@ class MessageTypeOption extends StatelessWidget {
         padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
         decoration: BoxDecoration(
           color: isSelected
-              ? color.withValues(alpha: 0.1)
+              ? color.withOpacity(0.1)
               : AppTheme.getBackgroundColor(context),
           borderRadius:
               BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
@@ -55,8 +54,8 @@ class MessageTypeOption extends StatelessWidget {
                   EdgeInsets.all(AppTheme.getMediumPadding(screenSize) * 0.8),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? color.withValues(alpha: 0.15)
-                    : AppTheme.getBorderColor(context).withValues(alpha: 0.1),
+                    ? color.withOpacity(0.15)
+                    : AppTheme.getBorderColor(context).withOpacity(0.1),
                 borderRadius:
                     BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
               ),

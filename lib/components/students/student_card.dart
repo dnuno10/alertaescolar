@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../models/models.dart';
 import '../../app/app_theme.dart';
-import '../custom_card.dart';
 
 class StudentCard extends StatelessWidget {
   final Alumno student;
@@ -63,7 +62,7 @@ class StudentCard extends StatelessWidget {
                         AppTheme.getSmallRadius(screenSize)),
                     boxShadow: [
                       BoxShadow(
-                        color: color.withValues(alpha: 0.2),
+                        color: color.withOpacity(0.2),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -109,8 +108,8 @@ class StudentCard extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: student.vinculado
-                              ? AppTheme.successColor.withValues(alpha: 0.1)
-                              : AppTheme.warningColor.withValues(alpha: 0.1),
+                              ? AppTheme.successColor.withOpacity(0.1)
+                              : AppTheme.warningColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(
                               AppTheme.getSmallRadius(screenSize) * 0.7),
                         ),

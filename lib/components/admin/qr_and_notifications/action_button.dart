@@ -21,11 +21,11 @@ class ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
         border: Border.all(
-          color: color.withValues(alpha: 0.3),
+          color: color.withOpacity(0.3),
         ),
       ),
       child: Material(

@@ -47,7 +47,7 @@ class StudentProfileCard extends StatelessWidget {
                     BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
                 boxShadow: [
                   BoxShadow(
-                    color: color.withValues(alpha: 0.3),
+                    color: color.withOpacity(0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
@@ -82,8 +82,8 @@ class StudentProfileCard extends StatelessWidget {
               ),
               decoration: BoxDecoration(
                 color: student.llaveActiva
-                    ? AppTheme.successColor.withValues(alpha: 0.1)
-                    : AppTheme.warningColor.withValues(alpha: 0.1),
+                    ? AppTheme.successColor.withOpacity(0.1)
+                    : AppTheme.warningColor.withOpacity(0.1),
                 borderRadius:
                     BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
               ),

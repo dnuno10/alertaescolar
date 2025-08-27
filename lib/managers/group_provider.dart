@@ -181,8 +181,9 @@ class GroupProvider with ChangeNotifier {
 
       final updateData = <String, dynamic>{};
       if (grupo != null) updateData['grupo'] = grupo;
-      if (nivelEducativo != null)
+      if (nivelEducativo != null) {
         updateData['nivel_educativo'] = nivelEducativo;
+      }
 
       if (updateData.isEmpty) {
         throw Exception('No hay cambios para actualizar');

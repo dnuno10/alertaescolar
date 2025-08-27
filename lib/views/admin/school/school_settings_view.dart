@@ -1,6 +1,4 @@
-import 'package:alertaescolar/components/textfield/custom_input_field.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
@@ -429,8 +427,9 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
     final formKey = isInformationTab ? _informationFormKey : _contactFormKey;
 
     // Safer null check
-    if (formKey.currentState == null || !formKey.currentState!.validate())
+    if (formKey.currentState == null || !formKey.currentState!.validate()) {
       return;
+    }
 
     final l10n = AppLocalizations.of(context);
     // Validate required fields

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
-import '../../app/app_theme.dart';
 import 'settings_tile.dart';
 
 class ThemeSettingsTile extends StatelessWidget {

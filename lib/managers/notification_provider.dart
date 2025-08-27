@@ -1,7 +1,7 @@
+import 'package:alertaescolar/services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
-import '../services/mock_notification_service.dart';
 
 class NotificationProvider extends ChangeNotifier {
   List<Notificacion> _notifications = [];
@@ -20,8 +20,7 @@ class NotificationProvider extends ChangeNotifier {
   bool get hasNotifications => _notifications.isNotEmpty;
 
   // Keep mock service for backward compatibility
-  final MockNotificationService _notificationService =
-      MockNotificationService();
+  final NotificationService _notificationService = NotificationService();
 
   // Load real notifications for current user's children
   Future<void> loadNotifications() async {
@@ -76,7 +75,7 @@ class NotificationProvider extends ChangeNotifier {
       // Convert to our Notificacion model
       _notifications = _mapNotificationsFromDb(response);
 
-      debugPrint('Loaded ${_notifications} notifications for user');
+      debugPrint('Loaded $_notifications notifications for user');
     } catch (e) {
       debugPrint('Error loading notifications: $e');
       _error = e.toString();
@@ -254,17 +253,6 @@ class NotificationProvider extends ChangeNotifier {
       _error = e.toString();
       notifyListeners();
     }
-  }
-
-  void filterByType(String type) {
-    // En una aplicación real, esto podría filtrar desde el servicio
-    // Por ahora, mantenemos la lista completa y filtramos en la UI
-    notifyListeners();
-  }
-
-  void clearFilter() {
-    // Recargar todas las notificaciones
-    loadNotifications();
   }
 
   // Get notification statistics for a student within a period

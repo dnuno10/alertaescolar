@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:alertaescolar/widgets/custom_snack_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../components/buttons/solid_button.dart';
 import '../../../components/textfield/custom_input_field.dart';

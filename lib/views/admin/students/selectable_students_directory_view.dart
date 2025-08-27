@@ -171,8 +171,8 @@ class _SelectableStudentsDirectoryViewState
                           AppTheme.getLargeRadius(screenSize)),
                       boxShadow: [
                         BoxShadow(
-                          color: AppTheme.getShadowColor(context)
-                              .withValues(alpha: 0.1),
+                          color:
+                              AppTheme.getShadowColor(context).withOpacity(0.1),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
@@ -258,7 +258,7 @@ class _SelectableStudentsDirectoryViewState
                                     value == 'all' ? l10n.all : value,
                                 screenSize: screenSize,
                                 backgroundColor:
-                                    AppTheme.accentBlue.withValues(alpha: 0.05),
+                                    AppTheme.accentBlue.withOpacity(0.05),
                               ),
                             ),
 
@@ -281,8 +281,8 @@ class _SelectableStudentsDirectoryViewState
                                 getLabel: (String value) =>
                                     value == 'all' ? l10n.all : value,
                                 screenSize: screenSize,
-                                backgroundColor: AppTheme.accentPurple
-                                    .withValues(alpha: 0.05),
+                                backgroundColor:
+                                    AppTheme.accentPurple.withOpacity(0.05),
                               ),
                             ),
                           ],
@@ -337,7 +337,7 @@ class _SelectableStudentsDirectoryViewState
                             padding: EdgeInsets.all(
                                 AppTheme.getSmallPadding(screenSize)),
                             decoration: BoxDecoration(
-                              color: AppTheme.accentBlue.withValues(alpha: 0.1),
+                              color: AppTheme.accentBlue.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(
                                   AppTheme.getSmallRadius(screenSize)),
                             ),
@@ -398,7 +398,7 @@ class _SelectableStudentsDirectoryViewState
                                     decoration: BoxDecoration(
                                       border: Border.all(
                                         color: AppTheme.getBorderColor(context)
-                                            .withValues(alpha: 0.3),
+                                            .withOpacity(0.3),
                                       ),
                                       borderRadius: BorderRadius.circular(
                                           AppTheme.getMediumRadius(screenSize)),
@@ -411,7 +411,7 @@ class _SelectableStudentsDirectoryViewState
                                           height: screenSize.width * 0.12,
                                           decoration: BoxDecoration(
                                             color: AppTheme.accentBlue
-                                                .withValues(alpha: 0.1),
+                                                .withOpacity(0.1),
                                             borderRadius: BorderRadius.circular(
                                                 AppTheme.getSmallRadius(
                                                     screenSize)),
@@ -481,9 +481,9 @@ class _SelectableStudentsDirectoryViewState
                                               decoration: BoxDecoration(
                                                 color: student.llaveActiva
                                                     ? AppTheme.successColor
-                                                        .withValues(alpha: 0.1)
+                                                        .withOpacity(0.1)
                                                     : AppTheme.errorColor
-                                                        .withValues(alpha: 0.1),
+                                                        .withOpacity(0.1),
                                                 borderRadius:
                                                     BorderRadius.circular(
                                                         AppTheme.getSmallRadius(

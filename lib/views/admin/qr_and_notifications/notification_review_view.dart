@@ -473,7 +473,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                       bottom: AppTheme.getSmallPadding(screenSize)),
                   child: card,
                 ))
-            .toList(),
+            ,
       ],
     );
   }

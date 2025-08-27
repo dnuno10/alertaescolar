@@ -31,7 +31,6 @@ import '../views/auth/signup_view.dart';
 import '../views/auth/verify_magic_link_view.dart';
 import '../views/auth/finish_setting_up_view.dart';
 import '../views/user/students/student_confirmation_view.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class AppRoutes {
   // Auth routes

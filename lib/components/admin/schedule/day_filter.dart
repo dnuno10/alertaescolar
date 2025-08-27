@@ -55,7 +55,7 @@ class DayFilter extends StatelessWidget {
                     screenSize: screenSize,
                   ),
                 );
-              }).toList(),
+              }),
             ],
           ),
         ),

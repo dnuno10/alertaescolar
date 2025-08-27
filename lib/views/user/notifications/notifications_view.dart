@@ -1,4 +1,3 @@
-// 🚀 Premium Notifications View - Following Fintech/EdTech Design References
 import 'package:alertaescolar/components/headers/notification_header.dart';
 import 'package:alertaescolar/components/notifications/enhanced_filter_section.dart';
 import 'package:alertaescolar/components/notifications/notification_detail_modal.dart';

@@ -1,3 +1,4 @@
+import 'package:alertaescolar/components/admin/attendance/calendar_explanation_header.dart';
 import 'package:alertaescolar/components/textfield/custom_input_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,7 +12,6 @@ import '../../../managers/group_provider.dart';
 import '../../../managers/turno_provider.dart';
 import '../../../managers/student_provider.dart';
 import '../../../components/headers/nav_header.dart';
-import '../../../components/admin/attendance/calendar_explanation_header.dart';
 import '../../../components/loading_dialog.dart';
 import '../students/student_profile_admin_view.dart';
 import '../../../utils/time_format.dart';
@@ -509,7 +509,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
           else
             ...notificationsForDate.map((notification) {
               return _buildNotificationCard(context, screenSize, notification);
-            }).toList(),
+            }),
         ],
       ),
     );
@@ -793,14 +793,13 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppTheme.accentPurple.withValues(alpha: 0.1),
-                  AppTheme.accentBlue.withValues(alpha: 0.05),
+                  AppTheme.accentPurple.withOpacity(0.1),
+                  AppTheme.accentBlue.withOpacity(0.05),
                 ],
               ),
               borderRadius:
                   BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-              border: Border.all(
-                  color: AppTheme.accentPurple.withValues(alpha: 0.3)),
+              border: Border.all(color: AppTheme.accentPurple.withOpacity(0.3)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -813,7 +812,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                         padding: EdgeInsets.all(
                             AppTheme.getSmallPadding(screenSize) * 0.6),
                         decoration: BoxDecoration(
-                          color: AppTheme.accentPurple.withValues(alpha: 0.2),
+                          color: AppTheme.accentPurple.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(
                               AppTheme.getSmallRadius(screenSize)),
                         ),

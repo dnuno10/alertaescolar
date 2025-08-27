@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../managers/notification_provider.dart';
-import 'nav_header.dart';
 
 class NotificationHeader extends StatelessWidget {
   final Size screenSize;
@@ -45,7 +44,7 @@ class NotificationHeader extends StatelessWidget {
                       padding:
                           EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
                       decoration: BoxDecoration(
-                        color: AppTheme.accentPurple.withValues(alpha: 0.1),
+                        color: AppTheme.accentPurple.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(
                             AppTheme.getMediumRadius(screenSize)),
                       ),

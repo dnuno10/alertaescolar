@@ -7,7 +7,7 @@ class Alumno {
   final String id;
   final String nombre;
   final String id_grupo;
-  final String grupo; // Add this field to store the group name
+  final String grupo;
   final String id_escuela;
   final String id_llave;
   final bool vinculado;
@@ -19,7 +19,7 @@ class Alumno {
     required this.id,
     required this.nombre,
     required this.id_grupo,
-    required this.grupo, // Add this parameter
+    required this.grupo,
     required this.id_escuela,
     required this.id_llave,
     this.vinculado = true,

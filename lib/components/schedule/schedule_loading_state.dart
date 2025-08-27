@@ -2,7 +2,6 @@ import 'package:alertaescolar/components/loading_dialog.dart';
 import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../../app/app_theme.dart';
-import '../../models/models.dart';
 
 class ScheduleLoadingState extends StatelessWidget {
   final Size screenSize;
@@ -16,7 +15,7 @@ class ScheduleLoadingState extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return Container(
+    return SizedBox(
       height: screenSize.height * 0.4,
       child: Center(
         child: Column(

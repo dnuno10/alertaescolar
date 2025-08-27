@@ -253,7 +253,7 @@ class _ProcessingViewState extends State<ProcessingView>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Clean animated loading circle
-                Container(
+                SizedBox(
                   width: 80,
                   height: 80,
                   child: AnimatedBuilder(

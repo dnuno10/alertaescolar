@@ -18,7 +18,7 @@ class TimeFormat {
       final suffix = hour < 12 ? 'AM' : 'PM';
       int hour12 = hour % 12;
       if (hour12 == 0) hour12 = 12;
-      return '${hour12}:${minute.toString().padLeft(2, '0')} $suffix';
+      return '$hour12:${minute.toString().padLeft(2, '0')} $suffix';
     } catch (e) {
       return time24;
     }

@@ -22,11 +22,11 @@ class ToleranceDisplayCard extends StatelessWidget {
         vertical: AppTheme.getMediumPadding(screenSize),
       ),
       decoration: BoxDecoration(
-        color: AppTheme.warningColor.withValues(alpha: 0.1),
+        color: AppTheme.warningColor.withOpacity(0.1),
         borderRadius:
             BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
         border: Border.all(
-          color: AppTheme.warningColor.withValues(alpha: 0.3),
+          color: AppTheme.warningColor.withOpacity(0.3),
           width: 2,
         ),
       ),

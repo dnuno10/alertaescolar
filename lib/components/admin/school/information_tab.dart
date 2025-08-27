@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/models.dart';
-import '../../../components/buttons/solid_button.dart';
 import '../../../components/textfield/custom_input_field.dart';
 import '../../../components/textfield/custom_text_area_field.dart';
 import '../../../components/admin/school/section_card.dart';

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import 'action_button.dart';
-import '../../../widgets/custom_snack_bar.dart';
 
 // Define enum for access types
 enum AccessType {

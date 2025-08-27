@@ -73,8 +73,8 @@ class SolidButton extends StatelessWidget {
                 HapticFeedback.mediumImpact();
                 onPressed();
               },
-              child: textStyle,
               style: buttonStyle,
+              child: textStyle,
             ),
     );
   }

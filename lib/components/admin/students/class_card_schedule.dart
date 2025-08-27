@@ -247,14 +247,14 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
                   end: Alignment.bottomRight,
                   colors: [
                     AppTheme.getCardColor(context),
-                    AppTheme.getCardColor(context).withValues(alpha: 0.95),
+                    AppTheme.getCardColor(context).withOpacity(0.95),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(
                   AppTheme.getLargeRadius(widget.screenSize),
                 ),
                 border: Border.all(
-                  color: cardColor.withValues(alpha: 0.2),
+                  color: cardColor.withOpacity(0.2),
                   width: 1,
                 ),
               ),
@@ -318,15 +318,15 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            cardColor.withValues(alpha: 0.15),
-            cardColor.withValues(alpha: 0.1),
+            cardColor.withOpacity(0.15),
+            cardColor.withOpacity(0.1),
           ],
         ),
         borderRadius: BorderRadius.circular(
           AppTheme.getMediumRadius(widget.screenSize),
         ),
         border: Border.all(
-          color: cardColor.withValues(alpha: 0.3),
+          color: cardColor.withOpacity(0.3),
           width: 1.5,
         ),
       ),
@@ -350,13 +350,13 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
           Container(
             width: 20,
             height: 1,
-            color: cardColor.withValues(alpha: 0.5),
+            color: cardColor.withOpacity(0.5),
             margin: const EdgeInsets.symmetric(vertical: 1),
           ),
           Text(
             _formatTime(widget.clase.horaFin),
             style: AppTheme.getCaption(widget.screenSize).copyWith(
-              color: cardColor.withValues(alpha: 0.8),
+              color: cardColor.withOpacity(0.8),
               fontSize: 9,
             ),
           ),
@@ -390,8 +390,7 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color:
-                    AppTheme.getOnPrimaryColor(context).withValues(alpha: 0.1),
+                color: AppTheme.getOnPrimaryColor(context).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -444,7 +443,7 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
               ),
               const SizedBox(width: 4),
               Text(
-                l10n.classroom + ' ' + widget.clase.aula,
+                '${l10n.classroom} ${widget.clase.aula}',
                 style: AppTheme.getCaption(widget.screenSize).copyWith(
                   color: AppTheme.getTextSecondaryColor(context),
                   fontWeight: FontWeight.w500,
@@ -497,8 +496,7 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppTheme.getTextSecondaryColor(context)
-                  .withValues(alpha: 0.3),
+              color: AppTheme.getTextSecondaryColor(context).withOpacity(0.3),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -523,12 +521,12 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
             color: cardColor,
           ),
 
-          if (widget.materia?.profesor?.isNotEmpty == true) ...[
+          if (widget.materia?.profesor.isNotEmpty == true) ...[
             const SizedBox(height: 12),
             _DetailRow(
               icon: Icons.person_outline_rounded,
               label: l10n.teacher,
-              value: widget.materia!.profesor!,
+              value: widget.materia!.profesor,
               color: cardColor,
             ),
           ],
@@ -593,7 +591,7 @@ class _DetailRow extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
+            color: color.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(

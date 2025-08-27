@@ -1,7 +1,5 @@
 // ignore_for_file: file_names
-import 'dart:math';
 
-import 'package:alertaescolar/app/app_theme.dart';
 import 'package:alertaescolar/components/loading_dialog.dart';
 import 'package:alertaescolar/l10n/app_localizations.dart';
 import 'package:alertaescolar/managers/auth/AdminSetup.dart';

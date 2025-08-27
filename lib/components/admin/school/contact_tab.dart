@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../components/buttons/solid_button.dart';
 import '../../../components/textfield/custom_input_field.dart';
 import '../../../components/textfield/custom_text_area_field.dart';
 import '../../../components/admin/school/section_card.dart';
@@ -88,8 +87,9 @@ class ContactTab extends StatelessWidget {
                         focusNode: emailFocusNode,
                         validator: (value) {
                           if (value?.isEmpty == true) return l10n.fieldRequired;
-                          if (value != null && !value.contains('@'))
+                          if (value != null && !value.contains('@')) {
                             return l10n.invalidEmail;
+                          }
                           return null;
                         },
                       ),

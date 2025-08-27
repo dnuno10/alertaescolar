@@ -35,7 +35,7 @@ class NavItem extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             color: isSelected
-                ? AppTheme.accentPurple.withValues(alpha: 0.1)
+                ? AppTheme.accentPurple.withOpacity(0.1)
                 : Colors.transparent,
             borderRadius:
                 BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),

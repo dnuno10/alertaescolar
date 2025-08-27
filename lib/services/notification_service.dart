@@ -181,6 +181,74 @@ class NotificationService {
     }
   }
 
+  Future<List<Notificacion>> getNotifications() async {
+    try {
+      // Obtener las notificaciones desde la base de datos
+      final response = await _supabase
+          .from('notificaciones')
+          .select('*')
+          .order('fecha_registro', ascending: false);
+
+      // Mapear los datos obtenidos a la lista de objetos Notificacion
+      return (response as List).map((record) {
+        return Notificacion(
+          id: record['id'],
+          alumnoId: record['id_alumno'],
+          adminId: record['id_admin'],
+          titulo: record['titulo'] ?? '',
+          mensaje: record['mensaje'] ?? '',
+          tipo: _mapTipoNotificacion(record['tipo_notificacion']),
+          estado: record['estado'] == EstadoNotificacion.leida.name
+              ? EstadoNotificacion.leida
+              : EstadoNotificacion.nueva,
+          fechaHora: DateTime.parse(record['fecha_registro']),
+          datosAdicionales: record['datos_adicionales'] ?? {},
+        );
+      }).toList();
+    } catch (e) {
+      debugPrint('Error al obtener notificaciones: $e');
+      throw Exception('Error al obtener notificaciones: $e');
+    }
+  }
+
+  Future<void> deleteNotification(String notificationId) async {
+    try {
+      // Eliminar la notificación de la base de datos
+      final response = await _supabase
+          .from('notificaciones')
+          .delete()
+          .eq('id', notificationId);
+
+      if (response == null || response.isEmpty) {
+        throw Exception(
+            'No se encontró la notificación con el ID proporcionado.');
+      }
+
+      debugPrint('Notificación con ID $notificationId eliminada exitosamente.');
+    } catch (e) {
+      debugPrint(
+          'Error al eliminar la notificación con ID $notificationId: $e');
+      throw Exception('Error al eliminar la notificación: $e');
+    }
+  }
+
+  TipoNotificacion _mapTipoNotificacion(String tipo) {
+    switch (tipo.toLowerCase()) {
+      case 'entrada':
+        return TipoNotificacion.entrada;
+      case 'salida':
+        return TipoNotificacion.salida;
+      case 'retraso':
+        return TipoNotificacion.retraso;
+      case 'permisoespecial':
+        return TipoNotificacion.permisoEspecial;
+      case 'comunicado':
+        return TipoNotificacion.comunicado;
+      default:
+        throw Exception('Tipo de notificación desconocido: $tipo');
+    }
+  }
+
   /// Obtiene los IDs de estudiantes por grupos
   static Future<List<String>> _getStudentsByGroups(
       List<String> groupIds, String escuelaId) async {

@@ -1,10 +1,8 @@
 import 'package:alertaescolar/components/headers/nav_header.dart';
 import 'package:alertaescolar/components/buttons/solid_button.dart';
-import 'package:alertaescolar/components/tips_cards/instructions_card.dart';
 import 'package:alertaescolar/components/students/qr_scan_option_card.dart';
 import 'package:alertaescolar/components/students/option_divider.dart';
 import 'package:alertaescolar/components/students/manual_input_card.dart';
-import 'package:alertaescolar/components/students/student_confirmation_dialog.dart';
 import 'package:alertaescolar/components/students/qr_scanner_widget.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:alertaescolar/managers/user_provider.dart';
@@ -12,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../managers/student_provider.dart';
-import '../../../models/models.dart';
 import '../../../app/app_theme.dart';
 import '../../../app/app_routes.dart';
 import '../../../components/loading_dialog.dart';

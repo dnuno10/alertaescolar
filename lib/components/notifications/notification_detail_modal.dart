@@ -84,7 +84,7 @@ class NotificationDetailModal extends StatelessWidget {
       padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.max,
         children: [
           // Header with close button
           Row(
@@ -137,230 +137,270 @@ class NotificationDetailModal extends StatelessWidget {
 
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-          // Notification details
-          _buildDetailRow(
-            context,
-            l10n.student,
-            studentName,
-            Icons.person_rounded,
-            screenSize,
-          ),
-
-          _buildDetailRow(
-            context,
-            l10n.group,
-            "$studentGroup - $studentLevel",
-            Icons.group_rounded,
-            screenSize,
-          ),
-
-          _buildDetailRow(
-            context,
-            l10n.date,
-            _formatDate(notification.fechaHora),
-            Icons.calendar_today_rounded,
-            screenSize,
-          ),
-
-          _buildDetailRow(
-            context,
-            l10n.time,
-            TimeFormat.format24to12(_formatTime(notification.fechaHora)),
-            Icons.access_time_rounded,
-            screenSize,
-          ),
-
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-
-          // Título (para todos los tipos de notificaciones)
-          Text(
-            l10n.title,
-            style: AppTheme.getSubtitle1(screenSize).copyWith(
-              color: AppTheme.getTextPrimaryColor(context),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-
-          SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.5),
-
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-            decoration: BoxDecoration(
-              color: AppTheme.getBackgroundColor(context),
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-              border: Border.all(
-                color: AppTheme.getBorderColor(context),
-              ),
-            ),
-            child: Text(
-              notification.titulo,
-              style: AppTheme.getBodyMedium(screenSize).copyWith(
-                color: AppTheme.getTextPrimaryColor(context),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-
-          // Información específica de comunicados y permisos especiales
-          if (notification.tipo == TipoNotificacion.comunicado) ...[
-            SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-            // Sección de metadatos del comunicado con mejor diseño
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-              decoration: BoxDecoration(
-                color: AppTheme.getBackgroundColor(context).withOpacity(0.7),
-                borderRadius:
-                    BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-                border: Border.all(
-                  color: AppTheme.getBorderColor(context),
-                ),
-              ),
+          // Scrollable content area
+          Expanded(
+            child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Notification details
+                  _buildDetailRow(
+                    context,
+                    l10n.student,
+                    studentName,
+                    Icons.person_rounded,
+                    screenSize,
+                  ),
+
+                  _buildDetailRow(
+                    context,
+                    l10n.group,
+                    "$studentGroup - $studentLevel",
+                    Icons.group_rounded,
+                    screenSize,
+                  ),
+
+                  _buildDetailRow(
+                    context,
+                    l10n.date,
+                    _formatDate(notification.fechaHora),
+                    Icons.calendar_today_rounded,
+                    screenSize,
+                  ),
+
+                  _buildDetailRow(
+                    context,
+                    l10n.time,
+                    TimeFormat.format24to12(
+                        _formatTime(notification.fechaHora)),
+                    Icons.access_time_rounded,
+                    screenSize,
+                  ),
+
+                  SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+
+                  // Título (para todos los tipos de notificaciones)
                   Text(
-                    'Detalles del anuncio',
+                    l10n.title,
                     style: AppTheme.getSubtitle1(screenSize).copyWith(
                       color: AppTheme.getTextPrimaryColor(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+
+                  SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.5),
+
+                  Container(
+                    width: double.infinity,
+                    padding:
+                        EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+                    decoration: BoxDecoration(
+                      color: AppTheme.getBackgroundColor(context),
+                      borderRadius: BorderRadius.circular(
+                          AppTheme.getMediumRadius(screenSize)),
+                      border: Border.all(
+                        color: AppTheme.getBorderColor(context),
+                      ),
+                    ),
+                    child: Text(
+                      notification.titulo,
+                      style: AppTheme.getBodyMedium(screenSize).copyWith(
+                        color: AppTheme.getTextPrimaryColor(context),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+
+                  // Información específica de comunicados y permisos especiales
+                  if (notification.tipo == TipoNotificacion.comunicado) ...[
+                    SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+
+                    // Sección de metadatos del comunicado con mejor diseño
+                    Container(
+                      width: double.infinity,
+                      padding:
+                          EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+                      decoration: BoxDecoration(
+                        color: AppTheme.getBackgroundColor(context)
+                            .withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(
+                            AppTheme.getMediumRadius(screenSize)),
+                        border: Border.all(
+                          color: AppTheme.getBorderColor(context),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Detalles del anuncio',
+                            style: AppTheme.getSubtitle1(screenSize).copyWith(
+                              color: AppTheme.getTextPrimaryColor(context),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(
+                              height: AppTheme.getSmallPadding(screenSize)),
+
+                          // Tipo de comunicado
+                          if (notification
+                                  .datosAdicionales?['tipo_comunicado'] !=
+                              null) ...[
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.category_rounded,
+                                  size: screenSize.height * 0.022,
+                                  color: AppTheme.accentPurple,
+                                ),
+                                SizedBox(
+                                    width:
+                                        AppTheme.getSmallPadding(screenSize) *
+                                            0.75),
+                                Text(
+                                  'Tipo:',
+                                  style: AppTheme.getBodyMedium(screenSize)
+                                      .copyWith(
+                                    color:
+                                        AppTheme.getTextSecondaryColor(context),
+                                  ),
+                                ),
+                                SizedBox(
+                                    width:
+                                        AppTheme.getSmallPadding(screenSize) *
+                                            0.5),
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal:
+                                        AppTheme.getSmallPadding(screenSize) *
+                                            1,
+                                    vertical:
+                                        AppTheme.getSmallPadding(screenSize) *
+                                            0.25,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.accentPurple,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Text(
+                                    _formatComunicadoType(notification
+                                        .datosAdicionales?['tipo_comunicado']),
+                                    style: AppTheme.getCaption(screenSize)
+                                        .copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(
+                                height: AppTheme.getSmallPadding(screenSize)),
+                          ],
+
+                          // Prioridad de comunicado
+                          if (notification
+                                  .datosAdicionales?['prioridad_comunicado'] !=
+                              null) ...[
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.priority_high_rounded,
+                                  size: screenSize.height * 0.022,
+                                  color: _getPriorityColor(
+                                      notification.datosAdicionales?[
+                                          'prioridad_comunicado']),
+                                ),
+                                SizedBox(
+                                    width:
+                                        AppTheme.getSmallPadding(screenSize) *
+                                            0.75),
+                                Text(
+                                  'Prioridad:',
+                                  style: AppTheme.getBodyMedium(screenSize)
+                                      .copyWith(
+                                    color:
+                                        AppTheme.getTextSecondaryColor(context),
+                                  ),
+                                ),
+                                SizedBox(
+                                    width:
+                                        AppTheme.getSmallPadding(screenSize) *
+                                            0.5),
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal:
+                                        AppTheme.getSmallPadding(screenSize) *
+                                            1,
+                                    vertical:
+                                        AppTheme.getSmallPadding(screenSize) *
+                                            0.25,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: _getPriorityColor(
+                                        notification.datosAdicionales?[
+                                            'prioridad_comunicado']),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Text(
+                                    _formatPrioridad(
+                                        notification.datosAdicionales?[
+                                            'prioridad_comunicado']),
+                                    style: AppTheme.getCaption(screenSize)
+                                        .copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+
                   SizedBox(height: AppTheme.getSmallPadding(screenSize)),
 
-                  // Tipo de comunicado
-                  if (notification.datosAdicionales?['tipo_comunicado'] !=
-                      null) ...[
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.category_rounded,
-                          size: screenSize.height * 0.022,
-                          color: AppTheme.accentPurple,
-                        ),
-                        SizedBox(
-                            width: AppTheme.getSmallPadding(screenSize) * 0.75),
-                        Text(
-                          'Tipo:',
-                          style: AppTheme.getBodyMedium(screenSize).copyWith(
-                            color: AppTheme.getTextSecondaryColor(context),
-                          ),
-                        ),
-                        SizedBox(
-                            width: AppTheme.getSmallPadding(screenSize) * 0.5),
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal:
-                                AppTheme.getSmallPadding(screenSize) * 1,
-                            vertical:
-                                AppTheme.getSmallPadding(screenSize) * 0.25,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppTheme.accentPurple,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            _formatComunicadoType(notification
-                                .datosAdicionales?['tipo_comunicado']),
-                            style: AppTheme.getCaption(screenSize).copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
+                  // Message content
+                  Text(
+                    'Mensaje',
+                    style: AppTheme.getSubtitle1(screenSize).copyWith(
+                      color: AppTheme.getTextPrimaryColor(context),
+                      fontWeight: FontWeight.w600,
                     ),
-                    SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-                  ],
+                  ),
 
-                  // Prioridad de comunicado
-                  if (notification.datosAdicionales?['prioridad_comunicado'] !=
-                      null) ...[
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.priority_high_rounded,
-                          size: screenSize.height * 0.022,
-                          color: _getPriorityColor(notification
-                              .datosAdicionales?['prioridad_comunicado']),
-                        ),
-                        SizedBox(
-                            width: AppTheme.getSmallPadding(screenSize) * 0.75),
-                        Text(
-                          'Prioridad:',
-                          style: AppTheme.getBodyMedium(screenSize).copyWith(
-                            color: AppTheme.getTextSecondaryColor(context),
-                          ),
-                        ),
-                        SizedBox(
-                            width: AppTheme.getSmallPadding(screenSize) * 0.5),
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal:
-                                AppTheme.getSmallPadding(screenSize) * 1,
-                            vertical:
-                                AppTheme.getSmallPadding(screenSize) * 0.25,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _getPriorityColor(notification
-                                .datosAdicionales?['prioridad_comunicado']),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            _formatPrioridad(notification
-                                .datosAdicionales?['prioridad_comunicado']),
-                            style: AppTheme.getCaption(screenSize).copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
+                  SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.5),
+
+                  Container(
+                    width: double.infinity,
+                    padding:
+                        EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+                    decoration: BoxDecoration(
+                      color: AppTheme.getBackgroundColor(context),
+                      borderRadius: BorderRadius.circular(
+                          AppTheme.getMediumRadius(screenSize)),
+                      border: Border.all(
+                        color: AppTheme.getBorderColor(context),
+                      ),
                     ),
-                  ],
+                    child: Text(
+                      notification.mensaje,
+                      style: AppTheme.getBodyMedium(screenSize).copyWith(
+                        color: AppTheme.getTextPrimaryColor(context),
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(height: AppTheme.getMediumPadding(screenSize)),
                 ],
               ),
             ),
-          ],
-
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-
-          // Message content
-          Text(
-            'Mensaje',
-            style: AppTheme.getSubtitle1(screenSize).copyWith(
-              color: AppTheme.getTextPrimaryColor(context),
-              fontWeight: FontWeight.w600,
-            ),
           ),
 
-          SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.5),
-
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-            decoration: BoxDecoration(
-              color: AppTheme.getBackgroundColor(context),
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-              border: Border.all(
-                color: AppTheme.getBorderColor(context),
-              ),
-            ),
-            child: Text(
-              notification.mensaje,
-              style: AppTheme.getBodyMedium(screenSize).copyWith(
-                color: AppTheme.getTextPrimaryColor(context),
-              ),
-            ),
-          ),
-
-          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-          // Action button
+          // Action button (fixed at bottom)
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(

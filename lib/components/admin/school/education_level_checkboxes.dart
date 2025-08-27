@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../models/models.dart';
 
 class EducationLevelCheckboxes extends StatelessWidget {
   final String label;
@@ -15,7 +14,7 @@ class EducationLevelCheckboxes extends StatelessWidget {
   final ValueChanged<bool> onBachilleratoChanged;
 
   const EducationLevelCheckboxes({
-    Key? key,
+    super.key,
     required this.label,
     required this.hasPreescolar,
     required this.hasPrimaria,
@@ -25,7 +24,7 @@ class EducationLevelCheckboxes extends StatelessWidget {
     required this.onPrimariaChanged,
     required this.onSecundariaChanged,
     required this.onBachilleratoChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

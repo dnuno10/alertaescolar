@@ -102,7 +102,7 @@ class ContactoFamiliar {
   }) {
     return ContactoFamiliar(
       id: id ?? this.id,
-      usuarioId: this.usuarioId,
+      usuarioId: usuarioId,
       nombre: nombre ?? this.nombre,
       parentesco: parentesco ?? this.parentesco,
       telefono: telefono ?? this.telefono,

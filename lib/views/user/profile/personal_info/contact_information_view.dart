@@ -277,10 +277,10 @@ class AdminInfoNoticeCard extends StatelessWidget {
   final Size screenSize;
 
   const AdminInfoNoticeCard({
-    Key? key,
+    super.key,
     required this.l10n,
     required this.screenSize,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

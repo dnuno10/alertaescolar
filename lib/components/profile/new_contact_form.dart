@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import '../textfield/custom_input_field.dart';
-import 'relation_dropdown.dart';
 import '../../models/contacto_familiar.dart';
 import '../../l10n/app_localizations.dart';
 import '../../app/app_theme.dart';
 import '../../utils/modern_dropdown.dart';
-import '../../views/user/profile/edit_family_contact_view.dart'
-    show TipoParentescoExtension;
 
 class NewContactForm extends StatelessWidget {
   final GlobalKey<FormState> formKey;

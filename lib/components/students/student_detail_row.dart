@@ -32,7 +32,7 @@ class StudentDetailRow extends StatelessWidget {
             width: screenSize.width * 0.1,
             height: screenSize.width * 0.1,
             decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.1),
+              color: iconColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(
                   AppTheme.getSmallRadius(screenSize) * 0.8),
             ),

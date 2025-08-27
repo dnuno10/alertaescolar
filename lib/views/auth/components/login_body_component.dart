@@ -2,14 +2,12 @@ import 'dart:io';
 import 'package:alertaescolar/widgets/custom_snack_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../components/buttons/solid_button.dart';
 import '../../../components/textfield/custom_input_field.dart';
 import '../../../managers/auth/Google.dart';
 import '../../../managers/auth/Apple.dart';
 import '../../../managers/auth/Login.dart';
-import '../../../managers/auth/MagicLink.dart';
 import '../../../app/app_theme.dart';
 
 class LoginBodyComponent extends StatefulWidget {

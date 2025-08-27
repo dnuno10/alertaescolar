@@ -139,8 +139,7 @@ class ProfileHeader extends StatelessWidget {
                                           0.25,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.accentPurple
-                                      .withValues(alpha: 0.1),
+                                  color: AppTheme.accentPurple.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(
                                       AppTheme.getSmallRadius(screenSize) *
                                           0.5),

@@ -337,13 +337,16 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
         schoolData['nivelesEducativos'] as Map<String, dynamic>;
     final nivelesActivos = <String>[];
 
-    if (nivelesEducativos['preescolar'] == true)
+    if (nivelesEducativos['preescolar'] == true) {
       nivelesActivos.add('Preescolar');
+    }
     if (nivelesEducativos['primaria'] == true) nivelesActivos.add('Primaria');
-    if (nivelesEducativos['secundaria'] == true)
+    if (nivelesEducativos['secundaria'] == true) {
       nivelesActivos.add('Secundaria');
-    if (nivelesEducativos['preparatoria'] == true)
+    }
+    if (nivelesEducativos['preparatoria'] == true) {
       nivelesActivos.add('Preparatoria');
+    }
 
     return Container(
       width: double.infinity,

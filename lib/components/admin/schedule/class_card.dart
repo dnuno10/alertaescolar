@@ -212,7 +212,7 @@ class ClassCard extends StatelessWidget {
                         ),
 
                         // Day indicator if needed and showDay is true
-                        if (showDay && clase.dia != null) ...[
+                        if (showDay) ...[
                           SizedBox(
                               height: AppTheme.getSmallPadding(screenSize)),
                           Container(
@@ -236,7 +236,7 @@ class ClassCard extends StatelessWidget {
                                 ),
                                 SizedBox(width: screenSize.width * 0.01),
                                 Text(
-                                  _getDayName(clase.dia!),
+                                  _getDayName(clase.dia),
                                   style: AppTheme.getCaptionSmall(screenSize)
                                       .copyWith(
                                     fontWeight: FontWeight.w600,

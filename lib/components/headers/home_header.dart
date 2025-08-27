@@ -22,7 +22,7 @@ class HomeHeader extends StatelessWidget {
             child: Consumer<UserProvider>(
               builder: (context, userProvider, child) {
                 final user = userProvider.currentUser;
-                final firstName = user?.nombre?.split(' ').first ?? l10n.user;
+                final firstName = user?.nombre.split(' ').first ?? l10n.user;
 
                 return Row(
                   children: [
@@ -58,7 +58,7 @@ class HomeHeader extends StatelessWidget {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.accentPurple.withValues(alpha: 0.2),
+                            color: AppTheme.accentPurple.withOpacity(0.2),
                             blurRadius: screenSize.height * 0.01,
                             offset: Offset(0, screenSize.height * 0.005),
                           ),

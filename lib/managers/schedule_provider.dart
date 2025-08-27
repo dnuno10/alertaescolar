@@ -10,7 +10,7 @@ class ScheduleProvider with ChangeNotifier {
   List<Materia> _materias = [];
   List<Map<String, dynamic>> _grupos = [];
   List<Map<String, dynamic>> _nivelesEducativos = [];
-  Map<String, List<ClaseHorario>> _horarios = {};
+  final Map<String, List<ClaseHorario>> _horarios = {};
 
   bool _isLoading = false;
   String? _error;

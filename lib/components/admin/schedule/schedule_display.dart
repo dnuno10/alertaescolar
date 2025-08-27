@@ -74,7 +74,7 @@ class ScheduleDisplay extends StatelessWidget {
                   showDay: false, // Don't show day in individual cards
                 ),
               );
-            }).toList(),
+            }),
         ],
       );
     }
@@ -330,7 +330,7 @@ class ScheduleDisplay extends StatelessWidget {
                           false, // Don't show day in cards since it's already shown in header
                     ),
                   );
-                }).toList(),
+                }),
             ],
           ),
         );

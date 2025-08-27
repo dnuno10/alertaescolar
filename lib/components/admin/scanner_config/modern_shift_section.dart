@@ -32,10 +32,10 @@ class ModernShiftSection extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.05),
+        color: color.withOpacity(0.05),
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,7 +46,7 @@ class ModernShiftSection extends StatelessWidget {
                 padding:
                     EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.8),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
+                  color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(
                       AppTheme.getSmallRadius(screenSize)),
                 ),

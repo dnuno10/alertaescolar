@@ -65,7 +65,7 @@ class PrioritySelector extends StatelessWidget {
             padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
             decoration: BoxDecoration(
               color: isSelected
-                  ? (priority['color'] as Color).withValues(alpha: 0.1)
+                  ? (priority['color'] as Color).withOpacity(0.1)
                   : AppTheme.getBackgroundColor(context),
               borderRadius:
                   BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
@@ -89,7 +89,7 @@ class PrioritySelector extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: (priority['color'] as Color)
-                        .withValues(alpha: isSelected ? 0.2 : 0.1),
+                        .withOpacity(isSelected ? 0.2 : 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(

@@ -200,8 +200,8 @@ class AppTheme {
 
   static Color getOverlayColor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
-        ? Colors.black.withValues(alpha: 0.5)
-        : Colors.black.withValues(alpha: 0.1);
+        ? Colors.black.withOpacity(0.5)
+        : Colors.black.withOpacity(0.1);
   }
 
   static Color getSecondaryBackgroundColor(BuildContext context) {
@@ -561,23 +561,6 @@ class AppTheme {
       ),
     ),
 
-    // Modern Cards with dynamic border radius
-    cardTheme: CardTheme(
-      elevation: 0,
-      color: cardLight,
-      surfaceTintColor: Colors.transparent,
-      shadowColor: shadowLight,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(
-            borderRadiusLarge), // Will use dynamic version
-        side: BorderSide(
-          color: borderLight,
-          width: 1,
-        ),
-      ),
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    ),
-
     // Modern Buttons with dynamic border radius
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -908,21 +891,6 @@ class AppTheme {
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
       ),
-    ),
-
-    // Cards for Dark Theme
-    cardTheme: CardTheme(
-      elevation: 0,
-      color: cardDark,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: Colors.grey.shade800,
-          width: 1,
-        ),
-      ),
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     ),
 
     // Buttons for Dark Theme

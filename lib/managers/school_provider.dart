@@ -35,11 +35,9 @@ class SchoolProvider with ChangeNotifier {
       final response =
           await supabase.from('escuelas').select().eq('id', schoolId).single();
 
-      if (response != null) {
-        final school = Escuela.fromJson(response);
-        return school;
-      }
-    } catch (e) {
+      final school = Escuela.fromJson(response);
+      return school;
+        } catch (e) {
       _error = '${l10n.errorFetchingSchool}: $e';
     } finally {
       _isLoading = false;
@@ -60,10 +58,8 @@ class SchoolProvider with ChangeNotifier {
       final response =
           await supabase.from('escuelas').select().eq('id', schoolId).single();
 
-      if (response != null) {
-        _currentSchool = Escuela.fromJson(response);
-      }
-    } catch (e) {
+      _currentSchool = Escuela.fromJson(response);
+        } catch (e) {
       _error = '${l10n.errorLoadingSchool}: $e';
     } finally {
       LoadingDialog.hide(context);

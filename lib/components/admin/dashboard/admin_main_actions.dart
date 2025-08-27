@@ -4,7 +4,6 @@ import '../../../l10n/app_localizations.dart';
 import '../../../views/admin/qr_and_notifications/notification_send_view.dart';
 import '../../../views/admin/schedule/schedule_management_view.dart';
 import 'admin_action_card.dart';
-import '../../../widgets/custom_snack_bar.dart';
 
 class AdminMainActions extends StatelessWidget {
   final Size screenSize;
@@ -26,7 +25,7 @@ class AdminMainActions extends StatelessWidget {
             BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.getShadowColor(context).withValues(alpha: 0.1),
+            color: AppTheme.getShadowColor(context).withOpacity(0.1),
             blurRadius: screenSize.height * 0.015,
             offset: Offset(0, screenSize.height * 0.005),
           ),
@@ -41,7 +40,7 @@ class AdminMainActions extends StatelessWidget {
                 padding:
                     EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.8),
                 decoration: BoxDecoration(
-                  color: AppTheme.accentPurple.withValues(alpha: 0.1),
+                  color: AppTheme.accentPurple.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(
                       AppTheme.getSmallRadius(screenSize)),
                 ),

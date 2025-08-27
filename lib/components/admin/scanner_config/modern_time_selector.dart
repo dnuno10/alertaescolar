@@ -35,7 +35,7 @@ class ModernTimeSelector extends StatelessWidget {
           color: AppTheme.getCardColor(context),
           borderRadius:
               BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          border: Border.all(color: color.withOpacity(0.3)),
           boxShadow: [
             BoxShadow(
               color: AppTheme.getShadowColor(context),
@@ -82,7 +82,7 @@ class ModernTimeSelector extends StatelessWidget {
                 vertical: AppTheme.getSmallPadding(screenSize) * 0.4,
               ),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
+                color: color.withOpacity(0.1),
                 borderRadius:
                     BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
               ),

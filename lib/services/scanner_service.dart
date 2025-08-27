@@ -288,7 +288,7 @@ class ScannerService {
       if (actualAccessType == ScannerAccessType.entry &&
           currentTime.isAfter(lateThreshold)) {
         isLate = true;
-        message = 'Llegada tardía (tolerancia: ${tolerancia} min)';
+        message = 'Llegada tardía (tolerancia: $tolerancia min)';
       } else if (actualAccessType == ScannerAccessType.entry) {
         message = 'Llegada a tiempo';
       } else {

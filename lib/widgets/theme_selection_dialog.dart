@@ -1,4 +1,3 @@
-import 'package:alertaescolar/components/buttons/custom_outline_button.dart';
 import 'package:alertaescolar/components/buttons/solid_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -11,7 +10,7 @@ class ThemeSelectionDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final screenSize = MediaQuery.of(context).size;
 
     return Dialog(
@@ -51,7 +50,7 @@ class ThemeSelectionDialog extends StatelessWidget {
                           AppTheme.getSmallPadding(screenSize) * 0.8,
                         ),
                         decoration: BoxDecoration(
-                          color: AppTheme.accentPurple.withValues(alpha: 0.1),
+                          color: AppTheme.accentPurple.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(
                             AppTheme.getSmallRadius(screenSize),
                           ),
@@ -178,7 +177,7 @@ class _ThemeOption extends StatelessWidget {
           padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
           decoration: BoxDecoration(
             color: isSelected
-                ? AppTheme.accentPurple.withValues(alpha: 0.1)
+                ? AppTheme.accentPurple.withOpacity(0.1)
                 : AppTheme.getBackgroundColor(context),
             borderRadius: BorderRadius.circular(
               AppTheme.getMediumRadius(screenSize),
@@ -198,9 +197,9 @@ class _ThemeOption extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? AppTheme.accentPurple.withValues(alpha: 0.15)
+                      ? AppTheme.accentPurple.withOpacity(0.15)
                       : AppTheme.getTextSecondaryColor(context)
-                          .withValues(alpha: 0.1),
+                          .withOpacity(0.1),
                   borderRadius: BorderRadius.circular(
                     AppTheme.getSmallRadius(screenSize),
                   ),

@@ -45,7 +45,7 @@ class NavHeader extends StatelessWidget {
                         width: screenSize.width * 0.1,
                         height: screenSize.width * 0.1,
                         decoration: BoxDecoration(
-                          color: AppTheme.accentPurple.withValues(alpha: 0.1),
+                          color: AppTheme.accentPurple.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(
                               AppTheme.getSmallRadius(screenSize)),
                         ),
@@ -78,6 +78,5 @@ class NavHeader extends StatelessWidget {
         ),
       ),
     );
-    ;
   }
 }

@@ -15,6 +15,7 @@ class StudentsEmptyState extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return Container(
+      width: MediaQuery.of(context).size.width * 0.9,
       padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
@@ -28,7 +29,7 @@ class StudentsEmptyState extends StatelessWidget {
             width: screenSize.width * 0.2,
             height: screenSize.width * 0.2,
             decoration: BoxDecoration(
-              color: AppTheme.getBorderColor(context).withValues(alpha: 0.5),
+              color: AppTheme.getBorderColor(context).withOpacity(0.5),
               borderRadius:
                   BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
             ),

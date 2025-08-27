@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../../app/app_theme.dart';
-import '../../widgets/custom_snack_bar.dart';
 
 class NotificationInfoNotice extends StatelessWidget {
   final Size screenSize;

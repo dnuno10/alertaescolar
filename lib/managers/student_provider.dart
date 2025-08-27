@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:math' as math;
 import '../models/models.dart';
-import '../models/alumno.dart';
 import '../models/turno.dart' as turno_model;
 
 // Data classes for student details
@@ -1463,9 +1462,7 @@ class StudentProvider with ChangeNotifier {
       debugPrint('validateStudentKeyCode: Date validation passed');
 
       // Calculate remaining days for the key
-      final remainingDays = fechaDesactivacion != null
-          ? fechaDesactivacion.difference(now).inDays
-          : null;
+      final remainingDays = fechaDesactivacion?.difference(now).inDays;
 
       // Format time fields properly for timestamptz
       String? formatTime(dynamic timeField) {
@@ -1571,7 +1568,7 @@ class StudentProvider with ChangeNotifier {
 
         if (exactMatchResponse != null) {
           debugPrint(
-              'validateStudentKeyCode: Found exact match (case insensitive): ${exactMatchResponse}');
+              'validateStudentKeyCode: Found exact match (case insensitive): $exactMatchResponse');
         } else {
           debugPrint(
               'validateStudentKeyCode: No exact match found even with case insensitive search');

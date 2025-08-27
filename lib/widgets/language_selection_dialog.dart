@@ -1,4 +1,3 @@
-import 'package:alertaescolar/components/buttons/custom_outline_button.dart';
 import 'package:alertaescolar/components/buttons/solid_button.dart';
 import 'package:alertaescolar/providers/language_provider.dart';
 import 'package:flutter/material.dart';
@@ -54,7 +53,7 @@ class LanguageSelectionDialog extends StatelessWidget {
                             height: screenSize.width * 0.12,
                             decoration: BoxDecoration(
                               color: AppTheme.getTextPrimaryColor(context)
-                                  .withValues(alpha: 0.1),
+                                  .withOpacity(0.1),
                               borderRadius: BorderRadius.circular(
                                   AppTheme.getSmallRadius(screenSize)),
                             ),
@@ -178,7 +177,7 @@ class LanguageSelectionDialog extends StatelessWidget {
           padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
           decoration: BoxDecoration(
             color: isSelected
-                ? accentColor.withValues(alpha: 0.1)
+                ? accentColor.withOpacity(0.1)
                 : AppTheme.getContainerBackgroundColor(context),
             borderRadius:
                 BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),

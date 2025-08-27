@@ -39,7 +39,7 @@ class AttendanceRecordItem extends StatelessWidget {
         color: AppTheme.getBackgroundColor(context),
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        border: Border.all(color: statusColor.withValues(alpha: 0.2)),
+        border: Border.all(color: statusColor.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -122,10 +122,10 @@ class AttendanceRecordItem extends StatelessWidget {
               padding:
                   EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.75),
               decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: 0.1),
+                color: statusColor.withOpacity(0.1),
                 borderRadius:
                     BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-                border: Border.all(color: statusColor.withValues(alpha: 0.2)),
+                border: Border.all(color: statusColor.withOpacity(0.2)),
               ),
               child: Row(
                 children: [

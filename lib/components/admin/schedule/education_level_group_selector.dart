@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../utils/modern_dropdown.dart';
-import '../../../utils/modern_dropdown.dart';
 
 class EducationLevelGroupSelector extends StatelessWidget {
   final String? selectedNivelEducativo;

@@ -61,7 +61,7 @@ class _IntroAnimationComponentState extends State<IntroAnimationComponent>
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
 
-    return Container(
+    return SizedBox(
       width: double.infinity,
       child: FadeTransition(
         opacity: _fadeAnimation,
@@ -89,7 +89,7 @@ class _IntroAnimationComponentState extends State<IntroAnimationComponent>
   }
 
   Widget _buildTextSection(Size screenSize) {
-    return Container(
+    return SizedBox(
       width: screenSize.width * 0.85,
       child: Column(
         children: [

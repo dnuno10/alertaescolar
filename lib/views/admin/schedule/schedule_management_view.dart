@@ -14,7 +14,6 @@ import '../../../components/admin/schedule/education_level_group_selector.dart';
 import '../../../components/admin/schedule/day_filter.dart';
 import '../../../components/admin/schedule/schedule_display.dart';
 import '../../../components/admin/schedule/contact_info_card.dart';
-import '../../../components/loading/loading_indicator.dart';
 
 class ScheduleManagementView extends StatefulWidget {
   const ScheduleManagementView({super.key});
@@ -339,7 +338,7 @@ class _ScheduleManagementViewState extends State<ScheduleManagementView> {
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
         border: Border.all(
-          color: AppTheme.accentPurple.withValues(alpha: 0.2),
+          color: AppTheme.accentPurple.withOpacity(0.2),
         ),
       ),
       child: Column(

@@ -1,14 +1,12 @@
 import 'package:alertaescolar/components/headers/nav_header.dart';
 import 'package:alertaescolar/components/buttons/solid_button.dart';
 import 'package:alertaescolar/components/loading_dialog.dart';
-import 'package:alertaescolar/components/tips_cards/student_edit_info_card.dart';
 import 'package:alertaescolar/components/students/student_profile_card.dart';
 import 'package:alertaescolar/components/students/student_academic_info_card.dart';
 import 'package:alertaescolar/components/students/student_key_info_card.dart';
 import 'package:alertaescolar/components/students/student_action_buttons.dart';
 import 'package:alertaescolar/managers/student_provider.dart';
 import 'package:alertaescolar/managers/school_provider.dart';
-import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';

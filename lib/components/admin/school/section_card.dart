@@ -43,7 +43,7 @@ class SectionCard extends StatelessWidget {
                 padding:
                     EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.5),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
+                  color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(
                       AppTheme.getSmallRadius(screenSize)),
                 ),

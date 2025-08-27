@@ -62,9 +62,9 @@ class ToleranceSliderControl extends StatelessWidget {
           SliderTheme(
             data: SliderTheme.of(context).copyWith(
               activeTrackColor: AppTheme.warningColor,
-              inactiveTrackColor: AppTheme.warningColor.withValues(alpha: 0.2),
+              inactiveTrackColor: AppTheme.warningColor.withOpacity(0.2),
               thumbColor: AppTheme.warningColor,
-              overlayColor: AppTheme.warningColor.withValues(alpha: 0.1),
+              overlayColor: AppTheme.warningColor.withOpacity(0.1),
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 14),
               trackHeight: 8,
               overlayShape: const RoundSliderOverlayShape(overlayRadius: 24),
@@ -75,7 +75,7 @@ class ToleranceSliderControl extends StatelessWidget {
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
               ),
-              showValueIndicator: ShowValueIndicator.always,
+              //showValueIndicator: ShowValueIndicator.onDrag,
             ),
             child: Slider(
               value: tolerance.toDouble(),
@@ -105,7 +105,7 @@ class ToleranceSliderControl extends StatelessWidget {
           decoration: BoxDecoration(
             color: isActive
                 ? AppTheme.warningColor
-                : AppTheme.warningColor.withValues(alpha: 0.3),
+                : AppTheme.warningColor.withOpacity(0.3),
             shape: BoxShape.circle,
           ),
         ),

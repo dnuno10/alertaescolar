@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../app/app_theme.dart';
 import '../../../utils/modern_dropdown.dart';
+import 'student_profile_admin_view.dart';
 
 class StudentsDirectoryView extends StatefulWidget {
   const StudentsDirectoryView({super.key});
@@ -243,7 +244,7 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                           boxShadow: [
                             BoxShadow(
                               color: AppTheme.getShadowColor(context)
-                                  .withValues(alpha: 0.1),
+                                  .withOpacity(0.1),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -333,8 +334,8 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                                     getLabel: (String value) =>
                                         value == 'all' ? l10n.all : value,
                                     screenSize: screenSize,
-                                    backgroundColor: AppTheme.accentBlue
-                                        .withValues(alpha: 0.05),
+                                    backgroundColor:
+                                        AppTheme.accentBlue.withOpacity(0.05),
                                   ),
                                 ),
 
@@ -358,8 +359,8 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                                     getLabel: (String value) =>
                                         value == 'all' ? l10n.all : value,
                                     screenSize: screenSize,
-                                    backgroundColor: AppTheme.accentPurple
-                                        .withValues(alpha: 0.05),
+                                    backgroundColor:
+                                        AppTheme.accentPurple.withOpacity(0.05),
                                   ),
                                 ),
                               ],
@@ -434,8 +435,7 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                                 padding: EdgeInsets.all(
                                     AppTheme.getSmallPadding(screenSize)),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.accentBlue
-                                      .withValues(alpha: 0.1),
+                                  color: AppTheme.accentBlue.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(
                                       AppTheme.getSmallRadius(screenSize)),
                                 ),
@@ -467,6 +467,190 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                           ],
                         ),
                       ),
+
+                      // Students List Section
+                      SizedBox(height: AppTheme.getLargePadding(screenSize)),
+
+                      // Students List
+                      if (allStudents.isEmpty &&
+                          studentProvider.students.isNotEmpty)
+                        // No students match current filters
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(
+                              AppTheme.getLargePadding(screenSize)),
+                          decoration: BoxDecoration(
+                            color: AppTheme.getCardColor(context),
+                            borderRadius: BorderRadius.circular(
+                                AppTheme.getLargeRadius(screenSize)),
+                            border: Border.all(
+                                color: AppTheme.getBorderColor(context)),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.search_off_rounded,
+                                size: screenSize.height * 0.08,
+                                color: AppTheme.getTextSecondaryColor(context),
+                              ),
+                              SizedBox(
+                                  height:
+                                      AppTheme.getMediumPadding(screenSize)),
+                              Text(
+                                l10n.noStudentsFound,
+                                style:
+                                    AppTheme.getSubtitle1(screenSize).copyWith(
+                                  color: AppTheme.getTextPrimaryColor(context),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              SizedBox(
+                                  height: AppTheme.getSmallPadding(screenSize)),
+                              Text(
+                                l10n.tryAdjustingFilters,
+                                style:
+                                    AppTheme.getBodyMedium(screenSize).copyWith(
+                                  color:
+                                      AppTheme.getTextSecondaryColor(context),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        )
+                      else if (allStudents.isEmpty &&
+                          studentProvider.students.isEmpty)
+                        // No students at all
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(
+                              AppTheme.getLargePadding(screenSize)),
+                          decoration: BoxDecoration(
+                            color: AppTheme.getCardColor(context),
+                            borderRadius: BorderRadius.circular(
+                                AppTheme.getLargeRadius(screenSize)),
+                            border: Border.all(
+                                color: AppTheme.getBorderColor(context)),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.group_rounded,
+                                size: screenSize.height * 0.08,
+                                color: AppTheme.getTextSecondaryColor(context),
+                              ),
+                              SizedBox(
+                                  height:
+                                      AppTheme.getMediumPadding(screenSize)),
+                              Text(
+                                'No hay estudiantes registrados',
+                                style:
+                                    AppTheme.getSubtitle1(screenSize).copyWith(
+                                  color: AppTheme.getTextPrimaryColor(context),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              SizedBox(
+                                  height: AppTheme.getSmallPadding(screenSize)),
+                              Text(
+                                'Los estudiantes aparecerán aquí una vez que sean registrados',
+                                style:
+                                    AppTheme.getBodyMedium(screenSize).copyWith(
+                                  color:
+                                      AppTheme.getTextSecondaryColor(context),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        // Show students list
+                        Container(
+                          decoration: BoxDecoration(
+                            color: AppTheme.getCardColor(context),
+                            borderRadius: BorderRadius.circular(
+                                AppTheme.getLargeRadius(screenSize)),
+                            border: Border.all(
+                                color: AppTheme.getBorderColor(context)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Students list header
+                              Padding(
+                                padding: EdgeInsets.all(
+                                    AppTheme.getMediumPadding(screenSize)),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.group_rounded,
+                                      color: AppTheme.accentPurple,
+                                      size: screenSize.height * 0.025,
+                                    ),
+                                    SizedBox(
+                                        width: AppTheme.getSmallPadding(
+                                            screenSize)),
+                                    Text(
+                                      'Estudiantes Registrados',
+                                      style: AppTheme.getSubtitle1(screenSize)
+                                          .copyWith(
+                                        color: AppTheme.getTextPrimaryColor(
+                                            context),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: AppTheme.getSmallPadding(
+                                            screenSize),
+                                        vertical: AppTheme.getSmallPadding(
+                                                screenSize) *
+                                            0.5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.accentPurple
+                                            .withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(
+                                            AppTheme.getSmallRadius(
+                                                screenSize)),
+                                      ),
+                                      child: Text(
+                                        '${allStudents.length}',
+                                        style: AppTheme.getCaption(screenSize)
+                                            .copyWith(
+                                          color: AppTheme.accentPurple,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Students list
+                              ListView.separated(
+                                padding: EdgeInsets.only(
+                                  left: AppTheme.getMediumPadding(screenSize),
+                                  right: AppTheme.getMediumPadding(screenSize),
+                                  bottom: AppTheme.getMediumPadding(screenSize),
+                                ),
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: allStudents.length,
+                                separatorBuilder: (context, index) => SizedBox(
+                                  height: AppTheme.getSmallPadding(screenSize),
+                                ),
+                                itemBuilder: (context, index) {
+                                  final student = allStudents[index];
+                                  return _buildStudentCard(
+                                      context, student, screenSize, l10n);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -475,6 +659,128 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildStudentCard(
+      BuildContext context, student, Size screenSize, l10n) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => StudentProfileAdminView(student: student),
+            ),
+          );
+        },
+        borderRadius:
+            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+        child: Container(
+          padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+          decoration: BoxDecoration(
+            color: AppTheme.getBackgroundColor(context),
+            borderRadius:
+                BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+            border: Border.all(
+              color: AppTheme.getBorderColor(context),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              // Student Avatar
+              Container(
+                width: screenSize.width * 0.12,
+                height: screenSize.width * 0.12,
+                decoration: BoxDecoration(
+                  color: AppTheme.accentBlue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(
+                      AppTheme.getSmallRadius(screenSize)),
+                ),
+                child: Icon(
+                  Icons.person_rounded,
+                  color: AppTheme.accentBlue,
+                  size: screenSize.width * 0.06,
+                ),
+              ),
+
+              SizedBox(width: AppTheme.getMediumPadding(screenSize)),
+
+              // Student Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      student.nombre,
+                      style: AppTheme.getBodyMedium(screenSize).copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.getTextPrimaryColor(context),
+                      ),
+                    ),
+                    SizedBox(
+                        height: AppTheme.getSmallPadding(screenSize) * 0.3),
+                    Text(
+                      '${student.nivelEducativo} - ${student.grupo}',
+                      style: AppTheme.getCaption(screenSize).copyWith(
+                        color: AppTheme.getTextSecondaryColor(context),
+                      ),
+                    ),
+                    if (student.matricula.isNotEmpty) ...[
+                      SizedBox(
+                          height: AppTheme.getSmallPadding(screenSize) * 0.3),
+                      Text(
+                        'Matrícula: ${student.matricula}',
+                        style: AppTheme.getCaptionSmall(screenSize).copyWith(
+                          color: AppTheme.getTextSecondaryColor(context),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              // Status and Arrow
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppTheme.getSmallPadding(screenSize),
+                      vertical: AppTheme.getSmallPadding(screenSize) * 0.5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: student.llaveActiva
+                          ? AppTheme.successColor.withOpacity(0.1)
+                          : AppTheme.errorColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(
+                          AppTheme.getSmallRadius(screenSize)),
+                    ),
+                    child: Text(
+                      student.llaveActiva ? l10n.active : l10n.inactive,
+                      style: AppTheme.getCaptionSmall(screenSize).copyWith(
+                        color: student.llaveActiva
+                            ? AppTheme.successColor
+                            : AppTheme.errorColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.3),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppTheme.getTextSecondaryColor(context),
+                    size: screenSize.height * 0.025,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

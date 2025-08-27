@@ -85,7 +85,7 @@ class StudentKeyInfoCard extends StatelessWidget {
       return l10n.activated;
     }
 
-    return '${l10n.activated} (${linkedTutorsCount} ${linkedTutorsCount == 1 ? l10n.linkedTutor : l10n.linkedTutors})';
+    return '${l10n.activated} ($linkedTutorsCount ${linkedTutorsCount == 1 ? l10n.linkedTutor : l10n.linkedTutors})';
   }
 
   String _calculateRemainingTime(BuildContext context) {

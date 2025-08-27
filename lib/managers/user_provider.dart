@@ -1,4 +1,3 @@
-import 'dart:math';
 
 import 'package:alertaescolar/components/loading_dialog.dart';
 import 'package:alertaescolar/l10n/app_localizations.dart';
