@@ -2,17 +2,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// FCM Service for handling Firebase Cloud Messaging
-///
-/// This service:
-/// 1. Registers FCM tokens only for non-admin users
-/// 2. Stores tokens in the 'mobile_tokens' table
-/// 3. Handles token refresh automatically
-/// 4. Manages foreground and background message handling
-/// 5. Removes tokens on user sign out
-/// 6. Sends real push notifications using FCM HTTP v1 API
-
-/// Background message handler - must be a top-level function
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint('FCM: Handling background message: ${message.messageId}');
@@ -32,7 +21,6 @@ class FCMService {
     try {
       debugPrint('FCM: Initializing FCM service');
 
-      // Request permission for notifications
       final settings = await _firebaseMessaging.requestPermission(
         alert: true,
         badge: true,
@@ -84,7 +72,8 @@ class FCMService {
         await _supabase.from('mobile_tokens').insert({
           'id_usuario': user.id,
           'token': token,
-        });
+        }).eq('id_usuario', user.id);
+
         debugPrint('FCM: Token registered successfully');
       } else {
         debugPrint('FCM: Token already exists');

@@ -45,51 +45,52 @@ void main() async {
   runApp(const AlertaEscolarApp());
 }
 
-/// Set up FCM authentication state listener
+final supabase = Supabase.instance.client;
+
+/// --- Función para calcular si un usuario es admin ---
+Future<bool> _computeIsAdmin(SupabaseClient supabase, User user) async {
+  // revisa campo tipo en usuarios
+  final userData = await supabase
+      .from('usuarios')
+      .select('tipo')
+      .eq('id', user.id)
+      .maybeSingle();
+
+  final isAdminByTipo =
+      (userData?['tipo']?.toString() ?? '') == TipoUsuario.administrador.name;
+
+  // revisa lista blanca
+  final email = (user.email ?? '').trim().toLowerCase();
+  bool isAdminByList = false;
+  if (email.isNotEmpty) {
+    final adminData = await supabase
+        .from('admin_access_list')
+        .select('email')
+        .eq('email', email)
+        .maybeSingle();
+    isAdminByList = adminData != null;
+  }
+
+  return isAdminByTipo || isAdminByList;
+}
+
+/// --- Listener de cambios de auth para FCM ---
 void _setupFCMAuthListener() {
   supabase.auth.onAuthStateChange.listen((event) async {
     if (event.event == AuthChangeEvent.signedIn) {
       debugPrint('FCM: User signed in, initializing FCM service');
-
-      // Check if user is admin before initializing FCM
       final user = supabase.auth.currentUser;
       if (user != null) {
         try {
-          final userData = await supabase
-              .from('usuarios')
-              .select('tipo')
-              .eq('id', user.id)
-              .maybeSingle();
-
-          if (userData != null) {
-            final tipoString = userData['tipo']?.toString() ?? '';
-            final isAdmin = tipoString == TipoUsuario.administrador.name;
-
-            if (!isAdmin) {
-              // Only initialize FCM for non-admin users
-              await FCMService().initializeFCM();
-            } else {
-              debugPrint('FCM: User is admin, skipping FCM initialization');
-            }
+          final isAdmin = await _computeIsAdmin(supabase, user);
+          if (!isAdmin) {
+            await FCMService().initializeFCM();
           } else {
-            // If no user data found, check admin access list
-            final adminData = await supabase
-                .from('admin_access_list')
-                .select('*')
-                .eq('email', user.email ?? '')
-                .maybeSingle();
-
-            if (adminData == null) {
-              // Not in admin list, initialize FCM
-              await FCMService().initializeFCM();
-            } else {
-              debugPrint(
-                  'FCM: User is in admin access list, skipping FCM initialization');
-            }
+            debugPrint('FCM: User is admin, skipping FCM initialization');
           }
         } catch (e) {
           debugPrint('FCM: Error checking user type: $e');
-          // On error, initialize FCM as a fallback for safety
+          // fallback
           await FCMService().initializeFCM();
         }
       }
@@ -99,8 +100,6 @@ void _setupFCMAuthListener() {
     }
   });
 }
-
-final supabase = Supabase.instance.client;
 
 class AlertaEscolarApp extends StatelessWidget {
   const AlertaEscolarApp({super.key});
@@ -123,7 +122,6 @@ class _AppContentState extends State<_AppContent> {
   bool _isAutoLoginChecked = false;
   String _initialRoute = AppRoutes.intro;
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
-  bool _initialNavigationCompleted = false; // Add this flag
 
   @override
   void initState() {
@@ -134,155 +132,108 @@ class _AppContentState extends State<_AppContent> {
   Future<void> _initializeProvidersAndAutoLogin() async {
     if (!_providersInitialized && mounted) {
       await Future.delayed(const Duration(milliseconds: 50));
-      if (mounted) {
-        // Initialize providers but skip AuthService to avoid conflicts
-        await _initializeProvidersWithoutAuth(context);
 
-        if (mounted) {
-          final userProvider =
-              Provider.of<UserProvider>(context, listen: false);
+      // Initialize providers básicos
+      await _initializeProvidersWithoutAuth(context);
 
-          // Check for existing session and load user data directly
-          final session = supabase.auth.currentSession;
-          if (session != null) {
-            debugPrint("Found existing session: ${session.user.id}");
+      if (!mounted) return;
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
 
-            try {
-              // Try to load user data directly into UserProvider
-              await userProvider.loadCurrentUser(context);
+      final session = supabase.auth.currentSession;
+      if (session != null) {
+        debugPrint("Found existing session: ${session.user.id}");
+        try {
+          await userProvider.loadCurrentUser(context);
 
-              // Get user data from database to check admin status
-              final userData = await supabase
-                  .from('usuarios')
-                  .select('*')
-                  .eq('id', session.user.id)
-                  .maybeSingle();
+          // lee datos del usuario
+          final userData = await supabase
+              .from('usuarios')
+              .select('email, nombre, apellido, tipo')
+              .eq('id', session.user.id)
+              .maybeSingle();
 
-              if (userData != null) {
-                final tipoString = userData['tipo']?.toString() ?? '';
-                final isAdmin = tipoString == TipoUsuario.administrador.name;
+          final hasCompleteProfile =
+              (userData?['nombre']?.toString() ?? '').isNotEmpty &&
+                  (userData?['apellido']?.toString() ?? '').isNotEmpty;
 
-                debugPrint(
-                    "User data found: email=${userData['email']}, tipo=$tipoString, isAdmin=$isAdmin");
+          final isAdmin = await _computeIsAdmin(supabase, session.user);
 
-                // Check if profile is complete
-                final hasCompleteProfile =
-                    (userData['nombre']?.toString() ?? '').isNotEmpty &&
-                        (userData['apellido']?.toString() ?? '').isNotEmpty;
-
-                if (!hasCompleteProfile) {
-                  _initialRoute = AppRoutes.finishSettingUp; // Use constant
-                  debugPrint(
-                      "Profile incomplete, routing to ${AppRoutes.finishSettingUp}");
-                } else if (isAdmin) {
-                  _initialRoute = AppRoutes.adminDashboard; // Use constant
-                  debugPrint(
-                      "Admin user detected, routing to ${AppRoutes.adminDashboard}");
-                } else {
-                  _initialRoute = AppRoutes.home; // Use constant
-                  debugPrint(
-                      "Regular user detected, routing to ${AppRoutes.home}");
-                }
-              } else {
-                // Check if user is in admin access list
-                final adminData = await supabase
-                    .from('admin_access_list')
-                    .select('*')
-                    .eq('email', session.user.email ?? '')
-                    .maybeSingle();
-
-                if (adminData != null) {
-                  _initialRoute = AppRoutes.adminDashboard; // Use constant
-                  debugPrint(
-                      "Admin user found in access list, routing to ${AppRoutes.adminDashboard}");
-                } else {
-                  _initialRoute = AppRoutes.finishSettingUp; // Use constant
-                }
-              }
-            } catch (e) {
-              debugPrint("Error loading user data: $e");
-              _initialRoute = AppRoutes.intro; // Use constant
-            }
+          if (!hasCompleteProfile) {
+            _initialRoute = AppRoutes.finishSettingUp;
+            debugPrint("Profile incomplete → ${AppRoutes.finishSettingUp}");
+          } else if (isAdmin) {
+            _initialRoute = AppRoutes.adminDashboard;
+            debugPrint("Admin user → ${AppRoutes.adminDashboard}");
           } else {
-            _initialRoute = AppRoutes.intro; // Use constant
+            _initialRoute = AppRoutes.home;
+            debugPrint("Regular user → ${AppRoutes.home}");
           }
-
-          if (mounted) {
-            setState(() {
-              _providersInitialized = true;
-              _isAutoLoginChecked = true;
-            });
-            debugPrint("Final initial route determined: $_initialRoute");
-
-            // Mark initial navigation as completed after a short delay
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (mounted) {
-                _initialNavigationCompleted = true;
-                debugPrint("Initial navigation marked as completed");
-              }
-            });
-          }
+        } catch (e) {
+          debugPrint("Error loading user data: $e");
+          _initialRoute = AppRoutes.intro;
         }
+      } else {
+        _initialRoute = AppRoutes.intro;
+      }
+
+      if (mounted) {
+        setState(() {
+          _providersInitialized = true;
+          _isAutoLoginChecked = true;
+        });
+        debugPrint("Final initial route determined: $_initialRoute");
       }
     }
   }
 
-  // Initialize providers without AuthService to avoid conflicts
   Future<void> _initializeProvidersWithoutAuth(BuildContext context) async {
     if (!mounted) return;
-
     try {
       final notificationProvider =
           Provider.of<NotificationProvider>(context, listen: false);
-
-      // Initialize essential providers only - skip student provider here
-      // as it will be initialized in the actual views when needed
       try {
         await notificationProvider.loadNotifications();
         debugPrint("Notification provider initialized successfully");
       } catch (e) {
         debugPrint("Notification provider initialization error: $e");
       }
-
-      debugPrint("Basic providers initialized successfully");
     } catch (e) {
       debugPrint('Error in basic provider initialization: $e');
     }
   }
 
-// ...existing code...
-
   @override
   Widget build(BuildContext context) {
-    // Show a loading indicator until we've checked login state
     if (!_providersInitialized || !_isAutoLoginChecked) {
       return MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          home: Scaffold(
-            backgroundColor: Colors.white,
-            body: Center(
-              child: Stack(
-                children: [
-                  Center(
-                    child: Image.asset(
-                      "images/alertaescolar_logo.png",
-                      width: MediaQuery.of(context).size.height * 0.045,
-                      height: MediaQuery.of(context).size.height * 0.045,
-                      color: Colors.black,
-                    ),
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.system,
+        home: Scaffold(
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          body: Center(
+            child: Stack(
+              children: [
+                Center(
+                  child: Image.asset(
+                    "images/alertaescolar_logo.png",
+                    width: MediaQuery.of(context).size.height * 0.045,
+                    height: MediaQuery.of(context).size.height * 0.045,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
-                  Center(
-                    child: LoadingAnimationWidget.twoRotatingArc(
-                      color: Colors.black,
-                      size: MediaQuery.of(context).size.height * 0.075,
-                    ),
+                ),
+                Center(
+                  child: LoadingAnimationWidget.twoRotatingArc(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    size: MediaQuery.of(context).size.height * 0.075,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ));
+          ),
+        ),
+      );
     }
 
     return Consumer2<LocaleProvider, ThemeProvider>(
@@ -298,10 +249,18 @@ class _AppContentState extends State<_AppContent> {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeProvider.themeMode,
-          // Use initialRoute instead of home
           initialRoute: _initialRoute,
+          onGenerateInitialRoutes: (String initialRouteName) {
+            debugPrint(
+                'Forcing initial route: $_initialRoute (framework asked for: $initialRouteName)');
+            final Route<dynamic>? first = AppRoutes.onGenerateRoute(
+              RouteSettings(name: _initialRoute),
+            );
+            assert(first != null,
+                'onGenerateRoute devolvió null para $_initialRoute');
+            return [first!];
+          },
           onGenerateRoute: AppRoutes.onGenerateRoute,
-          // Add navigation observer to debug navigation
           navigatorObservers: [
             _NavigationObserver(),
           ],
@@ -311,7 +270,7 @@ class _AppContentState extends State<_AppContent> {
   }
 }
 
-// Add a navigation observer to debug navigation issues
+/// --- Observer para debug de navegación ---
 class _NavigationObserver extends NavigatorObserver {
   @override
   void didPush(Route route, Route? previousRoute) {

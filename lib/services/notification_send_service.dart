@@ -13,8 +13,8 @@ class NotificationSendService {
   Future<Map<String, dynamic>> sendNotification({
     required String adminId,
     required String schoolId,
-    required String messageType, // 'permiso' or 'comunicado'
-    required String recipientType, // 'individual', 'grupo', 'turno', 'todos'
+    required String messageType,
+    required String recipientType,
     required String title,
     required String message,
     TipoComunicado? comunicadoType,

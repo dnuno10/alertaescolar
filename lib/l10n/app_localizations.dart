@@ -72,6 +72,10 @@ abstract class AppLocalizations {
   String get registering;
   String get settingUpAccount;
   String get loading;
+  String get signInCanceled;
+  String get registerCanceled;
+  String get appleNotAvailable;
+
 // Time related
   String get timeSeparator;
   String get am;
@@ -1385,6 +1389,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get loadingNotifications => 'Loading notifications...';
 
+  @override
+  String get appleNotAvailable =>
+      'Apple Sign-In is not available on this device';
+
   // Time related
   @override
   String get timeSeparator => ':';
@@ -1392,6 +1400,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get am => 'AM';
   @override
   String get pm => 'PM';
+
+  @override
+  String get signInCanceled => 'Sign-in process canceled';
+
+  @override
+  String get registerCanceled => 'Registration process canceled';
 
 // QR Scanner
   @override
@@ -4454,6 +4468,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get excelExportDesc => 'Hoja de cálculo Excel';
 
+  @override
+  String get appleNotAvailable =>
+      'Inicio de sesión con Apple no está disponible en este dispositivo';
+
   // Time related
   @override
   String get timeSeparator => ':';
@@ -4461,6 +4479,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get am => 'AM';
   @override
   String get pm => 'PM';
+  @override
+  String get signInCanceled => 'Proceso de inicio de sesión cancelado';
+
+  @override
+  String get registerCanceled => 'Proceso de registro cancelado';
 
 // QR Scanner
   @override

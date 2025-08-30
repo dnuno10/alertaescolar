@@ -9,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/theme_provider.dart';
-import '../services/auth_service.dart';
 import 'notification_provider.dart';
 import 'student_provider.dart';
 import 'user_provider.dart';
@@ -24,7 +23,6 @@ class ProviderManager {
       NotificationProvider();
   static final FamilyProvider _familyProvider = FamilyProvider();
   static final LocaleProvider _localeProvider = LocaleProvider();
-  static final AuthService _authService = AuthService();
   static final SchoolProvider _schoolProvider =
       SchoolProvider(); // Add SchoolProvider instance
   static final ScheduleProvider _scheduleProvider =
@@ -52,7 +50,6 @@ class ProviderManager {
             value: _notificationProvider),
         ChangeNotifierProvider<FamilyProvider>.value(value: _familyProvider),
         ChangeNotifierProvider<LocaleProvider>.value(value: _localeProvider),
-        ChangeNotifierProvider<AuthService>.value(value: _authService),
         ChangeNotifierProvider<SchoolProvider>.value(value: _schoolProvider),
         ChangeNotifierProvider<ScheduleProvider>.value(
             value: _scheduleProvider),
@@ -94,13 +91,6 @@ class ProviderManager {
         debugPrint("Family provider initialized successfully");
       } catch (e) {
         debugPrint("Family provider initialization error: $e");
-      }
-      // Initialize providers that don't need MaterialLocalizations
-      try {
-        await _authService.initialize(context);
-        debugPrint("Auth service initialized successfully");
-      } catch (e) {
-        debugPrint("Auth service initialization error: $e");
       }
 
       try {

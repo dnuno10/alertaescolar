@@ -1,136 +1,83 @@
 // ignore_for_file: file_names, use_build_context_synchronously
 
-import 'package:alertaescolar/components/loading_dialog.dart';
 import 'package:alertaescolar/managers/auth/AdminSetup.dart';
-import 'package:alertaescolar/widgets/custom_snack_bar.dart';
+import 'package:alertaescolar/managers/auth/auth_utils.dart';
 import 'package:alertaescolar/managers/user_provider.dart';
 import 'package:alertaescolar/models/usuario.dart';
+import 'package:alertaescolar/models/models.dart';
 import 'package:alertaescolar/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+enum VerifyNext { finishSetup, admin, home }
+
+class VerifyResult {
+  final String message;
+  final VerifyNext next;
+  const VerifyResult(this.message, this.next);
+}
 
 class VerifyMagicLink {
   final BuildContext context;
   final String email;
   final String code;
 
-  VerifyMagicLink(
-      {required this.context, required this.email, required this.code});
+  VerifyMagicLink({
+    required this.context,
+    required this.email,
+    required this.code,
+  });
 
-  /// Verifica el código de autenticación en Supabase
-  Future<void> verifyCode() async {
+  Future<VerifyResult> verifyCode() async {
     final l10n = AppLocalizations.of(context);
 
     if (code.isEmpty || code.length != 6) {
-      // Close loading dialog first
-      LoadingDialog.hide(context);
-      CustomSnackBar.show(
-        context: context,
-        message: l10n.enterCompleteCode,
-        isError: true,
-      );
-      return;
+      throw FormatException(l10n.enterCompleteCode);
     }
 
-    try {
-      final response = await Supabase.instance.client.auth.verifyOTP(
-        type: OtpType.email,
-        token: code,
-        email: email,
-      );
+    final supabase = Supabase.instance.client;
 
-      if (response.session == null) {
-        throw Exception('No session returned');
-      }
-
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-
-      final userExist = await Supabase.instance.client
-          .from('usuarios')
-          .select('*')
-          .eq('email', email)
-          .maybeSingle();
-
-      if (userExist == null) {
-        // Usuario no existe, verificar si es un administrador en la lista de acceso
-        final isAdmin = await AdminSetup.checkAndSetupAdmin(
-          context,
-          email,
-          response.user!.id,
-        );
-
-        if (isAdmin) {
-          // Si ya se configuró como administrador, se ha manejado la navegación
-          LoadingDialog.hide(context);
-          return;
-        }
-
-        // Si no es admin, continuar con el flujo normal
-        // Create new user
-        final nuevoUsuario = Usuario(
-          id: response.user!.id,
-          nombre: '',
-          apellido: '',
-          email: email,
-          fechaRegistro: DateTime.now(),
-        );
-
-        await userProvider.updateUser(nuevoUsuario);
-
-        LoadingDialog.hide(context);
-        _showSuccessAndNavigate(
-          context,
-          l10n.codeVerifiedSuccessfully,
-          '/finish_setting_up',
-        );
-      } else {
-        final usuario = Usuario.fromJson(userExist);
-        await userProvider.updateUser(usuario);
-
-        LoadingDialog.hide(context);
-
-        if (usuario.nombre.isEmpty || usuario.apellido.isEmpty) {
-          // Perfil incompleto, redirigir a configuración
-          _showSuccessAndNavigate(
-            context,
-            l10n.completeYourProfile,
-            '/finish_setting_up',
-          );
-        } else {
-          // Perfil completo, redirigir según el tipo de usuario
-          _showSuccessAndNavigate(
-            context,
-            l10n.loginSuccessful,
-            usuario.tipo == TipoUsuario.administrador ? '/admin' : '/',
-          );
-        }
-      }
-    } catch (e) {
-      LoadingDialog.hide(context);
-      CustomSnackBar.show(
-        context: context,
-        message: l10n.invalidVerificationCode,
-        isError: true,
-      );
+    final response = await supabase.auth.verifyOTP(
+      type: OtpType.email,
+      token: code,
+      email: email,
+    );
+    if (response.session == null || response.user == null) {
+      throw Exception(l10n.invalidVerificationCode);
     }
-  }
 
-  void _showSuccessAndNavigate(
-      BuildContext context, String message, String route) {
-    LoadingDialog.hide(context);
+    final authUser = response.user!;
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (context.mounted) {
-        CustomSnackBar.show(
-          context: context,
-          message: message,
-          isError: false,
-        );
+    // 1) Asegura/inserta fila mínima
+    final usuario = await ensureUserRow(
+      supabase: supabase,
+      authUser: authUser,
+      defaultTipo: TipoUsuario.padre,
+    );
 
-        // Use pushNamedAndRemoveUntil to clear navigation stack
-        Navigator.pushNamedAndRemoveUntil(context, route, (route) => false);
-      }
-    });
+    // 2) Admin por lista blanca (por email verificado)
+    final isAdmin = await AdminSetup.checkAndSetupAdmin(
+      context,
+      email.trim().toLowerCase(),
+      authUser.id,
+    );
+    if (isAdmin) {
+      return VerifyResult(l10n.loginSuccessful, VerifyNext.admin);
+    }
+
+    // 3) Hidrata provider y decide siguiente paso
+    await userProvider.updateUser(usuario);
+
+    if (usuario.nombre.isEmpty || usuario.apellido.isEmpty) {
+      return VerifyResult(
+          l10n.codeVerifiedSuccessfully, VerifyNext.finishSetup);
+    }
+
+    final next = usuario.tipo == TipoUsuario.administrador
+        ? VerifyNext.admin
+        : VerifyNext.home;
+    return VerifyResult(l10n.loginSuccessful, next);
   }
 }

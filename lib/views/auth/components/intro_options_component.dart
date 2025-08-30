@@ -4,6 +4,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../components/buttons/solid_button.dart';
 import '../../../managers/auth/Google.dart';
 import '../../../app/app_theme.dart';
+import '../../../app/app_routes.dart';
 
 class IntroOptionsComponent extends StatelessWidget {
   const IntroOptionsComponent({super.key});
@@ -12,10 +13,13 @@ class IntroOptionsComponent extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final size = MediaQuery.of(context).size;
+    final bottomInset = MediaQuery.of(context).viewPadding.bottom;
 
     return Container(
       width: size.width,
-      padding: EdgeInsets.only(bottom: AppTheme.getMediumPadding(size) * 1.2),
+      padding: EdgeInsets.only(
+        bottom: AppTheme.getMediumPadding(size) * 1.2 + bottomInset,
+      ),
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
         boxShadow: [
@@ -53,16 +57,20 @@ class IntroOptionsComponent extends StatelessWidget {
 
           SizedBox(height: AppTheme.getMediumPadding(size)),
 
-          // Register Button
-          SolidButton(
+          // Signup Button
+          Semantics(
+            button: true,
             label: l10n.registerWithEmail,
-            backgroundColor: AppTheme.accentPurple,
-            screenSize: size,
-            width: size.width * 0.9,
-            onPressed: () {
-              HapticFeedback.mediumImpact();
-              Navigator.pushNamed(context, '/signup');
-            },
+            child: SolidButton(
+              label: l10n.registerWithEmail,
+              backgroundColor: AppTheme.accentPurple,
+              screenSize: size,
+              width: size.width * 0.9,
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                Navigator.pushNamed(context, AppRoutes.signup);
+              },
+            ),
           ),
 
           // Divider
@@ -73,19 +81,7 @@ class IntroOptionsComponent extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: size.width * 0.3,
-                  height: 1,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppTheme.getBorderColor(context).withOpacity(0.1),
-                        AppTheme.getBorderColor(context),
-                        AppTheme.getBorderColor(context).withOpacity(0.1),
-                      ],
-                    ),
-                  ),
-                ),
+                _DividerStripe(size: size, context: context),
                 Padding(
                   padding: EdgeInsets.symmetric(
                     horizontal: AppTheme.getSmallPadding(size),
@@ -97,33 +93,26 @@ class IntroOptionsComponent extends StatelessWidget {
                     ),
                   ),
                 ),
-                Container(
-                  width: size.width * 0.3,
-                  height: 1,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppTheme.getBorderColor(context).withOpacity(0.1),
-                        AppTheme.getBorderColor(context),
-                        AppTheme.getBorderColor(context).withOpacity(0.1),
-                      ],
-                    ),
-                  ),
-                ),
+                _DividerStripe(size: size, context: context),
               ],
             ),
           ),
 
           // Login Button
-          SolidButton(
+          Semantics(
+            button: true,
             label: l10n.login,
-            backgroundColor: Colors.black,
-            screenSize: size,
-            width: size.width * 0.9,
-            onPressed: () {
-              HapticFeedback.mediumImpact();
-              Navigator.pushNamed(context, '/login');
-            },
+            child: SolidButton(
+              label: l10n.login,
+              // Evita Colors.black “crudo”; usa el tema
+              backgroundColor: AppTheme.getTextPrimaryColor(context),
+              screenSize: size,
+              width: size.width * 0.9,
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                Navigator.pushNamed(context, AppRoutes.login);
+              },
+            ),
           ),
         ],
       ),
@@ -131,89 +120,89 @@ class IntroOptionsComponent extends StatelessWidget {
   }
 }
 
+class _DividerStripe extends StatelessWidget {
+  const _DividerStripe({
+    required this.size,
+    required this.context,
+  });
+
+  final Size size;
+  final BuildContext context;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size.width * 0.3,
+      height: 1,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.getBorderColor(this.context).withOpacity(0.1),
+            AppTheme.getBorderColor(this.context),
+            AppTheme.getBorderColor(this.context).withOpacity(0.1),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _GoogleSignInButton extends StatelessWidget {
   final Size size;
-
   const _GoogleSignInButton({required this.size});
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final radius = AppTheme.getSmallRadius(size);
 
-    return Container(
-      width: size.width * 0.9,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppTheme.getSmallRadius(size)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-            spreadRadius: -2,
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.mediumImpact();
-            _signInWithGoogle(context);
-          },
-          borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppTheme.getMediumPadding(size),
-              vertical: AppTheme.getSmallPadding(size),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Google Logo
-                Container(
-                  width: size.height * 0.025,
-                  height: size.height * 0.025,
-                  decoration: BoxDecoration(
-                    image: const DecorationImage(
-                      image: AssetImage('images/google_logo.png'),
-                      fit: BoxFit.contain,
-                    ),
-                    borderRadius:
-                        BorderRadius.circular(size.height * 0.025 / 2),
-                  ),
-                  // Fallback in case image isn't available
-                  child: Image.network(
-                    'https://developers.google.com/identity/images/g-logo.png',
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: size.width * 0.9),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(radius),
+        child: Material(
+          color: Colors.white, // Google button debe ser blanco
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.mediumImpact();
+              Google().signInWithGoogle(context);
+            },
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppTheme.getMediumPadding(size),
+                vertical: AppTheme.getSmallPadding(size),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Google Logo (con fallback seguro)
+                  SizedBox(
                     width: size.height * 0.025,
                     height: size.height * 0.025,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(
+                    child: Image.asset(
+                      'images/google_logo.png',
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Icon(
                         Icons.g_mobiledata,
                         color: Colors.blue,
                         size: size.height * 0.025,
-                      );
-                    },
+                      ),
+                    ),
                   ),
-                ),
-                SizedBox(width: AppTheme.getSmallPadding(size)),
-                Text(
-                  l10n.continueWithGoogle,
-                  style: AppTheme.getBodyMedium(size).copyWith(
-                    color: const Color(0xFF3C4043),
-                    fontWeight: FontWeight.w500,
+                  SizedBox(width: AppTheme.getSmallPadding(size)),
+                  Text(
+                    l10n.continueWithGoogle,
+                    style: AppTheme.getBodyMedium(size).copyWith(
+                      color: const Color(0xFF3C4043),
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
-  }
-
-  void _signInWithGoogle(BuildContext context) {
-    // Use the Google authentication manager
-    Google().signInWithGoogle(context);
   }
 }

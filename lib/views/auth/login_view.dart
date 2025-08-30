@@ -14,8 +14,11 @@ class LoginView extends StatefulWidget {
 class _LoginViewState extends State<LoginView> {
   @override
   Widget build(BuildContext context) {
-    // Mantén el almacenamiento del idioma
-    Provider.of<LocaleProvider>(context);
+    // Escucha cambios de idioma y evita parpadeo si aún no carga
+    final lp = context.watch<LocaleProvider>();
+    if (!lp.isInitialized) {
+      return const Scaffold(body: SizedBox.expand());
+    }
 
     return Scaffold(
       // Centramos el contenido y lo llevamos al final
@@ -31,11 +34,15 @@ class _LoginViewState extends State<LoginView> {
           child: SingleChildScrollView(
             child: SizedBox(
               height: MediaQuery.of(context).size.height,
-              child: const Column(
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
+                children: const [
+                  // Quitar const en LoginBodyComponent para que reaccione al cambio de locale
+                  // (dejar el Column externo como está no afecta lo visual)
+                  // ignore: prefer_const_constructors
                   Column(
                     children: [
+                      // ignore: prefer_const_constructors
                       LoginBodyComponent(),
                     ],
                   ),

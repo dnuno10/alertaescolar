@@ -1,3 +1,4 @@
+import 'package:alertaescolar/app/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../app/app_theme.dart';
@@ -100,10 +101,14 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
       child: Row(
         children: [
           IconButton(
-            onPressed: () => {
-              HapticFeedback.mediumImpact(),
-              Supabase.instance.client.auth.signOut(),
-              Navigator.pop(context)
+            onPressed: () async {
+              HapticFeedback.mediumImpact();
+              await Supabase.instance.client.auth.signOut();
+              if (!mounted) return;
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                AppRoutes.intro,
+                (route) => false,
+              );
             },
             icon: Icon(
               Icons.arrow_back_ios_new,
@@ -234,7 +239,7 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
                                 HapticFeedback.mediumImpact();
                                 _finishSetup();
                               }
-                            : () {},
+                            : null,
                       );
                     },
                   ),
@@ -442,7 +447,7 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
     );
   }
 
-  void _finishSetup() {
+  void _finishSetup() async {
     final firstName = _firstNameController.text.trim();
     final lastName = _lastNameController.text.trim();
     final l10n = AppLocalizations.of(context);
@@ -470,7 +475,7 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
         tipo: _selectedUserType, // Pass the selected user type
       );
 
-      finishSettingUp.settingUpAccount();
+      await finishSettingUp.settingUpAccount();
     } catch (e) {
       if (mounted) {
         _showErrorSnackBar(l10n.errorSettingUpAccount);

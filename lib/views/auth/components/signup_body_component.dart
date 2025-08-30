@@ -1,4 +1,8 @@
-import 'dart:io';
+import 'package:alertaescolar/app/app_routes.dart';
+import 'package:alertaescolar/components/auth/terms_privacy_footer.dart';
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
+
 import 'package:alertaescolar/widgets/custom_snack_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,6 +27,7 @@ class _SignUpBodyComponentState extends State<SignUpBodyComponent>
   late FocusNode _emailNode;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -35,13 +40,9 @@ class _SignUpBodyComponentState extends State<SignUpBodyComponent>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeOut,
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeOut),
+    );
 
     _fadeController.forward();
   }
@@ -72,12 +73,8 @@ class _SignUpBodyComponentState extends State<SignUpBodyComponent>
         child: SafeArea(
           child: Column(
             children: [
-              // Header section
               _buildHeader(size, l10n),
-              // Expanded content
-              Expanded(
-                child: _buildSignUpForm(size, l10n),
-              ),
+              Expanded(child: _buildSignUpForm(size, l10n)),
             ],
           ),
         ),
@@ -91,7 +88,10 @@ class _SignUpBodyComponentState extends State<SignUpBodyComponent>
       child: Row(
         children: [
           IconButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              Navigator.pop(context);
+            },
             icon: Icon(
               Icons.arrow_back_ios_new,
               color: AppTheme.getTextPrimaryColor(context),
@@ -149,7 +149,6 @@ class _SignUpBodyComponentState extends State<SignUpBodyComponent>
       ),
       child: Column(
         children: [
-          // Header pill
           Container(
             width: size.width * 0.15,
             height: 4,
@@ -162,8 +161,6 @@ class _SignUpBodyComponentState extends State<SignUpBodyComponent>
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-
-          // Scrollable content
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.symmetric(
@@ -171,7 +168,6 @@ class _SignUpBodyComponentState extends State<SignUpBodyComponent>
               ),
               child: Column(
                 children: [
-                  // Email field
                   CustomInputField(
                     controller: _emailController,
                     label: l10n.email,
@@ -179,22 +175,29 @@ class _SignUpBodyComponentState extends State<SignUpBodyComponent>
                     icon: Icons.email_outlined,
                     keyboardType: TextInputType.emailAddress,
                     focusNode: _emailNode,
+                    textInputAction: TextInputAction.done,
+                    // Si tu CustomInputField expone onFieldSubmitted:
+                    // onFieldSubmitted: (_) => _handleRegister(),
                   ),
 
                   SizedBox(height: AppTheme.getLargePadding(size)),
 
-                  // Continue button using SolidButton
+                  // Botón continuar
                   SolidButton(
-                    label: l10n.continue_,
+                    label: _isSubmitting ? l10n.sending : l10n.continue_,
                     backgroundColor: AppTheme.accentPurple,
                     screenSize: size,
                     width: size.width * 0.9,
-                    onPressed: _checkAndRegisterEmail,
+                    onPressed: _isSubmitting
+                        ? null
+                        : () {
+                            HapticFeedback.mediumImpact();
+                            _handleRegister();
+                          },
                   ),
 
                   SizedBox(height: AppTheme.getMediumPadding(size)),
 
-                  // Sign in link
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -206,7 +209,9 @@ class _SignUpBodyComponentState extends State<SignUpBodyComponent>
                       ),
                       TextButton(
                         onPressed: () {
-                          Navigator.pushReplacementNamed(context, '/login');
+                          HapticFeedback.mediumImpact();
+                          Navigator.pushReplacementNamed(
+                              context, AppRoutes.login);
                         },
                         child: Text(
                           l10n.signIn,
@@ -218,7 +223,8 @@ class _SignUpBodyComponentState extends State<SignUpBodyComponent>
                       ),
                     ],
                   ),
-                  // Divider with proper styling
+
+                  // Divider
                   Padding(
                     padding: EdgeInsets.symmetric(
                       vertical: AppTheme.getSmallPadding(size),
@@ -226,21 +232,7 @@ class _SignUpBodyComponentState extends State<SignUpBodyComponent>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          width: size.width * 0.3,
-                          height: 1,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                AppTheme.getBorderColor(context)
-                                    .withOpacity(0.1),
-                                AppTheme.getBorderColor(context),
-                                AppTheme.getBorderColor(context)
-                                    .withOpacity(0.1),
-                              ],
-                            ),
-                          ),
-                        ),
+                        _dividerSide(size),
                         Padding(
                           padding: EdgeInsets.symmetric(
                             horizontal: AppTheme.getSmallPadding(size),
@@ -252,85 +244,45 @@ class _SignUpBodyComponentState extends State<SignUpBodyComponent>
                             ),
                           ),
                         ),
-                        Container(
-                          width: size.width * 0.3,
-                          height: 1,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                AppTheme.getBorderColor(context)
-                                    .withOpacity(0.1),
-                                AppTheme.getBorderColor(context),
-                                AppTheme.getBorderColor(context)
-                                    .withOpacity(0.1),
-                              ],
-                            ),
-                          ),
-                        ),
+                        _dividerSide(size),
                       ],
                     ),
                   ),
-                  // Social signup options first
-                  SignUpOptionsComponent(size: size),
+
+                  // Social signup
+                  SignUpOptionsComponent(
+                    size: size,
+                    isBusy: _isSubmitting,
+                    onGoogle: _isSubmitting
+                        ? null
+                        : () async {
+                            setState(() => _isSubmitting = true);
+                            try {
+                              HapticFeedback.mediumImpact();
+                              await Google().signInWithGoogle(context);
+                            } finally {
+                              if (mounted)
+                                setState(() => _isSubmitting = false);
+                            }
+                          },
+                    onApple: _isSubmitting
+                        ? null
+                        : () async {
+                            HapticFeedback.mediumImpact();
+                            setState(() => _isSubmitting = true);
+                            try {
+                              await Apple().signInWithApple(context);
+                            } finally {
+                              if (mounted)
+                                setState(() => _isSubmitting = false);
+                            }
+                          },
+                  ),
 
                   SizedBox(height: AppTheme.getLargePadding(size)),
 
-                  // Terms & Privacy at bottom
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      vertical: AppTheme.getMediumPadding(size),
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        top: BorderSide(
-                          color:
-                              AppTheme.getBorderColor(context).withOpacity(0.3),
-                          width: 1,
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.pushNamed(context, '/terms');
-                          },
-                          child: Text(
-                            l10n.termsOfService,
-                            style: AppTheme.getCaptionSmall(size).copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: AppTheme.accentPurple,
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: AppTheme.getSmallPadding(size),
-                          ),
-                          child: Container(
-                            height: size.height * 0.015,
-                            width: 1,
-                            color: AppTheme.getTextSecondaryColor(context)
-                                .withOpacity(0.3),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            HapticFeedback.mediumImpact();
-                            Navigator.pushNamed(context, '/privacy');
-                          },
-                          child: Text(
-                            l10n.privacyPolicy,
-                            style: AppTheme.getCaptionSmall(size).copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: AppTheme.accentPurple,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  // Términos & privacidad
+                  TermsPrivacyFooter(size: size),
 
                   SizedBox(height: AppTheme.getMediumPadding(size)),
                 ],
@@ -342,193 +294,257 @@ class _SignUpBodyComponentState extends State<SignUpBodyComponent>
     );
   }
 
-  Future<void> _checkAndRegisterEmail() async {
+  Widget _dividerSide(Size size) {
+    return Container(
+      width: size.width * 0.3,
+      height: 1,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.getBorderColor(context).withOpacity(0.1),
+            AppTheme.getBorderColor(context),
+            AppTheme.getBorderColor(context).withOpacity(0.1),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleRegister() async {
     final email = _emailController.text.trim();
     final l10n = AppLocalizations.of(context);
 
-    // Validate email before continuing
     if (!_isEmailValid(email)) {
       _showErrorSnackBar(l10n.enterValidEmail);
       return;
     }
 
-    // Use Login manager to check and register
-    await LogIn(context).checkAndRegister(email);
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+
+    try {
+      await LogIn(context).checkAndRegister(email);
+    } catch (_) {
+      if (!mounted) return;
+      CustomSnackBar.show(
+        context: context,
+        message: l10n.unexpectedError,
+        isError: true,
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   void _showErrorSnackBar(String message) {
     if (!mounted) return;
-
-    CustomSnackBar.show(
-      context: context,
-      message: message,
-      isError: true,
-    );
+    CustomSnackBar.show(context: context, message: message, isError: true);
   }
 }
 
 class SignUpOptionsComponent extends StatelessWidget {
   final Size size;
+  final bool isBusy;
+  final VoidCallback? onGoogle;
+  final VoidCallback? onApple;
 
-  const SignUpOptionsComponent({super.key, required this.size});
+  const SignUpOptionsComponent({
+    super.key,
+    required this.size,
+    required this.isBusy,
+    this.onGoogle,
+    this.onApple,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _GoogleSignUpButton(size: size),
-        if (Platform.isIOS) ...[
+        _GoogleSignUpButton(
+          size: size,
+          onTap: onGoogle,
+          isBusy: isBusy,
+        ),
+        if (_showAppleButton()) ...[
           SizedBox(height: AppTheme.getMediumPadding(size)),
-          _AppleSignUpButton(size: size),
+          _AppleSignUpButton(
+            size: size,
+            onTap: onApple,
+            isBusy: isBusy,
+          ),
         ],
       ],
     );
+  }
+
+  bool _showAppleButton() {
+    if (kIsWeb) return false; // El plugin de Apple no funciona en web
+    return defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS;
   }
 }
 
 class _GoogleSignUpButton extends StatelessWidget {
   final Size size;
+  final VoidCallback? onTap;
+  final bool isBusy;
 
-  const _GoogleSignUpButton({required this.size});
+  const _GoogleSignUpButton({
+    required this.size,
+    required this.onTap,
+    required this.isBusy,
+  });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return Container(
-      width: size.width * 0.9,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppTheme.getSmallRadius(size)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-            spreadRadius: -2,
+    return Opacity(
+      opacity: onTap == null ? 0.6 : 1,
+      child: IgnorePointer(
+        ignoring: onTap == null,
+        child: Container(
+          width: size.width * 0.9,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppTheme.getSmallRadius(size)),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.getShadowColor(context),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+                spreadRadius: -2,
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
-          onTap: () => _signUpWithGoogle(context),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppTheme.getMediumPadding(size),
-              vertical: AppTheme.getSmallPadding(size),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Google Logo
-                Container(
-                  width: size.height * 0.025,
-                  height: size.height * 0.025,
-                  decoration: BoxDecoration(
-                    image: const DecorationImage(
-                      image: AssetImage('images/google_logo.png'),
-                      fit: BoxFit.contain,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius:
+                  BorderRadius.circular(AppTheme.getMediumRadius(size)),
+              onTap: onTap,
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppTheme.getMediumPadding(size),
+                  vertical: AppTheme.getSmallPadding(size),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Logo de Google
+                    Container(
+                      width: size.height * 0.025,
+                      height: size.height * 0.025,
+                      decoration: BoxDecoration(
+                        image: const DecorationImage(
+                          image: AssetImage('images/google_logo.png'),
+                          fit: BoxFit.contain,
+                        ),
+                        borderRadius:
+                            BorderRadius.circular(size.height * 0.025 / 2),
+                      ),
                     ),
-                    borderRadius:
-                        BorderRadius.circular(size.height * 0.025 / 2),
-                  ),
-                  // Fallback in case image isn't available
-                  child: Image.network(
-                    'https://developers.google.com/identity/images/g-logo.png',
-                    width: size.height * 0.025,
-                    height: size.height * 0.025,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(
-                        Icons.g_mobiledata,
-                        color: Colors.blue,
-                        size: size.height * 0.025,
-                      );
-                    },
-                  ),
+                    SizedBox(width: AppTheme.getSmallPadding(size)),
+                    Text(
+                      l10n.signUpWithGoogle,
+                      style: AppTheme.getBodyMedium(size).copyWith(
+                        color: const Color(0xFF3C4043),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (isBusy) ...[
+                      SizedBox(width: AppTheme.getSmallPadding(size)),
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ],
+                  ],
                 ),
-                SizedBox(width: AppTheme.getSmallPadding(size)),
-                Text(
-                  l10n.signUpWithGoogle,
-                  style: AppTheme.getBodyMedium(size).copyWith(
-                    color: const Color(0xFF3C4043),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
       ),
     );
-  }
-
-  void _signUpWithGoogle(BuildContext context) {
-    // Use the Google authentication manager
-    Google().signInWithGoogle(context);
   }
 }
 
 class _AppleSignUpButton extends StatelessWidget {
   final Size size;
+  final VoidCallback? onTap;
+  final bool isBusy;
 
-  const _AppleSignUpButton({required this.size});
+  const _AppleSignUpButton({
+    required this.size,
+    required this.onTap,
+    required this.isBusy,
+  });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return Container(
-      width: size.width * 0.9,
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(AppTheme.getSmallRadius(size)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-            spreadRadius: -2,
+    return Opacity(
+      opacity: onTap == null ? 0.6 : 1,
+      child: IgnorePointer(
+        ignoring: onTap == null,
+        child: Container(
+          width: size.width * 0.9,
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(AppTheme.getSmallRadius(size)),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.getShadowColor(context),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+                spreadRadius: -2,
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
-          onTap: () => _signUpWithApple(context),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppTheme.getMediumPadding(size),
-              vertical: AppTheme.getSmallPadding(size),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.apple,
-                  color: Colors.white,
-                  size: size.height * 0.025,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius:
+                  BorderRadius.circular(AppTheme.getMediumRadius(size)),
+              onTap: onTap,
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppTheme.getMediumPadding(size),
+                  vertical: AppTheme.getSmallPadding(size),
                 ),
-                SizedBox(width: AppTheme.getSmallPadding(size)),
-                Text(
-                  l10n.signUpWithApple,
-                  style: AppTheme.getBodyMedium(size).copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.apple, color: Colors.white),
+                    SizedBox(width: AppTheme.getSmallPadding(size)),
+                    Text(
+                      l10n.signUpWithApple,
+                      style: AppTheme.getBodyMedium(size).copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (isBusy) ...[
+                      SizedBox(width: AppTheme.getSmallPadding(size)),
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
       ),
     );
-  }
-
-  void _signUpWithApple(BuildContext context) {
-    // Use the Apple authentication manager
-    Apple().signInWithApple(context);
   }
 }

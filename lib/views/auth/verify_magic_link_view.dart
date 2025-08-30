@@ -4,9 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
-import '../../managers/auth/VerifyMagicLink.dart';
+import '../../managers/auth/VerifyMagicLink.dart'; // VerifyResult, VerifyNext
 import '../../widgets/custom_snack_bar.dart';
-import '../../managers/auth/MagicLink.dart';
+import '../../managers/auth/SendingMagicLink.dart'; // SendingResult
 
 class VerifyMagicLinkView extends StatefulWidget {
   final String email;
@@ -21,14 +21,10 @@ class VerifyMagicLinkView extends StatefulWidget {
 
 class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
     with TickerProviderStateMixin {
-  final List<TextEditingController> _controllers =
-      List.generate(6, (index) => TextEditingController());
-
   late TextEditingController _pinController;
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
-  String _currentPin = '';
 
   @override
   void initState() {
@@ -53,74 +49,110 @@ class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
 
   @override
   void dispose() {
-    for (var controller in _controllers) {
-      controller.dispose();
-    }
-
+    _pinController.dispose();
     _fadeController.dispose();
     super.dispose();
   }
 
-  void _onPinChanged(String pin) {
-    setState(() {
-      _currentPin = pin;
-    });
-  }
-
-  void _verifyCode(String code) {
+  Future<void> _verifyCode(String code) async {
     final l10n = AppLocalizations.of(context);
 
     if (code.isEmpty || code.length != 6) {
       _showErrorSnackBar(l10n.enterCompleteCode);
       return;
     }
+
     LoadingDialog.show(context, message: l10n.verifyingCode);
 
-    // Use the VerifyMagicLink manager
-    final verifyManager = VerifyMagicLink(
-      context: context,
-      email: widget.email,
-      code: code,
-    );
+    try {
+      final verifyManager = VerifyMagicLink(
+        context: context,
+        email: widget.email,
+        code: code,
+      );
+      final result = await verifyManager.verifyCode();
 
-    verifyManager.verifyCode();
+      if (!mounted) return;
+
+      // Mostrar mensaje de éxito
+      CustomSnackBar.show(
+        context: context,
+        message: result.message,
+        isError: false,
+      );
+
+      // Navegar según el siguiente paso recomendado
+      switch (result.next) {
+        case VerifyNext.finishSetup:
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/finish_setting_up',
+            (route) => false,
+          );
+          break;
+        case VerifyNext.admin:
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/admin',
+            (route) => false,
+          );
+          break;
+        case VerifyNext.home:
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/',
+            (route) => false,
+          );
+          break;
+      }
+    } catch (e) {
+      if (!mounted) return;
+      CustomSnackBar.show(
+        context: context,
+        message: l10n
+            .invalidVerificationCode, // mensaje correcto para error de verificación
+        isError: true,
+      );
+    } finally {
+      if (mounted) LoadingDialog.hide(context);
+    }
   }
 
   Future<void> _resendCode() async {
     final l10n = AppLocalizations.of(context);
-
     LoadingDialog.show(context, message: l10n.resendingCode);
 
     try {
-      // Use SendingMagicLink manager for consistent resend functionality
       final sendingManager = SendingMagicLink(
         context: context,
         email: widget.email,
       );
 
-      await sendingManager.resendMagicLink();
+      // Si conservaste los helpers:
+      // final res = await sendingManager.resendMagicLink();
+      // O usando el método unificado:
+      final res = await sendingManager.requestMagicLink(isResend: true);
 
-      if (mounted) {
-        CustomSnackBar.show(
-          context: context,
-          message: l10n.codeResentSuccessfully,
-          isError: false,
-        );
-      }
+      if (!mounted) return;
+      CustomSnackBar.show(
+        context: context,
+        message: res.message,
+        isError: !res.success,
+      );
     } catch (e) {
-      if (mounted) {
-        CustomSnackBar.show(
-          context: context,
-          message: l10n.errorResendingCode,
-          isError: true,
-        );
-      }
+      if (!mounted) return;
+      CustomSnackBar.show(
+        context: context,
+        message: l10n.errorResendingCode,
+        isError: true,
+      );
+    } finally {
+      if (mounted) LoadingDialog.hide(context);
     }
   }
 
   void _showErrorSnackBar(String message) {
     if (!mounted) return;
-
     CustomSnackBar.show(
       context: context,
       message: message,
@@ -161,16 +193,17 @@ class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
       padding: EdgeInsets.all(AppTheme.getMediumPadding(size)),
       child: Row(
         children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: Icon(
-              Icons.arrow_back_ios_new,
-              color: AppTheme.getTextPrimaryColor(context),
-              size: 20,
-            ),
-            style: IconButton.styleFrom(
-              backgroundColor: AppTheme.getCardColor(context),
-              elevation: 2,
+          Material(
+            color: AppTheme.getCardColor(context),
+            elevation: 2,
+            shape: const CircleBorder(),
+            child: IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: Icon(
+                Icons.arrow_back_ios_new,
+                color: AppTheme.getTextPrimaryColor(context),
+                size: 20,
+              ),
             ),
           ),
           SizedBox(width: AppTheme.getMediumPadding(size)),
@@ -242,8 +275,10 @@ class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
                   // Description
                   Padding(
                     padding: EdgeInsets.symmetric(
-                        horizontal: AppTheme.getMediumPadding(
-                            MediaQuery.of(context).size)),
+                      horizontal: AppTheme.getMediumPadding(
+                        MediaQuery.of(context).size,
+                      ),
+                    ),
                     child: _buildDescription(size, l10n),
                   ),
 
@@ -348,7 +383,6 @@ class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
         onCompleted: (pin) {
           _verifyCode(pin);
         },
-        onChanged: _onPinChanged,
         animationType: AnimationType.fade,
         animationDuration: const Duration(milliseconds: 300),
         animationCurve: Curves.easeInOut,

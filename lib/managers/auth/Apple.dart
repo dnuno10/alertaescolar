@@ -1,29 +1,42 @@
 // ignore_for_file: file_names
 import 'dart:convert';
-
-import 'package:alertaescolar/components/loading_dialog.dart';
-import 'package:alertaescolar/l10n/app_localizations.dart';
-import 'package:alertaescolar/managers/auth/AdminSetup.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'package:alertaescolar/components/loading_dialog.dart';
+import 'package:alertaescolar/l10n/app_localizations.dart';
+import 'package:alertaescolar/managers/auth/AdminSetup.dart';
+import 'package:alertaescolar/managers/auth/auth_utils.dart';
 import 'package:alertaescolar/managers/user_provider.dart';
-import 'package:alertaescolar/models/usuario.dart';
 import 'package:alertaescolar/widgets/custom_snack_bar.dart';
+import 'package:alertaescolar/app/app_routes.dart';
+import 'package:alertaescolar/models/models.dart';
 
 class Apple {
   static final Apple _instance = Apple._Internal();
+  Apple._Internal();
+  factory Apple() => _instance;
 
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  Apple._Internal();
-
-  factory Apple() => _instance;
-
   Future<void> signInWithApple(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
+
+    final available = !kIsWeb && await SignInWithApple.isAvailable();
+    if (!available) {
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: l10n.appleNotAvailable,
+          isError: true,
+        );
+      }
+      return;
+    }
 
     LoadingDialog.show(context, message: l10n.signingInWithApple);
 
@@ -32,7 +45,7 @@ class Apple {
       final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
 
       final credential = await SignInWithApple.getAppleIDCredential(
-        scopes: [
+        scopes: const [
           AppleIDAuthorizationScopes.email,
           AppleIDAuthorizationScopes.fullName,
         ],
@@ -41,9 +54,7 @@ class Apple {
 
       final idToken = credential.identityToken;
       if (idToken == null) {
-        throw const AuthException(
-          'Could not find ID Token from generated credential.',
-        );
+        throw const AuthException('Missing Apple ID token');
       }
 
       final response = await _supabase.auth.signInWithIdToken(
@@ -51,101 +62,86 @@ class Apple {
         idToken: idToken,
         nonce: rawNonce,
       );
-
-      if (response.session == null) {
-        throw Exception('No session returned from Supabase.');
+      if (response.session == null || response.user == null) {
+        throw Exception('No Supabase session');
       }
+      if (!context.mounted) return;
 
-      // ignore: use_build_context_synchronously
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final authUser = response.user!;
+      final resolvedEmail =
+          (authUser.email ?? credential.email ?? '').trim().toLowerCase();
 
-      final userExist = await _supabase
-          .from('usuarios')
-          .select('*')
-          .eq('email', response.user!.email.toString())
-          .maybeSingle();
+      // 1) Asegura/inserta fila mínima
+      final usuario = await ensureUserRow(
+        supabase: _supabase,
+        authUser: authUser,
+        defaultTipo: TipoUsuario.padre,
+      );
 
-      if (userExist == null) {
-        // Usuario no existe, verificar si es un administrador en la lista de acceso
-        // ignore: use_build_context_synchronously
+      // 2) Admin si aplica
+      if (resolvedEmail.isNotEmpty) {
         final isAdmin = await AdminSetup.checkAndSetupAdmin(
-            context, response.user!.email ?? '', response.user!.id);
-
+          context,
+          resolvedEmail,
+          authUser.id,
+        );
         if (isAdmin) {
-          // Si ya se configuró como administrador, se ha manejado la navegación
           LoadingDialog.hide(context);
+          CustomSnackBar.show(
+            context: context,
+            message: l10n.loginSuccessful,
+            isError: false,
+          );
+          Navigator.of(context).pushReplacementNamed(AppRoutes.adminDashboard);
           return;
         }
-
-        // Si no es admin, continuar con el flujo normal
-        final nuevoUsuario = Usuario(
-          id: response.user!.id,
-          nombre: credential.givenName ?? '',
-          apellido: credential.familyName ?? '',
-          email: response.user!.email ?? '',
-          fechaRegistro: DateTime.now(),
-        );
-
-        await userProvider.updateUser(nuevoUsuario);
-
-        LoadingDialog.hide(context);
-
-        _showSuccessAndNavigate(
-          context,
-          l10n.verificationSuccessful,
-          '/finish_setting_up',
-        );
-      } else {
-        // Usuario existe, verificar si el perfil está completo
-        final usuario = Usuario.fromJson(userExist);
-        await userProvider.updateUser(usuario);
-
-        LoadingDialog.hide(context);
-
-        if (usuario.nombre.isEmpty || usuario.apellido.isEmpty) {
-          // Perfil incompleto, redirigir a configuración
-          _showSuccessAndNavigate(
-            context,
-            l10n.completeYourProfile,
-            '/finish_setting_up',
-          );
-        } else {
-          // Perfil completo, redirigir según el tipo de usuario
-          _showSuccessAndNavigate(
-            context,
-            l10n.loginSuccessful,
-            usuario.tipo == TipoUsuario.administrador ? '/admin' : '/',
-          );
-        }
       }
-    } catch (e) {
-      // ignore: use_build_context_synchronously
-      LoadingDialog.hide(context);
-      debugPrint('Error during Apple Sign-In: $e');
-      // ignore: use_build_context_synchronously
-      _showError(context, l10n.appleSignInError);
-    }
-  }
 
-  void _showSuccessAndNavigate(
-      BuildContext context, String message, String route) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // 3) Actualiza provider y navega
+      await Provider.of<UserProvider>(context, listen: false)
+          .updateUser(usuario);
+
+      final incomplete = usuario.nombre.isEmpty || usuario.apellido.isEmpty;
+      final nextRoute = incomplete
+          ? AppRoutes.finishSettingUp
+          : (usuario.tipo == TipoUsuario.administrador
+              ? AppRoutes.adminDashboard
+              : AppRoutes.home);
+
+      LoadingDialog.hide(context);
       CustomSnackBar.show(
         context: context,
-        message: message,
+        message: incomplete ? l10n.completeYourProfile : l10n.loginSuccessful,
         isError: false,
       );
-      Navigator.pushReplacementNamed(context, route);
-    });
-  }
-
-  void _showError(BuildContext context, String message) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      CustomSnackBar.show(
-        context: context,
-        message: message,
-        isError: true,
-      );
-    });
+      Navigator.of(context).pushReplacementNamed(nextRoute);
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (context.mounted) {
+        if (e.code == AuthorizationErrorCode.canceled) {
+          CustomSnackBar.show(
+            context: context,
+            message: l10n.signInCanceled,
+            isError: false,
+          );
+        } else {
+          CustomSnackBar.show(
+            context: context,
+            message: l10n.appleSignInError,
+            isError: true,
+          );
+        }
+        LoadingDialog.hide(context);
+      }
+    } catch (e) {
+      debugPrint('Apple Sign-In error: $e');
+      if (context.mounted) {
+        LoadingDialog.hide(context);
+        CustomSnackBar.show(
+          context: context,
+          message: l10n.appleSignInError,
+          isError: true,
+        );
+      }
+    }
   }
 }

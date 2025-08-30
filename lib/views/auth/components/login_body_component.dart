@@ -1,4 +1,8 @@
-import 'dart:io';
+import 'package:alertaescolar/app/app_routes.dart';
+import 'package:alertaescolar/components/auth/terms_privacy_footer.dart';
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
+
 import 'package:alertaescolar/widgets/custom_snack_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,19 +24,16 @@ class LoginBodyComponent extends StatefulWidget {
 class _LoginBodyComponentState extends State<LoginBodyComponent>
     with TickerProviderStateMixin {
   late TextEditingController _emailController;
-  late TextEditingController _passwordController;
   late FocusNode _emailNode;
-  late FocusNode _passwordNode;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
     _emailController = TextEditingController();
-    _passwordController = TextEditingController();
     _emailNode = FocusNode();
-    _passwordNode = FocusNode();
 
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -53,16 +54,9 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
   @override
   void dispose() {
     _emailController.dispose();
-    _passwordController.dispose();
     _emailNode.dispose();
-    _passwordNode.dispose();
     _fadeController.dispose();
     super.dispose();
-  }
-
-  bool _isEmailValid(String email) {
-    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
-    return emailRegex.hasMatch(email);
   }
 
   @override
@@ -78,9 +72,7 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
         child: SafeArea(
           child: Column(
             children: [
-              // Header section
               _buildHeader(size, l10n),
-              // Expanded content
               Expanded(
                 child: _buildLoginForm(size, l10n),
               ),
@@ -188,20 +180,26 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
                     icon: Icons.email_outlined,
                     keyboardType: TextInputType.emailAddress,
                     focusNode: _emailNode,
+                    textInputAction:
+                        TextInputAction.done, // enter/done coherente
+                    // Si tu CustomInputField expone onFieldSubmitted, puedes usar:
+                    // onFieldSubmitted: (_) => _handleLogin(),
                   ),
 
                   SizedBox(height: AppTheme.getMediumPadding(size)),
 
-                  // Login button using SolidButton
+                  // Botón principal: deshabilitado mientras se envía
                   SolidButton(
-                    label: l10n.login,
+                    label: _isSubmitting ? l10n.sending : l10n.login,
                     backgroundColor: AppTheme.accentPurple,
                     screenSize: size,
                     width: size.width * 0.9,
-                    onPressed: () {
-                      HapticFeedback.mediumImpact();
-                      _handleLogin();
-                    },
+                    onPressed: _isSubmitting
+                        ? null
+                        : () {
+                            HapticFeedback.mediumImpact();
+                            _handleLogin();
+                          },
                   ),
 
                   SizedBox(height: AppTheme.getMediumPadding(size)),
@@ -219,7 +217,8 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
                       TextButton(
                         onPressed: () {
                           HapticFeedback.mediumImpact();
-                          Navigator.pushReplacementNamed(context, '/signup');
+                          Navigator.pushReplacementNamed(
+                              context, AppRoutes.signup);
                         },
                         child: Text(
                           l10n.signUp,
@@ -232,7 +231,7 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
                     ],
                   ),
 
-                  // Divider with proper styling
+                  // Divider
                   Padding(
                     padding: EdgeInsets.symmetric(
                       vertical: AppTheme.getSmallPadding(size),
@@ -285,68 +284,40 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
                     ),
                   ),
 
-                  // Social login options
-                  LoginOptionsComponent(size: size),
+                  // Social login (deshabilitados si _isSubmitting)
+                  LoginOptionsComponent(
+                    size: size,
+                    isBusy: _isSubmitting,
+                    onGoogle: _isSubmitting
+                        ? null
+                        : () async {
+                            setState(() => _isSubmitting = true);
+                            try {
+                              HapticFeedback.mediumImpact();
+                              await Google().signInWithGoogle(context);
+                            } finally {
+                              if (mounted)
+                                setState(() => _isSubmitting = false);
+                            }
+                          },
+                    onApple: _isSubmitting
+                        ? null
+                        : () async {
+                            HapticFeedback.mediumImpact();
+                            setState(() => _isSubmitting = true);
+                            try {
+                              await Apple().signInWithApple(context);
+                            } finally {
+                              if (mounted)
+                                setState(() => _isSubmitting = false);
+                            }
+                          },
+                  ),
 
                   SizedBox(height: AppTheme.getSmallPadding(size)),
 
-                  // Terms & Privacy at bottom
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      vertical: AppTheme.getMediumPadding(size),
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        top: BorderSide(
-                          color:
-                              AppTheme.getBorderColor(context).withOpacity(0.3),
-                          width: 1,
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            HapticFeedback.mediumImpact();
-                            Navigator.pushNamed(context, '/terms');
-                          },
-                          child: Text(
-                            l10n.termsOfService,
-                            style: AppTheme.getCaptionSmall(size).copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: AppTheme.accentPurple,
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: AppTheme.getSmallPadding(size),
-                          ),
-                          child: Container(
-                            height: size.height * 0.015,
-                            width: 1,
-                            color: AppTheme.getTextSecondaryColor(context)
-                                .withOpacity(0.3),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            HapticFeedback.mediumImpact();
-                            Navigator.pushNamed(context, '/privacy');
-                          },
-                          child: Text(
-                            l10n.privacyPolicy,
-                            style: AppTheme.getCaptionSmall(size).copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: AppTheme.accentPurple,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  // Terms & Privacy
+                  TermsPrivacyFooter(size: size),
 
                   SizedBox(height: AppTheme.getMediumPadding(size)),
                 ],
@@ -358,12 +329,32 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
     );
   }
 
-  void _handleLogin() {
+  bool _isEmailValid(String email) {
+    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
+    return emailRegex.hasMatch(email);
+  }
+
+  void _handleLogin() async {
     final email = _emailController.text.trim();
-    if (email.isNotEmpty && _isEmailValid(email)) {
-      LogIn(context).checkAndLogin(email);
-    } else {
+    if (email.isEmpty || !_isEmailValid(email)) {
       _showErrorSnackBar(AppLocalizations.of(context).emailInvalid);
+      return;
+    }
+
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+
+    try {
+      await LogIn(context).checkAndLogin(email);
+    } catch (_) {
+      if (!mounted) return;
+      CustomSnackBar.show(
+        context: context,
+        message: AppLocalizations.of(context).unexpectedError,
+        isError: true,
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -380,177 +371,229 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
 
 class LoginOptionsComponent extends StatelessWidget {
   final Size size;
+  final bool isBusy;
+  final VoidCallback? onGoogle;
+  final VoidCallback? onApple;
 
-  const LoginOptionsComponent({super.key, required this.size});
+  const LoginOptionsComponent({
+    super.key,
+    required this.size,
+    required this.isBusy,
+    this.onGoogle,
+    this.onApple,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _GoogleSignInButton(size: size),
-        if (Platform.isIOS) ...[
+        _GoogleSignInButton(
+          size: size,
+          onTap: onGoogle,
+          isBusy: isBusy,
+        ),
+        if (showAppleButton()) ...[
           SizedBox(height: AppTheme.getMediumPadding(size)),
-          _AppleSignInButton(size: size),
+          _AppleSignInButton(
+            size: size,
+            onTap: onApple,
+            isBusy: isBusy,
+          ),
         ],
       ],
     );
+  }
+
+  bool showAppleButton() {
+    if (kIsWeb) return false; // Apple Sign in no funciona en web
+    return defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS;
   }
 }
 
 class _GoogleSignInButton extends StatelessWidget {
   final Size size;
+  final VoidCallback? onTap;
+  final bool isBusy;
 
-  const _GoogleSignInButton({required this.size});
+  const _GoogleSignInButton({
+    required this.size,
+    required this.onTap,
+    required this.isBusy,
+  });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return Container(
-      width: size.width * 0.9,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppTheme.getSmallRadius(size)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-            spreadRadius: -2,
+    return Opacity(
+      opacity: onTap == null ? 0.6 : 1,
+      child: IgnorePointer(
+        ignoring: onTap == null,
+        child: Container(
+          width: size.width * 0.9,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppTheme.getSmallRadius(size)),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.getShadowColor(context),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+                spreadRadius: -2,
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
-          onTap: () {
-            HapticFeedback.mediumImpact();
-            _signInWithGoogle(context);
-          },
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppTheme.getMediumPadding(size),
-              vertical: AppTheme.getSmallPadding(size),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Google Logo
-                Container(
-                  width: size.height * 0.025,
-                  height: size.height * 0.025,
-                  decoration: BoxDecoration(
-                    image: const DecorationImage(
-                      image: AssetImage('images/google_logo.png'),
-                      fit: BoxFit.contain,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius:
+                  BorderRadius.circular(AppTheme.getMediumRadius(size)),
+              onTap: onTap,
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppTheme.getMediumPadding(size),
+                  vertical: AppTheme.getSmallPadding(size),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Google Logo
+                    Container(
+                      width: size.height * 0.025,
+                      height: size.height * 0.025,
+                      decoration: BoxDecoration(
+                        image: const DecorationImage(
+                          image: AssetImage('images/google_logo.png'),
+                          fit: BoxFit.contain,
+                        ),
+                        borderRadius:
+                            BorderRadius.circular(size.height * 0.025 / 2),
+                      ),
+                      // Fallback
+                      child: Image.network(
+                        'https://developers.google.com/identity/images/g-logo.png',
+                        width: size.height * 0.025,
+                        height: size.height * 0.025,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            Icons.g_mobiledata,
+                            color: Colors.blue,
+                            size: size.height * 0.025,
+                          );
+                        },
+                      ),
                     ),
-                    borderRadius:
-                        BorderRadius.circular(size.height * 0.025 / 2),
-                  ),
-                  // Fallback in case image isn't available
-                  child: Image.network(
-                    'https://developers.google.com/identity/images/g-logo.png',
-                    width: size.height * 0.025,
-                    height: size.height * 0.025,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(
-                        Icons.g_mobiledata,
-                        color: Colors.blue,
-                        size: size.height * 0.025,
-                      );
-                    },
-                  ),
+                    SizedBox(width: AppTheme.getSmallPadding(size)),
+                    Text(
+                      l10n.continueWithGoogle,
+                      style: AppTheme.getBodyMedium(size).copyWith(
+                        color: const Color(0xFF3C4043),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (isBusy) ...[
+                      SizedBox(width: AppTheme.getSmallPadding(size)),
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ],
+                  ],
                 ),
-                SizedBox(width: AppTheme.getSmallPadding(size)),
-                Text(
-                  l10n.continueWithGoogle,
-                  style: AppTheme.getBodyMedium(size).copyWith(
-                    color: const Color(0xFF3C4043),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
       ),
     );
-  }
-
-  void _signInWithGoogle(BuildContext context) {
-    // Use the Google authentication manager
-    Google().signInWithGoogle(context);
   }
 }
 
 class _AppleSignInButton extends StatelessWidget {
   final Size size;
+  final VoidCallback? onTap;
+  final bool isBusy;
 
-  const _AppleSignInButton({required this.size});
+  const _AppleSignInButton({
+    required this.size,
+    required this.onTap,
+    required this.isBusy,
+  });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return Container(
-      width: size.width * 0.9,
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(AppTheme.getSmallRadius(size)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-            spreadRadius: -2,
+    return Opacity(
+      opacity: onTap == null ? 0.6 : 1,
+      child: IgnorePointer(
+        ignoring: onTap == null,
+        child: Container(
+          width: size.width * 0.9,
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(AppTheme.getSmallRadius(size)),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.getShadowColor(context),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+                spreadRadius: -2,
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
-          onTap: () {
-            HapticFeedback.mediumImpact();
-            _signInWithApple(context);
-          },
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppTheme.getMediumPadding(size),
-              vertical: AppTheme.getSmallPadding(size),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.apple,
-                  color: Colors.white,
-                  size: size.height * 0.025,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius:
+                  BorderRadius.circular(AppTheme.getMediumRadius(size)),
+              onTap: onTap,
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppTheme.getMediumPadding(size),
+                  vertical: AppTheme.getSmallPadding(size),
                 ),
-                SizedBox(width: AppTheme.getSmallPadding(size)),
-                Text(
-                  l10n.continueWithApple,
-                  style: AppTheme.getBodyMedium(size).copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.apple,
+                      color: Colors.white,
+                      size: size.height * 0.025,
+                    ),
+                    SizedBox(width: AppTheme.getSmallPadding(size)),
+                    Text(
+                      l10n.continueWithApple,
+                      style: AppTheme.getBodyMedium(size).copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (isBusy) ...[
+                      SizedBox(width: AppTheme.getSmallPadding(size)),
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
       ),
     );
   }
-
-  void _signInWithApple(BuildContext context) {
-    // Use the Apple authentication manager
-    Apple().signInWithApple(context);
-  }
 }
 
+// helper redundante pero mantenido por compatibilidad con tu código existente
 void _signInWithApple(BuildContext context) {
-  // Use the Apple authentication manager
   Apple().signInWithApple(context);
 }

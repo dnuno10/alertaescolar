@@ -15,8 +15,12 @@ class SignUpView extends StatefulWidget {
 class _SignUpViewState extends State<SignUpView> {
   @override
   Widget build(BuildContext context) {
-    // Mantén el almacenamiento del idioma
-    Provider.of<LocaleProvider>(context);
+    // Escucha cambios de idioma y evita parpadeo si aún no carga
+    final lp = context.watch<LocaleProvider>();
+    if (!lp.isInitialized) {
+      return const Scaffold(body: SizedBox.expand());
+    }
+
     return Scaffold(
       // Centramos el contenido y lo llevamos al final
       body: GestureDetector(
@@ -30,14 +34,16 @@ class _SignUpViewState extends State<SignUpView> {
           height: double.infinity,
           child: SingleChildScrollView(
             child: SizedBox(
-              height: MediaQuery.of(context)
-                  .size
-                  .height, // Aseguramos que la Column ocupe toda la altura de la pantalla
-              child: const Column(
+              height: MediaQuery.of(context).size.height,
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
+                children: const [
+                  // Quitar const en SignUpBodyComponent para que reaccione al cambio de locale
+                  // (mantener la estructura visual idéntica)
+                  // ignore: prefer_const_constructors
                   Column(
                     children: [
+                      // ignore: prefer_const_constructors
                       SignUpBodyComponent(),
                     ],
                   ),

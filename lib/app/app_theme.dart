@@ -407,16 +407,17 @@ class AppTheme {
   static double getLargePadding(Size screenSize) =>
       screenSize.width * 0.08; // ~32px on 400px width
 
-  // Tema claro - Updated with Dynamic Typography
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: primaryColor,
+      seedColor: accentPurple,
       brightness: Brightness.light,
       surface: surfaceLight,
       background: backgroundLight,
     ).copyWith(
+      primary: accentPurple,
+      onPrimary: Colors.white,
       secondary: secondaryColor,
       error: errorColor,
     ),
@@ -780,21 +781,21 @@ class AppTheme {
     ],
   );
 
-  // Tema oscuro - Updated with Dynamic Typography
   static ThemeData darkTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: primaryColor,
+      seedColor: accentPurple,
       brightness: Brightness.dark,
       surface: surfaceDark,
       background: backgroundDark,
     ).copyWith(
+      primary: accentPurple,
+      onPrimary: Colors.white,
       secondary: secondaryColor,
       error: errorColor,
     ),
 
-    // Modern Typography for Dark Theme with Poppins - Dynamic Sizing
     textTheme:
         GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme).copyWith(
       displayLarge: GoogleFonts.poppins(

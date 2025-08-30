@@ -1,8 +1,10 @@
 // ignore_for_file: file_names
 
+import 'package:alertaescolar/app/app_routes.dart';
 import 'package:alertaescolar/components/loading_dialog.dart';
 import 'package:alertaescolar/l10n/app_localizations.dart';
 import 'package:alertaescolar/managers/auth/AdminSetup.dart';
+import 'package:alertaescolar/managers/auth/auth_utils.dart';
 import 'package:alertaescolar/widgets/custom_snack_bar.dart';
 import 'package:alertaescolar/models/models.dart';
 import 'package:alertaescolar/managers/user_provider.dart';
@@ -13,16 +15,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Google {
   static final Google _instance = Google._Internal();
-
-  // Cliente de Supabase
   final SupabaseClient _supabase = Supabase.instance.client;
-
-  // Constructor privado para Singleton
   Google._Internal();
-
   factory Google() => _instance;
 
-  // Método principal para iniciar sesión
   Future<void> signInWithGoogle(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
 
@@ -31,7 +27,7 @@ class Google {
     const iosClientId =
         '84476159662-5srkbbd1l6aibi2ng9plj67ec6qhr8pf.apps.googleusercontent.com';
 
-    final GoogleSignIn googleSignIn = GoogleSignIn(
+    final googleSignIn = GoogleSignIn(
       clientId: iosClientId,
       serverClientId: webClientId,
     );
@@ -41,18 +37,22 @@ class Google {
     try {
       final googleUser = await googleSignIn.signIn();
       if (googleUser == null) {
-        throw 'Sign-in aborted by user.';
+        if (context.mounted) {
+          LoadingDialog.hide(context);
+          CustomSnackBar.show(
+            context: context,
+            message: l10n.signInCanceled,
+            isError: false,
+          );
+        }
+        return;
       }
 
       final googleAuth = await googleUser.authentication;
       final accessToken = googleAuth.accessToken;
       final idToken = googleAuth.idToken;
-
-      if (accessToken == null) {
-        throw 'No access token found.';
-      }
-      if (idToken == null) {
-        throw 'No ID token found.';
+      if (accessToken == null || idToken == null) {
+        throw Exception('Missing Google tokens');
       }
 
       final response = await _supabase.auth.signInWithIdToken(
@@ -60,62 +60,63 @@ class Google {
         idToken: idToken,
         accessToken: accessToken,
       );
-
-      if (response.session == null) {
-        throw Exception('No session returned');
+      if (response.session == null || response.user == null) {
+        throw Exception('No Supabase session');
       }
 
-      // Obtener el provider de usuario
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      // Verificar si el usuario existe en la base de datos
-      final userExist = await _supabase
-          .from('usuarios')
-          .select('*')
-          .eq('email', response.user!.email ?? '')
-          .maybeSingle();
+      if (!context.mounted) return;
 
-      if (userExist == null) {
-        // Usuario no existe, verificar si es un administrador en la lista de acceso
-        // ignore: use_build_context_synchronously
+      final authUser = response.user!;
+      final resolvedEmail = (authUser.email ?? '').trim().toLowerCase();
+
+      // 1) Asegura/inserta fila mínima en 'usuarios'
+      final usuario = await ensureUserRow(
+        supabase: _supabase,
+        authUser: authUser,
+        defaultTipo: TipoUsuario.padre,
+      );
+
+      // 2) Elevar a admin si aplica (lista blanca)
+      if (resolvedEmail.isNotEmpty) {
         final isAdmin = await AdminSetup.checkAndSetupAdmin(
-            context, response.user!.email ?? '', response.user!.id);
-
+          context,
+          resolvedEmail,
+          authUser.id,
+        );
         if (isAdmin) {
-          // Si ya se configuró como administrador, se ha manejado la navegación
           LoadingDialog.hide(context);
+          CustomSnackBar.show(
+            context: context,
+            message: l10n.loginSuccessful,
+            isError: false,
+          );
+          Navigator.pushReplacementNamed(context, AppRoutes.adminDashboard);
           return;
         }
-
-        // Si no es admin, continuar con el flujo normal
-        _showSuccessAndNavigate(
-          context,
-          l10n.verificationSuccessful,
-          '/finish_setting_up',
-        );
-      } else {
-        final usuario = Usuario.fromJson(userExist);
-        await userProvider.updateUser(usuario);
-        if (usuario.nombre.isEmpty || usuario.apellido.isEmpty) {
-          _showSuccessAndNavigate(
-            context,
-            l10n.completeYourProfile,
-            '/finish_setting_up',
-          );
-        } else {
-          _showSuccessAndNavigate(
-            context,
-            l10n.loginSuccessful,
-            usuario.tipo == TipoUsuario.administrador ? '/admin' : '/',
-          );
-        }
       }
-    } catch (e) {
-      // Cerrar pantalla de carga en caso de error
+
+      // 3) Actualiza provider y navega según perfil
+      await Provider.of<UserProvider>(context, listen: false)
+          .updateUser(usuario);
+
+      final incomplete = usuario.nombre.isEmpty || usuario.apellido.isEmpty;
+      final nextRoute = incomplete
+          ? AppRoutes.finishSettingUp
+          : (usuario.tipo == TipoUsuario.administrador
+              ? AppRoutes.adminDashboard
+              : AppRoutes.home);
+
       LoadingDialog.hide(context);
-
-      debugPrint('Error en Google Sign In: $e');
-
+      CustomSnackBar.show(
+        context: context,
+        message: incomplete ? l10n.completeYourProfile : l10n.loginSuccessful,
+        isError: false,
+      );
+      Navigator.pushReplacementNamed(context, nextRoute);
+    } catch (e, st) {
+      debugPrint('Error en Google Sign In: $e\n$st');
       if (context.mounted) {
+        LoadingDialog.hide(context);
         CustomSnackBar.show(
           context: context,
           message: l10n.googleSignInError,
@@ -123,17 +124,5 @@ class Google {
         );
       }
     }
-  }
-
-  void _showSuccessAndNavigate(
-      BuildContext context, String message, String route) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      CustomSnackBar.show(
-        context: context,
-        message: message,
-        isError: false,
-      );
-      Navigator.pushReplacementNamed(context, route);
-    });
   }
 }

@@ -8,6 +8,8 @@ import 'package:alertaescolar/views/admin/schedule/schedule_management_view.dart
 import 'package:alertaescolar/views/admin/school/school_settings_view.dart';
 import 'package:alertaescolar/views/admin/students/student_profile_admin_view.dart';
 import 'package:alertaescolar/views/admin/students/students_directory_view.dart';
+import 'package:alertaescolar/views/legal/privacy_view.dart';
+import 'package:alertaescolar/views/legal/terms_view.dart';
 import 'package:alertaescolar/views/user/students/students_view_new.dart';
 import 'package:alertaescolar/views/user/students/student_detail_view.dart';
 import 'package:flutter/material.dart';
@@ -39,6 +41,10 @@ class AppRoutes {
   static const String signup = '/signup';
   static const String verifyMagicLink = '/verify_magic_link';
   static const String finishSettingUp = '/finish_setting_up';
+
+  // Legal routes
+  static const String terms = '/terms';
+  static const String privacy = '/privacy';
 
   static const String home = '/';
   static const String profile = '/profile';
@@ -85,6 +91,18 @@ class AppRoutes {
     }
 
     switch (settings.name) {
+      case terms:
+        return MaterialPageRoute(
+          builder: (context) => const TermsView(),
+          settings: const RouteSettings(name: terms),
+        );
+
+      case privacy:
+        return MaterialPageRoute(
+          builder: (context) => const PrivacyView(),
+          settings: const RouteSettings(name: privacy),
+        );
+
       // Auth routes
       case intro:
         debugPrint("AppRoutes: Building IntroView");

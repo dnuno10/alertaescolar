@@ -149,7 +149,6 @@ class NotificationService {
         };
       }
 
-      // Crear mensaje personalizado basado en el tipo y destinatario
       String tipoMensajeText =
           tipoMensaje == 'permiso' ? 'Permiso especial' : 'Comunicado';
       String destinatarioText =

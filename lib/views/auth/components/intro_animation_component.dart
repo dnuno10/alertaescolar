@@ -12,7 +12,7 @@ class IntroAnimationComponent extends StatefulWidget {
 }
 
 class _IntroAnimationComponentState extends State<IntroAnimationComponent>
-    with TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   late List<String> keyPhrases;
@@ -108,7 +108,7 @@ class _IntroAnimationComponentState extends State<IntroAnimationComponent>
             child: DefaultTextStyle(
               style: AppTheme.getBodyLarge(screenSize).copyWith(
                 color: AppTheme.getTextPrimaryColor(context),
-                fontSize: MediaQuery.of(context).size.height * 0.022,
+                fontSize: screenSize.height * 0.022,
                 fontWeight: FontWeight.w300,
                 height: 1.4,
               ),
@@ -125,9 +125,8 @@ class _IntroAnimationComponentState extends State<IntroAnimationComponent>
                 repeatForever: true,
                 pause: const Duration(milliseconds: 2000),
                 onNext: (index, isLast) {
-                  setState(() {
-                    currentPhraseIndex = index;
-                  });
+                  if (!mounted) return;
+                  setState(() => currentPhraseIndex = index);
                 },
               ),
             ),

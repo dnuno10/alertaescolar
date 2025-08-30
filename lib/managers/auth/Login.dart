@@ -1,11 +1,13 @@
 // ignore_for_file: file_names, use_build_context_synchronously
 
+import 'package:alertaescolar/app/app_routes.dart';
 import 'package:alertaescolar/components/loading_dialog.dart';
 import 'package:alertaescolar/managers/auth/AdminSetup.dart';
+import 'package:alertaescolar/managers/auth/auth_utils.dart';
 import 'package:alertaescolar/widgets/custom_snack_bar.dart';
 import 'package:alertaescolar/managers/user_provider.dart';
 import 'package:alertaescolar/models/usuario.dart';
-import 'package:alertaescolar/managers/auth/MagicLink.dart';
+import 'package:alertaescolar/managers/auth/SendingMagicLink.dart';
 import 'package:alertaescolar/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -13,174 +15,219 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LogIn {
   final BuildContext context;
-
   LogIn(this.context);
 
-  Future<void> checkAndLogin(String email) async {
+  Future<void> checkAndLogin(String rawEmail) async {
     final l10n = AppLocalizations.of(context);
+    final email = rawEmail.trim().toLowerCase();
 
     LoadingDialog.show(context, message: l10n.loggingIn);
-
     try {
-      // Check if the email is registered
-      final isRegistered = await Supabase.instance.client
+      final result = await Supabase.instance.client
           .rpc('is_email_registered', params: {'input_email': email});
+      final isRegistered = result == true;
 
-      if (isRegistered == true) {
-        // Email is already registered, send magic link
-        SendingMagicLink(context: context, email: email).sendMagicLink();
+      if (!context.mounted) return;
+
+      // Cierra loader antes de cualquier UI
+      LoadingDialog.hide(context);
+
+      if (isRegistered) {
+        final res = await SendingMagicLink(context: context, email: email)
+            .sendMagicLink();
+
+        // Muestra el mensaje proveniente del envío
+        CustomSnackBar.show(
+          context: context,
+          message: res.message,
+          isError: !res.success,
+        );
+
+        // Navega a verificación si se envió con éxito
+        if (res.success) {
+          Navigator.pushReplacementNamed(
+            context,
+            AppRoutes.verifyMagicLink,
+            arguments: email,
+          );
+        }
       } else {
-        // Email is not registered, show error message
-        LoadingDialog.hide(context);
         CustomSnackBar.show(
           context: context,
           message: l10n.pleaseCreateAccount,
           isError: true,
         );
       }
-    } catch (e) {
-      LoadingDialog.hide(context);
-      CustomSnackBar.show(
-        context: context,
-        message: l10n.loginErrorMessage,
-        isError: true,
-      );
+    } catch (_) {
+      if (context.mounted) {
+        LoadingDialog.hide(context); // redundante pero seguro
+        CustomSnackBar.show(
+          context: context,
+          message: l10n.loginErrorMessage,
+          isError: true,
+        );
+      }
+    } finally {
+      if (context.mounted) {
+        LoadingDialog.hide(context); // red de seguridad
+      }
     }
   }
 
   Future<void> checkLoginStatus() async {
     final l10n = AppLocalizations.of(context);
-
     try {
-      debugPrint("🔍 Checking current session...");
-      final session = Supabase.instance.client.auth.currentSession;
+      final supabase = Supabase.instance.client;
+      final session = supabase.auth.currentSession;
+      if (session == null) return;
 
-      if (session == null) {
-        debugPrint("❌ No active session found. Returning to login.");
-        Navigator.of(context).pop();
-        return;
-      }
+      final authUser = session.user;
+      final emailNorm = (authUser.email ?? '').trim().toLowerCase();
 
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      // 1) Asegura/inserta fila mínima en 'usuarios'
+      final usuario = await ensureUserRow(
+        supabase: supabase,
+        authUser: authUser,
+        defaultTipo: TipoUsuario.padre,
+      );
 
-      // Guardamos los datos localmente
-      debugPrint("✅ Updating local user data...");
-
-      debugPrint("🔍 Checking user existence in Supabase...");
-      final userExist = await Supabase.instance.client
-          .from('usuarios')
-          .select()
-          .eq('email', session.user.email.toString())
-          .maybeSingle();
-
-      Navigator.of(context).pop();
-
-      if (userExist == null) {
-        // Usuario no existe, verificar si es un administrador en la lista de acceso
+      // 2) Admin si aplica (lista blanca)
+      if (emailNorm.isNotEmpty) {
         final isAdmin = await AdminSetup.checkAndSetupAdmin(
           context,
-          session.user.email ?? '',
-          session.user.id,
+          emailNorm,
+          authUser.id,
         );
+        if (isAdmin) return; // AdminSetup ya pudo navegar/ajustar
+      }
 
-        if (isAdmin) {
-          // Si ya se configuró como administrador, se ha manejado la navegación
-          return;
-        }
+      // 3) Actualiza provider y decide ruta
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      await userProvider.updateUser(usuario);
 
-        // Si no es admin, continuar con el flujo normal
+      if (usuario.nombre.isEmpty || usuario.apellido.isEmpty) {
         _showSuccessAndNavigate(
           context,
-          l10n.verificationSuccessful,
-          '/finish_setting_up',
+          l10n.completeYourProfile,
+          AppRoutes.finishSettingUp,
         );
       } else {
-        // Usuario existe, verificar si el perfil está completo
-        final usuario = Usuario.fromJson(userExist);
-        await userProvider.updateUser(usuario);
-
-        if (usuario.nombre.isEmpty || usuario.apellido.isEmpty) {
-          // Perfil incompleto, redirigir a configuración
-          _showSuccessAndNavigate(
-            context,
-            l10n.completeYourProfile,
-            '/finish_setting_up',
-          );
-        } else {
-          // Perfil completo, comprobar si es admin y redirigir adecuadamente
-          final route =
-              usuario.tipo == TipoUsuario.administrador ? '/admin' : '/';
-          debugPrint(
-              'User login complete: ${usuario.email}, tipo: ${usuario.tipo}, routing to: $route');
-          _showSuccessAndNavigate(
-            context,
-            l10n.loginSuccessful,
-            route,
-          );
-        }
+        final route = usuario.tipo == TipoUsuario.administrador
+            ? AppRoutes.adminDashboard
+            : AppRoutes.home;
+        _showSuccessAndNavigate(context, l10n.loginSuccessful, route);
       }
-    } on PostgrestException catch (error) {
-      debugPrint("PostgrestException in checkLoginStatus: ${error.message}");
-      Navigator.of(context).pop();
-
-      CustomSnackBar.show(
-        context: context,
-        message: l10n.unexpectedError,
-        isError: true,
-      );
-    } catch (error) {
-      debugPrint("Unexpected error in checkLoginStatus: $error");
-      Navigator.of(context).pop();
-
-      CustomSnackBar.show(
-        context: context,
-        message: l10n.unexpectedError,
-        isError: true,
-      );
+    } on PostgrestException catch (e) {
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: l10n.unexpectedError,
+          isError: true,
+        );
+      }
+      debugPrint("PostgrestException in checkLoginStatus: ${e.message}");
+    } catch (e) {
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: l10n.unexpectedError,
+          isError: true,
+        );
+      }
+      debugPrint("Unexpected error in checkLoginStatus: $e");
     }
   }
 
-  Future<void> checkAndRegister(String email) async {
+  Future<void> checkAndRegister(String rawEmail) async {
     final l10n = AppLocalizations.of(context);
+    final email = rawEmail.trim().toLowerCase();
 
-    LoadingDialog.show(context, message: l10n.registering);
-    try {
-      // Check if the email is already registered
-      final isRegistered = await Supabase.instance.client
-          .rpc('is_email_registered', params: {'input_email': email});
-
-      if (isRegistered == true) {
-        // Email is already registered, show error message
-        LoadingDialog.hide(context);
-        CustomSnackBar.show(
-          context: context,
-          message: l10n
-              .emailAlreadyExists, // You'll need to add this to localizations
-          isError: true,
-        );
-      } else {
-        // Email is not registered, send magic link for registration
-        SendingMagicLink(context: context, email: email).sendMagicLink();
-      }
-    } catch (e) {
-      LoadingDialog.hide(context);
+    // Guard simple por si viene vacío
+    if (email.isEmpty) {
       CustomSnackBar.show(
         context: context,
         message: l10n.signUpErrorMessage,
         isError: true,
       );
+      return;
+    }
+
+    LoadingDialog.show(context, message: l10n.registering);
+
+    try {
+      final result = await Supabase.instance.client
+          .rpc('is_email_registered', params: {'input_email': email});
+      final isRegistered = result == true;
+
+      if (!context.mounted) return;
+
+      // Cierra el loader ANTES de cualquier UI
+      LoadingDialog.hide(context);
+
+      if (isRegistered) {
+        // Si ya existe, muestra error
+        CustomSnackBar.show(
+          context: context,
+          message: l10n.emailAlreadyExists,
+          isError: true,
+        );
+      } else {
+        // Enviar magic link y usar su resultado
+        final res = await SendingMagicLink(context: context, email: email)
+            .sendMagicLink();
+
+        CustomSnackBar.show(
+          context: context,
+          message: res.message,
+          isError: !res.success,
+        );
+
+        if (res.success) {
+          Navigator.pushReplacementNamed(
+            context,
+            AppRoutes.verifyMagicLink,
+            arguments: email,
+          );
+        }
+      }
+    } on PostgrestException catch (e) {
+      debugPrint('PostgrestException in checkAndRegister: ${e.message}');
+      if (context.mounted) {
+        LoadingDialog.hide(context); // redundante pero seguro
+        CustomSnackBar.show(
+          context: context,
+          message: l10n.signUpErrorMessage,
+          isError: true,
+        );
+      }
+    } catch (e) {
+      debugPrint('Unexpected error in checkAndRegister: $e');
+      if (context.mounted) {
+        LoadingDialog.hide(context); // redundante pero seguro
+        CustomSnackBar.show(
+          context: context,
+          message: l10n.signUpErrorMessage,
+          isError: true,
+        );
+      }
+    } finally {
+      // Red de seguridad: por si algún camino no cerró el diálogo
+      if (context.mounted) {
+        LoadingDialog.hide(context);
+      }
     }
   }
 
   void _showSuccessAndNavigate(
       BuildContext context, String message, String route) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      CustomSnackBar.show(
-        context: context,
-        message: message,
-        isError: false,
-      );
-      Navigator.pushReplacementNamed(context, route);
+      if (!context.mounted) return;
+      // Red de seguridad: si por alguna razón quedara abierto, ciérralo.
+      LoadingDialog.hide(context);
+      CustomSnackBar.show(context: context, message: message, isError: false);
+      if (context.mounted) {
+        Navigator.pushReplacementNamed(context, route);
+      }
     });
   }
 }

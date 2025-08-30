@@ -1,5 +1,6 @@
 // ignore_for_file: file_names, use_build_context_synchronously
 
+import 'package:alertaescolar/app/app_routes.dart';
 import 'package:alertaescolar/l10n/app_localizations.dart';
 import 'package:alertaescolar/managers/user_provider.dart';
 import 'package:alertaescolar/models/usuario.dart';
@@ -11,97 +12,87 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class AdminSetup {
   static final SupabaseClient _supabase = Supabase.instance.client;
 
-  /// Checks if the email exists in the admin_access_list table and sets up the user
-  /// Returns true if the user is an admin and was set up automatically
+  /// Verifica si el `email` está en `admin_access_list`. Si sí, crea/hidrata
+  /// el usuario admin (persistiendo vía UserProvider) y navega al dashboard.
+  /// Retorna `true` si se configuró como admin; `false` si no está autorizado
+  /// o si ocurrió un error.
   static Future<bool> checkAndSetupAdmin(
-      BuildContext context, String email, String userId) async {
+    BuildContext context,
+    String email,
+    String userId,
+  ) async {
     final l10n = AppLocalizations.of(context);
+    final emailNorm = email.trim().toLowerCase();
 
     try {
-      // Check if the email exists in the admin_access_list table
-      final adminData = await _supabase
+      final dynamic adminData = await _supabase
           .from('admin_access_list')
           .select()
-          .eq('email', email)
+          .eq('email', emailNorm)
           .maybeSingle();
 
-      // If the email is not in the admin list or not active, return false to continue with normal flow
       if (adminData == null) {
+        // No autorizado como admin
         return false;
       }
 
-      // If the email is in the admin list, set up the user with admin privileges
-      final adminRecord = adminData;
+      // Cast seguro
+      final record = adminData as Map<String, dynamic>;
 
-      // Convert string to TipoAdministrador enum
-      TipoAdministrador? tipoAdmin;
-      if (adminRecord['tipo_administrador'] != null) {
+      // Parse de tipo de administrador con fallback
+      TipoAdministrador tipoAdmin = TipoAdministrador.administrativo;
+      final dynamic rawTipo = record['tipo_administrador'];
+      if (rawTipo is String && rawTipo.isNotEmpty) {
         try {
-          final tipoString = adminRecord['tipo_administrador'] as String;
           tipoAdmin = TipoAdministrador.values.firstWhere(
-            (e) => e.name == tipoString,
+            (e) => e.name == rawTipo,
             orElse: () => TipoAdministrador.administrativo,
           );
-        } catch (e) {
-          debugPrint('Error converting tipo_administrador: $e');
-          tipoAdmin = TipoAdministrador.administrativo; // Default value
+        } catch (_) {
+          tipoAdmin = TipoAdministrador.administrativo;
         }
       }
 
-      // Create user object with admin data
+      final nowUtc = DateTime.now().toUtc();
+
+      final escuelaId = record['id_escuela']?.toString();
       final adminUser = Usuario(
         id: userId,
-        nombre: adminRecord['nombre'] ?? '',
-        apellido: adminRecord['apellido'] ?? '',
-        email: email,
+        nombre: (record['nombre'] as String?) ?? '',
+        apellido: (record['apellido'] as String?) ?? '',
+        email: emailNorm,
         tipo: TipoUsuario.administrador,
-        escuelaId: adminRecord['id_escuela'],
+        escuelaId: escuelaId,
         tipoAdministrador: tipoAdmin,
-        fechaRegistro: DateTime.now(),
+        fechaRegistro: nowUtc,
       );
 
-      // Insert user in the database
-      await _supabase.from('usuarios').insert({
-        'id': userId,
-        'email': email,
-        'nombre': adminUser.nombre,
-        'apellido': adminUser.apellido,
-        'tipo': TipoUsuario.administrador.name,
-        'id_escuela': adminUser.escuelaId,
-        'tipo_administrador': tipoAdmin?.name,
-        'fecha_registro': DateTime.now().toIso8601String(),
+      // Persistir + actualizar estado local desde el provider
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      await userProvider.updateUser(adminUser, saveToDatabase: true);
+
+      if (!context.mounted) return true;
+
+      // Feedback + navegación segura al dashboard admin
+      CustomSnackBar.show(
+        context: context,
+        message: l10n.accountSetupSuccessfully,
+        isError: false,
+      );
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        Navigator.of(context).pushReplacementNamed(AppRoutes.adminDashboard);
       });
 
-      // Update the provider
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      await userProvider.updateUser(adminUser);
-
-      debugPrint(
-          'Admin user setup complete: ${adminUser.email}, routing to /admin');
-
-      // Show success message and navigate to admin page
-      _showSuccessAndNavigate(
-        context,
-        l10n.accountSetupSuccessfully,
-        '/admin',
-      );
-
       return true;
+    } on PostgrestException catch (e) {
+      // Errores específicos de Postgrest
+      debugPrint('PostgrestException in AdminSetup: ${e.message}');
+      return false;
     } catch (e) {
       debugPrint('Error checking admin access: $e');
       return false;
     }
-  }
-
-  static void _showSuccessAndNavigate(
-      BuildContext context, String message, String route) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      CustomSnackBar.show(
-        context: context,
-        message: message,
-        isError: false,
-      );
-      Navigator.pushReplacementNamed(context, route);
-    });
   }
 }

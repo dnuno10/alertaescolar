@@ -260,7 +260,7 @@ class _StudentDetailViewState extends State<StudentDetailView> {
               });
               _loadStudentDetails();
             },
-            fontColor: AppTheme.getOnPrimaryColor(context),
+            //fontColor: AppTheme.getOnPrimaryColor(context),
             icon: Icons.refresh,
             screenSize: screenSize,
           ),

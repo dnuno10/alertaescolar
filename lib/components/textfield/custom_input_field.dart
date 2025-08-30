@@ -5,30 +5,33 @@ class CustomInputField extends StatefulWidget {
   final TextEditingController controller;
   final String label;
   final Size screenSize;
-  final bool isPassword;
-  final IconData? icon; // ahora opcional
+  final IconData? icon;
   final String? Function(String?)? validator;
   final TextInputType? keyboardType;
   final FocusNode? focusNode;
-  final bool? obscureText;
+
   final Widget? suffixIcon;
   final TextCapitalization? textCapitalization;
   final TextInputAction? textInputAction;
+  final List<String>? autofillHints;
+  final bool? enableSuggestions;
+  final bool? autocorrect;
 
   const CustomInputField({
     super.key,
     required this.controller,
     required this.label,
     required this.screenSize,
-    this.isPassword = false,
     this.icon,
     this.validator,
     this.keyboardType,
     this.focusNode,
-    this.obscureText,
     this.suffixIcon,
     this.textCapitalization,
     this.textInputAction,
+    this.autofillHints,
+    this.enableSuggestions,
+    this.autocorrect,
   });
 
   @override
@@ -36,16 +39,15 @@ class CustomInputField extends StatefulWidget {
 }
 
 class _CustomInputFieldState extends State<CustomInputField> {
-  bool _obscureText = true;
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final themeTextColor = AppTheme.getTextPrimaryColor(context);
-    final hintText = widget.label;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Label externo
         Text(
           widget.label,
           style: AppTheme.getCaption(widget.screenSize).copyWith(
@@ -62,72 +64,66 @@ class _CustomInputFieldState extends State<CustomInputField> {
           textCapitalization:
               widget.textCapitalization ?? TextCapitalization.none,
           textInputAction: widget.textInputAction ?? TextInputAction.done,
-          obscureText:
-              widget.obscureText ?? (widget.isPassword ? _obscureText : false),
+          enableSuggestions: widget.enableSuggestions ?? true,
+          autocorrect: widget.autocorrect ?? true,
+          autofillHints: widget.autofillHints,
+          keyboardAppearance: theme.brightness == Brightness.dark
+              ? Brightness.dark
+              : Brightness.light,
           style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
             fontWeight: FontWeight.w500,
             color: themeTextColor,
           ),
+          onFieldSubmitted: (_) {
+            if (widget.textInputAction == TextInputAction.next) {
+              FocusScope.of(context).nextFocus();
+            }
+          },
           decoration: InputDecoration(
-            hintText: hintText,
-            labelText: widget.isPassword ? widget.label : null,
-            labelStyle: AppTheme.getCaption(widget.screenSize).copyWith(
-              fontWeight: FontWeight.w500,
-              color: AppTheme.getTextSecondaryColor(context),
-            ),
+            hintText: null, // evita duplicar label
             hintStyle: AppTheme.getBodyMedium(widget.screenSize).copyWith(
               color: AppTheme.getTextSecondaryColor(context),
             ),
             prefixIcon: widget.icon != null
                 ? Icon(
                     widget.icon,
-                    color: AppTheme.accentPurple,
+                    color: theme.colorScheme.primary,
                     size: widget.screenSize.width * 0.05,
                   )
                 : null,
-            suffixIcon: widget.isPassword
-                ? IconButton(
-                    icon: Icon(
-                      _obscureText ? Icons.visibility_off : Icons.visibility,
-                      color: AppTheme.getTextSecondaryColor(context),
-                      size: widget.screenSize.width * 0.05,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscureText = !_obscureText;
-                      });
-                    },
-                  )
-                : null,
-            filled: true,
-            fillColor: Colors.transparent,
+            suffixIcon: widget.suffixIcon,
+            filled: false,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(
-                  AppTheme.getSmallRadius(widget.screenSize)),
+                AppTheme.getSmallRadius(widget.screenSize),
+              ),
               borderSide: BorderSide(
-                color: AppTheme.accentPurple.withOpacity(0.2),
+                color: theme.colorScheme.primary.withOpacity(0.25),
                 width: 1,
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(
-                  AppTheme.getSmallRadius(widget.screenSize)),
+                AppTheme.getSmallRadius(widget.screenSize),
+              ),
               borderSide: BorderSide(
-                color: AppTheme.accentPurple.withOpacity(0.2),
+                color: theme.colorScheme.primary.withOpacity(0.25),
                 width: 1,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(
-                  AppTheme.getSmallRadius(widget.screenSize)),
-              borderSide: const BorderSide(
-                color: AppTheme.accentPurple,
+                AppTheme.getSmallRadius(widget.screenSize),
+              ),
+              borderSide: BorderSide(
+                color: theme.colorScheme.primary,
                 width: 2,
               ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(
-                  AppTheme.getSmallRadius(widget.screenSize)),
+                AppTheme.getSmallRadius(widget.screenSize),
+              ),
               borderSide: const BorderSide(
                 color: AppTheme.errorColor,
                 width: 1,
@@ -137,7 +133,9 @@ class _CustomInputFieldState extends State<CustomInputField> {
               horizontal: AppTheme.getSmallPadding(widget.screenSize),
               vertical: AppTheme.getSmallPadding(widget.screenSize),
             ),
+            isDense: true,
           ),
+          textAlignVertical: TextAlignVertical.center,
         ),
       ],
     );
