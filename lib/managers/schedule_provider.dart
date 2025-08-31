@@ -1,35 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/models.dart';
+
 import '../components/loading_dialog.dart';
+import '../models/models.dart';
 import '../utils/time_format.dart';
 
 class ScheduleProvider with ChangeNotifier {
   final SupabaseClient _supabase = Supabase.instance.client;
 
   List<Materia> _materias = [];
-  List<Map<String, dynamic>> _grupos = [];
+  List<Grupo> _grupos = [];
   List<Map<String, dynamic>> _nivelesEducativos = [];
-  final Map<String, List<ClaseHorario>> _horarios = {};
+
+  /// Key: idGrupo, Value: lista de clases del grupo
+  final Map<String, List<ClaseHorario>> _horariosPorGrupoId = {};
 
   bool _isLoading = false;
   String? _error;
 
   // Getters
   List<Materia> get materias => _materias;
-  List<Map<String, dynamic>> get grupos => _grupos;
+  List<Grupo> get grupos => _grupos;
   List<Map<String, dynamic>> get nivelesEducativos => _nivelesEducativos;
-  Map<String, List<ClaseHorario>> get horarios => _horarios;
+  Map<String, List<ClaseHorario>> get horariosPorGrupoId => _horariosPorGrupoId;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // Clear error message
+  // ===== Utilidades internas =====
+  T? _firstOrNull<T>(Iterable<T> it) {
+    final i = it.iterator;
+    return i.moveNext() ? i.current : null;
+  }
+
+  void _safeNotifyListeners() {
+    Future.microtask(() => notifyListeners());
+  }
+
   void clearError() {
     _error = null;
     _safeNotifyListeners();
   }
 
-  // Load niveles educativos
+  // ===== Niveles educativos =====
   Future<void> loadNivelesEducativos({
     required String escuelaId,
     BuildContext? context,
@@ -61,9 +73,9 @@ class ScheduleProvider with ChangeNotifier {
     }
   }
 
-  // Load materias (subjects)
+  // ===== Materias =====
   Future<void> loadMaterias({
-    String? escuelaId,
+    required String escuelaId,
     BuildContext? context,
   }) async {
     try {
@@ -71,16 +83,14 @@ class ScheduleProvider with ChangeNotifier {
       if (context != null && context.mounted) {
         LoadingDialog.show(context, message: 'Cargando materias...');
       }
-      // Safely notify listeners
       _safeNotifyListeners();
 
       final response = await _supabase
           .from('materias')
           .select()
-          .eq('id_escuela', escuelaId!)
+          .eq('id_escuela', escuelaId)
           .order('nombre');
 
-      // Supabase Flutter SDK returns non-null response
       _materias =
           (response as List).map((item) => Materia.fromJson(item)).toList();
       _error = null;
@@ -92,18 +102,19 @@ class ScheduleProvider with ChangeNotifier {
       if (context != null && context.mounted) {
         LoadingDialog.hide(context);
       }
-      // Safely notify listeners
       _safeNotifyListeners();
     }
   }
 
-  // Load groups
+  // ===== Grupos =====
   Future<void> loadGrupos({
-    String? escuelaId,
-    String? nivelEducativoId,
-    String? nivelEducativo, // Add this parameter for backward compatibility
+    required String escuelaId,
+    String?
+        nivelEducativoId, // si quieres filtrar por id de nivel (tabla niveles_educativos)
+    String?
+        nivelEducativoNombre, // o directo por nombre (lo que guarda grupos.nivel_educativo)
+    bool loadAll = false,
     BuildContext? context,
-    bool loadAll = false, // Add this parameter to load all groups
   }) async {
     try {
       _isLoading = true;
@@ -112,35 +123,31 @@ class ScheduleProvider with ChangeNotifier {
       }
       _safeNotifyListeners();
 
-      var query =
-          _supabase.from('grupos').select().eq('id_escuela', escuelaId!);
+      var query = _supabase.from('grupos').select().eq('id_escuela', escuelaId);
 
-      // Only filter if we're not loading all groups and have a filter parameter
       if (!loadAll) {
-        if (nivelEducativoId != null) {
-          // Convert nivel educativo ID to name first since grupos table stores names
-          final nivelEducativoData = _nivelesEducativos
-              .where((nivel) => nivel['id'] == nivelEducativoId)
-              .firstOrNull;
-          if (nivelEducativoData != null) {
-            query = query.eq('nivel_educativo', nivelEducativoData['nombre']);
+        if (nivelEducativoNombre != null && nivelEducativoNombre.isNotEmpty) {
+          query = query.eq('nivel_educativo', nivelEducativoNombre);
+        } else if (nivelEducativoId != null) {
+          // traducir id -> nombre usando _nivelesEducativos ya cargados
+          final nivel = _firstOrNull(_nivelesEducativos
+              .where((n) => (n['id']?.toString() ?? '') == nivelEducativoId));
+          final nombre = nivel?['nombre']?.toString();
+          if (nombre != null && nombre.isNotEmpty) {
+            query = query.eq('nivel_educativo', nombre);
           }
-        } else if (nivelEducativo != null) {
-          // Use the name directly since that's what's stored in the grupos table
-          query = query.eq('nivel_educativo', nivelEducativo);
         }
       }
 
       final response = await query.order('grupo');
+      _grupos =
+          (response as List).map<Grupo>((row) => Grupo.fromJson(row)).toList();
 
-      // Supabase Flutter SDK returns non-null response
-      _grupos = (response as List).cast<Map<String, dynamic>>();
       _error = null;
 
       debugPrint('Grupos cargados: ${_grupos.length}');
-      for (var grupo in _grupos) {
-        debugPrint(
-            'Grupo: ${grupo['grupo']}, NivelEducativo: ${grupo['nivel_educativo']}');
+      for (final g in _grupos) {
+        debugPrint('Grupo: ${g.grupo} | Nivel: ${g.nivelEducativo}');
       }
     } catch (e) {
       _error = 'Error al cargar grupos: $e';
@@ -154,10 +161,10 @@ class ScheduleProvider with ChangeNotifier {
     }
   }
 
-  // Load schedules for a specific group or all groups
+  // ===== Horarios =====
   Future<void> loadHorarios({
-    String? escuelaId,
-    String? grupoId,
+    required String escuelaId,
+    String? grupoId, // opcional para filtrar por un grupo específico
     BuildContext? context,
   }) async {
     try {
@@ -168,30 +175,21 @@ class ScheduleProvider with ChangeNotifier {
       _safeNotifyListeners();
 
       var query =
-          _supabase.from('horarios').select().eq('id_escuela', escuelaId!);
+          _supabase.from('horarios').select().eq('id_escuela', escuelaId);
 
-      if (grupoId != null) {
+      if (grupoId != null && grupoId.isNotEmpty) {
         query = query.eq('id_grupo', grupoId);
       }
 
       final response = await query;
+      final list =
+          (response as List).map((r) => ClaseHorario.fromJson(r)).toList();
 
-      // Supabase Flutter SDK returns non-null response
-      final horariosList = (response as List).cast<Map<String, dynamic>>();
-      _horarios.clear();
-
-      // Process the schedules and organize by group
-      for (var horario in horariosList) {
-        final claseHorario = _mapToClaseHorario(horario);
-        final grupo = await getGrupoById(horario['id_grupo']);
-        final grupoKey = grupo?['grupo'] ?? 'sin_grupo';
-
-        if (!_horarios.containsKey(grupoKey)) {
-          _horarios[grupoKey] = [];
-        }
-
-        _horarios[grupoKey]?.add(claseHorario);
+      _horariosPorGrupoId.clear();
+      for (final ch in list) {
+        _horariosPorGrupoId.putIfAbsent(ch.idGrupo, () => []).add(ch);
       }
+
       _error = null;
     } catch (e) {
       _error = 'Error al cargar horarios: $e';
@@ -205,248 +203,107 @@ class ScheduleProvider with ChangeNotifier {
     }
   }
 
-  // Get group by ID (improved helper method)
-  Future<Map<String, dynamic>?> getGrupoById(String grupoId) async {
-    try {
-      // First check in already loaded groups
-      final cachedGrupo =
-          _grupos.where((grupo) => grupo['id'] == grupoId).firstOrNull;
+  // ===== Helpers de consulta (por ID y por nombre para compatibilidad UI) =====
 
-      if (cachedGrupo != null) return cachedGrupo;
-
-      // If not found, fetch from database
-      final response =
-          await _supabase.from('grupos').select().eq('id', grupoId).single();
-
-      return response;
-    } catch (e) {
-      debugPrint('Error fetching grupo: $e');
-      return null;
-    }
+  Grupo? getGrupoById(String grupoId) {
+    return _firstOrNull(_grupos.where((g) => g.id == grupoId));
   }
 
-  // Get grupo by name (new method)
-  Map<String, dynamic>? getGrupoByName(String grupoName) {
-    try {
-      return _grupos.firstWhere((grupo) => grupo['grupo'] == grupoName);
-    } catch (e) {
-      debugPrint('Grupo no encontrado: $grupoName');
-      return null;
-    }
+  Grupo? getGrupoByName(String nombreGrupo) {
+    return _firstOrNull(_grupos
+        .where((g) => g.grupo.toLowerCase() == nombreGrupo.toLowerCase()));
   }
 
-  ClaseHorario _mapToClaseHorario(Map<String, dynamic> data) {
-    // Map the days of the week to DiaSemana enum
-    DiaSemana? getDia() {
-      try {
-        if (data['lunes'] == true) return DiaSemana.lunes;
-        if (data['martes'] == true) return DiaSemana.martes;
-        if (data['miercoles'] == true) return DiaSemana.miercoles;
-        if (data['jueves'] == true) return DiaSemana.jueves;
-        if (data['viernes'] == true) return DiaSemana.viernes;
-        if (data['sabado'] == true) return DiaSemana.sabado;
-        if (data['domingo'] == true) return DiaSemana.domingo;
-        return DiaSemana.lunes; // Default
-      } catch (e) {
-        debugPrint('Error mapping day: $e');
-        return DiaSemana.lunes;
-      }
-    }
-
-    // Format timetz from PostgreSQL (time with timezone)
-    String formatTimeFromTimetz(dynamic timetz) {
-      try {
-        if (timetz == null) return '00:00';
-
-        String timeStr = timetz.toString();
-        debugPrint('Formatting timetz: $timeStr');
-
-        // Fallback: try to extract time pattern
-        final timePattern = RegExp(r'(\d{1,2}):(\d{2})');
-        final match = timePattern.firstMatch(timeStr);
-        if (match != null) {
-          final hour = int.parse(match.group(1)!);
-          final minute = int.parse(match.group(2)!);
-          return TimeFormat.format24to12(
-              '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}');
-        }
-
-        debugPrint('Could not format time, returning default: $timeStr');
-        return '00:00';
-      } catch (e) {
-        debugPrint('Error formatting timetz: $timetz, error: $e');
-        return '00:00';
-      }
-    }
-
-    try {
-      final claseHorario = ClaseHorario(
-        id: data['id'] ?? '',
-        materiaId: data['id_materia'] ?? '',
-        escuelaId: data['id_escuela'] ?? '',
-        grupo: data['id_grupo'] ?? '',
-        dia: getDia() ?? DiaSemana.lunes,
-        horaInicio: formatTimeFromTimetz(data['hora_inicio']),
-        horaFin: formatTimeFromTimetz(data['hora_fin']),
-        aula: data['aula'] ?? '',
-      );
-
-      debugPrint('Created ClaseHorario: ${claseHorario.toString()}');
-      return claseHorario;
-    } catch (e) {
-      debugPrint('Error creating ClaseHorario: $e');
-      debugPrint('Data: $data');
-
-      // Return a default ClaseHorario to prevent crashes
-      return ClaseHorario(
-        id: data['id'] ?? 'unknown',
-        materiaId: data['id_materia'] ?? '',
-        escuelaId: data['id_escuela'] ?? '',
-        grupo: data['id_grupo'] ?? '',
-        dia: DiaSemana.lunes,
-        horaInicio: '00:00',
-        horaFin: '00:00',
-        aula: data['aula'] ?? '',
-      );
-    }
+  /// Devuelve horarios por **id de grupo** (recomendado)
+  List<ClaseHorario> getHorariosForGroupId(String grupoId) {
+    return _horariosPorGrupoId[grupoId] ?? const [];
   }
 
-  // Get schedules for a specific group
-  List<ClaseHorario> getHorariosForGroup(String group) {
-    return _horarios[group] ?? [];
+  /// Compatibilidad: permite pedir por **nombre** del grupo
+  List<ClaseHorario> getHorariosForGroupName(String nombreGrupo) {
+    final g = getGrupoByName(nombreGrupo);
+    if (g == null) return const [];
+    return getHorariosForGroupId(g.id);
   }
 
-  // Get materia by ID
   Materia? getMateriaById(String materiaId) {
-    try {
-      return _materias.firstWhere((materia) => materia.id == materiaId);
-    } catch (e) {
-      return null;
-    }
+    return _firstOrNull(_materias.where((m) => m.id == materiaId));
   }
 
-  // Get all group names
-  List<String> getGruposNames() {
-    return _grupos
-        .map((grupo) => grupo['grupo']?.toString() ?? '')
-        .where((name) => name.isNotEmpty)
-        .toList();
-  }
+  // ===== Listas de nombres para UI =====
+  List<String> getGruposNames() => _grupos.map((g) => g.grupo).toList();
 
-  // Get all educational level names
-  List<String> getNivelesEducativosNames() {
-    return _nivelesEducativos
-        .map((nivel) => nivel['nombre'].toString())
-        .toList();
-  }
+  List<String> getNivelesEducativosNames() =>
+      _nivelesEducativos.map((n) => n['nombre'].toString()).toList();
 
-  // Get nivel educativo by name
   Map<String, dynamic>? getNivelEducativoByName(String nombre) {
-    try {
-      return _nivelesEducativos
-          .firstWhere((nivel) => nivel['nombre'] == nombre);
-    } catch (e) {
-      return null;
-    }
+    return _firstOrNull(
+        _nivelesEducativos.where((n) => (n['nombre'] ?? '') == nombre));
   }
 
-  // Get groups by nivel educativo id (fixed to use name instead of ID)
-  List<Map<String, dynamic>> getGruposByNivelEducativo(
-      String nivelEducativoId) {
-    // Convert ID to name first
-    final nivelEducativoData = _nivelesEducativos
-        .where((nivel) => nivel['id'] == nivelEducativoId)
-        .firstOrNull;
-
-    if (nivelEducativoData == null) {
+  // Filtra grupos por **id** de nivel educativo (traduce a nombre internamente)
+  List<Grupo> getGruposByNivelEducativo(String nivelEducativoId) {
+    final nivel = _firstOrNull(_nivelesEducativos
+        .where((n) => (n['id']?.toString() ?? '') == nivelEducativoId));
+    if (nivel == null) {
       debugPrint('Nivel educativo no encontrado para ID: $nivelEducativoId');
-      return [];
+      return const [];
     }
-
-    final nivelEducativoName = nivelEducativoData['nombre'];
-    final filteredGroups = _grupos
-        .where((grupo) => grupo['nivel_educativo'] == nivelEducativoName)
-        .toList();
-
-    debugPrint(
-        'Grupos filtrados para nivel $nivelEducativoName (ID: $nivelEducativoId): ${filteredGroups.length}');
-    return filteredGroups;
+    final nombre = (nivel['nombre'] ?? '').toString();
+    final res = _grupos.where((g) => g.nivelEducativo == nombre).toList();
+    debugPrint('Grupos filtrados para nivel $nombre: ${res.length}');
+    return res;
   }
 
-  // Get groups by nivel educativo name (updated method)
-  List<Map<String, dynamic>> getGruposByNivelEducativoName(String nivelNombre) {
-    final filteredGroups = _grupos
-        .where((grupo) => grupo['nivel_educativo'] == nivelNombre)
-        .toList();
-
-    debugPrint(
-        'Grupos filtrados para nivel $nivelNombre: ${filteredGroups.length}');
-    return filteredGroups;
+  // Filtra grupos por **nombre** de nivel educativo (lo que guarda la tabla grupos)
+  List<Grupo> getGruposByNivelEducativoName(String nivelNombre) {
+    final res = _grupos.where((g) => g.nivelEducativo == nivelNombre).toList();
+    debugPrint('Grupos filtrados para nivel $nivelNombre: ${res.length}');
+    return res;
   }
 
-  // Get groups names by nivel educativo
-  List<String> getGruposNamesByNivelEducativo(String nivelEducativoId) {
-    return getGruposByNivelEducativo(nivelEducativoId)
-        .map((grupo) => grupo['grupo']?.toString() ?? '')
-        .where((name) => name.isNotEmpty)
-        .toList();
-  }
+  List<String> getGruposNamesByNivelEducativo(String nivelEducativoId) =>
+      getGruposByNivelEducativo(nivelEducativoId).map((g) => g.grupo).toList();
 
-  // Get groups names by nivel educativo name
-  List<String> getGruposNamesByNivelEducativoName(String nivelNombre) {
-    return getGruposByNivelEducativoName(nivelNombre)
-        .map((grupo) => grupo['grupo']?.toString() ?? '')
-        .where((name) => name.isNotEmpty)
-        .toList();
-  }
+  List<String> getGruposNamesByNivelEducativoName(String nivelNombre) =>
+      getGruposByNivelEducativoName(nivelNombre).map((g) => g.grupo).toList();
 
-  // Get nivel educativo name for a group
+  /// Regresa el **nombre del nivel** para un grupo dado por ID
   String? getNivelEducativoNameForGroup(String grupoId) {
-    final grupo = _grupos.where((g) => g['id'] == grupoId).firstOrNull;
-    if (grupo == null) return null;
-
-    // Since nivel_educativo in grupos table stores the name directly
-    return grupo['nivel_educativo'];
+    final g = getGrupoById(grupoId);
+    return g?.nivelEducativo;
   }
 
-  // Debug method to print all data
+  // ===== Debug =====
   void debugPrintAllData() {
     debugPrint('=== NIVELES EDUCATIVOS ===');
-    for (var nivel in _nivelesEducativos) {
-      debugPrint('ID: ${nivel['id']}, Nombre: ${nivel['nombre']}');
+    for (var n in _nivelesEducativos) {
+      debugPrint('ID: ${n['id']}, Nombre: ${n['nombre']}');
     }
-
     debugPrint('=== GRUPOS ===');
-    for (var grupo in _grupos) {
-      debugPrint(
-          'ID: ${grupo['id']}, Grupo: ${grupo['grupo']}, NivelEducativo: ${grupo['nivel_educativo']}');
+    for (var g in _grupos) {
+      debugPrint('ID: ${g.id}, Grupo: ${g.grupo}, Nivel: ${g.nivelEducativo}');
     }
   }
 
-  // Initialize - load all required data
+  // ===== Inicialización =====
   Future<void> initialize(String escuelaId, {BuildContext? context}) async {
     await loadNivelesEducativos(escuelaId: escuelaId, context: context);
     await loadMaterias(escuelaId: escuelaId, context: context);
     await loadGrupos(
-        escuelaId: escuelaId,
-        context: context,
-        loadAll: true); // Load all groups
+      escuelaId: escuelaId,
+      loadAll: true,
+      context: context,
+    );
     await loadHorarios(escuelaId: escuelaId, context: context);
   }
 
-  // Helper method to safely notify listeners
-  void _safeNotifyListeners() {
-    // Use microtask to ensure notifyListeners is not called during build
-    Future.microtask(() {
-      notifyListeners();
-    });
-  }
-
+  // ===== Limpieza =====
   void clearAllData() {
-    _materias.clear();
-    _grupos.clear();
-    _nivelesEducativos.clear();
-    _horarios.clear();
+    _materias = [];
+    _grupos = [];
+    _nivelesEducativos = [];
+    _horariosPorGrupoId.clear();
     _isLoading = false;
     _error = null;
     _safeNotifyListeners();

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
+
 import '../models/alumno.dart';
 import '../models/notificacion.dart';
 
@@ -26,7 +27,7 @@ class AttendanceScannerProvider with ChangeNotifier {
   QRViewController? _cameraController;
   List<String> _scannedHistory = [];
 
-  // Mock admin ID - in a real app, this would come from authentication
+  // Mock admin ID - en una app real, vendría del sistema de auth
   final String _currentAdminId = 'current-admin-id';
 
   // Getters
@@ -67,7 +68,7 @@ class AttendanceScannerProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Camera Scanner Methods
+  // ===== Cámara =====
   void setCameraController(QRViewController controller) {
     _cameraController = controller;
   }
@@ -95,7 +96,7 @@ class AttendanceScannerProvider with ChangeNotifier {
     });
   }
 
-  // Physical Scanner Methods
+  // ===== Lector físico =====
   void startPhysicalScannerListening() {
     _isListeningToPhysicalScanner = true;
     _setState(ScannerState.scanning);
@@ -114,13 +115,12 @@ class AttendanceScannerProvider with ChangeNotifier {
     }
   }
 
-  // Process scan result and create notification
+  // ===== Procesamiento =====
   Future<void> _processScanResult(String scannedCode) async {
     _setState(ScannerState.processing);
     _lastScannedCode = scannedCode;
 
     try {
-      // Find student by matricula
       final student = await _findStudentByMatricula(scannedCode);
 
       if (student == null) {
@@ -128,10 +128,9 @@ class AttendanceScannerProvider with ChangeNotifier {
         return;
       }
 
-      // Create attendance notification
       await _createAttendanceNotification(student);
 
-      // Add to history
+      // Historial
       _scannedHistory.insert(0, scannedCode);
       if (_scannedHistory.length > 50) {
         _scannedHistory = _scannedHistory.take(50).toList();
@@ -143,70 +142,69 @@ class AttendanceScannerProvider with ChangeNotifier {
     }
   }
 
-  // Mock method to find student by matricula
+  // Mock: buscar alumno por matrícula (usa tu modelo Alumno correcto)
   Future<Alumno?> _findStudentByMatricula(String matricula) async {
-    // Simulate API call delay
     await Future.delayed(const Duration(milliseconds: 500));
 
-    // Mock data - In real implementation, this would query the database
-    final mockStudents = [
+    final now = DateTime.now();
+    final mockStudents = <Alumno>[
       Alumno(
         id: 'student-1-id',
         nombre: 'Juan Pérez',
-        id_grupo: 'group-1-id',
+        idGrupo: 'group-1-id',
         grupo: 'Grupo A',
-        id_escuela: 'school-1-id',
-        id_llave: 'key-1',
+        idEscuela: 'school-1-id',
+        idLlave: 'key-1',
         matricula: '2024001',
-        fecha_registro: DateTime.now(),
+        fechaRegistro: now,
+        idTurno: '', // si no aplica en mock
       ),
       Alumno(
         id: 'student-2-id',
         nombre: 'María García',
-        id_grupo: 'group-1-id',
+        idGrupo: 'group-1-id',
         grupo: 'Grupo A',
-        id_escuela: 'school-1-id',
-        id_llave: 'key-2',
+        idEscuela: 'school-1-id',
+        idLlave: 'key-2',
         matricula: '2024002',
-        fecha_registro: DateTime.now(),
+        fechaRegistro: now,
+        idTurno: '',
       ),
       Alumno(
         id: 'student-3-id',
         nombre: 'Carlos López',
-        id_grupo: 'group-2-id',
+        idGrupo: 'group-2-id',
         grupo: 'Grupo B',
-        id_escuela: 'school-1-id',
-        id_llave: 'key-3',
+        idEscuela: 'school-1-id',
+        idLlave: 'key-3',
         matricula: '2024003',
-        fecha_registro: DateTime.now(),
+        fechaRegistro: now,
+        idTurno: '',
       ),
     ];
 
-    return mockStudents.firstWhere(
-      (student) => student.matricula == matricula,
-      orElse: () => throw Exception('Student not found'),
-    );
+    for (final s in mockStudents) {
+      if (s.matricula == matricula) return s;
+    }
+    return null;
   }
 
-  // Create attendance notification in database
+  // Crear notificación de asistencia (mock)
   Future<void> _createAttendanceNotification(Alumno student) async {
-    // Simulate API call delay
     await Future.delayed(const Duration(milliseconds: 300));
 
-    // Determine notification type based on current time
     final now = DateTime.now();
-    final currentHour = now.hour;
+    final hour = now.hour;
 
     TipoNotificacion tipoNotificacion;
-    if (currentHour >= 7 && currentHour < 12) {
+    if (hour >= 7 && hour < 12) {
       tipoNotificacion = TipoNotificacion.entrada;
-    } else if (currentHour >= 12 && currentHour < 18) {
+    } else if (hour >= 12 && hour < 18) {
       tipoNotificacion = TipoNotificacion.salida;
     } else {
-      tipoNotificacion = TipoNotificacion.entrada; // Default
+      tipoNotificacion = TipoNotificacion.entrada;
     }
 
-    // Create notification object
     final notification = Notificacion(
       id: 'notification-${DateTime.now().millisecondsSinceEpoch}',
       alumnoId: student.id,
@@ -218,14 +216,13 @@ class AttendanceScannerProvider with ChangeNotifier {
       fechaHora: now,
     );
 
-    // Mock database insertion
-    print('Creating attendance notification: ${notification.toJson()}');
+    // Evitar print en producción
+    debugPrint('Creating attendance notification: ${notification.toJson()}');
 
-    // In a real implementation, you would call your API here:
-    // await NotificationService.createNotification(notification);
+    // Aquí iría tu inserción real a BD / API.
   }
 
-  // Utility method to reset scanner
+  // ===== Utilidades =====
   void resetScanner() {
     stopCameraScanning();
     stopPhysicalScannerListening();

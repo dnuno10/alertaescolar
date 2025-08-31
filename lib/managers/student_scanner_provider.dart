@@ -23,8 +23,8 @@ class StudentScannerProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Find student by matricula (QR code value)
-  /// Returns the student with grupo information
+  /// Busca alumno por matrícula (valor del QR).
+  /// Regresa el Alumno con el nombre del grupo ya mapeado.
   Future<Alumno?> findStudentByMatricula(String matricula) async {
     try {
       _isLoading = true;
@@ -33,7 +33,7 @@ class StudentScannerProvider with ChangeNotifier {
 
       debugPrint('Searching for student with matricula: $matricula');
 
-      final response = await _supabase.from('alumnos').select('''
+      final resp = await _supabase.from('alumnos').select('''
             id,
             nombre,
             id_grupo,
@@ -42,61 +42,32 @@ class StudentScannerProvider with ChangeNotifier {
             vinculado,
             matricula,
             fecha_registro,
+            id_turno,
             turno,
-            grupos!inner(
-              grupo
-            )
+            grupos!inner(grupo)
           ''').eq('matricula', matricula).maybeSingle();
 
-      if (response == null) {
+      if (resp == null) {
         debugPrint('No student found with matricula: $matricula');
         return null;
       }
 
-      // Parse turno enum
-      TurnoEnum turnoEnum = TurnoEnum.matutino;
-      if (response['turno'] != null) {
-        try {
-          turnoEnum = TurnoEnum.values.firstWhere(
-            (e) =>
-                e.name.toLowerCase() ==
-                response['turno'].toString().toLowerCase(),
-            orElse: () => TurnoEnum.matutino,
-          );
-        } catch (e) {
-          debugPrint('Error parsing turno: $e, using default');
-        }
+      // Extrae el nombre del grupo del join y lo deja como campo plano "grupo"
+      final Map<String, dynamic> row = Map<String, dynamic>.from(resp);
+      if (row['grupos'] is Map) {
+        final g = row['grupos'] as Map;
+        row['grupo'] = g['grupo']?.toString() ?? '';
+      } else {
+        row['grupo'] = row['grupo'] ?? '';
       }
 
-      // Get grupo name from the joined grupos table
-      String grupoName = '';
-      if (response['grupos'] != null && response['grupos'] is Map) {
-        grupoName = response['grupos']['grupo']?.toString() ?? '';
+      // Parseo robusto de fecha si hiciera falta (Alumno.fromJson ya maneja DateTime.parse).
+      // Solo aseguramos que fecha_registro sea String.
+      if (row['fecha_registro'] != null && row['fecha_registro'] is! String) {
+        row['fecha_registro'] = row['fecha_registro'].toString();
       }
 
-      // Parse fecha_registro safely
-      DateTime fechaRegistro = DateTime.now();
-      if (response['fecha_registro'] != null) {
-        try {
-          fechaRegistro = DateTime.parse(response['fecha_registro'].toString());
-        } catch (e) {
-          debugPrint('Error parsing fecha_registro: $e, using current date');
-        }
-      }
-
-      // Map response to Alumno object using the correct structure
-      final alumno = Alumno(
-        id: response['id']?.toString() ?? '',
-        nombre: response['nombre']?.toString() ?? '',
-        id_grupo: response['id_grupo']?.toString() ?? '',
-        grupo: grupoName,
-        id_escuela: response['id_escuela']?.toString() ?? '',
-        id_llave: response['id_llave']?.toString() ?? '',
-        vinculado: response['vinculado'] == true,
-        matricula: response['matricula']?.toString() ?? '',
-        fecha_registro: fechaRegistro,
-        turno: turnoEnum,
-      );
+      final alumno = Alumno.fromJson(row);
 
       debugPrint(
           'Student found: ${alumno.nombre}, grupo: ${alumno.grupo}, turno: ${alumno.turno}');
@@ -112,44 +83,45 @@ class StudentScannerProvider with ChangeNotifier {
     }
   }
 
-  /// Get turno information for time validation based on turno enum and school
-  Future<Map<String, dynamic>?> getTurnoInfo(
-      TurnoEnum turnoEnum, String escuelaId) async {
+  /// Obtiene información del turno (por enum + escuela) -> Turno del modelo.
+  Future<Turno?> getTurnoInfo(TurnoEnum turnoEnum, String escuelaId) async {
     try {
-      // Convert enum to string for database query
-      String turnoString = turnoEnum.name; // 'matutino' or 'vespertino'
+      final turnoString =
+          turnoEnum.name; // 'matutino' | 'vespertino' | 'desconocido'
 
-      final response = await _supabase
+      final resp = await _supabase
           .from('turnos')
           .select('*')
           .eq('turno', turnoString)
           .eq('id_escuela', escuelaId)
           .maybeSingle();
 
-      if (response != null) {
-        debugPrint(
-            'Turno info found: ${response['turno']} - ${response['hora_inicio']} to ${response['hora_fin']}');
-      }
+      if (resp == null) return null;
 
-      return response;
+      final t = Turno.fromJson(Map<String, dynamic>.from(resp));
+      debugPrint(
+          'Turno info: ${t.turno} - ${t.horaInicio} to ${t.horaFin} (tol: ${t.tolerancia}m)');
+      return t;
     } catch (e) {
       debugPrint('Error getting turno info: $e');
       return null;
     }
   }
 
-  /// Get student's turno information for time validation (legacy method for compatibility)
-  Future<Map<String, dynamic>?> getStudentTurno(int idTurno) async {
+  /// Obtiene un turno por su ID (UUID en tu modelo) -> Turno del modelo.
+  Future<Turno?> getStudentTurno(String idTurno) async {
     try {
-      final response = await _supabase
+      final resp = await _supabase
           .from('turnos')
           .select('*')
           .eq('id', idTurno)
           .maybeSingle();
 
-      return response;
+      if (resp == null) return null;
+
+      return Turno.fromJson(Map<String, dynamic>.from(resp));
     } catch (e) {
-      debugPrint('Error getting turno: $e');
+      debugPrint('Error getting turno by id: $e');
       return null;
     }
   }

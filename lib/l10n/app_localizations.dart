@@ -75,6 +75,7 @@ abstract class AppLocalizations {
   String get signInCanceled;
   String get registerCanceled;
   String get appleNotAvailable;
+  String get sessionExpiredOrNoUser;
 
 // Time related
   String get timeSeparator;
@@ -1400,6 +1401,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get am => 'AM';
   @override
   String get pm => 'PM';
+  @override
+  String get sessionExpiredOrNoUser =>
+      'Session expired or no user is signed in. Please sign in again.';
 
   @override
   String get signInCanceled => 'Sign-in process canceled';
@@ -4479,6 +4483,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get am => 'AM';
   @override
   String get pm => 'PM';
+
+  @override
+  String get sessionExpiredOrNoUser =>
+      'Tu sesión ha expirado o no hay un usuario autenticado. Inicia sesión nuevamente.';
+
   @override
   String get signInCanceled => 'Proceso de inicio de sesión cancelado';
 

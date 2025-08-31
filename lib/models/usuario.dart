@@ -6,7 +6,7 @@ enum TipoAdministrador {
   secretario,
   personalSeguridad,
   maestro,
-  administrativo
+  administrativo,
 }
 
 class Usuario {
@@ -32,7 +32,7 @@ class Usuario {
     required this.fechaRegistro,
   });
 
-  // -------- Helpers de parseo seguro --------
+  // ---------- Helpers de parseo seguro ----------
   static String _asString(dynamic v) => v?.toString() ?? '';
   static String? _asNullableString(dynamic v) {
     if (v == null) return null;
@@ -41,21 +41,50 @@ class Usuario {
   }
 
   static TipoUsuario _parseTipoUsuario(dynamic raw) {
-    final s = (raw?.toString() ?? 'padre').trim().toLowerCase();
-    return TipoUsuario.values.firstWhere(
-      (e) => e.name == s,
-      orElse: () => TipoUsuario.padre,
-    );
+    final s = (raw?.toString() ?? '').trim().toLowerCase();
+    // Acepta alias comunes
+    switch (s) {
+      case 'padre':
+        return TipoUsuario.padre;
+      case 'madre':
+        return TipoUsuario.madre;
+      case 'tutor':
+        return TipoUsuario.tutor;
+      case 'familiar':
+        return TipoUsuario.familiar;
+      case 'administrador':
+      case 'admin':
+        return TipoUsuario.administrador;
+      default:
+        // valor por defecto seguro
+        return TipoUsuario.padre;
+    }
   }
 
   static TipoAdministrador? _parseTipoAdministrador(dynamic raw) {
     if (raw == null) return null;
     final s = raw.toString().trim().toLowerCase();
     if (s.isEmpty) return null;
-    return TipoAdministrador.values.firstWhere(
-      (e) => e.name == s,
-      orElse: () => TipoAdministrador.administrativo,
-    );
+    switch (s) {
+      case 'director':
+        return TipoAdministrador.director;
+      case 'subdirector':
+        return TipoAdministrador.subdirector;
+      case 'secretario':
+        return TipoAdministrador.secretario;
+      case 'personalseguridad':
+      case 'personal_seguridad':
+      case 'seguridad':
+        return TipoAdministrador.personalSeguridad;
+      case 'maestro':
+      case 'docente':
+        return TipoAdministrador.maestro;
+      case 'administrativo':
+      case 'admin':
+        return TipoAdministrador.administrativo;
+      default:
+        return TipoAdministrador.administrativo;
+    }
   }
 
   static DateTime _parseFecha(dynamic raw) {
@@ -69,10 +98,15 @@ class Usuario {
     }
   }
 
+  /// Crea un Usuario desde el JSON/row de la BD (snake_case).
   factory Usuario.fromJson(Map<String, dynamic> json) {
+    // Normaliza email
     final emailNorm = _asString(json['email']).trim().toLowerCase();
-    final escuelaStr =
-        _asNullableString(json['id_escuela']); // admite int/string
+
+    // `id_escuela` puede venir numérico o string
+    final escuelaStr = json.containsKey('id_escuela')
+        ? _asNullableString(json['id_escuela'])
+        : _asNullableString(json['escuelaId']); // fallback
 
     return Usuario(
       id: _asString(json['id']),
@@ -83,10 +117,12 @@ class Usuario {
       tipo: _parseTipoUsuario(json['tipo']),
       tipoAdministrador: _parseTipoAdministrador(json['tipo_administrador']),
       escuelaId: escuelaStr,
-      fechaRegistro: _parseFecha(json['fecha_registro']),
+      fechaRegistro:
+          _parseFecha(json['fecha_registro'] ?? json['fechaRegistro']),
     );
   }
 
+  /// Serializa a mapa listo para escribir en la BD (snake_case).
   Map<String, dynamic> toJson() {
     final fechaUtc =
         fechaRegistro.isUtc ? fechaRegistro : fechaRegistro.toUtc();
@@ -96,7 +132,7 @@ class Usuario {
       'apellido': apellido,
       'email': email.trim().toLowerCase(),
       'telefono': telefono,
-      'tipo': tipo.name,
+      'tipo': tipo.name, // guarda exactamente los enums en minúsculas
       'tipo_administrador': tipoAdministrador?.name,
       'id_escuela': escuelaId,
       'fecha_registro': fechaUtc.toIso8601String(),
@@ -131,6 +167,7 @@ class Usuario {
     );
   }
 
+  // ---------- Helpers de dominio ----------
   String get nombreCompleto =>
       [nombre, apellido].where((s) => s.isNotEmpty).join(' ');
   bool get esAdministrador => tipo == TipoUsuario.administrador;
@@ -139,14 +176,12 @@ class Usuario {
 
   @override
   String toString() {
-    return 'Usuario(id: $id, nombreCompleto: $nombreCompleto, email: $email, tipo: $tipo)';
+    return 'Usuario(id: $id, nombreCompleto: $nombreCompleto, email: $email, tipo: $tipo, escuelaId: $escuelaId)';
   }
 
   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is Usuario && other.id == id;
-  }
+  bool operator ==(Object other) =>
+      identical(this, other) || (other is Usuario && other.id == id);
 
   @override
   int get hashCode => id.hashCode;

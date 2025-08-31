@@ -7,7 +7,7 @@ import 'empty_schedule.dart';
 
 class ScheduleDisplay extends StatelessWidget {
   final String selectedGradeGroup;
-  final DiaSemana? selectedDay;
+  final String? selectedDayKey; // ej. "lunes" | "martes" | null (todos)
   final List<ClaseHorario> schedules;
   final List<Materia> subjects;
   final Size screenSize;
@@ -15,7 +15,7 @@ class ScheduleDisplay extends StatelessWidget {
   const ScheduleDisplay({
     super.key,
     required this.selectedGradeGroup,
-    required this.selectedDay,
+    required this.selectedDayKey,
     required this.schedules,
     required this.subjects,
     required this.screenSize,
@@ -38,17 +38,17 @@ class ScheduleDisplay extends StatelessWidget {
           ),
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
           EmptySchedule(
-            selectedDay: selectedDay,
+            selectedDayKey: selectedDayKey,
             screenSize: screenSize,
           ),
         ],
       );
     }
 
-    // If a specific day is selected, show only that day's schedule
-    if (selectedDay != null) {
+    // Filtro por día específico
+    if (selectedDayKey != null) {
       final daySchedules = schedules
-          .where((schedule) => schedule.dia == selectedDay)
+          .where((s) => _isOnDay(s, selectedDayKey!))
           .toList()
         ..sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
 
@@ -57,29 +57,27 @@ class ScheduleDisplay extends StatelessWidget {
         children: [
           if (daySchedules.isEmpty)
             EmptySchedule(
-              selectedDay: selectedDay,
+              selectedDayKey: selectedDayKey,
               screenSize: screenSize,
             )
           else
-            ...daySchedules.asMap().entries.map((entry) {
-              return Padding(
-                padding: EdgeInsets.only(
-                  bottom: AppTheme.getSmallPadding(screenSize),
-                ),
-                child: ClassCard(
-                  clase: entry.value,
-                  index: entry.key,
-                  screenSize: screenSize,
-                  subject: _getSubjectById(entry.value.materiaId),
-                  showDay: false, // Don't show day in individual cards
-                ),
-              );
-            }),
+            ...daySchedules.asMap().entries.map((entry) => Padding(
+                  padding: EdgeInsets.only(
+                    bottom: AppTheme.getSmallPadding(screenSize),
+                  ),
+                  child: ClassCard(
+                    clase: entry.value,
+                    index: entry.key,
+                    screenSize: screenSize,
+                    subject: _getSubjectById(entry.value.idMateria),
+                    showDay: false, // ya está filtrado por día
+                  ),
+                )),
         ],
       );
     }
 
-    // Show complete weekly schedule
+    // Vista semanal completa
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -90,66 +88,7 @@ class ScheduleDisplay extends StatelessWidget {
     );
   }
 
-  Widget _buildDayHeader(BuildContext context, DiaSemana day, String group) {
-    return Container(
-      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppTheme.accentBlue.withOpacity(0.1),
-            AppTheme.accentPurple.withOpacity(0.1),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
-        border: Border.all(
-          color: AppTheme.accentBlue.withOpacity(0.2),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
-            decoration: BoxDecoration(
-              color: AppTheme.accentBlue,
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-            ),
-            child: Icon(
-              Icons.calendar_today_rounded,
-              color: Colors.white,
-              size: screenSize.width * 0.05,
-            ),
-          ),
-          SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _getDayName(context, day),
-                  style: AppTheme.getH2(screenSize).copyWith(
-                    color: AppTheme.getTextPrimaryColor(context),
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  'Horario de $group',
-                  style: AppTheme.getBodyMedium(screenSize).copyWith(
-                    color: AppTheme.getTextSecondaryColor(context),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
+  // ---------- Weekly sections ----------
   Widget _buildWeeklyScheduleHeader(BuildContext context, String group) {
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -164,9 +103,7 @@ class ScheduleDisplay extends StatelessWidget {
         ),
         borderRadius:
             BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
-        border: Border.all(
-          color: AppTheme.accentBlue.withOpacity(0.2),
-        ),
+        border: Border.all(color: AppTheme.accentBlue.withOpacity(0.2)),
       ),
       child: Row(
         children: [
@@ -177,31 +114,24 @@ class ScheduleDisplay extends StatelessWidget {
               borderRadius:
                   BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
             ),
-            child: Icon(
-              Icons.view_week_rounded,
-              color: Colors.white,
-              size: screenSize.width * 0.05,
-            ),
+            child: Icon(Icons.view_week_rounded,
+                color: Colors.white, size: screenSize.width * 0.05),
           ),
           SizedBox(width: AppTheme.getMediumPadding(screenSize)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Horario Semanal',
-                  style: AppTheme.getH2(screenSize).copyWith(
-                    color: AppTheme.getTextPrimaryColor(context),
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  'Grupo $group - Todas las materias',
-                  style: AppTheme.getBodyMedium(screenSize).copyWith(
-                    color: AppTheme.getTextSecondaryColor(context),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                Text('Horario Semanal',
+                    style: AppTheme.getH2(screenSize).copyWith(
+                      color: AppTheme.getTextPrimaryColor(context),
+                      fontWeight: FontWeight.w700,
+                    )),
+                Text('Grupo $group - Todas las materias',
+                    style: AppTheme.getBodyMedium(screenSize).copyWith(
+                      color: AppTheme.getTextSecondaryColor(context),
+                      fontWeight: FontWeight.w500,
+                    )),
               ],
             ),
           ),
@@ -211,34 +141,35 @@ class ScheduleDisplay extends StatelessWidget {
   }
 
   Widget _buildCompleteWeeklySchedule(BuildContext context) {
-    // Group schedules by day
-    final schedulesByDay = <DiaSemana, List<ClaseHorario>>{};
-
-    for (final schedule in schedules) {
-      if (!schedulesByDay.containsKey(schedule.dia)) {
-        schedulesByDay[schedule.dia] = [];
-      }
-      schedulesByDay[schedule.dia]!.add(schedule);
-    }
-
-    // Sort schedules within each day by time
-    schedulesByDay.forEach((day, daySchedules) {
-      daySchedules.sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
-    });
-
-    final daysOfWeek = [
-      DiaSemana.lunes,
-      DiaSemana.martes,
-      DiaSemana.miercoles,
-      DiaSemana.jueves,
-      DiaSemana.viernes,
-      DiaSemana.sabado,
-      DiaSemana.domingo,
+    // Definir orden de días
+    final orderedDays = const [
+      'lunes',
+      'martes',
+      'miercoles',
+      'jueves',
+      'viernes',
+      'sabado',
+      'domingo',
     ];
 
+    // Agrupar por día usando flags del modelo
+    final Map<String, List<ClaseHorario>> byDay = {
+      for (final d in orderedDays) d: <ClaseHorario>[],
+    };
+    for (final s in schedules) {
+      for (final d in orderedDays) {
+        if (_isOnDay(s, d)) byDay[d]!.add(s);
+      }
+    }
+    // Ordenar cada día por hora de inicio (HH:MM string)
+    for (final d in orderedDays) {
+      byDay[d]!.sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
+    }
+
     return Column(
-      children: daysOfWeek.map((day) {
-        final daySchedules = schedulesByDay[day] ?? [];
+      children: orderedDays.map((dayKey) {
+        final daySchedules = byDay[dayKey]!;
+        final color = _getDayColor(dayKey);
 
         return Container(
           margin:
@@ -246,7 +177,7 @@ class ScheduleDisplay extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Day header
+              // Header del día
               Container(
                 width: double.infinity,
                 padding: EdgeInsets.symmetric(
@@ -254,25 +185,20 @@ class ScheduleDisplay extends StatelessWidget {
                   vertical: AppTheme.getSmallPadding(screenSize),
                 ),
                 decoration: BoxDecoration(
-                  color: _getDayColor(day).withOpacity(0.1),
+                  color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(
                       AppTheme.getSmallRadius(screenSize)),
-                  border: Border.all(
-                    color: _getDayColor(day).withOpacity(0.3),
-                  ),
+                  border: Border.all(color: color.withOpacity(0.3)),
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      _getDayIcon(day),
-                      color: _getDayColor(day),
-                      size: screenSize.width * 0.045,
-                    ),
+                    Icon(_getDayIcon(dayKey),
+                        color: color, size: screenSize.width * 0.045),
                     SizedBox(width: AppTheme.getSmallPadding(screenSize)),
                     Text(
-                      _getDayName(context, day),
+                      _getDayName(context, dayKey),
                       style: AppTheme.getSubtitle1(screenSize).copyWith(
-                        color: _getDayColor(day),
+                        color: color,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -280,17 +206,15 @@ class ScheduleDisplay extends StatelessWidget {
                     Text(
                       '${daySchedules.length} ${daySchedules.length == 1 ? 'clase' : 'clases'}',
                       style: AppTheme.getCaption(screenSize).copyWith(
-                        color: _getDayColor(day),
+                        color: color,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
               ),
-
               SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-
-              // Day's classes
+              // Clases del día
               if (daySchedules.isEmpty)
                 Container(
                   width: double.infinity,
@@ -316,21 +240,19 @@ class ScheduleDisplay extends StatelessWidget {
                   ),
                 )
               else
-                ...daySchedules.asMap().entries.map((entry) {
-                  return Padding(
-                    padding: EdgeInsets.only(
-                      bottom: AppTheme.getSmallPadding(screenSize) * 0.5,
+                ...daySchedules.asMap().entries.map(
+                      (entry) => Padding(
+                        padding: EdgeInsets.only(
+                            bottom: AppTheme.getSmallPadding(screenSize) * 0.5),
+                        child: ClassCard(
+                          clase: entry.value,
+                          index: entry.key,
+                          screenSize: screenSize,
+                          subject: _getSubjectById(entry.value.idMateria),
+                          showDay: false,
+                        ),
+                      ),
                     ),
-                    child: ClassCard(
-                      clase: entry.value,
-                      index: entry.key,
-                      screenSize: screenSize,
-                      subject: _getSubjectById(entry.value.materiaId),
-                      showDay:
-                          false, // Don't show day in cards since it's already shown in header
-                    ),
-                  );
-                }),
             ],
           ),
         );
@@ -338,68 +260,96 @@ class ScheduleDisplay extends StatelessWidget {
     );
   }
 
-  Color _getDayColor(DiaSemana day) {
-    switch (day) {
-      case DiaSemana.lunes:
+  // ---------- Helpers ----------
+  bool _isOnDay(ClaseHorario s, String dayKey) {
+    switch (dayKey.toLowerCase()) {
+      case 'lunes':
+        return s.lunes;
+      case 'martes':
+        return s.martes;
+      case 'miercoles':
+        return s.miercoles;
+      case 'jueves':
+        return s.jueves;
+      case 'viernes':
+        return s.viernes;
+      case 'sabado':
+        return s.sabado;
+      case 'domingo':
+        return s.domingo;
+      default:
+        return false;
+    }
+  }
+
+  Color _getDayColor(String dayKey) {
+    switch (dayKey) {
+      case 'lunes':
         return AppTheme.accentBlue;
-      case DiaSemana.martes:
+      case 'martes':
         return AppTheme.accentPurple;
-      case DiaSemana.miercoles:
+      case 'miercoles':
         return Colors.green;
-      case DiaSemana.jueves:
+      case 'jueves':
         return Colors.orange;
-      case DiaSemana.viernes:
+      case 'viernes':
         return Colors.red;
-      case DiaSemana.sabado:
+      case 'sabado':
         return Colors.indigo;
-      case DiaSemana.domingo:
+      case 'domingo':
         return Colors.pink;
+      default:
+        return AppTheme.accentBlue;
     }
   }
 
-  IconData _getDayIcon(DiaSemana day) {
-    switch (day) {
-      case DiaSemana.lunes:
+  IconData _getDayIcon(String dayKey) {
+    switch (dayKey) {
+      case 'lunes':
         return Icons.looks_one_rounded;
-      case DiaSemana.martes:
+      case 'martes':
         return Icons.looks_two_rounded;
-      case DiaSemana.miercoles:
+      case 'miercoles':
         return Icons.looks_3_rounded;
-      case DiaSemana.jueves:
+      case 'jueves':
         return Icons.looks_4_rounded;
-      case DiaSemana.viernes:
+      case 'viernes':
         return Icons.looks_5_rounded;
-      case DiaSemana.sabado:
+      case 'sabado':
         return Icons.looks_6_rounded;
-      case DiaSemana.domingo:
+      case 'domingo':
         return Icons.weekend_rounded;
+      default:
+        return Icons.calendar_today_rounded;
     }
   }
 
-  String _getDayName(BuildContext context, DiaSemana day) {
+  String _getDayName(BuildContext context, String dayKey) {
     final l10n = AppLocalizations.of(context);
-    switch (day) {
-      case DiaSemana.lunes:
+    switch (dayKey) {
+      case 'lunes':
         return l10n.monday;
-      case DiaSemana.martes:
+      case 'martes':
         return l10n.tuesday;
-      case DiaSemana.miercoles:
+      case 'miercoles':
         return l10n.wednesday;
-      case DiaSemana.jueves:
+      case 'jueves':
         return l10n.thursday;
-      case DiaSemana.viernes:
+      case 'viernes':
         return l10n.friday;
-      case DiaSemana.sabado:
+      case 'sabado':
         return l10n.saturday;
-      case DiaSemana.domingo:
+      case 'domingo':
         return l10n.sunday;
+      default:
+        return l10n.unknown; // opcional en tu l10n
     }
   }
 
   Materia? _getSubjectById(String materiaId) {
     try {
-      return subjects.firstWhere((subject) => subject.id == materiaId);
-    } catch (e) {
+      return subjects.firstWhere((s) => s.id == materiaId);
+    } catch (_) {
       return null;
     }
   }

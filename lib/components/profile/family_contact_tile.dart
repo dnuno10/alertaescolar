@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../models/contacto_familiar.dart';
+import '../../models/models.dart';
 import '../../l10n/app_localizations.dart';
 import '../../app/app_theme.dart';
 
@@ -22,7 +22,7 @@ class FamilyContactTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context); // Added non-null assertion
+    final l10n = AppLocalizations.of(context);
 
     return GestureDetector(
       onTap: () {
@@ -85,7 +85,7 @@ class FamilyContactTile extends StatelessWidget {
                               BorderRadius.circular(screenSize.width * 0.02),
                         ),
                         child: Text(
-                          _getRelationshipName(contact.parentesco, l10n),
+                          contact.parentesco.getLocalizedName(l10n),
                           style: AppTheme.getCaptionSmall(screenSize).copyWith(
                             fontWeight: FontWeight.w500,
                             color: AppTheme.accentPurple,
@@ -95,7 +95,7 @@ class FamilyContactTile extends StatelessWidget {
                     ],
                   ),
                   SizedBox(height: screenSize.height * 0.005),
-                  if (contact.telefono.isNotEmpty)
+                  if (contact.telefono?.isNotEmpty == true)
                     Row(
                       children: [
                         Icon(
@@ -105,7 +105,7 @@ class FamilyContactTile extends StatelessWidget {
                         ),
                         SizedBox(width: screenSize.width * 0.01),
                         Text(
-                          contact.telefono,
+                          contact.telefono!,
                           style: AppTheme.getCaption(screenSize).copyWith(
                             color: AppTheme.getTextSecondaryColor(context),
                           ),
@@ -214,35 +214,8 @@ class FamilyContactTile extends StatelessWidget {
       case TipoParentesco.hermano:
       case TipoParentesco.hermana:
         return Icons.people_outline;
-      default:
-        return Icons.contact_phone_outlined;
-    }
-  }
-
-  String _getRelationshipName(TipoParentesco relation, AppLocalizations l10n) {
-    switch (relation) {
-      case TipoParentesco.padre:
-        return l10n.father;
-      case TipoParentesco.madre:
-        return l10n.mother;
-      case TipoParentesco.abuelo:
-        return l10n.grandfather;
-      case TipoParentesco.abuela:
-        return l10n.grandmother;
-      case TipoParentesco.tutor:
-        return l10n.guardian;
-      case TipoParentesco.tutora:
-        return l10n.guardianFemale;
-      case TipoParentesco.tio:
-        return l10n.uncle;
-      case TipoParentesco.tia:
-        return l10n.aunt;
-      case TipoParentesco.hermano:
-        return l10n.brother;
-      case TipoParentesco.hermana:
-        return l10n.sister;
       case TipoParentesco.otroFamiliar:
-        return l10n.otherFamily;
+        return Icons.contact_phone_outlined;
     }
   }
 }

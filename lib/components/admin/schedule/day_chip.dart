@@ -1,29 +1,30 @@
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
-import '../../../models/models.dart';
 
+/// Chip de selección de día de la semana.
+/// Usamos un [dayKey] en formato string (ej: "lunes", "martes") en lugar de enum.
 class DayChip extends StatelessWidget {
   final String label;
-  final DiaSemana? day;
-  final DiaSemana? selectedDay;
-  final Function(DiaSemana?) onSelected;
+  final String dayKey; // p. ej. "lunes", "martes", etc.
+  final String? selectedDayKey;
+  final Function(String?) onSelected;
   final Size screenSize;
 
   const DayChip({
     super.key,
     required this.label,
-    required this.day,
-    required this.selectedDay,
+    required this.dayKey,
+    required this.selectedDayKey,
     required this.onSelected,
     required this.screenSize,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isSelected = selectedDay == day;
+    final isSelected = selectedDayKey == dayKey;
 
     return GestureDetector(
-      onTap: () => onSelected(day),
+      onTap: () => onSelected(dayKey),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: EdgeInsets.symmetric(

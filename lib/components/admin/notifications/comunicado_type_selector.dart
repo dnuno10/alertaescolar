@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../models/comunicado.dart';
+import '../../../models/models.dart';
 
 class ComunicadoTypeSelector extends StatelessWidget {
-  final TipoComunicado selectedType;
-  final Function(TipoComunicado) onTypeSelected;
+  final TipoComunicacion selectedType;
+  final Function(TipoComunicacion) onTypeSelected;
   final Size screenSize;
 
   const ComunicadoTypeSelector({
@@ -19,51 +19,51 @@ class ComunicadoTypeSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    final comunicadoTypes = [
+    final List<Map<String, Object>> comunicadoTypes = [
       {
-        'value': TipoComunicado.informativo,
+        'value': TipoComunicacion.informativo,
         'label': l10n.informative,
-        'icon': Icons.info_rounded
+        'icon': Icons.info_rounded,
       },
       {
-        'value': TipoComunicado.paseo,
+        'value': TipoComunicacion.paseo,
         'label': l10n.fieldTrip,
-        'icon': Icons.directions_bus_rounded
+        'icon': Icons.directions_bus_rounded,
       },
       {
-        'value': TipoComunicado.emergencia,
+        'value': TipoComunicacion.emergencia,
         'label': l10n.emergency,
-        'icon': Icons.emergency_rounded
+        'icon': Icons.emergency_rounded,
       },
       {
-        'value': TipoComunicado.evento,
+        'value': TipoComunicacion.evento,
         'label': l10n.event,
-        'icon': Icons.event_rounded
+        'icon': Icons.event_rounded,
       },
       {
-        'value': TipoComunicado.recordatorioPago,
+        'value': TipoComunicacion.recordatorioPago,
         'label': l10n.paymentReminder,
-        'icon': Icons.payment_rounded
+        'icon': Icons.payment_rounded,
       },
       {
-        'value': TipoComunicado.citatorio,
+        'value': TipoComunicacion.citatorio,
         'label': l10n.citation,
-        'icon': Icons.gavel_rounded
+        'icon': Icons.gavel_rounded,
       },
       {
-        'value': TipoComunicado.celebracion,
+        'value': TipoComunicacion.celebracion,
         'label': l10n.celebration,
-        'icon': Icons.celebration_rounded
+        'icon': Icons.celebration_rounded,
       },
       {
-        'value': TipoComunicado.suspencionClases,
+        'value': TipoComunicacion.suspencionClases,
         'label': l10n.classSuspension,
-        'icon': Icons.cancel_rounded
+        'icon': Icons.cancel_rounded,
       },
       {
-        'value': TipoComunicado.cambioHorario,
+        'value': TipoComunicacion.cambioHorario,
         'label': l10n.scheduleChange,
-        'icon': Icons.schedule_rounded
+        'icon': Icons.schedule_rounded,
       },
     ];
 
@@ -71,9 +71,10 @@ class ComunicadoTypeSelector extends StatelessWidget {
       spacing: AppTheme.getSmallPadding(screenSize),
       runSpacing: AppTheme.getSmallPadding(screenSize),
       children: comunicadoTypes.map((type) {
-        final isSelected = selectedType == type['value'];
+        final value = type['value'] as TipoComunicacion;
+        final isSelected = selectedType == value;
         return GestureDetector(
-          onTap: () => onTypeSelected(type['value'] as TipoComunicado),
+          onTap: () => onTypeSelected(value),
           child: Container(
             padding: EdgeInsets.symmetric(
               horizontal: AppTheme.getMediumPadding(screenSize),

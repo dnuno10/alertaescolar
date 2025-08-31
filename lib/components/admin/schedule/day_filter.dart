@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../models/models.dart';
 import 'day_chip.dart';
 
 class DayFilter extends StatelessWidget {
-  final DiaSemana? selectedDay;
-  final Function(DiaSemana?) onDaySelected;
+  final String? selectedDayKey; // ej. "lunes", "martes" o null para todos
+  final Function(String?) onDaySelected;
   final Size screenSize;
 
   const DayFilter({
     super.key,
-    required this.selectedDay,
+    required this.selectedDayKey,
     required this.onDaySelected,
     required this.screenSize,
   });
@@ -19,6 +18,16 @@ class DayFilter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+
+    final days = <String, String>{
+      'lunes': l10n.monday,
+      'martes': l10n.tuesday,
+      'miercoles': l10n.wednesday,
+      'jueves': l10n.thursday,
+      'viernes': l10n.friday,
+      'sabado': l10n.saturday,
+      'domingo': l10n.sunday,
+    };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -35,22 +44,25 @@ class DayFilter extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
+              // Opción "Todos"
               DayChip(
                 label: l10n.all,
-                day: null,
-                selectedDay: selectedDay,
-                onSelected: onDaySelected,
+                dayKey: 'all',
+                selectedDayKey: selectedDayKey,
+                onSelected: (d) => onDaySelected(null),
                 screenSize: screenSize,
               ),
               SizedBox(width: AppTheme.getSmallPadding(screenSize) * 0.5),
-              ...DiaSemana.values.take(5).map((day) {
+              // Días de la semana
+              ...days.entries.map((entry) {
                 return Padding(
                   padding: EdgeInsets.only(
-                      right: AppTheme.getSmallPadding(screenSize) * 0.5),
+                    right: AppTheme.getSmallPadding(screenSize) * 0.5,
+                  ),
                   child: DayChip(
-                    label: _getDayName(context, day),
-                    day: day,
-                    selectedDay: selectedDay,
+                    label: entry.value,
+                    dayKey: entry.key,
+                    selectedDayKey: selectedDayKey,
                     onSelected: onDaySelected,
                     screenSize: screenSize,
                   ),
@@ -61,25 +73,5 @@ class DayFilter extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  String _getDayName(BuildContext context, DiaSemana day) {
-    final l10n = AppLocalizations.of(context);
-    switch (day) {
-      case DiaSemana.lunes:
-        return l10n.monday;
-      case DiaSemana.martes:
-        return l10n.tuesday;
-      case DiaSemana.miercoles:
-        return l10n.wednesday;
-      case DiaSemana.jueves:
-        return l10n.thursday;
-      case DiaSemana.viernes:
-        return l10n.friday;
-      case DiaSemana.sabado:
-        return l10n.saturday;
-      case DiaSemana.domingo:
-        return l10n.sunday;
-    }
   }
 }

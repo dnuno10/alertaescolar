@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../models/models.dart';
 
 class EmptySchedule extends StatelessWidget {
-  final DiaSemana? selectedDay;
+  final String? selectedDayKey; // ej. "lunes", "martes", null = sin filtro
   final Size screenSize;
 
   const EmptySchedule({
     super.key,
-    required this.selectedDay,
+    required this.selectedDayKey,
     required this.screenSize,
   });
 
@@ -17,11 +16,11 @@ class EmptySchedule extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    final message = selectedDay == null
+    final message = selectedDayKey == null
         ? l10n.noSchedulesAvailable
-        : l10n.noClassesForDay(_getDayName(context, selectedDay!));
+        : l10n.noClassesForDay(_getDayName(context, selectedDayKey!));
 
-    final subtitle = selectedDay == null
+    final subtitle = selectedDayKey == null
         ? l10n.noSchedulesConfiguredForGroup
         : l10n.noClassesScheduledForThisDay;
 
@@ -47,6 +46,7 @@ class EmptySchedule extends StatelessWidget {
               color: AppTheme.getTextSecondaryColor(context),
               fontWeight: FontWeight.w500,
             ),
+            textAlign: TextAlign.center,
           ),
           SizedBox(height: AppTheme.getSmallPadding(screenSize)),
           Text(
@@ -61,23 +61,25 @@ class EmptySchedule extends StatelessWidget {
     );
   }
 
-  String _getDayName(BuildContext context, DiaSemana day) {
+  String _getDayName(BuildContext context, String dayKey) {
     final l10n = AppLocalizations.of(context);
-    switch (day) {
-      case DiaSemana.lunes:
+    switch (dayKey.toLowerCase()) {
+      case 'lunes':
         return l10n.monday;
-      case DiaSemana.martes:
+      case 'martes':
         return l10n.tuesday;
-      case DiaSemana.miercoles:
+      case 'miercoles':
         return l10n.wednesday;
-      case DiaSemana.jueves:
+      case 'jueves':
         return l10n.thursday;
-      case DiaSemana.viernes:
+      case 'viernes':
         return l10n.friday;
-      case DiaSemana.sabado:
+      case 'sabado':
         return l10n.saturday;
-      case DiaSemana.domingo:
+      case 'domingo':
         return l10n.sunday;
+      default:
+        return l10n.unknown; // agrega en l10n si lo necesitas
     }
   }
 }

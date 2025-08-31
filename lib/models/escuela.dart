@@ -5,7 +5,7 @@ enum NivelEducativo { preescolar, primaria, secundaria, bachillerato }
 class Escuela {
   final String id;
   final String nombre;
-  final String codigo;
+  final String? codigo; // en BD puede ser NULL
   final TipoEscuela tipo;
   final List<NivelEducativo> nivelesEducativos;
   final String direccion;
@@ -18,7 +18,7 @@ class Escuela {
   const Escuela({
     required this.id,
     required this.nombre,
-    required this.codigo,
+    this.codigo, // ahora opcional
     required this.tipo,
     required this.nivelesEducativos,
     required this.direccion,
@@ -30,8 +30,8 @@ class Escuela {
   });
 
   factory Escuela.fromJson(Map<String, dynamic> json) {
-    // Convert boolean education level flags to enum list
-    List<NivelEducativo> niveles = [];
+    // Convert boolean flags to enums
+    final niveles = <NivelEducativo>[];
     if (json['preescolar'] == true) {
       niveles.add(NivelEducativo.preescolar);
     }
@@ -42,31 +42,26 @@ class Escuela {
       niveles.add(NivelEducativo.secundaria);
     }
     if (json['preparatoria'] == true) {
-      // Use 'preparatoria' field from DB for bachillerato level
       niveles.add(NivelEducativo.bachillerato);
-    }
-
-    // Default to primaria if no levels are selected
-    if (niveles.isEmpty) {
-      niveles.add(NivelEducativo.primaria);
     }
 
     return Escuela(
       id: json['id'] ?? '',
       nombre: json['nombre'] ?? '',
-      codigo: json['codigo'] ?? '',
+      codigo: json['codigo'], // puede venir null
       tipo: TipoEscuela.values.firstWhere(
-        (e) => e.name == json['tipo'],
+        (e) => e.name == (json['tipo'] ?? '').toLowerCase(),
         orElse: () => TipoEscuela.publica,
       ),
-      nivelesEducativos: niveles,
+      nivelesEducativos:
+          niveles.isNotEmpty ? niveles : [NivelEducativo.primaria],
       direccion: json['direccion'] ?? '',
       telefono: json['telefono'] ?? '',
       email: json['email'] ?? '',
       sitioWeb: json['sitio_web'],
       descripcion: json['descripcion'],
-      fechaRegistro: DateTime.parse(
-          json['fecha_registro'] ?? DateTime.now().toIso8601String()),
+      fechaRegistro:
+          DateTime.tryParse(json['fecha_registro'] ?? '') ?? DateTime.now(),
     );
   }
 
@@ -76,12 +71,10 @@ class Escuela {
       'nombre': nombre,
       'codigo': codigo,
       'tipo': tipo.name,
-      // Convert education level enums to boolean fields for database
       'preescolar': nivelesEducativos.contains(NivelEducativo.preescolar),
       'primaria': nivelesEducativos.contains(NivelEducativo.primaria),
       'secundaria': nivelesEducativos.contains(NivelEducativo.secundaria),
-      'preparatoria': nivelesEducativos.contains(
-          NivelEducativo.bachillerato), // Use 'preparatoria' field in DB
+      'preparatoria': nivelesEducativos.contains(NivelEducativo.bachillerato),
       'direccion': direccion,
       'telefono': telefono,
       'email': email,
@@ -120,15 +113,12 @@ class Escuela {
   }
 
   @override
-  String toString() {
-    return 'Escuela(id: $id, nombre: $nombre, codigo: $codigo)';
-  }
+  String toString() =>
+      'Escuela(id: $id, nombre: $nombre, codigo: $codigo, tipo: $tipo)';
 
   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is Escuela && other.id == id;
-  }
+  bool operator ==(Object other) =>
+      identical(this, other) || (other is Escuela && other.id == id);
 
   @override
   int get hashCode => id.hashCode;

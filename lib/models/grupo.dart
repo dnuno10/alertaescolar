@@ -1,8 +1,8 @@
 class Grupo {
   final String id;
   final String idEscuela;
-  final String grupo;
-  final String nivelEducativo;
+  final String grupo; // p. ej. "1°A", "2°B"
+  final String nivelEducativo; // texto tal como viene en DB
   final DateTime fechaRegistro;
 
   const Grupo({
@@ -13,17 +13,35 @@ class Grupo {
     required this.fechaRegistro,
   });
 
+  /// Factory robusto para filas devueltas por Supabase (snake_case)
   factory Grupo.fromJson(Map<String, dynamic> json) {
     return Grupo(
-      id: json['id'] ?? '',
-      idEscuela: json['id_escuela'] ?? '',
-      grupo: json['grupo'] ?? '',
-      nivelEducativo: json['nivel_educativo'] ?? '',
-      fechaRegistro: DateTime.parse(
-          json['fecha_registro'] ?? DateTime.now().toIso8601String()),
+      id: (json['id'] ?? '').toString(),
+      idEscuela: (json['id_escuela'] ?? json['idEscuela'] ?? '').toString(),
+      grupo: (json['grupo'] ?? '').toString().trim(),
+      nivelEducativo: (json['nivel_educativo'] ?? json['nivelEducativo'] ?? '')
+          .toString()
+          .trim(),
+      fechaRegistro:
+          _parseDate(json['fecha_registro'] ?? json['fechaRegistro']),
     );
   }
 
+  /// Alias por si en algún punto mapeas keys camelCase en tu app
+  factory Grupo.fromCamelJson(Map<String, dynamic> json) {
+    return Grupo(
+      id: (json['id'] ?? '').toString(),
+      idEscuela: (json['idEscuela'] ?? json['id_escuela'] ?? '').toString(),
+      grupo: (json['grupo'] ?? '').toString().trim(),
+      nivelEducativo: (json['nivelEducativo'] ?? json['nivel_educativo'] ?? '')
+          .toString()
+          .trim(),
+      fechaRegistro:
+          _parseDate(json['fechaRegistro'] ?? json['fecha_registro']),
+    );
+  }
+
+  /// Serializa en snake_case tal como espera la BD
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -50,50 +68,49 @@ class Grupo {
     );
   }
 
-  /// Validates the grupo data
-  /// Returns true if all validations pass, or throws an exception with the error message
+  /// Validaciones simples de dominio
   bool validate() {
     if (id.isEmpty) {
       throw Exception('El ID del grupo no puede estar vacío');
     }
-
     if (idEscuela.isEmpty) {
       throw Exception('El grupo debe estar asociado a una escuela');
     }
-
-    if (grupo.isEmpty) {
+    if (grupo.trim().isEmpty) {
       throw Exception('El nombre del grupo no puede estar vacío');
     }
-
-    if (nivelEducativo.isEmpty) {
+    if (nivelEducativo.trim().isEmpty) {
       throw Exception('El nivel educativo no puede estar vacío');
     }
-
     return true;
+    // (Dejas las validaciones de formato exacto al backend/reglas de BD)
   }
 
-  /// Validates that this grupo belongs to the specified school
-  bool belongsToSchool(String schoolId) {
-    return idEscuela == schoolId;
-  }
+  /// Pertenece a una escuela dada
+  bool belongsToSchool(String schoolId) => idEscuela == schoolId;
 
-  /// Get display name for the group (e.g., "1°A", "2°B")
+  /// Alias útiles para UI
   String get displayName => grupo;
-
-  /// Get educational level display name
   String get nivelEducativoDisplay => nivelEducativo;
 
   @override
-  String toString() {
-    return 'Grupo(id: $id, grupo: $grupo, nivelEducativo: $nivelEducativo, idEscuela: $idEscuela)';
-  }
+  String toString() =>
+      'Grupo(id: $id, grupo: $grupo, nivelEducativo: $nivelEducativo, idEscuela: $idEscuela)';
 
   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is Grupo && other.id == id;
-  }
+  bool operator ==(Object other) =>
+      identical(this, other) || (other is Grupo && other.id == id);
 
   @override
   int get hashCode => id.hashCode;
+
+  // -----------------------
+  // Helpers
+  // -----------------------
+  static DateTime _parseDate(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is DateTime) return value;
+    final parsed = DateTime.tryParse(value.toString());
+    return parsed ?? DateTime.now();
+  }
 }

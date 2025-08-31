@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../../app/app_theme.dart';
-import '../../../models/comunicado.dart';
-import '../../../models/grupo.dart';
-import '../../../models/turno.dart';
+import '../../../models/models.dart'; // Unificado: Alumno, Grupo, Turno, Notificacion enums
 import '../../../managers/user_provider.dart';
 import '../../../services/notification_send_service.dart';
 import '../../../widgets/custom_snack_bar.dart';
@@ -14,13 +13,17 @@ import '../../../components/loading_dialog.dart';
 import '../../../l10n/app_localizations.dart';
 
 class NotificationReviewView extends StatefulWidget {
-  final String tipoMensaje;
-  final String tipoDestinatario;
+  final String tipoMensaje; // 'permiso' | 'comunicado'
+  final String tipoDestinatario; // 'individual' | 'grupo' | 'turno' | 'todos'
   final String titulo;
   final String mensaje;
-  final TipoComunicado? tipoComunicado;
+
+  /// En tus models, el enum se llama TipoComunicacion
+  final TipoComunicacion? tipoComunicado;
   final PrioridadComunicado? prioridadComunicado;
-  final Map<String, dynamic>? selectedStudent;
+
+  /// Tipamos al modelo real
+  final Alumno? selectedStudent;
   final List<Grupo> selectedGroups;
   final Turno? selectedShift;
 
@@ -43,19 +46,16 @@ class NotificationReviewView extends StatefulWidget {
 
 class _NotificationReviewViewState extends State<NotificationReviewView>
     with TickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
+  late final AnimationController _animationController;
+  late final Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-    );
+        duration: const Duration(milliseconds: 600), vsync: this);
+    _fadeAnimation =
+        CurvedAnimation(parent: _animationController, curve: Curves.easeOut);
     _animationController.forward();
   }
 
@@ -77,9 +77,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
-            NavHeader(
-              title: l10n.reviewMessage,
-            ),
+            NavHeader(title: l10n.reviewMessage),
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -103,8 +101,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                         borderRadius: BorderRadius.circular(
                             AppTheme.getLargeRadius(screenSize)),
                         border: Border.all(
-                          color: AppTheme.accentPurple.withOpacity(0.3),
-                        ),
+                            color: AppTheme.accentPurple.withOpacity(0.3)),
                       ),
                       child: Column(
                         children: [
@@ -146,14 +143,14 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
 
                     // Contenido del mensaje
                     _buildMessageContentSection(
-                      context: context,
-                      screenSize: screenSize,
-                    ),
+                        context: context, screenSize: screenSize),
 
                     SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-                    // Información específica de comunicado
-                    if (widget.tipoMensaje == 'comunicado') ...[
+                    // Información específica de comunicado (solo si aplica y con null-safety)
+                    if (widget.tipoMensaje == 'comunicado' &&
+                        widget.tipoComunicado != null &&
+                        widget.prioridadComunicado != null) ...[
                       _buildSection(
                         context: context,
                         screenSize: screenSize,
@@ -191,9 +188,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                       title: l10n.recipients,
                       icon: Icons.people_rounded,
                       iconColor: AppTheme.accentPurple,
-                      children: [
-                        _buildRecipientInfo(context, screenSize),
-                      ],
+                      children: [_buildRecipientInfo(context, screenSize)],
                     ),
 
                     SizedBox(height: AppTheme.getMediumPadding(screenSize)),
@@ -253,17 +248,14 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                   color: AppTheme.warningColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(
                       AppTheme.getSmallRadius(screenSize)),
-                  border: Border.all(
-                    color: AppTheme.warningColor.withOpacity(0.3),
-                  ),
+                  border:
+                      Border.all(color: AppTheme.warningColor.withOpacity(0.3)),
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.warning_rounded,
-                      color: AppTheme.warningColor,
-                      size: screenSize.height * 0.02,
-                    ),
+                    Icon(Icons.warning_rounded,
+                        color: AppTheme.warningColor,
+                        size: screenSize.height * 0.02),
                     SizedBox(width: AppTheme.getSmallPadding(screenSize)),
                     Expanded(
                       child: Text(
@@ -312,6 +304,10 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
     );
   }
 
+  // =========================
+  // Secciones y helpers UI
+  // =========================
+
   Widget _buildSection({
     required BuildContext context,
     required Size screenSize,
@@ -328,8 +324,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
         border: Border.all(
-          color: AppTheme.getBorderColor(context).withOpacity(0.3),
-        ),
+            color: AppTheme.getBorderColor(context).withOpacity(0.3)),
         boxShadow: [
           BoxShadow(
             color: AppTheme.getShadowColor(context),
@@ -351,11 +346,8 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                   borderRadius: BorderRadius.circular(
                       AppTheme.getSmallRadius(screenSize)),
                 ),
-                child: Icon(
-                  icon,
-                  color: iconColor,
-                  size: screenSize.height * 0.025,
-                ),
+                child: Icon(icon,
+                    color: iconColor, size: screenSize.height * 0.025),
               ),
               SizedBox(width: AppTheme.getMediumPadding(screenSize)),
               Text(
@@ -402,8 +394,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
             borderRadius:
                 BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
             border: Border.all(
-              color: AppTheme.getBorderColor(context).withOpacity(0.3),
-            ),
+                color: AppTheme.getBorderColor(context).withOpacity(0.3)),
           ),
           child: Text(
             value,
@@ -424,7 +415,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
   }
 
   Widget _buildRecipientInfo(BuildContext context, Size screenSize) {
-    List<Widget> recipientCards = [];
+    final List<Widget> recipientCards = [];
 
     switch (widget.tipoDestinatario) {
       case 'individual':
@@ -439,12 +430,16 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
 
       case 'grupo':
         if (widget.selectedGroups.isNotEmpty) {
-          recipientCards.addAll(widget.selectedGroups
-              .map((grupo) => _buildGroupCard(context, screenSize, grupo))
-              .toList());
+          recipientCards.addAll(
+            widget.selectedGroups
+                .map((grupo) => _buildGroupCard(context, screenSize, grupo))
+                .toList(),
+          );
         } else {
-          recipientCards.add(_buildEmptyRecipientCard(
-              context, screenSize, 'No se han seleccionado grupos'));
+          recipientCards.add(
+            _buildEmptyRecipientCard(
+                context, screenSize, 'No se han seleccionado grupos'),
+          );
         }
         break;
 
@@ -453,33 +448,38 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
           recipientCards
               .add(_buildShiftCard(context, screenSize, widget.selectedShift!));
         } else {
-          recipientCards.add(_buildEmptyRecipientCard(
-              context, screenSize, 'No se ha seleccionado ningún turno'));
+          recipientCards.add(
+            _buildEmptyRecipientCard(
+                context, screenSize, 'No se ha seleccionado ningún turno'),
+          );
         }
         break;
 
       case 'todos':
         recipientCards.add(_buildAllStudentsCard(context, screenSize));
         break;
+
+      default:
+        recipientCards.add(
+          _buildEmptyRecipientCard(
+              context, screenSize, 'Tipo de destinatario no reconocido'),
+        );
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Tarjetas de destinatarios (sin subtítulo redundante)
-        ...recipientCards
-            .map((card) => Padding(
-                  padding: EdgeInsets.only(
-                      bottom: AppTheme.getSmallPadding(screenSize)),
-                  child: card,
-                ))
-            ,
-      ],
+      children: recipientCards
+          .map((card) => Padding(
+                padding: EdgeInsets.only(
+                    bottom: AppTheme.getSmallPadding(screenSize)),
+                child: card,
+              ))
+          .toList(),
     );
   }
 
   Widget _buildStudentCard(
-      BuildContext context, Size screenSize, Map<String, dynamic> student) {
+      BuildContext context, Size screenSize, Alumno student) {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -487,9 +487,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
         color: AppTheme.accentBlue.withOpacity(0.05),
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        border: Border.all(
-          color: AppTheme.accentBlue.withOpacity(0.2),
-        ),
+        border: Border.all(color: AppTheme.accentBlue.withOpacity(0.2)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -503,23 +501,20 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
               borderRadius:
                   BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
             ),
-            child: Icon(
-              Icons.person_rounded,
-              color: AppTheme.accentBlue,
-              size: screenSize.height * 0.03,
-            ),
+            child: Icon(Icons.person_rounded,
+                color: AppTheme.accentBlue, size: screenSize.height * 0.03),
           ),
-
           SizedBox(width: AppTheme.getMediumPadding(screenSize)),
 
           // Información del estudiante
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  student['name'] ?? 'Nombre no disponible',
+                  student.nombre.isNotEmpty
+                      ? student.nombre
+                      : 'Nombre no disponible',
                   style: AppTheme.getBodyMedium(screenSize).copyWith(
                     fontWeight: FontWeight.w600,
                     color: AppTheme.getTextPrimaryColor(context),
@@ -527,7 +522,6 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-
                 SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.3),
 
                 // Matrícula
@@ -542,7 +536,9 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                     ),
                     Flexible(
                       child: Text(
-                        student['matricula'] ?? 'N/A',
+                        student.matricula.isNotEmpty
+                            ? student.matricula
+                            : 'N/A',
                         style: AppTheme.getCaptionSmall(screenSize).copyWith(
                           color: AppTheme.getTextPrimaryColor(context),
                           fontWeight: FontWeight.w600,
@@ -568,7 +564,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                     ),
                     Flexible(
                       child: Text(
-                        '${student['nivelEducativo'] ?? ''} - ${student['group'] ?? 'N/A'}',
+                        student.grupo.isNotEmpty ? student.grupo : 'N/A',
                         style: AppTheme.getCaptionSmall(screenSize).copyWith(
                           color: AppTheme.getTextPrimaryColor(context),
                           fontWeight: FontWeight.w600,
@@ -585,14 +581,14 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
 
           SizedBox(width: AppTheme.getSmallPadding(screenSize)),
 
-          // Estado
+          // Estado vinculación de llave (si aplica)
           Container(
             padding: EdgeInsets.symmetric(
               horizontal: AppTheme.getSmallPadding(screenSize),
               vertical: AppTheme.getSmallPadding(screenSize) * 0.5,
             ),
             decoration: BoxDecoration(
-              color: (student['active'] == true
+              color: (student.vinculado
                       ? AppTheme.successColor
                       : AppTheme.errorColor)
                   .withOpacity(0.1),
@@ -600,9 +596,9 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                   BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
             ),
             child: Text(
-              student['status'] ?? 'Desconocido',
+              student.vinculado ? 'Vinculado' : 'No vinculado',
               style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                color: student['active'] == true
+                color: student.vinculado
                     ? AppTheme.successColor
                     : AppTheme.errorColor,
                 fontWeight: FontWeight.w600,
@@ -624,9 +620,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
         color: AppTheme.accentOrange.withOpacity(0.05),
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        border: Border.all(
-          color: AppTheme.accentOrange.withOpacity(0.2),
-        ),
+        border: Border.all(color: AppTheme.accentOrange.withOpacity(0.2)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -638,17 +632,13 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
               borderRadius:
                   BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
             ),
-            child: Icon(
-              Icons.class_rounded,
-              color: AppTheme.accentOrange,
-              size: screenSize.height * 0.025,
-            ),
+            child: Icon(Icons.class_rounded,
+                color: AppTheme.accentOrange, size: screenSize.height * 0.025),
           ),
           SizedBox(width: AppTheme.getMediumPadding(screenSize)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   '${grupo.nivelEducativo} - ${grupo.grupo}',
@@ -684,9 +674,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
         color: AppTheme.warningColor.withOpacity(0.05),
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        border: Border.all(
-          color: AppTheme.warningColor.withOpacity(0.2),
-        ),
+        border: Border.all(color: AppTheme.warningColor.withOpacity(0.2)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -698,17 +686,13 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
               borderRadius:
                   BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
             ),
-            child: Icon(
-              Icons.schedule_rounded,
-              color: AppTheme.warningColor,
-              size: screenSize.height * 0.025,
-            ),
+            child: Icon(Icons.schedule_rounded,
+                color: AppTheme.warningColor, size: screenSize.height * 0.025),
           ),
           SizedBox(width: AppTheme.getMediumPadding(screenSize)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   turno.turno,
@@ -721,7 +705,8 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                 ),
                 SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.3),
                 Text(
-                  'Horario: ${turno.horaInicio} - ${turno.horaFin}',
+                  // Usa getters ya provistos por tu modelo
+                  'Horario: ${turno.horarioCompleto}',
                   style: AppTheme.getCaptionSmall(screenSize).copyWith(
                     color: AppTheme.getTextSecondaryColor(context),
                   ),
@@ -744,9 +729,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
         color: AppTheme.accentPurple.withOpacity(0.05),
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        border: Border.all(
-          color: AppTheme.accentPurple.withOpacity(0.2),
-        ),
+        border: Border.all(color: AppTheme.accentPurple.withOpacity(0.2)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -758,17 +741,13 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
               borderRadius:
                   BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
             ),
-            child: Icon(
-              Icons.school_rounded,
-              color: AppTheme.accentPurple,
-              size: screenSize.height * 0.025,
-            ),
+            child: Icon(Icons.school_rounded,
+                color: AppTheme.accentPurple, size: screenSize.height * 0.025),
           ),
           SizedBox(width: AppTheme.getMediumPadding(screenSize)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   'Toda la Institución Educativa',
@@ -805,18 +784,13 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
         color: AppTheme.errorColor.withOpacity(0.05),
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        border: Border.all(
-          color: AppTheme.errorColor.withOpacity(0.2),
-        ),
+        border: Border.all(color: AppTheme.errorColor.withOpacity(0.2)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.warning_rounded,
-            color: AppTheme.errorColor,
-            size: screenSize.height * 0.025,
-          ),
+          Icon(Icons.warning_rounded,
+              color: AppTheme.errorColor, size: screenSize.height * 0.025),
           SizedBox(width: AppTheme.getMediumPadding(screenSize)),
           Expanded(
             child: Text(
@@ -834,11 +808,16 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
     );
   }
 
-  void _sendNotification() async {
-    // Mostrar loading dialog
-    LoadingDialog.show(context,
-        message:
-            'Enviando ${widget.tipoMensaje == 'permiso' ? 'permiso especial' : 'comunicado'}...');
+  // =========================
+  // Envío
+  // =========================
+
+  Future<void> _sendNotification() async {
+    LoadingDialog.show(
+      context,
+      message:
+          'Enviando ${widget.tipoMensaje == 'permiso' ? 'permiso especial' : 'comunicado'}...',
+    );
 
     try {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
@@ -848,11 +827,14 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
         LoadingDialog.hide(context);
         throw Exception('Usuario no autenticado');
       }
+      if (!(currentUser.escuelaId?.isNotEmpty ?? false)) {
+        LoadingDialog.hide(context);
+        throw Exception('El usuario no está asociado a una escuela');
+      }
 
       final adminId = currentUser.id;
       final escuelaId = currentUser.escuelaId!;
 
-      // Enviar notificaciones usando el nuevo servicio con FCM
       final notificationSendService = NotificationSendService();
       final result = await notificationSendService.sendNotification(
         adminId: adminId,
@@ -861,31 +843,28 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
         recipientType: widget.tipoDestinatario,
         title: widget.titulo,
         message: widget.mensaje,
-        comunicadoType: widget.tipoComunicado,
+        // Con tus models actuales:
+        communicationType: widget.tipoComunicado, // TipoComunicacion?
         priority: widget.prioridadComunicado,
-        selectedStudent: widget.selectedStudent,
+        selectedStudent: widget.selectedStudent?.toJson(),
         selectedGroups:
             widget.selectedGroups.isNotEmpty ? widget.selectedGroups : null,
         selectedShift: widget.selectedShift,
       );
 
-      // Ocultar loading dialog
       LoadingDialog.hide(context);
 
-      if (result['success']) {
-        // Mostrar diálogo de éxito y regresar a la vista principal
+      if (result['success'] == true) {
         _showSuccessDialog(context, result);
       } else {
         CustomSnackBar.show(
           context: context,
-          message: result['error'] ?? 'Error desconocido',
+          message: (result['error'] ?? 'Error desconocido').toString(),
           isError: true,
         );
       }
     } catch (e) {
-      // Ocultar loading dialog en caso de error
       LoadingDialog.hide(context);
-
       CustomSnackBar.show(
         context: context,
         message: 'Error al enviar notificación: $e',
@@ -925,15 +904,11 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                   borderRadius: BorderRadius.circular(
                       AppTheme.getLargeRadius(screenSize)),
                 ),
-                child: Icon(
-                  Icons.check_circle_rounded,
-                  color: AppTheme.successColor,
-                  size: screenSize.height * 0.08,
-                ),
+                child: Icon(Icons.check_circle_rounded,
+                    color: AppTheme.successColor,
+                    size: screenSize.height * 0.08),
               ),
-
               SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
               Text(
                 '¡Mensaje Enviado!',
                 style: AppTheme.getH2(screenSize).copyWith(
@@ -942,9 +917,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                 ),
                 textAlign: TextAlign.center,
               ),
-
               SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-
               Text(
                 'Tu ${widget.tipoMensaje == 'permiso' ? 'permiso especial' : 'comunicado'} ha sido enviado exitosamente a $notificationsSent ${notificationsSent == 1 ? 'estudiante' : 'estudiantes'}.\n\nLas notificaciones push también fueron enviadas a los tutores.',
                 style: AppTheme.getBodyMedium(screenSize).copyWith(
@@ -952,9 +925,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                 ),
                 textAlign: TextAlign.center,
               ),
-
               SizedBox(height: AppTheme.getLargePadding(screenSize)),
-
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -986,25 +957,29 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
     );
   }
 
-  String _getComunicadoTypeText(TipoComunicado tipo) {
+  // =========================
+  // Mapeos/enums display
+  // =========================
+
+  String _getComunicadoTypeText(TipoComunicacion tipo) {
     switch (tipo) {
-      case TipoComunicado.emergencia:
+      case TipoComunicacion.emergencia:
         return 'Emergencia';
-      case TipoComunicado.paseo:
+      case TipoComunicacion.paseo:
         return 'Paseo';
-      case TipoComunicado.evento:
+      case TipoComunicacion.evento:
         return 'Evento';
-      case TipoComunicado.recordatorioPago:
+      case TipoComunicacion.recordatorioPago:
         return 'Recordatorio de Pago';
-      case TipoComunicado.citatorio:
+      case TipoComunicacion.citatorio:
         return 'Citatorio';
-      case TipoComunicado.informativo:
+      case TipoComunicacion.informativo:
         return 'Informativo';
-      case TipoComunicado.celebracion:
+      case TipoComunicacion.celebracion:
         return 'Celebración';
-      case TipoComunicado.suspencionClases:
+      case TipoComunicacion.suspencionClases:
         return 'Suspensión de Clases';
-      case TipoComunicado.cambioHorario:
+      case TipoComunicacion.cambioHorario:
         return 'Cambio de Horario';
     }
   }
@@ -1036,7 +1011,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
   }
 
   String _formatDateTime(DateTime dateTime) {
-    final months = [
+    const months = [
       'enero',
       'febrero',
       'marzo',
@@ -1050,13 +1025,11 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
       'noviembre',
       'diciembre'
     ];
-
     final day = dateTime.day;
     final month = months[dateTime.month - 1];
     final year = dateTime.year;
     final hour = dateTime.hour.toString().padLeft(2, '0');
     final minute = dateTime.minute.toString().padLeft(2, '0');
-
     return '$day de $month de $year a las $hour:$minute';
   }
 
@@ -1071,8 +1044,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
         borderRadius:
             BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
         border: Border.all(
-          color: AppTheme.getBorderColor(context).withOpacity(0.3),
-        ),
+            color: AppTheme.getBorderColor(context).withOpacity(0.3)),
         boxShadow: [
           BoxShadow(
             color: AppTheme.getShadowColor(context),
@@ -1095,10 +1067,8 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                 topRight: Radius.circular(AppTheme.getLargeRadius(screenSize)),
               ),
               border: Border(
-                bottom: BorderSide(
-                  color: AppTheme.accentBlue.withOpacity(0.2),
-                ),
-              ),
+                  bottom:
+                      BorderSide(color: AppTheme.accentBlue.withOpacity(0.2))),
             ),
             child: Row(
               children: [
@@ -1110,11 +1080,9 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                     borderRadius: BorderRadius.circular(
                         AppTheme.getSmallRadius(screenSize)),
                   ),
-                  child: Icon(
-                    Icons.message_rounded,
-                    color: AppTheme.accentBlue,
-                    size: screenSize.height * 0.025,
-                  ),
+                  child: Icon(Icons.message_rounded,
+                      color: AppTheme.accentBlue,
+                      size: screenSize.height * 0.025),
                 ),
                 SizedBox(width: AppTheme.getMediumPadding(screenSize)),
                 Text(
@@ -1143,20 +1111,17 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                     color: AppTheme.accentBlue.withOpacity(0.03),
                     borderRadius: BorderRadius.circular(
                         AppTheme.getMediumRadius(screenSize)),
-                    border: Border.all(
-                      color: AppTheme.accentBlue.withOpacity(0.1),
-                    ),
+                    border:
+                        Border.all(color: AppTheme.accentBlue.withOpacity(0.1)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          Icon(
-                            Icons.title_rounded,
-                            color: AppTheme.accentBlue,
-                            size: screenSize.height * 0.02,
-                          ),
+                          Icon(Icons.title_rounded,
+                              color: AppTheme.accentBlue,
+                              size: screenSize.height * 0.02),
                           SizedBox(width: AppTheme.getSmallPadding(screenSize)),
                           Text(
                             'Título',
@@ -1193,19 +1158,17 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                     borderRadius: BorderRadius.circular(
                         AppTheme.getMediumRadius(screenSize)),
                     border: Border.all(
-                      color: AppTheme.getBorderColor(context).withOpacity(0.3),
-                    ),
+                        color:
+                            AppTheme.getBorderColor(context).withOpacity(0.3)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          Icon(
-                            Icons.description_rounded,
-                            color: AppTheme.getTextSecondaryColor(context),
-                            size: screenSize.height * 0.02,
-                          ),
+                          Icon(Icons.description_rounded,
+                              color: AppTheme.getTextSecondaryColor(context),
+                              size: screenSize.height * 0.02),
                           SizedBox(width: AppTheme.getSmallPadding(screenSize)),
                           Text(
                             'Mensaje',

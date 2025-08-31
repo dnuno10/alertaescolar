@@ -41,7 +41,7 @@ class _StudentDetailViewState extends State<StudentDetailView> {
   Future<void> _loadStudentDetails() async {
     if (!mounted) return;
 
-    // Defer the LoadingDialog.show call to avoid calling during build
+    // Mostrar el loading fuera del ciclo de build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         LoadingDialog.show(context,
@@ -55,65 +55,65 @@ class _StudentDetailViewState extends State<StudentDetailView> {
       final schoolProvider =
           Provider.of<SchoolProvider>(context, listen: false);
 
-      await studentProvider.loadStudentById(studentId: widget.student.id ?? '');
+      // Carga/refresh desde el provider (usa el id en camelCase)
+      await studentProvider.loadStudentById(studentId: widget.student.id);
 
-      if (mounted) {
-        final studentDetails = studentProvider.selectedStudent ??
-            _convertToStudentDetails(widget.student);
+      if (!mounted) return;
 
-        // Cargar datos de la escuela usando el escuelaId del estudiante
-        if (studentDetails.escuelaId.isNotEmpty) {
-          final schoolData = await schoolProvider.getSchoolById(
-              studentDetails.escuelaId, context);
+      // Si el provider no trae nada, usa fallback a partir del Alumno recibido
+      final studentDetails = studentProvider.selectedStudent ??
+          _convertToStudentDetails(widget.student);
 
-          if (mounted) {
-            setState(() {
-              _studentDetails = studentDetails;
-              _schoolData = schoolData;
-              _isLoading = false;
-            });
-          }
-        } else {
-          setState(() {
-            _studentDetails = studentDetails;
-            _isLoading = false;
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
+      // Si tenemos escuelaId, traer la escuela con loadSchool (consistente con el resto de tu app)
+      if (studentDetails.escuelaId.isNotEmpty) {
+        final schoolData = await schoolProvider.loadSchool(
+          studentDetails.escuelaId,
+          context: context,
+        );
+
+        if (!mounted) return;
         setState(() {
+          _studentDetails = studentDetails;
+          _schoolData = schoolData;
           _isLoading = false;
-          _studentDetails = _convertToStudentDetails(widget.student);
+        });
+      } else {
+        setState(() {
+          _studentDetails = studentDetails;
+          _isLoading = false;
         });
       }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _studentDetails = _convertToStudentDetails(widget.student);
+      });
     } finally {
-      if (mounted) {
-        LoadingDialog.hide(context);
-      }
+      if (mounted) LoadingDialog.hide(context);
     }
   }
 
-  // Convert Alumno to StudentDetails as fallback
+  // Fallback: convierte Alumno (modelo camelCase) -> StudentDetails
   StudentDetails _convertToStudentDetails(Alumno alumno) {
     return StudentDetails(
-      id: alumno.id ?? '',
+      id: alumno.id,
       nombre: alumno.nombre,
-      matricula: alumno.matricula ?? '',
-      escuelaId: alumno.id_escuela ?? '',
-      grupoId: alumno.id_grupo ?? '',
-      grupo: alumno.grupo ?? '',
-      nivelEducativo: '',
-      turnoId: null,
-      turno: alumno.turno.toString().split('.').last,
-      llaveId: alumno.id_llave,
+      matricula: alumno.matricula,
+      escuelaId: alumno.idEscuela,
+      grupoId: alumno.idGrupo,
+      grupo: alumno.grupo,
+      nivelEducativo: '', // si necesitas, puedes derivarlo con el Grupo
+      turnoId: alumno.idTurno,
+      turno: alumno.turno.name, // 'matutino' | 'vespertino' | 'desconocido'
+      llaveId: alumno.idLlave,
       llaveCodigo: null,
       llaveActiva: alumno.vinculado,
-      fechaRegistro: alumno.fecha_registro ?? DateTime.now(),
+      fechaRegistro: alumno.fechaRegistro,
       fechaRegistroLlave: null,
       limiteVinculacion: null,
-      tutores: [],
-      familyContacts: [],
+      tutores: const [],
+      familyContacts: const [],
     );
   }
 
@@ -147,7 +147,8 @@ class _StudentDetailViewState extends State<StudentDetailView> {
           NavHeader(title: widget.student.nombre),
           SliverToBoxAdapter(
             child: _isLoading
-                ? Container() // Empty container while loading dialog is shown
+                ? const SizedBox
+                    .shrink() // mientras se muestra el LoadingDialog
                 : _buildContent(context, l10n, screenSize),
           ),
         ],
@@ -165,7 +166,7 @@ class _StudentDetailViewState extends State<StudentDetailView> {
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
       child: Column(
         children: [
-          // Student Profile Card
+          // Tarjeta de perfil
           StudentProfileCard(
             color: AppTheme.accentBlue,
             student: _studentDetails!,
@@ -174,7 +175,7 @@ class _StudentDetailViewState extends State<StudentDetailView> {
 
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-          // Navigation Buttons
+          // Botones de navegación
           Column(
             children: [
               SolidButton(
@@ -199,7 +200,7 @@ class _StudentDetailViewState extends State<StudentDetailView> {
 
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-          // Academic Information
+          // Info académica
           StudentAcademicInfoCard(
             student: _studentDetails!,
             screenSize: screenSize,
@@ -207,7 +208,7 @@ class _StudentDetailViewState extends State<StudentDetailView> {
 
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-          // Key Information
+          // Info de llave
           StudentKeyInfoCard(
             student: _studentDetails!,
             screenSize: screenSize,
@@ -215,7 +216,7 @@ class _StudentDetailViewState extends State<StudentDetailView> {
 
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-          // Action Buttons (if needed for admin functions)
+          // Acciones (si hay tutores)
           if (_studentDetails!.tutores.isNotEmpty)
             StudentActionButtons(
               student: _studentDetails!,
@@ -232,11 +233,7 @@ class _StudentDetailViewState extends State<StudentDetailView> {
       child: Column(
         children: [
           SizedBox(height: AppTheme.getLargePadding(screenSize) * 2),
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: AppTheme.errorColor,
-          ),
+          Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
           Text(
             'Error al cargar los detalles del estudiante',
@@ -248,19 +245,16 @@ class _StudentDetailViewState extends State<StudentDetailView> {
           SizedBox(height: AppTheme.getSmallPadding(screenSize)),
           Text(
             'Por favor, intenta de nuevo más tarde.',
-            style: AppTheme.getBodyLarge(screenSize).copyWith(),
+            style: AppTheme.getBodyLarge(screenSize),
             textAlign: TextAlign.center,
           ),
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
           SolidButton(
             label: 'Reintentar',
             onPressed: () {
-              setState(() {
-                _isLoading = true;
-              });
+              setState(() => _isLoading = true);
               _loadStudentDetails();
             },
-            //fontColor: AppTheme.getOnPrimaryColor(context),
             icon: Icons.refresh,
             screenSize: screenSize,
           ),

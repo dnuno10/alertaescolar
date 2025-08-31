@@ -2,6 +2,7 @@ import 'package:alertaescolar/views/user/schedule/schedule_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../managers/schedule_provider.dart';
@@ -36,42 +37,29 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
     });
   }
 
-  // Initialize and auto-select first student
+  // Selecciona automáticamente el primer estudiante disponible
   void _initializeStudentSelection() {
-    final studentProvider =
-        Provider.of<StudentProvider>(context, listen: false);
-
-    // Auto-select first student if available
-    if (studentProvider.students.isNotEmpty && _selectedStudentId == null) {
-      setState(() {
-        _selectedStudentId = studentProvider.students.first.id;
-      });
+    final sp = Provider.of<StudentProvider>(context, listen: false);
+    if (sp.students.isNotEmpty && _selectedStudentId == null) {
+      setState(() => _selectedStudentId = sp.students.first.id);
       _loadTodaySchedule();
-    } else if (studentProvider.students.isEmpty) {
-      // Try to reload students if empty
+    } else if (sp.students.isEmpty) {
       _loadStudents();
     }
   }
 
-  // Load students for current user
+  // Recarga estudiantes si no hay (espera a que el padre los cargue)
   Future<void> _loadStudents() async {
     try {
-      final studentProvider =
-          Provider.of<StudentProvider>(context, listen: false);
-
-      // Students should already be loaded, but refresh if needed
-      if (studentProvider.students.isEmpty) {
-        setState(() {
-          _isLoading = true;
-        });
-
-        // This will be handled by the parent component
-        // Just wait and check again
+      final sp = Provider.of<StudentProvider>(context, listen: false);
+      if (sp.students.isEmpty) {
+        setState(() => _isLoading = true);
         await Future.delayed(const Duration(milliseconds: 500));
+        if (!mounted) return;
 
-        if (mounted && studentProvider.students.isNotEmpty) {
+        if (sp.students.isNotEmpty) {
           setState(() {
-            _selectedStudentId = studentProvider.students.first.id;
+            _selectedStudentId = sp.students.first.id;
             _isLoading = false;
           });
           _loadTodaySchedule();
@@ -90,35 +78,33 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
     }
   }
 
-  // Handle student selection change
+  // Cambio de alumno seleccionado
   void _onStudentSelected(String? studentId) {
     if (studentId != _selectedStudentId) {
-      setState(() {
-        _selectedStudentId = studentId;
-      });
+      setState(() => _selectedStudentId = studentId);
       _loadTodaySchedule();
     }
   }
 
-  DiaSemana _getCurrentDay() {
-    final now = DateTime.now();
-    switch (now.weekday) {
-      case 1:
-        return DiaSemana.lunes;
-      case 2:
-        return DiaSemana.martes;
-      case 3:
-        return DiaSemana.miercoles;
-      case 4:
-        return DiaSemana.jueves;
-      case 5:
-        return DiaSemana.viernes;
-      case 6:
-        return DiaSemana.sabado;
-      case 7:
-        return DiaSemana.domingo;
+  // Devuelve true si la clase aplica para el weekday (1=lun ... 7=dom)
+  bool _isClassOnWeekday(ClaseHorario c, int weekday) {
+    switch (weekday) {
+      case DateTime.monday:
+        return c.lunes;
+      case DateTime.tuesday:
+        return c.martes;
+      case DateTime.wednesday:
+        return c.miercoles;
+      case DateTime.thursday:
+        return c.jueves;
+      case DateTime.friday:
+        return c.viernes;
+      case DateTime.saturday:
+        return c.sabado;
+      case DateTime.sunday:
+        return c.domingo;
       default:
-        return DiaSemana.lunes;
+        return false;
     }
   }
 
@@ -134,7 +120,6 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
         hour: int.parse(startParts[0]),
         minute: int.parse(startParts[1]),
       );
-
       final endTime = TimeOfDay(
         hour: int.parse(endParts[0]),
         minute: int.parse(endParts[1]),
@@ -144,18 +129,21 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
       final startMinutes = startTime.hour * 60 + startTime.minute;
       final endMinutes = endTime.hour * 60 + endTime.minute;
 
-      if (currentMinutes < startMinutes) {
-        return ClaseStatus.upcoming;
-      } else if (currentMinutes >= startMinutes &&
-          currentMinutes <= endMinutes) {
-        return ClaseStatus.inProgress;
-      } else {
-        return ClaseStatus.completed;
-      }
-    } catch (e) {
-      debugPrint('Error getting class status: $e');
+      if (currentMinutes < startMinutes) return ClaseStatus.upcoming;
+      if (currentMinutes <= endMinutes) return ClaseStatus.inProgress;
+      return ClaseStatus.completed;
+    } catch (_) {
       return ClaseStatus.upcoming;
     }
+  }
+
+  StudentDetails? _findStudentById(
+      List<StudentDetails> list, String? studentId) {
+    if (studentId == null) return null;
+    for (final s in list) {
+      if (s.id == studentId) return s;
+    }
+    return null;
   }
 
   Future<void> _loadTodaySchedule() async {
@@ -179,10 +167,8 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
       final scheduleProvider =
           Provider.of<ScheduleProvider>(context, listen: false);
 
-      // Get the selected student
-      final student = studentProvider.students
-          .where((s) => s.id == _selectedStudentId)
-          .firstOrNull;
+      final student =
+          _findStudentById(studentProvider.students, _selectedStudentId);
 
       if (student == null) {
         setState(() {
@@ -193,72 +179,47 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
         return;
       }
 
-      debugPrint('Loading schedule for student: ${student.nombre}');
-      debugPrint('School ID: ${student.escuelaId}');
-      debugPrint('Group ID: ${student.grupoId}');
-
-      // Load schedule data if needed
+      // Aseguramos catálogos mínimos
       await scheduleProvider.loadMaterias(
         escuelaId: student.escuelaId,
         context: null,
       );
-
+      // Carga horarios del grupo específico
       await scheduleProvider.loadHorarios(
         escuelaId: student.escuelaId,
         grupoId: student.grupoId,
         context: null,
       );
 
-      // Get group info
-      final grupo = await scheduleProvider.getGrupoById(student.grupoId);
-      final grupoName = grupo?['grupo'] ?? '';
+      // Tomamos horarios directamente por id de grupo
+      final allClasses =
+          scheduleProvider.getHorariosForGroupId(student.grupoId);
 
-      debugPrint('Group found: $grupoName');
+      final weekday = DateTime.now().weekday;
 
-      if (mounted) {
-        if (grupoName.isNotEmpty) {
-          final allClasses = scheduleProvider.getHorariosForGroup(grupoName);
-          final currentDay = _getCurrentDay();
+      // Filtramos por día actual y ordenamos por hora de inicio
+      final todayClasses = allClasses
+          .where((c) => _isClassOnWeekday(c, weekday))
+          .toList()
+        ..sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
 
-          debugPrint('All classes for group: ${allClasses.length}');
-          debugPrint('Current day: $currentDay');
-
-          // Filter classes for today and sort by start time
-          final todayClasses = allClasses
-              .where((clase) => clase.dia == currentDay)
-              .toList()
-            ..sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
-
-          // Eliminar duplicados por materiaId, horaInicio y horaFin
-          final uniqueTodayClasses = <String, ClaseHorario>{};
-          for (final clase in todayClasses) {
-            final key =
-                '${clase.materiaId}_${clase.horaInicio}_${clase.horaFin}';
-            uniqueTodayClasses[key] = clase;
-          }
-
-          debugPrint('Today classes: ${uniqueTodayClasses.length}');
-
-          setState(() {
-            _todayClasses = uniqueTodayClasses.values.toList();
-            _isLoading = false;
-          });
-        } else {
-          setState(() {
-            _todayClasses = [];
-            _isLoading = false;
-            _error = 'Grupo no encontrado para el estudiante';
-          });
-        }
+      // Deduplicado simple por (idMateria, horaInicio, horaFin)
+      final map = <String, ClaseHorario>{};
+      for (final c in todayClasses) {
+        map['${c.idMateria}_${c.horaInicio}_${c.horaFin}'] = c;
       }
+
+      if (!mounted) return;
+      setState(() {
+        _todayClasses = map.values.toList();
+        _isLoading = false;
+      });
     } catch (e) {
-      debugPrint('Error loading today schedule: $e');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _error = 'Error al cargar el horario: $e';
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _error = 'Error al cargar el horario: $e';
+      });
     }
   }
 
@@ -280,7 +241,7 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
 
   Widget _buildSectionHeader(BuildContext context, AppLocalizations l10n) {
     final today = DateTime.now();
-    final dayNames = [
+    const dayNames = [
       'Lunes',
       'Martes',
       'Miércoles',
@@ -289,7 +250,7 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
       'Sábado',
       'Domingo'
     ];
-    final monthNames = [
+    const monthNames = [
       'Enero',
       'Febrero',
       'Marzo',
@@ -326,7 +287,6 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
             ],
           ),
         ),
-        // Botón moderno 'Ver completo'
         if (_selectedStudentId != null)
           Container(
             margin: EdgeInsets.only(
@@ -336,7 +296,7 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
                 HapticFeedback.mediumImpact();
                 _navigateToFullSchedule(context);
               },
-              icon: Icon(Icons.calendar_view_week_rounded,
+              icon: const Icon(Icons.calendar_view_week_rounded,
                   color: Colors.white, size: 18),
               label: Text(
                 'Ver completo',
@@ -346,7 +306,8 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.accentBlue,
                 foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(
                       AppTheme.getMediumRadius(widget.screenSize)),
@@ -369,27 +330,22 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
   }
 
   void _navigateToFullSchedule(BuildContext context) {
-    final studentProvider =
-        Provider.of<StudentProvider>(context, listen: false);
+    final sp = Provider.of<StudentProvider>(context, listen: false);
+    final student = _findStudentById(sp.students, _selectedStudentId);
 
-    // Get the selected student (this is a StudentDetails object)
-    final studentDetails = studentProvider.students
-        .where((s) => s.id == _selectedStudentId)
-        .firstOrNull;
-
-    if (studentDetails != null) {
-      // Convert StudentDetails to Alumno based on the actual model structures
+    if (student != null) {
       final alumno = Alumno(
-        id: studentDetails.id,
-        nombre: studentDetails.nombre,
-        id_grupo: studentDetails.grupoId,
-        grupo: studentDetails.grupo,
-        id_escuela: studentDetails.escuelaId,
-        id_llave: studentDetails.llaveId ?? '',
-        vinculado: studentDetails.llaveActiva,
-        matricula: studentDetails.matricula,
-        fecha_registro: studentDetails.fechaRegistro,
-        turno: _mapStringToTurnoEnum(studentDetails.turno),
+        id: student.id,
+        nombre: student.nombre,
+        idGrupo: student.grupoId,
+        grupo: student.grupo,
+        idEscuela: student.escuelaId,
+        matricula: student.matricula,
+        fechaRegistro: student.fechaRegistro,
+        idTurno: student.turnoId ?? '',
+        turno: _mapStringToTurnoEnum(student.turno),
+        idLlave: student.llaveId,
+        vinculado: student.llaveActiva,
       );
 
       Navigator.push(
@@ -399,10 +355,9 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
         ),
       );
     } else {
-      // Show error message if student not found
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
+          content: const Text(
             'Error: No se pudo encontrar la información del estudiante',
             style: TextStyle(color: Colors.white),
           ),
@@ -418,24 +373,22 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
   }
 
   TurnoEnum _mapStringToTurnoEnum(String? turno) {
-    if (turno == null) return TurnoEnum.matutino;
-
-    switch (turno.toLowerCase()) {
-      case 'matutino':
-      case 'mañana':
-        return TurnoEnum.matutino;
-      case 'vespertino':
-      case 'tarde':
-        return TurnoEnum.vespertino;
-      default:
-        return TurnoEnum.matutino; // Default fallback
+    if (turno == null) return TurnoEnum.desconocido;
+    final t = turno.toLowerCase();
+    if (t.contains('vespertino') || t.contains('tarde'))
+      return TurnoEnum.vespertino;
+    if (t.contains('matutino') ||
+        t.contains('mañana') ||
+        t.contains('manana')) {
+      return TurnoEnum.matutino;
     }
+    return TurnoEnum.desconocido;
   }
 
   Widget _buildStudentSelector() {
     return Consumer<StudentProvider>(
-      builder: (context, studentProvider, child) {
-        if (studentProvider.students.isEmpty) {
+      builder: (context, sp, child) {
+        if (sp.students.isEmpty) {
           return Container(
             padding:
                 EdgeInsets.all(AppTheme.getMediumPadding(widget.screenSize)),
@@ -462,57 +415,34 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
             ),
           );
         }
+
+        // Si aún no hay valor, selecciona el primero
+        final currentValue = _selectedStudentId ??
+            (sp.students.isNotEmpty ? sp.students.first.id : '');
+
         return ModernDropdown<String>(
-          value: _selectedStudentId ?? '',
-          items: studentProvider.students.map((student) => student.id).toList(),
+          value: currentValue,
+          items: sp.students.map((s) => s.id).toList(),
           onChanged: (value) {
-            if (value != null) {
-              _onStudentSelected(value);
-            }
+            if (value != null) _onStudentSelected(value);
           },
           getLabel: (id) {
-            final student = studentProvider.students.firstWhere(
-              (s) => s.id == id,
-              orElse: () => StudentDetails(
-                id: '',
-                nombre: '',
-                matricula: '',
-                escuelaId: '',
-                grupoId: '',
-                grupo: '',
-                nivelEducativo: '',
-                llaveActiva: false,
-                fechaRegistro: DateTime(2000, 1, 1),
-                tutores: const [],
-              ),
-            );
-            return student.nombre;
+            final s = _findStudentById(sp.students, id);
+            return s?.nombre ?? '';
           },
           screenSize: widget.screenSize,
-          backgroundColor:
-              AppTheme.getSecondaryBackgroundColor(context).withOpacity(0.9),
+          backgroundColor: AppTheme.getSecondaryBackgroundColor(context)
+              .withValues(alpha: 0.9),
         );
       },
     );
   }
 
   Widget _buildScheduleContent(BuildContext context, AppLocalizations l10n) {
-    if (_isLoading) {
-      return _buildLoadingState();
-    }
-
-    if (_error != null) {
-      return _buildErrorState();
-    }
-
-    if (_selectedStudentId == null) {
-      return _buildSelectStudentState();
-    }
-
-    if (_todayClasses.isEmpty) {
-      return _buildEmptyState();
-    }
-
+    if (_isLoading) return _buildLoadingState();
+    if (_error != null) return _buildErrorState();
+    if (_selectedStudentId == null) return _buildSelectStudentState();
+    if (_todayClasses.isEmpty) return _buildEmptyState();
     return _buildClassesList();
   }
 
@@ -525,9 +455,7 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
           AppTheme.getLargeRadius(widget.screenSize),
         ),
       ),
-      child: const Center(
-        child: CircularProgressIndicator(),
-      ),
+      child: const Center(child: CircularProgressIndicator()),
     );
   }
 
@@ -537,39 +465,31 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
       padding: EdgeInsets.all(AppTheme.getLargePadding(widget.screenSize)),
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
-        borderRadius: BorderRadius.circular(
-          AppTheme.getLargeRadius(widget.screenSize),
-        ),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getLargeRadius(widget.screenSize)),
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 48,
-            color: AppTheme.errorColor,
-          ),
+          Icon(Icons.error_outline, size: 48, color: AppTheme.errorColor),
           SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
           Text(
             _error ?? 'Error desconocido',
-            style: AppTheme.getSubtitle2(widget.screenSize).copyWith(
-              color: AppTheme.errorColor,
-            ),
+            style: AppTheme.getSubtitle2(widget.screenSize)
+                .copyWith(color: AppTheme.errorColor),
             textAlign: TextAlign.center,
           ),
           SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
           ElevatedButton(
             onPressed: () {
               HapticFeedback.mediumImpact();
-              setState(() {
-                _error = null;
-              });
+              setState(() => _error = null);
               _loadTodaySchedule();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryColor,
               foregroundColor: AppTheme.onPrimaryColor,
             ),
-            child: Text('Reintentar'),
+            child: const Text('Reintentar'),
           ),
         ],
       ),
@@ -581,17 +501,13 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
       padding: EdgeInsets.all(AppTheme.getLargePadding(widget.screenSize)),
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
-        borderRadius: BorderRadius.circular(
-          AppTheme.getLargeRadius(widget.screenSize),
-        ),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getLargeRadius(widget.screenSize)),
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.person_search_rounded,
-            size: 48,
-            color: AppTheme.getTextSecondaryColor(context),
-          ),
+          Icon(Icons.person_search_rounded,
+              size: 48, color: AppTheme.getTextSecondaryColor(context)),
           SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
           Text(
             'Selecciona un estudiante para ver su horario de hoy',
@@ -606,27 +522,31 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
   }
 
   Widget _buildEmptyState() {
-    final currentDay = _getCurrentDay();
-    final dayName = currentDay.toString().split('.').last;
+    final weekday = DateTime.now().weekday;
+    const dayNames = {
+      DateTime.monday: 'Lunes',
+      DateTime.tuesday: 'Martes',
+      DateTime.wednesday: 'Miércoles',
+      DateTime.thursday: 'Jueves',
+      DateTime.friday: 'Viernes',
+      DateTime.saturday: 'Sábado',
+      DateTime.sunday: 'Domingo',
+    };
 
     return Container(
       padding: EdgeInsets.all(AppTheme.getLargePadding(widget.screenSize)),
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
-        borderRadius: BorderRadius.circular(
-          AppTheme.getLargeRadius(widget.screenSize),
-        ),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getLargeRadius(widget.screenSize)),
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.event_busy_rounded,
-            size: 48,
-            color: AppTheme.getTextSecondaryColor(context),
-          ),
+          Icon(Icons.event_busy_rounded,
+              size: 48, color: AppTheme.getTextSecondaryColor(context)),
           SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
           Text(
-            'No hay clases programadas para hoy ($dayName)',
+            'No hay clases programadas para hoy (${dayNames[weekday]})',
             style: AppTheme.getSubtitle2(widget.screenSize).copyWith(
               color: AppTheme.getTextSecondaryColor(context),
             ),
@@ -677,17 +597,6 @@ class _TodayClassCard extends StatelessWidget {
     required this.isLast,
   });
 
-  Color _getStatusColor() {
-    switch (status) {
-      case ClaseStatus.upcoming:
-        return AppTheme.primaryColor;
-      case ClaseStatus.inProgress:
-        return Colors.green;
-      case ClaseStatus.completed:
-        return AppTheme.accentPurple;
-    }
-  }
-
   String _getStatusText() {
     switch (status) {
       case ClaseStatus.upcoming:
@@ -714,8 +623,7 @@ class _TodayClassCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ScheduleProvider>(
       builder: (context, scheduleProvider, child) {
-        final materia = scheduleProvider.getMateriaById(clase.materiaId);
-        final statusColor = _getStatusColor();
+        final materia = scheduleProvider.getMateriaById(clase.idMateria);
         final cardColor = materia != null
             ? AppTheme.hexToColor(materia.color)
             : AppTheme.accentPurple;
@@ -729,25 +637,27 @@ class _TodayClassCard extends StatelessWidget {
               child: Opacity(
                 opacity: value,
                 child: Container(
-                  margin: EdgeInsets.only(bottom: 10),
+                  margin: const EdgeInsets.only(bottom: 10),
                   decoration: BoxDecoration(
                     color: AppTheme.getSecondaryBackgroundColor(context),
                     borderRadius: BorderRadius.circular(
                         AppTheme.getMediumRadius(screenSize)),
                     border: Border.all(
-                        color: cardColor.withOpacity(0.18), width: 1.2),
+                      color: cardColor.withValues(alpha: 0.18),
+                      width: 1.2,
+                    ),
                   ),
                   child: Padding(
                     padding:
                         EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
                     child: Row(
                       children: [
-                        // Time indicator
+                        // Indicador de horas
                         Container(
                           width: 60,
                           height: 60,
                           decoration: BoxDecoration(
-                            color: cardColor.withOpacity(0.13),
+                            color: cardColor.withValues(alpha: 0.13),
                             borderRadius: BorderRadius.circular(12),
                             border: status == ClaseStatus.inProgress
                                 ? Border.all(color: cardColor, width: 2)
@@ -767,21 +677,24 @@ class _TodayClassCard extends StatelessWidget {
                               Container(
                                 width: 15,
                                 height: 1,
-                                color: cardColor.withOpacity(0.5),
+                                color: cardColor.withValues(alpha: 0.5),
                                 margin: const EdgeInsets.symmetric(vertical: 1),
                               ),
                               Text(
                                 TimeFormat.format24to12(clase.horaFin),
                                 style: AppTheme.getCaption(screenSize).copyWith(
-                                  color: cardColor.withOpacity(0.8),
+                                  color: cardColor.withValues(alpha: 0.8),
                                   fontSize: 10,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-                        // Class details
+                        SizedBox(
+                          height: AppTheme.getMediumPadding(screenSize),
+                          width: AppTheme.getMediumPadding(screenSize),
+                        ),
+                        // Detalles
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -799,14 +712,14 @@ class _TodayClassCard extends StatelessWidget {
                                       ),
                                     ),
                                   ),
-                                  // Status badge
+                                  // Badge de estado
                                   Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 8,
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: cardColor.withOpacity(0.13),
+                                      color: cardColor.withValues(alpha: 0.13),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Row(

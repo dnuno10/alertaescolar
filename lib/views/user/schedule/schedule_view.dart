@@ -28,16 +28,32 @@ class _ScheduleViewState extends State<ScheduleView>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  Map<DiaSemana, List<ClaseHorario>> _schedule = {};
+
+  /// Mapa de horarios por clave de día: 'lunes'..'domingo'
+  Map<String, List<ClaseHorario>> _scheduleByDay = {
+    for (final d in _orderedDays) d: <ClaseHorario>[],
+  };
+
   bool _isLoading = true;
   int _selectedDayIndex = 0;
   String? _errorMessage;
+
+  // Orden fijo de días
+  static const List<String> _orderedDays = [
+    'lunes',
+    'martes',
+    'miercoles',
+    'jueves',
+    'viernes',
+    'sabado',
+    'domingo',
+  ];
 
   @override
   void initState() {
     super.initState();
 
-    // Set the current day of the week as the default selected day
+    // Día actual por defecto (0=lunes .. 6=domingo)
     _selectedDayIndex = _getCurrentDayIndex();
 
     _animationController = AnimationController(
@@ -48,7 +64,6 @@ class _ScheduleViewState extends State<ScheduleView>
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
-    // Use post frame callback to avoid build issues
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadSchedule();
     });
@@ -56,14 +71,8 @@ class _ScheduleViewState extends State<ScheduleView>
     _animationController.forward();
   }
 
-  /// Gets the current day of the week index (0 = Monday, 6 = Sunday)
-  /// Maps DateTime.weekday (1 = Monday, 7 = Sunday) to DiaSemana enum index
-  int _getCurrentDayIndex() {
-    final now = DateTime.now();
-    // DateTime.weekday: Monday = 1, Sunday = 7
-    // DiaSemana enum: lunes = 0, domingo = 6
-    return now.weekday - 1; // Convert to 0-based index
-  }
+  /// 0=lunes .. 6=domingo
+  int _getCurrentDayIndex() => DateTime.now().weekday - 1;
 
   @override
   void dispose() {
@@ -83,76 +92,95 @@ class _ScheduleViewState extends State<ScheduleView>
       final scheduleProvider =
           Provider.of<ScheduleProvider>(context, listen: false);
 
-      // Load materias without showing loading dialog
+      // Cargar materias (sin dialog)
       await scheduleProvider.loadMaterias(
-        escuelaId: widget.student.id_escuela,
-        context: null, // Don't show loading dialog
+        escuelaId: widget.student.idEscuela,
+        context: null,
       );
 
-      // Load schedules without showing loading dialog
+      // Cargar horarios del grupo del alumno (sin dialog)
       await scheduleProvider.loadHorarios(
-        escuelaId: widget.student.id_escuela,
-        grupoId: widget.student.id_grupo,
-        context: null, // Don't show loading dialog
+        escuelaId: widget.student.idEscuela,
+        grupoId: widget.student.idGrupo,
+        context: null,
       );
 
-      // Get the group name to access the schedule
-      final grupo =
-          await scheduleProvider.getGrupoById(widget.student.id_grupo);
-      final grupoName = grupo?['grupo'] ?? '';
+      // Obtener datos del grupo (objeto Grupo)
+      final grupo = scheduleProvider.getGrupoById(widget.student.idGrupo);
+      final grupoName = grupo?.grupo ?? '';
 
-      if (mounted) {
-        if (grupoName.isNotEmpty) {
-          final horarios = scheduleProvider.getHorariosForGroup(grupoName);
+      if (!mounted) return;
 
-          // Organize schedule by day
-          final organizedSchedule = _organizeScheduleByDay(horarios);
-
-          setState(() {
-            _schedule = organizedSchedule;
-            _isLoading = false;
-          });
-        } else {
-          setState(() {
-            _schedule = {};
-            _isLoading = false;
-            _errorMessage =
-                'No se encontró información del grupo del estudiante';
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
+      if (grupoName.isEmpty) {
         setState(() {
+          _scheduleByDay = {
+            for (final d in _orderedDays) d: <ClaseHorario>[],
+          };
           _isLoading = false;
-          _errorMessage = 'Error al cargar el horario: $e';
+          _errorMessage = 'No se encontró información del grupo del estudiante';
         });
+        return;
       }
+
+      // Horarios del grupo por NOMBRE (helper del provider)
+      final horarios = scheduleProvider.getHorariosForGroupName(grupoName);
+
+      // Organizar por día
+      final organized = _organizeScheduleByDay(horarios);
+
+      setState(() {
+        _scheduleByDay = organized;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Error al cargar el horario: $e';
+      });
     }
   }
 
-  Map<DiaSemana, List<ClaseHorario>> _organizeScheduleByDay(
+  /// Devuelve mapa { 'lunes': [...], ... } ordenado por horaInicio
+  Map<String, List<ClaseHorario>> _organizeScheduleByDay(
       List<ClaseHorario> horarios) {
-    final Map<DiaSemana, List<ClaseHorario>> organizedSchedule = {};
+    final byDay = {
+      for (final d in _orderedDays) d: <ClaseHorario>[],
+    };
 
-    // Initialize all days with empty lists
-    for (final dia in DiaSemana.values) {
-      organizedSchedule[dia] = [];
+    bool _isOnDay(ClaseHorario s, String dayKey) {
+      switch (dayKey) {
+        case 'lunes':
+          return s.lunes;
+        case 'martes':
+          return s.martes;
+        case 'miercoles':
+          return s.miercoles;
+        case 'jueves':
+          return s.jueves;
+        case 'viernes':
+          return s.viernes;
+        case 'sabado':
+          return s.sabado;
+        case 'domingo':
+          return s.domingo;
+        default:
+          return false;
+      }
     }
 
-    // Group schedules by day
-    for (final horario in horarios) {
-      organizedSchedule[horario.dia]?.add(horario);
+    for (final s in horarios) {
+      for (final d in _orderedDays) {
+        if (_isOnDay(s, d)) byDay[d]!.add(s);
+      }
     }
 
-    // Sort each day's schedule by start time
-    for (final dia in DiaSemana.values) {
-      organizedSchedule[dia]?.sort((a, b) {
-        return a.horaInicio.compareTo(b.horaInicio);
-      });
+    // Ordenar por hora de inicio (HH:MM)
+    for (final d in _orderedDays) {
+      byDay[d]!.sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
     }
 
-    return organizedSchedule;
+    return byDay;
   }
 
   @override
@@ -176,7 +204,7 @@ class _ScheduleViewState extends State<ScheduleView>
                       screenSize: screenSize,
                     ),
                     SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                    if (!_isLoading) ...[
+                    if (!_isLoading)
                       DaySelector(
                         selectedDayIndex: _selectedDayIndex,
                         onDaySelected: (index) {
@@ -186,7 +214,6 @@ class _ScheduleViewState extends State<ScheduleView>
                         },
                         screenSize: screenSize,
                       ),
-                    ],
                   ],
                 ),
               ),
@@ -233,27 +260,30 @@ class _ScheduleViewState extends State<ScheduleView>
               backgroundColor: AppTheme.primaryColor,
               foregroundColor: AppTheme.onPrimaryColor,
             ),
-            child: Text('Reintentar'),
+            child: const Text('Reintentar'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildScheduleContent(
+  SliverPadding _buildScheduleContent(
       BuildContext context, AppLocalizations l10n, Size screenSize) {
-    final selectedDay = DiaSemana.values[_selectedDayIndex];
-    final daySchedule = _schedule[selectedDay] ?? [];
+    final selectedDayKey = _orderedDays[_selectedDayIndex];
+    final daySchedule =
+        _scheduleByDay[selectedDayKey] ?? const <ClaseHorario>[];
 
     return SliverPadding(
       padding: EdgeInsets.only(
-          left: AppTheme.getMediumPadding(screenSize),
-          right: AppTheme.getMediumPadding(screenSize),
-          bottom: AppTheme.getMediumPadding(screenSize)),
+        left: AppTheme.getMediumPadding(screenSize),
+        right: AppTheme.getMediumPadding(screenSize),
+        bottom: AppTheme.getMediumPadding(screenSize),
+      ),
       sliver: daySchedule.isEmpty
           ? SliverToBoxAdapter(
               child: ScheduleEmptyState(
-                day: selectedDay,
+                // Si tu widget acepta otra cosa, ajusta aquí.
+                dayKey: selectedDayKey,
                 screenSize: screenSize,
               ),
             )
@@ -263,9 +293,9 @@ class _ScheduleViewState extends State<ScheduleView>
                   final clase = daySchedule[index];
                   return Consumer<ScheduleProvider>(
                     builder: (context, scheduleProvider, child) {
-                      // Get materia information
+                      // OJO: el modelo usa idMateria
                       final materia =
-                          scheduleProvider.getMateriaById(clase.materiaId);
+                          scheduleProvider.getMateriaById(clase.idMateria);
 
                       return ClassCardSchedule(
                         clase: clase,

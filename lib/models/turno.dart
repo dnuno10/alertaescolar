@@ -3,11 +3,11 @@ import '../utils/time_format.dart';
 class Turno {
   final String id;
   final String turno;
-  final String horaInicio;
-  final String horaFin;
-  final DateTime fechaRegistro;
-  final String idEscuela;
-  final int tolerancia;
+  final String horaInicio; // HH:MM (derivado de hora_inicio)
+  final String horaFin; // HH:MM (derivado de hora_fin)
+  final DateTime fechaRegistro; // fecha_registro
+  final String idEscuela; // id_escuela
+  final int tolerancia; // minutos
 
   const Turno({
     required this.id,
@@ -16,29 +16,32 @@ class Turno {
     required this.horaFin,
     required this.fechaRegistro,
     required this.idEscuela,
-    this.tolerancia = 15, // Default tolerance of 15 minutes
+    this.tolerancia = 15,
   });
 
   factory Turno.fromJson(Map<String, dynamic> json) {
-    // Parse time with timezone format to extract just HH:MM
-    String parseTime(String? timeString) {
-      if (timeString == null || timeString.isEmpty) return '00:00';
+    // Extrae "HH:MM" desde timestamptz o HH:MM(:SS)
+    String parseTime(dynamic time) {
+      final s = (time ?? '').toString();
+      if (s.isEmpty) return '00:00';
 
-      // If it contains timezone part (+/-), extract just the time part
-      if (timeString.contains('+') ||
-          (timeString.contains('-') && timeString.lastIndexOf('-') > 2)) {
-        final timePart = timeString.split(RegExp(r'[+-]'))[0];
-        return timePart.substring(0, 5); // Take just HH:MM
+      // Caso timestamptz: "2024-01-01T07:30:00+00:00" -> "07:30"
+      final tMatch = RegExp(r'T(\d{2}):(\d{2})').firstMatch(s);
+      if (tMatch != null) {
+        return '${tMatch.group(1)}:${tMatch.group(2)}';
       }
 
-      // Handle simple time format (HH:MM:SS or HH:MM)
-      if (timeString.contains(':')) {
-        final parts = timeString.split(':');
+      // Caso HH:MM(:SS)
+      if (s.contains(':')) {
+        final parts = s.split(':');
         if (parts.length >= 2) {
-          return '${parts[0].padLeft(2, '0')}:${parts[1].padLeft(2, '0')}';
+          final hh = parts[0].padLeft(2, '0');
+          final mm = parts[1].padLeft(2, '0');
+          return '$hh:$mm';
         }
       }
 
+      // Último recurso
       return '00:00';
     }
 
@@ -47,11 +50,13 @@ class Turno {
       turno: json['turno'] ?? '',
       horaInicio: parseTime(json['hora_inicio']),
       horaFin: parseTime(json['hora_fin']),
-      fechaRegistro: DateTime.parse(json['fecha-registro'] ??
-          json['fecha_registro'] ??
-          DateTime.now().toIso8601String()),
+      fechaRegistro: DateTime.parse(
+        (json['fecha_registro'] ?? DateTime.now().toIso8601String()).toString(),
+      ),
       idEscuela: json['id_escuela'] ?? '',
-      tolerancia: json['tolerancia']?.toInt() ?? 15,
+      tolerancia: (json['tolerancia'] is num)
+          ? (json['tolerancia'] as num).toInt()
+          : 15,
     );
   }
 
@@ -61,7 +66,7 @@ class Turno {
       'turno': turno,
       'hora_inicio': horaInicio,
       'hora_fin': horaFin,
-      'fecha-registro': fechaRegistro.toIso8601String(),
+      'fecha_registro': fechaRegistro.toIso8601String(),
       'id_escuela': idEscuela,
       'tolerancia': tolerancia,
     };
@@ -90,7 +95,7 @@ class Turno {
   String get horaInicioAmPm => TimeFormat.format24to12(horaInicio);
   String get horaFinAmPm => TimeFormat.format24to12(horaFin);
 
-  String get horarioCompleto => '[32m$horaInicioAmPm - $horaFinAmPm[0m';
+  String get horarioCompleto => '$horaInicioAmPm - $horaFinAmPm';
 
   @override
   String toString() {
@@ -98,10 +103,8 @@ class Turno {
   }
 
   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is Turno && other.id == id;
-  }
+  bool operator ==(Object other) =>
+      identical(this, other) || (other is Turno && other.id == id);
 
   @override
   int get hashCode => id.hashCode;

@@ -40,13 +40,9 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutCubic,
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+    );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadSchoolData();
@@ -54,7 +50,7 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
   }
 
   Future<void> _loadSchoolData() async {
-    // Si se proporcionó la información de la escuela, usarla directamente
+    // Si ya viene la escuela vía props, úsala tal cual
     if (widget.school != null) {
       setState(() {
         _school = widget.school;
@@ -64,8 +60,7 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
       return;
     }
 
-    // De lo contrario, cargar desde el ID de escuela del usuario
-    // Only show LoadingDialog when actually loading from database
+    // Cargar desde el id_escuela del usuario
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         LoadingDialog.show(context,
@@ -78,19 +73,16 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
       final schoolProvider =
           Provider.of<SchoolProvider>(context, listen: false);
 
-      if (userProvider.currentUser?.escuelaId != null) {
-        final school = await schoolProvider
-            .loadSchool(userProvider.currentUser!.escuelaId!, context: context);
-
+      final escuelaId = userProvider.currentUser?.escuelaId;
+      if (escuelaId != null && escuelaId.isNotEmpty) {
+        final school =
+            await schoolProvider.loadSchool(escuelaId, context: context);
         if (mounted) {
-          setState(() {
-            _school = school;
-          });
+          setState(() => _school = school);
         }
       }
     } catch (e) {
       if (mounted) {
-        // Move AppLocalizations.of(context) call here to ensure context is available
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             final l10n = AppLocalizations.of(context);
@@ -106,9 +98,7 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
     } finally {
       if (mounted) {
         LoadingDialog.hide(context);
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
         _animationController.forward();
       }
     }
@@ -180,7 +170,7 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
         children: [
           SizedBox(height: AppTheme.getSmallPadding(screenSize)),
 
-          // Modern School Header Card
+          // Header
           SchoolHeaderCard(
             schoolName: _school!.nombre,
             subtitle: l10n.educationalExcellenceInstitution,
@@ -189,25 +179,25 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
 
           SizedBox(height: AppTheme.getLargePadding(screenSize)),
 
-          // Quick Stats Section
+          // Quick stats
           QuickStatsSection(screenSize: screenSize, stats: [
             {
               'title': _getEducationalLevel(_school!.nivelesEducativos, l10n),
               'subtitle': l10n.educationalLevel,
               'icon': Icons.school_rounded,
-              'color': AppTheme.successColor
+              'color': AppTheme.successColor,
             },
             {
               'title': _getSchoolType(_school!.tipo, l10n),
               'subtitle': l10n.institution,
               'icon': Icons.public_rounded,
-              'color': AppTheme.warningColor
+              'color': AppTheme.warningColor,
             },
           ]),
 
           SizedBox(height: AppTheme.getLargePadding(screenSize)),
 
-          // Basic Information Section
+          // Basic info
           InfoSection(
             title: l10n.basicInformation,
             icon: Icons.school_rounded,
@@ -216,8 +206,8 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
             children: [
               InfoRow(
                 label: l10n.schoolCode,
-                value: _school!.codigo.isNotEmpty
-                    ? _school!.codigo
+                value: (_school!.codigo ?? '').isNotEmpty
+                    ? (_school!.codigo ?? '')
                     : l10n.notAvailable,
                 icon: Icons.tag_rounded,
                 screenSize: screenSize,
@@ -237,7 +227,7 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
 
           SizedBox(height: AppTheme.getLargePadding(screenSize)),
 
-          // Contact Information Section
+          // Contact info
           InfoSection(
             title: l10n.contactInfo,
             icon: Icons.contact_phone_rounded,
@@ -276,9 +266,9 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
 
           SizedBox(height: AppTheme.getLargePadding(screenSize)),
 
-          // Description Section
+          // Description
           DescriptionSection(
-            description: _school!.descripcion?.isNotEmpty == true
+            description: (_school!.descripcion ?? '').isNotEmpty
                 ? _school!.descripcion!
                 : l10n.schoolDescription,
             screenSize: screenSize,
@@ -296,11 +286,7 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
       child: Column(
         children: [
           SizedBox(height: AppTheme.getLargePadding(screenSize) * 2),
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: AppTheme.errorColor,
-          ),
+          Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
           Text(
             'Error al cargar la información de la escuela',
@@ -324,7 +310,6 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
 
   String _getSchoolType(TipoEscuela? tipo, AppLocalizations l10n) {
     if (tipo == null) return l10n.public;
-
     switch (tipo) {
       case TipoEscuela.publica:
         return l10n.public;
@@ -332,16 +317,12 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
         return l10n.private;
       case TipoEscuela.mixta:
         return l10n.mixed;
-      default:
-        return l10n.public;
     }
   }
 
   String _getEducationalLevel(
       List<NivelEducativo>? niveles, AppLocalizations l10n) {
     if (niveles == null || niveles.isEmpty) return l10n.primary;
-
-    // Return the first level for the stats card
     switch (niveles.first) {
       case NivelEducativo.preescolar:
         return l10n.preschool;
@@ -351,17 +332,14 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
         return l10n.secondary;
       case NivelEducativo.bachillerato:
         return l10n.highSchool;
-      default:
-        return l10n.primary;
     }
   }
 
   List<String> _getEducationalLevels(
       List<NivelEducativo>? niveles, AppLocalizations l10n) {
     if (niveles == null || niveles.isEmpty) return [l10n.primary];
-
-    return niveles.map((nivel) {
-      switch (nivel) {
+    return niveles.map((n) {
+      switch (n) {
         case NivelEducativo.preescolar:
           return l10n.preschool;
         case NivelEducativo.primaria:
@@ -370,8 +348,6 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
           return l10n.secondary;
         case NivelEducativo.bachillerato:
           return l10n.highSchool;
-        default:
-          return l10n.primary;
       }
     }).toList();
   }

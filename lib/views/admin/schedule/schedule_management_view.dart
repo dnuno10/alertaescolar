@@ -1,15 +1,16 @@
-import 'package:alertaescolar/managers/user_provider.dart';
-import 'package:alertaescolar/managers/group_provider.dart';
-import 'package:alertaescolar/components/loading_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../managers/user_provider.dart';
+import '../../../managers/group_provider.dart';
 import '../../../managers/schedule_provider.dart';
+
 import '../../../components/headers/nav_header.dart';
-import '../../../models/models.dart';
+import '../../../components/loading_dialog.dart';
 import '../../../components/admin/schedule/education_level_group_selector.dart';
 import '../../../components/admin/schedule/day_filter.dart';
 import '../../../components/admin/schedule/schedule_display.dart';
@@ -25,25 +26,30 @@ class ScheduleManagementView extends StatefulWidget {
 class _ScheduleManagementViewState extends State<ScheduleManagementView> {
   String? _selectedNivelEducativo;
   String? _selectedGrupo;
-  DiaSemana? _selectedDay;
+  String? _selectedDayKey; // "lunes" | "martes" | ... | null
   bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-
-    // Set the current day of the week as the default selected day
-    _selectedDay = _getCurrentDay();
+    // Día actual como default
+    _selectedDayKey = _getCurrentDayKey();
   }
 
-  /// Gets the current day of the week as DiaSemana enum
-  /// Maps DateTime.weekday (1 = Monday, 7 = Sunday) to DiaSemana enum
-  DiaSemana _getCurrentDay() {
-    final now = DateTime.now();
-    // DateTime.weekday: Monday = 1, Sunday = 7
-    // DiaSemana enum: lunes = 0, domingo = 6
-    final dayIndex = now.weekday - 1; // Convert to 0-based index
-    return DiaSemana.values[dayIndex];
+  /// Obtiene el día actual como key: "lunes"..."domingo"
+  String _getCurrentDayKey() {
+    // DateTime.weekday: Mon=1 ... Sun=7
+    const keys = [
+      'lunes',
+      'martes',
+      'miercoles',
+      'jueves',
+      'viernes',
+      'sabado',
+      'domingo',
+    ];
+    final idx = DateTime.now().weekday - 1;
+    return keys[idx.clamp(0, 6)];
   }
 
   @override
@@ -55,7 +61,6 @@ class _ScheduleManagementViewState extends State<ScheduleManagementView> {
   Future<void> _initializeScheduleData() async {
     if (_isInitialized) return;
 
-    // Use Future.microtask to defer the initialization until after the current build phase
     Future.microtask(() async {
       if (!mounted) return;
 
@@ -64,50 +69,40 @@ class _ScheduleManagementViewState extends State<ScheduleManagementView> {
           Provider.of<ScheduleProvider>(context, listen: false);
       final groupProvider = Provider.of<GroupProvider>(context, listen: false);
 
-      if (userProvider.currentUser?.escuelaId != null) {
-        LoadingDialog.show(context, message: 'Inicializando datos...');
+      final escuelaId = userProvider.currentUser?.escuelaId;
+      if (escuelaId == null) return;
 
-        try {
-          // Initialize both schedule and group data
-          await Future.wait([
-            scheduleProvider.initialize(
-              userProvider.currentUser!.escuelaId!,
-              context: context,
-            ),
-            groupProvider.loadGroups(
-              escuelaId: userProvider.currentUser!.escuelaId!,
-              context: context,
-            ),
-          ]);
+      LoadingDialog.show(context, message: 'Inicializando datos...');
 
-          if (!mounted) return;
+      try {
+        await Future.wait([
+          scheduleProvider.initialize(escuelaId, context: context),
+          groupProvider.loadGroups(escuelaId: escuelaId, context: context),
+        ]);
 
-          // Get unique education levels from groups
-          final nivelesEducativos =
-              groupProvider.getAvailableNivelesEducativos();
+        if (!mounted) return;
 
-          if (nivelesEducativos.isNotEmpty && _selectedNivelEducativo == null) {
-            setState(() {
-              _selectedNivelEducativo = nivelesEducativos.first;
-              _isInitialized = true;
-            });
-
-            // Load groups for the first nivel educativo
-            await _loadGruposForNivel(_selectedNivelEducativo!);
-          }
-        } catch (e) {
-          debugPrint('Error initializing schedule data: $e');
-          if (mounted) {
-            setState(() {
-              _isInitialized =
-                  true; // Mark as initialized even on error to prevent infinite loops
-            });
-          }
-        } finally {
-          if (mounted) {
-            LoadingDialog.hide(context);
-          }
+        final nivelesEducativos = groupProvider.getAvailableNivelesEducativos();
+        if (nivelesEducativos.isNotEmpty && _selectedNivelEducativo == null) {
+          setState(() {
+            _selectedNivelEducativo = nivelesEducativos.first;
+            _isInitialized = true;
+          });
+          await _loadGruposForNivel(_selectedNivelEducativo!);
+        } else {
+          setState(() {
+            _isInitialized = true;
+          });
         }
+      } catch (e) {
+        debugPrint('Error initializing schedule data: $e');
+        if (mounted) {
+          setState(() {
+            _isInitialized = true; // Evita bucles
+          });
+        }
+      } finally {
+        if (mounted) LoadingDialog.hide(context);
       }
     });
   }
@@ -118,33 +113,31 @@ class _ScheduleManagementViewState extends State<ScheduleManagementView> {
         Provider.of<ScheduleProvider>(context, listen: false);
     final groupProvider = Provider.of<GroupProvider>(context, listen: false);
 
-    if (userProvider.currentUser?.escuelaId != null) {
-      try {
-        // Get groups for the selected education level
-        final grupos = groupProvider.getGroupsByNivelEducativo(nivelEducativo);
-        debugPrint('Grupos encontrados para $nivelEducativo: ${grupos.length}');
+    final escuelaId = userProvider.currentUser?.escuelaId;
+    if (escuelaId == null) return;
 
-        if (grupos.isNotEmpty) {
-          setState(() {
-            _selectedGrupo = grupos.first.grupo;
-          });
+    try {
+      final grupos = groupProvider.getGroupsByNivelEducativo(nivelEducativo);
+      debugPrint('Grupos encontrados para $nivelEducativo: ${grupos.length}');
 
-          // Load schedules for the selected group
-          await scheduleProvider.loadHorarios(
-            escuelaId: userProvider.currentUser!.escuelaId!,
-            grupoId: grupos.first.id,
-            context: context,
-          );
-        } else {
-          // If no groups found, clear the selection
-          setState(() {
-            _selectedGrupo = null;
-          });
-          debugPrint('No se encontraron grupos para el nivel: $nivelEducativo');
-        }
-      } catch (e) {
-        debugPrint('Error loading grupos: $e');
+      if (grupos.isNotEmpty) {
+        setState(() {
+          _selectedGrupo = grupos.first.grupo;
+        });
+
+        await scheduleProvider.loadHorarios(
+          escuelaId: escuelaId,
+          grupoId: grupos.first.id,
+          context: context,
+        );
+      } else {
+        setState(() {
+          _selectedGrupo = null;
+        });
+        debugPrint('No se encontraron grupos para el nivel: $nivelEducativo');
       }
+    } catch (e) {
+      debugPrint('Error loading grupos: $e');
     }
   }
 
@@ -156,16 +149,13 @@ class _ScheduleManagementViewState extends State<ScheduleManagementView> {
     return Consumer3<ThemeProvider, ScheduleProvider, GroupProvider>(
       builder:
           (context, themeProvider, scheduleProvider, groupProvider, child) {
-        final isLoading = scheduleProvider.isLoading || groupProvider.isLoading;
         final error = scheduleProvider.error ?? groupProvider.error;
-        final hasSchedules = scheduleProvider.horarios.isNotEmpty;
         final nivelesEducativos = groupProvider.getAvailableNivelesEducativos();
 
-        // Get available groups for the selected nivel educativo
         final availableGrupos = _selectedNivelEducativo != null
             ? groupProvider
                 .getGroupsByNivelEducativo(_selectedNivelEducativo!)
-                .map((grupo) => grupo.grupo)
+                .map((g) => g.grupo)
                 .toList()
             : <String>[];
 
@@ -182,10 +172,10 @@ class _ScheduleManagementViewState extends State<ScheduleManagementView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (error != null && !hasSchedules)
+                      if (error != null)
                         _buildErrorState(error, screenSize)
                       else ...[
-                        // Education Level and Group Selector
+                        // Selector de nivel educativo y grupo
                         EducationLevelGroupSelector(
                           selectedNivelEducativo: _selectedNivelEducativo,
                           selectedGrupo: _selectedGrupo,
@@ -234,23 +224,23 @@ class _ScheduleManagementViewState extends State<ScheduleManagementView> {
 
                         SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-                        // Day Filter
+                        // Filtro de día
                         DayFilter(
-                          selectedDay: _selectedDay,
-                          onDaySelected: (day) =>
-                              setState(() => _selectedDay = day),
+                          selectedDayKey: _selectedDayKey,
+                          onDaySelected: (key) =>
+                              setState(() => _selectedDayKey = key),
                           screenSize: screenSize,
                         ),
 
                         SizedBox(height: AppTheme.getLargePadding(screenSize)),
 
-                        // Schedule Display
+                        // Vista de horario
                         if (_selectedGrupo != null)
                           ScheduleDisplay(
                             selectedGradeGroup: _selectedGrupo!,
-                            selectedDay: _selectedDay,
+                            selectedDayKey: _selectedDayKey,
                             schedules: scheduleProvider
-                                .getHorariosForGroup(_selectedGrupo!),
+                                .getHorariosForGroupName(_selectedGrupo!),
                             subjects: scheduleProvider.materias,
                             screenSize: screenSize,
                           )
@@ -259,7 +249,7 @@ class _ScheduleManagementViewState extends State<ScheduleManagementView> {
 
                         SizedBox(height: AppTheme.getLargePadding(screenSize)),
 
-                        // Contact Information Card
+                        // Información de contacto
                         ContactInfoCard(screenSize: screenSize),
                       ],
                     ],

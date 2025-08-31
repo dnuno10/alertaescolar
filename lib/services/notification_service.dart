@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/notificacion.dart';
-import '../models/comunicado.dart' as comunicado_model;
 
 class NotificationService {
   static final SupabaseClient _supabase = Supabase.instance.client;
@@ -12,7 +11,8 @@ class NotificationService {
     required String escuelaId,
     required String titulo,
     required String mensaje,
-    required String tipoMensaje, // 'permiso' o 'comunicado'
+    required String
+        tipoMensaje, // 'entrada' | 'salida' | 'retraso' | 'ausencia' | 'permiso'
     required String tipoDestinatario, // 'individual', 'grupo', 'turno', 'todos'
 
     // Para destinatario individual
@@ -23,24 +23,13 @@ class NotificationService {
 
     // Para destinatario por turno
     String? turnoId,
-
-    // Para comunicados
-    comunicado_model.TipoComunicado? tipoComunicado,
-    comunicado_model.PrioridadComunicado? prioridadComunicado,
   }) async {
     try {
       debugPrint('Starting notification sending process...');
       debugPrint('Tipo: $tipoMensaje, Destinatario: $tipoDestinatario');
 
-      // Determinar el tipo de notificación
-      TipoNotificacion tipoNotificacion;
-      if (tipoMensaje == 'permiso') {
-        tipoNotificacion = TipoNotificacion.permisoEspecial;
-      } else if (tipoMensaje == 'comunicado') {
-        tipoNotificacion = TipoNotificacion.comunicado;
-      } else {
-        throw Exception('Tipo de mensaje no válido: $tipoMensaje');
-      }
+      // Determinar el tipo de notificación a partir del string recibido
+      final tipoNotificacion = _tipoFromString(tipoMensaje);
 
       // Obtener la lista de estudiantes destinatarios
       List<String> studentIds = [];
@@ -121,7 +110,7 @@ class NotificationService {
       int notificationsSent = 0;
       List<String> errors = [];
 
-      for (String alumnoId in studentIds) {
+      for (final alumnoId in studentIds) {
         try {
           await _createNotification(
             alumnoId: alumnoId,
@@ -129,9 +118,6 @@ class NotificationService {
             titulo: titulo,
             mensaje: mensaje,
             tipo: tipoNotificacion,
-            tipoComunicacion: _convertTipoComunicado(tipoComunicado),
-            prioridadComunicado:
-                _convertPrioridadComunicado(prioridadComunicado),
           );
           notificationsSent++;
         } catch (e) {
@@ -149,9 +135,8 @@ class NotificationService {
         };
       }
 
-      String tipoMensajeText =
-          tipoMensaje == 'permiso' ? 'Permiso especial' : 'Comunicado';
-      String destinatarioText =
+      final tipoMensajeText = _tipoToLabel(tipoNotificacion);
+      final destinatarioText =
           _getDestinatarioText(tipoDestinatario, studentIds.length);
 
       String message =
@@ -182,13 +167,11 @@ class NotificationService {
 
   Future<List<Notificacion>> getNotifications() async {
     try {
-      // Obtener las notificaciones desde la base de datos
       final response = await _supabase
           .from('notificaciones')
           .select('*')
           .order('fecha_registro', ascending: false);
 
-      // Mapear los datos obtenidos a la lista de objetos Notificacion
       return (response as List).map((record) {
         return Notificacion(
           id: record['id'],
@@ -197,11 +180,13 @@ class NotificationService {
           titulo: record['titulo'] ?? '',
           mensaje: record['mensaje'] ?? '',
           tipo: _mapTipoNotificacion(record['tipo_notificacion']),
-          estado: record['estado'] == EstadoNotificacion.leida.name
+          estado: (record['estado']?.toString().toLowerCase() ==
+                  EstadoNotificacion.leida.name)
               ? EstadoNotificacion.leida
               : EstadoNotificacion.nueva,
           fechaHora: DateTime.parse(record['fecha_registro']),
-          datosAdicionales: record['datos_adicionales'] ?? {},
+          datosAdicionales:
+              (record['datos_adicionales'] as Map?)?.cast<String, dynamic>(),
         );
       }).toList();
     } catch (e) {
@@ -212,22 +197,60 @@ class NotificationService {
 
   Future<void> deleteNotification(String notificationId) async {
     try {
-      // Eliminar la notificación de la base de datos
       final response = await _supabase
           .from('notificaciones')
           .delete()
           .eq('id', notificationId);
 
-      if (response == null || response.isEmpty) {
+      if (response == null || (response is List && response.isEmpty)) {
         throw Exception(
             'No se encontró la notificación con el ID proporcionado.');
       }
-
       debugPrint('Notificación con ID $notificationId eliminada exitosamente.');
     } catch (e) {
       debugPrint(
           'Error al eliminar la notificación con ID $notificationId: $e');
       throw Exception('Error al eliminar la notificación: $e');
+    }
+  }
+
+  // ----- Helpers de mapeo -----
+
+  static TipoNotificacion _tipoFromString(String raw) {
+    final s = raw.trim().toLowerCase();
+    switch (s) {
+      case 'entrada':
+        return TipoNotificacion.entrada;
+      case 'salida':
+        return TipoNotificacion.salida;
+      case 'retraso':
+        return TipoNotificacion.retraso;
+      case 'ausencia':
+        return TipoNotificacion.ausencia;
+      case 'permiso':
+      case 'permisoespecial':
+        return TipoNotificacion.permisoEspecial;
+      default:
+        throw Exception(
+          "Tipo de mensaje no válido: '$raw'. Usa: entrada|salida|retraso|ausencia|permiso",
+        );
+    }
+  }
+
+  static String _tipoToLabel(TipoNotificacion t) {
+    switch (t) {
+      case TipoNotificacion.entrada:
+        return 'Entrada';
+      case TipoNotificacion.salida:
+        return 'Salida';
+      case TipoNotificacion.retraso:
+        return 'Retraso';
+      case TipoNotificacion.ausencia:
+        return 'Ausencia';
+      case TipoNotificacion.permisoEspecial:
+        return 'Permiso especial';
+      case TipoNotificacion.comunicado:
+        return 'Comunicado'; // ya no se usa en envío, pero conservamos etiqueta por compatibilidad
     }
   }
 
@@ -239,10 +262,12 @@ class NotificationService {
         return TipoNotificacion.salida;
       case 'retraso':
         return TipoNotificacion.retraso;
+      case 'ausencia':
+        return TipoNotificacion.ausencia;
       case 'permisoespecial':
         return TipoNotificacion.permisoEspecial;
       case 'comunicado':
-        return TipoNotificacion.comunicado;
+        return TipoNotificacion.comunicado; // legado en DB si existiera
       default:
         throw Exception('Tipo de notificación desconocido: $tipo');
     }
@@ -252,7 +277,6 @@ class NotificationService {
   static Future<List<String>> _getStudentsByGroups(
       List<String> groupIds, String escuelaId) async {
     try {
-      // Obtener estudiantes que pertenecen a los grupos seleccionados
       final response = await _supabase
           .from('alumnos')
           .select('id')
@@ -262,7 +286,6 @@ class NotificationService {
       final studentIds =
           (response as List).map((item) => item['id'] as String).toList();
 
-      // Filtrar solo estudiantes que están registrados por tutores (activos)
       final activeStudentIds = await _filterActiveStudents(studentIds);
 
       debugPrint('Estudiantes encontrados en grupos: ${studentIds.length}');
@@ -279,7 +302,6 @@ class NotificationService {
   static Future<List<String>> _getStudentsByTurno(
       String turnoId, String escuelaId) async {
     try {
-      // Obtener estudiantes que pertenecen al turno seleccionado
       final response = await _supabase
           .from('alumnos')
           .select('id')
@@ -289,7 +311,6 @@ class NotificationService {
       final studentIds =
           (response as List).map((item) => item['id'] as String).toList();
 
-      // Filtrar solo estudiantes que están registrados por tutores (activos)
       final activeStudentIds = await _filterActiveStudents(studentIds);
 
       debugPrint('Estudiantes encontrados en turno: ${studentIds.length}');
@@ -305,7 +326,6 @@ class NotificationService {
   /// Obtiene todos los estudiantes de una escuela
   static Future<List<String>> _getAllStudents(String escuelaId) async {
     try {
-      // Obtener todos los estudiantes de la escuela
       final response = await _supabase
           .from('alumnos')
           .select('id')
@@ -314,7 +334,6 @@ class NotificationService {
       final studentIds =
           (response as List).map((item) => item['id'] as String).toList();
 
-      // Filtrar solo estudiantes que están registrados por tutores (activos)
       final activeStudentIds = await _filterActiveStudents(studentIds);
 
       debugPrint('Estudiantes encontrados en escuela: ${studentIds.length}');
@@ -334,8 +353,6 @@ class NotificationService {
     required String titulo,
     required String mensaje,
     required TipoNotificacion tipo,
-    TipoComunicacion? tipoComunicacion,
-    PrioridadComunicado? prioridadComunicado,
   }) async {
     try {
       final notificationData = {
@@ -348,66 +365,11 @@ class NotificationService {
         'fecha_registro': DateTime.now().toIso8601String(),
       };
 
-      // Agregar campos específicos para comunicados
-      if (tipo == TipoNotificacion.comunicado) {
-        if (tipoComunicacion != null) {
-          notificationData['tipo_comunicado'] = tipoComunicacion.name;
-        }
-        if (prioridadComunicado != null) {
-          notificationData['prioridad_comunicado'] = prioridadComunicado.name;
-        }
-      }
-
       await _supabase.from('notificaciones').insert(notificationData);
-
       debugPrint('Notificación creada para alumno: $alumnoId');
     } catch (e) {
       debugPrint('Error creando notificación para alumno $alumnoId: $e');
       throw Exception('Error al crear notificación: $e');
-    }
-  }
-
-  /// Convierte TipoComunicado enum a TipoComunicacion enum
-  static TipoComunicacion? _convertTipoComunicado(
-      comunicado_model.TipoComunicado? tipoComunicado) {
-    if (tipoComunicado == null) return null;
-
-    switch (tipoComunicado) {
-      case comunicado_model.TipoComunicado.emergencia:
-        return TipoComunicacion.emergencia;
-      case comunicado_model.TipoComunicado.paseo:
-        return TipoComunicacion.paseo;
-      case comunicado_model.TipoComunicado.evento:
-        return TipoComunicacion.evento;
-      case comunicado_model.TipoComunicado.recordatorioPago:
-        return TipoComunicacion.recordatorioPago;
-      case comunicado_model.TipoComunicado.citatorio:
-        return TipoComunicacion.citatorio;
-      case comunicado_model.TipoComunicado.informativo:
-        return TipoComunicacion.informativo;
-      case comunicado_model.TipoComunicado.celebracion:
-        return TipoComunicacion.celebracion;
-      case comunicado_model.TipoComunicado.suspencionClases:
-        return TipoComunicacion.suspencionClases;
-      case comunicado_model.TipoComunicado.cambioHorario:
-        return TipoComunicacion.cambioHorario;
-    }
-  }
-
-  /// Convierte PrioridadComunicado enum del modelo comunicado al modelo notificación
-  static PrioridadComunicado? _convertPrioridadComunicado(
-      comunicado_model.PrioridadComunicado? prioridad) {
-    if (prioridad == null) return null;
-
-    switch (prioridad) {
-      case comunicado_model.PrioridadComunicado.baja:
-        return PrioridadComunicado.baja;
-      case comunicado_model.PrioridadComunicado.media:
-        return PrioridadComunicado.media;
-      case comunicado_model.PrioridadComunicado.alta:
-        return PrioridadComunicado.alta;
-      case comunicado_model.PrioridadComunicado.critica:
-        return PrioridadComunicado.critica;
     }
   }
 
@@ -434,14 +396,11 @@ class NotificationService {
   static Future<List<String>> _filterActiveStudents(
       List<String> studentIds) async {
     try {
-      if (studentIds.isEmpty) {
-        return [];
-      }
+      if (studentIds.isEmpty) return [];
 
       debugPrint(
           'Filtrando ${studentIds.length} estudiantes para verificar registro por tutores...');
 
-      // Obtener estudiantes que tienen registro en alumno_tutores
       final response = await _supabase
           .from('alumno_tutores')
           .select('id_alumno')

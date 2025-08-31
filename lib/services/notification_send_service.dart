@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/comunicado.dart';
+
+import '../models/notificacion.dart'; // <- usamos tu modelo de notificación
 import '../models/grupo.dart';
 import '../models/turno.dart';
 import 'fcm_service.dart';
@@ -9,27 +10,32 @@ class NotificationSendService {
   final SupabaseClient _supabase = Supabase.instance.client;
   final FCMService _fcmService = FCMService();
 
-  /// Send notification based on recipient type and message details
+  /// Envía notificaciones según el tipo de destinatario
+  ///
+  /// [messageType] debe mapearse a `TipoNotificacion`:
+  ///   'entrada' | 'salida' | 'retraso' | 'ausencia' | 'permisoEspecial' | 'comunicado'
+  ///
+  /// Si [messageType] == 'comunicado' puedes pasar [communicationType] y [priority].
   Future<Map<String, dynamic>> sendNotification({
     required String adminId,
     required String schoolId,
     required String messageType,
-    required String recipientType,
+    required String recipientType, // 'individual' | 'grupo' | 'turno' | 'todos'
     required String title,
     required String message,
-    TipoComunicado? comunicadoType,
+    TipoComunicacion? communicationType, // <- reemplaza a TipoComunicado
     PrioridadComunicado? priority,
-    Map<String, dynamic>? selectedStudent,
+    Map<String, dynamic>? selectedStudent, // { id: ..., name: ... }
     List<Grupo>? selectedGroups,
     Turno? selectedShift,
   }) async {
     try {
       debugPrint('Sending notification: $messageType to $recipientType');
 
+      // 1) Resolver destinatarios (ids de alumnos)
       List<String> targetStudentIds = [];
       String destinatarios = '';
 
-      // Get target student IDs based on recipient type
       switch (recipientType) {
         case 'individual':
           if (selectedStudent != null) {
@@ -67,63 +73,64 @@ class NotificationSendService {
         };
       }
 
-      // Create notifications for each student
+      // 2) Preparar batch de inserción en 'notificaciones'
+      final nowIso = DateTime.now().toUtc().toIso8601String();
       final List<Map<String, dynamic>> notifications = [];
       final List<String> notificationIds = [];
 
-      for (String studentId in targetStudentIds) {
-        final notificationData = {
+      // Normaliza messageType a enum.name válido
+      final tipoString = _coerceTipoName(messageType);
+      for (final studentId in targetStudentIds) {
+        final notificationData = <String, dynamic>{
           'id_alumno': studentId,
           'id_admin': adminId,
           'titulo': title,
           'mensaje': message,
-          'tipo_notificacion':
-              messageType == 'permiso' ? 'permisoEspecial' : 'comunicado',
-          'estado': 'nueva',
-          'fecha_registro': DateTime.now().toUtc().toIso8601String(),
+          // Campo correcto según tu modelo/tabla:
+          'tipo': tipoString,
+          'estado': EstadoNotificacion.nueva.name,
+          // Fecha correcta según tu modelo:
+          'fecha_hora': nowIso,
+          // Extras para tipo "comunicado" dentro de NOTIFICACIONES (si aplica)
+          if (tipoString == TipoNotificacion.comunicado.name)
+            'tipo_comunicacion': communicationType?.name ?? '',
+          if (tipoString == TipoNotificacion.comunicado.name)
+            'prioridad_comunicado': priority?.name ?? '',
+          if (tipoString == TipoNotificacion.comunicado.name)
+            'destinatarios_comunicado': destinatarios,
+          // Puedes incluir id_escuela si tu tabla lo guarda en notificaciones:
+          // 'id_escuela': schoolId,
         };
-
-        // Add comunicado-specific fields
-        if (messageType == 'comunicado') {
-          notificationData['tipo_comunicado'] = comunicadoType?.name ?? '';
-          notificationData['prioridad_comunicado'] = priority?.name ?? '';
-          notificationData['destinatarios_comunicado'] = destinatarios;
-        }
 
         notifications.add(notificationData);
       }
 
-      // Insert all notifications in batch
+      // 3) Insert batch
       final response = await _supabase
           .from('notificaciones')
           .insert(notifications)
           .select('id');
 
-      // Get the created notification IDs
       notificationIds.addAll(
-        response.map<String>((record) => record['id']?.toString() ?? ''),
+        response.map<String>((r) => r['id']?.toString() ?? ''),
       );
-
       debugPrint('Created ${notificationIds.length} notifications');
 
-      // Send push notifications based on recipient type
+      // 4) Push por FCM (no romper la firma existente)
       try {
         List<String>? groupIds;
-        if (selectedGroups != null) {
+        if (selectedGroups != null && selectedGroups.isNotEmpty) {
           groupIds = selectedGroups.map((g) => g.id).toList();
         }
-
-        String? schoolIdForFCM;
-        if (recipientType == 'todos') {
-          schoolIdForFCM = schoolId;
-        }
+        String? schoolIdForFCM = recipientType == 'todos' ? schoolId : null;
 
         await _fcmService.sendNotificationsByRecipientType(
           recipientType: recipientType,
           title: title,
           body: message,
-          messageType: messageType,
-          comunicadoType: comunicadoType?.name,
+          messageType: tipoString, // pasamos el enum.name final
+          // mantenemos el nombre del parámetro para no romper FCMService
+          comunicadoType: communicationType?.name,
           priority: priority?.name,
           destinatarios: destinatarios,
           selectedStudent: selectedStudent,
@@ -135,7 +142,7 @@ class NotificationSendService {
         debugPrint('FCM: Push notifications sent successfully');
       } catch (e) {
         debugPrint('FCM: Error sending push notifications: $e');
-        // Don't fail the whole process if push notification fails
+        // No romper el flujo si FCM falla
       }
 
       return {
@@ -156,7 +163,7 @@ class NotificationSendService {
     }
   }
 
-  /// Get student IDs from specific groups
+  // ---------- Helpers de obtención de alumnos ----------
   Future<List<String>> _getStudentIdsFromGroups(List<String> groupIds) async {
     try {
       final response = await _supabase
@@ -164,27 +171,25 @@ class NotificationSendService {
           .select('id')
           .inFilter('id_grupo', groupIds);
 
-      return response.map<String>((record) => record['id'] as String).toList();
+      return response.map<String>((r) => r['id'] as String).toList();
     } catch (e) {
       debugPrint('Error getting students from groups: $e');
       return [];
     }
   }
 
-  /// Get student IDs from specific shift
   Future<List<String>> _getStudentIdsFromShift(String shiftId) async {
     try {
       final response =
           await _supabase.from('alumnos').select('id').eq('id_turno', shiftId);
 
-      return response.map<String>((record) => record['id'] as String).toList();
+      return response.map<String>((r) => r['id'] as String).toList();
     } catch (e) {
       debugPrint('Error getting students from shift: $e');
       return [];
     }
   }
 
-  /// Get all student IDs from school
   Future<List<String>> _getStudentIdsFromSchool(String schoolId) async {
     try {
       final response = await _supabase
@@ -192,14 +197,14 @@ class NotificationSendService {
           .select('id')
           .eq('id_escuela', schoolId);
 
-      return response.map<String>((record) => record['id'] as String).toList();
+      return response.map<String>((r) => r['id'] as String).toList();
     } catch (e) {
       debugPrint('Error getting students from school: $e');
       return [];
     }
   }
 
-  /// Get notification statistics for sent notifications
+  /// Estadísticas de notificaciones enviadas por un admin
   Future<Map<String, dynamic>> getNotificationStats({
     required String adminId,
     String? startDate,
@@ -208,30 +213,27 @@ class NotificationSendService {
     try {
       final query = _supabase
           .from('notificaciones')
-          .select('tipo_notificacion, estado')
+          // columnas correctas según tu modelo/tabla
+          .select('tipo, estado, fecha_hora')
           .eq('id_admin', adminId);
 
       if (startDate != null) {
-        query.gte('fecha_registro', startDate);
+        query.gte('fecha_hora', startDate); // <- antes era fecha_registro
       }
       if (endDate != null) {
-        query.lte('fecha_registro', endDate);
+        query.lte('fecha_hora', endDate);
       }
 
       final response = await query;
 
-      int totalSent = response.length;
-      int permisosEspeciales = response
-          .where((n) => n['tipo_notificacion'] == 'permisoEspecial')
-          .length;
-      int comunicados =
-          response.where((n) => n['tipo_notificacion'] == 'comunicado').length;
-      int leidas = response.where((n) => n['estado'] == 'leida').length;
+      final totalSent = response.length;
+      final permisosEspeciales =
+          response.where((n) => n['tipo'] == 'permisoEspecial').length;
+      final comunicados =
+          response.where((n) => n['tipo'] == 'comunicado').length;
+      final leidas = response.where((n) => n['estado'] == 'leida').length;
 
-      int readRate = 0;
-      if (totalSent > 0) {
-        readRate = ((leidas / totalSent) * 100).round();
-      }
+      final readRate = totalSent > 0 ? ((leidas / totalSent) * 100).round() : 0;
 
       return {
         'success': true,
@@ -250,5 +252,22 @@ class NotificationSendService {
         'error': 'Error al obtener estadísticas: $e',
       };
     }
+  }
+
+  // ---------- Normalización del tipo ----------
+  /// Acepta valores de UI como 'permiso', 'permisoEspecial', 'comunicado', etc.
+  /// y devuelve exactamente el `.name` de `TipoNotificacion`.
+  String _coerceTipoName(String raw) {
+    final s = raw.trim().toLowerCase();
+    if (s == 'permiso' || s == 'permisoespecial') {
+      return TipoNotificacion.permisoEspecial.name;
+    }
+    if (s == 'entrada') return TipoNotificacion.entrada.name;
+    if (s == 'salida') return TipoNotificacion.salida.name;
+    if (s == 'retraso') return TipoNotificacion.retraso.name;
+    if (s == 'ausencia') return TipoNotificacion.ausencia.name;
+    if (s == 'comunicado') return TipoNotificacion.comunicado.name;
+    // fallback seguro
+    return TipoNotificacion.entrada.name;
   }
 }

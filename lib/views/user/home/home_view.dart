@@ -8,7 +8,7 @@ import 'package:alertaescolar/components/schedule/today_schedule_section.dart';
 import 'package:alertaescolar/components/students/students_overview_section.dart';
 import 'package:alertaescolar/managers/student_provider.dart';
 import 'package:alertaescolar/models/usuario.dart';
-import 'package:alertaescolar/views/user/students/students_view_new.dart';
+import 'package:alertaescolar/views/user/students/students_view.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../app/app_theme.dart';

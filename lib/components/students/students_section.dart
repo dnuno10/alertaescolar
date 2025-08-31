@@ -12,14 +12,13 @@ import 'students_empty_state.dart';
 class StudentsSection extends StatefulWidget {
   final bool isWide;
   final Size screenSize;
-  final VoidCallback?
-      onAddStudent; // Make this optional since we'll use floating button
+  final VoidCallback? onAddStudent;
 
   const StudentsSection({
     super.key,
     required this.isWide,
     required this.screenSize,
-    this.onAddStudent, // Make optional
+    this.onAddStudent,
   });
 
   @override
@@ -32,7 +31,6 @@ class _StudentsSectionState extends State<StudentsSection> {
   @override
   void initState() {
     super.initState();
-    // Initialize with empty list, will be populated in build when provider is available
     filteredStudents = [];
   }
 
@@ -45,43 +43,13 @@ class _StudentsSectionState extends State<StudentsSection> {
         // Convert StudentDetails to Alumno using the provider's method
         final alumnosList = studentProvider.getAlumnosFromStudents();
 
-        // Update filtered students with the converted list
+        // Sin loader local: sólo sincronizamos la lista mostrada
         if (filteredStudents.isEmpty ||
             filteredStudents.length != alumnosList.length) {
           filteredStudents = List.from(alumnosList);
         }
 
-        if (studentProvider.isLoading) {
-          return Container(
-            height: widget.screenSize.height * 0.4,
-            decoration: BoxDecoration(
-              color: AppTheme.getCardColor(context),
-              borderRadius: BorderRadius.circular(
-                  AppTheme.getMediumRadius(widget.screenSize)),
-            ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    color: AppTheme.accentPurple,
-                    strokeWidth: 3,
-                  ),
-                  SizedBox(
-                      height: AppTheme.getMediumPadding(widget.screenSize)),
-                  Text(
-                    l10n.loadingStudents,
-                    style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
-                      color: AppTheme.getTextPrimaryColor(context),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-
+        // Errores -> estado de error
         if (studentProvider.error != null) {
           return StudentsErrorState(
             studentProvider: studentProvider,
@@ -89,7 +57,7 @@ class _StudentsSectionState extends State<StudentsSection> {
           );
         }
 
-        // Check if there are no students at all
+        // Sin alumnos -> estado vacío (el overlay global de StudentsView cubre la carga inicial)
         if (alumnosList.isEmpty) {
           return Center(
             child: Column(
@@ -103,6 +71,7 @@ class _StudentsSectionState extends State<StudentsSection> {
           );
         }
 
+        // Lista de alumnos
         return Padding(
           padding: EdgeInsets.symmetric(
             horizontal: AppTheme.getMediumPadding(widget.screenSize),

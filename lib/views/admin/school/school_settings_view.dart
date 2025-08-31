@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../app/app_theme.dart';
@@ -20,13 +22,13 @@ class SchoolSettingsView extends StatefulWidget {
 class _SchoolSettingsViewState extends State<SchoolSettingsView>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late TabController _tabController;
-  late ScrollController _scrollController;
-// Add a separate key for each tab
-  final _informationFormKey = GlobalKey<FormState>();
-  final _contactFormKey = GlobalKey<FormState>();
   bool _isKeyboardVisible = false;
 
-  // Form controllers
+  // Keys por pestaña (validación independiente)
+  final _informationFormKey = GlobalKey<FormState>();
+  final _contactFormKey = GlobalKey<FormState>();
+
+  // Controllers
   final _nombreController = TextEditingController();
   final _codigoController = TextEditingController();
   final _direccionController = TextEditingController();
@@ -46,33 +48,30 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
   final _emailFocusNode = FocusNode();
   final _sitioWebFocusNode = FocusNode();
 
+  // Estado
   TipoEscuela _selectedTipo = TipoEscuela.publica;
 
-  // Educational levels as booleans to match database structure
+  // Niveles (banderas para UI) + lista para modelo
   bool _hasPreescolar = false;
   bool _hasPrimaria = false;
   bool _hasSecundaria = false;
   bool _hasBachillerato = false;
-
   List<NivelEducativo> _selectedNiveles = [NivelEducativo.primaria];
+
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _scrollController = ScrollController();
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadSchoolData();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadSchoolData());
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _tabController.dispose();
-    _scrollController.dispose();
 
     // Dispose controllers
     _nombreController.dispose();
@@ -93,123 +92,93 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
     _telefonoFocusNode.dispose();
     _emailFocusNode.dispose();
     _sitioWebFocusNode.dispose();
-
     super.dispose();
   }
 
   @override
   void didChangeMetrics() {
     super.didChangeMetrics();
-    final bottomInset = WidgetsBinding
-        .instance.platformDispatcher.views.first.viewInsets.bottom;
-    final newIsKeyboardVisible = bottomInset > 0;
-
-    if (newIsKeyboardVisible != _isKeyboardVisible) {
-      setState(() {
-        _isKeyboardVisible = newIsKeyboardVisible;
-      });
+    final view = WidgetsBinding.instance.platformDispatcher.views.firstOrNull;
+    final bottomInset = view?.viewInsets.bottom ?? 0;
+    final visible = bottomInset > 0;
+    if (visible != _isKeyboardVisible && mounted) {
+      setState(() => _isKeyboardVisible = visible);
     }
   }
 
   Future<void> _loadSchoolData() async {
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() => _isLoading = true);
     try {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       final schoolProvider =
           Provider.of<SchoolProvider>(context, listen: false);
       final l10n = AppLocalizations.of(context);
 
-      if (userProvider.currentUser?.escuelaId == null) {
-        _showErrorDialog(
-          l10n.error,
-          l10n.noAssociatedSchool,
-        );
+      final escuelaId = userProvider.currentUser?.escuelaId;
+      if (escuelaId == null || escuelaId.isEmpty) {
+        _showErrorDialog(l10n.error, l10n.noAssociatedSchool);
         return;
       }
 
-      final school = await schoolProvider
-          .loadSchool(userProvider.currentUser!.escuelaId!, context: context);
-
+      final school =
+          await schoolProvider.loadSchool(escuelaId, context: context);
       if (school == null) {
-        if (mounted) {
-          _showErrorDialog(
-            l10n.error,
-            l10n.errorLoadingSchoolInfo,
-          );
-        }
+        _showErrorDialog(l10n.error, l10n.errorLoadingSchoolInfo);
         return;
       }
 
-      if (mounted) {
-        setState(() {
-          _nombreController.text = school.nombre;
-          _codigoController.text = school.codigo;
-          _direccionController.text = school.direccion;
-          _telefonoController.text = school.telefono;
-          _emailController.text = school.email;
-          _sitioWebController.text = school.sitioWeb ?? '';
-          _descripcionController.text = school.descripcion ?? '';
-          _selectedTipo = school.tipo;
+      if (!mounted) return;
+      setState(() {
+        _nombreController.text = school.nombre;
+        _codigoController.text = school.codigo ?? ''; // <- null-safe
+        _direccionController.text = school.direccion;
+        _telefonoController.text = school.telefono;
+        _emailController.text = school.email;
+        _sitioWebController.text = school.sitioWeb ?? '';
+        _descripcionController.text = school.descripcion ?? '';
+        _selectedTipo = school.tipo;
 
-          // Convert educational levels from list to boolean flags
-          _hasPreescolar =
-              school.nivelesEducativos.contains(NivelEducativo.preescolar);
-          _hasPrimaria =
-              school.nivelesEducativos.contains(NivelEducativo.primaria);
-          _hasSecundaria =
-              school.nivelesEducativos.contains(NivelEducativo.secundaria);
-          _hasBachillerato =
-              school.nivelesEducativos.contains(NivelEducativo.bachillerato);
+        // map niveles -> banderas
+        _hasPreescolar =
+            school.nivelesEducativos.contains(NivelEducativo.preescolar);
+        _hasPrimaria =
+            school.nivelesEducativos.contains(NivelEducativo.primaria);
+        _hasSecundaria =
+            school.nivelesEducativos.contains(NivelEducativo.secundaria);
+        _hasBachillerato =
+            school.nivelesEducativos.contains(NivelEducativo.bachillerato);
 
-          // Update selected levels list for backward compatibility
-          _updateSelectedNivelesFromBooleans();
+        // mantener lista en sync
+        _updateSelectedNivelesFromBooleans();
 
-          // Extract year from fundacion if available
-          _yearFoundedController.text = school.fechaRegistro.year.toString();
-
-          // Extra data that might be available in your actual model
-          // Adjust as needed
-        });
-      }
+        // usa año del registro como “fundación” (si luego tienes otro campo, cámbialo aquí)
+        _yearFoundedController.text = school.fechaRegistro.year.toString();
+      });
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context);
-        _showErrorDialog(
-          l10n.error,
-          '${l10n.errorLoadingSchoolInfo}: $e',
-        );
+        _showErrorDialog(l10n.error, '${l10n.errorLoadingSchoolInfo}: $e');
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _hideKeyboard() {
-    // Unfocus all focus nodes
-    _nombreFocusNode.unfocus();
-    _codigoFocusNode.unfocus();
-    _descripcionFocusNode.unfocus();
-    _yearFoundedFocusNode.unfocus();
-    _direccionFocusNode.unfocus();
-    _telefonoFocusNode.unfocus();
-    _emailFocusNode.unfocus();
-    _sitioWebFocusNode.unfocus();
-
-    // Alternative way to hide keyboard
-    FocusScope.of(context).unfocus();
-  }
+  void _hideKeyboard() => FocusScope.of(context).unfocus();
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final screenSize = MediaQuery.of(context).size;
+
+    // Altura estimada del header + tabs (mantén esto simple y estable)
+    final headerHeight = MediaQuery.of(context).padding.top +
+        AppTheme.getSmallPadding(screenSize) +
+        AppTheme.getMediumPadding(screenSize) +
+        AppTheme.getH1(screenSize).fontSize! +
+        AppTheme.getBodyMedium(screenSize).fontSize! +
+        AppTheme.getMediumPadding(screenSize) * 2 +
+        64; // alto aproximado del TabBar
 
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
@@ -219,7 +188,7 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
             onTap: _hideKeyboard,
             child: Stack(
               children: [
-                // Header fijo y tab bar
+                // Header + TabBar
                 Container(
                   padding: EdgeInsets.only(
                     top: MediaQuery.of(context).padding.top +
@@ -232,7 +201,6 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Title and Actions Row
                       Text(
                         l10n.schoolSettings,
                         style: AppTheme.getH1(screenSize).copyWith(
@@ -290,15 +258,10 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
                     ],
                   ),
                 ),
-                // Contenido scrolleable debajo del header fijo
+
+                // Contenido
                 Positioned.fill(
-                  top: MediaQuery.of(context).padding.top +
-                      AppTheme.getSmallPadding(screenSize) +
-                      AppTheme.getLargePadding(screenSize) +
-                      AppTheme.getH1(screenSize).fontSize! +
-                      AppTheme.getBodyMedium(screenSize).fontSize! +
-                      AppTheme.getMediumPadding(screenSize) * 2 +
-                      48, // Altura aproximada del TabBar
+                  top: headerHeight,
                   child: Padding(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -321,22 +284,30 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
                           hasPrimaria: _hasPrimaria,
                           hasSecundaria: _hasSecundaria,
                           hasBachillerato: _hasBachillerato,
-                          onPreescolarChanged: (value) => setState(() {
-                            _hasPreescolar = value;
-                            _updateSelectedNivelesFromBooleans();
-                          }),
-                          onPrimariaChanged: (value) => setState(() {
-                            _hasPrimaria = value;
-                            _updateSelectedNivelesFromBooleans();
-                          }),
-                          onSecundariaChanged: (value) => setState(() {
-                            _hasSecundaria = value;
-                            _updateSelectedNivelesFromBooleans();
-                          }),
-                          onBachilleratoChanged: (value) => setState(() {
-                            _hasBachillerato = value;
-                            _updateSelectedNivelesFromBooleans();
-                          }),
+                          onPreescolarChanged: (v) {
+                            setState(() {
+                              _hasPreescolar = v;
+                              _updateSelectedNivelesFromBooleans();
+                            });
+                          },
+                          onPrimariaChanged: (v) {
+                            setState(() {
+                              _hasPrimaria = v;
+                              _updateSelectedNivelesFromBooleans();
+                            });
+                          },
+                          onSecundariaChanged: (v) {
+                            setState(() {
+                              _hasSecundaria = v;
+                              _updateSelectedNivelesFromBooleans();
+                            });
+                          },
+                          onBachilleratoChanged: (v) {
+                            setState(() {
+                              _hasBachillerato = v;
+                              _updateSelectedNivelesFromBooleans();
+                            });
+                          },
                           isLoading: _isLoading,
                           onSave: _saveSettings,
                           getTipoLabel: _getTipoLabel,
@@ -363,7 +334,8 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
                     ),
                   ),
                 ),
-                // Botón flotante animado
+
+                // Botón Guardar (oculto si el teclado está visible)
                 AnimatedPositioned(
                   duration: const Duration(milliseconds: 200),
                   curve: Curves.fastOutSlowIn,
@@ -419,78 +391,57 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
     }
   }
 
-  // Image picker functionality to be implemented later
-
-  void _saveSettings() async {
-    // Check which tab is active and validate the appropriate form
+  Future<void> _saveSettings() async {
+    // Valida solo la pestaña activa
     final isInformationTab = _tabController.index == 0;
     final formKey = isInformationTab ? _informationFormKey : _contactFormKey;
-
-    // Safer null check
-    if (formKey.currentState == null || !formKey.currentState!.validate()) {
-      return;
-    }
+    final formState = formKey.currentState;
+    if (formState == null || !formState.validate()) return;
 
     final l10n = AppLocalizations.of(context);
-    // Validate required fields
-    final List<String> missingFields = [];
 
-    if (_nombreController.text.trim().isEmpty) {
-      missingFields.add(l10n.schoolName);
-    }
-    if (_direccionController.text.trim().isEmpty) {
-      missingFields.add(l10n.address);
-    }
-    if (_telefonoController.text.trim().isEmpty) {
-      missingFields.add(l10n.phone);
-    }
-    if (_emailController.text.trim().isEmpty) {
-      missingFields.add(l10n.email);
-    }
-    if (_yearFoundedController.text.trim().isEmpty) {
-      missingFields.add(l10n.foundedYear);
-    }
+    // Campos requeridos (por diseño)
+    final missing = <String>[];
+    if (_nombreController.text.trim().isEmpty) missing.add(l10n.schoolName);
+    if (_direccionController.text.trim().isEmpty) missing.add(l10n.address);
+    if (_telefonoController.text.trim().isEmpty) missing.add(l10n.phone);
+    if (_emailController.text.trim().isEmpty) missing.add(l10n.email);
+    if (_yearFoundedController.text.trim().isEmpty)
+      missing.add(l10n.foundedYear);
 
-    if (missingFields.isNotEmpty) {
+    if (missing.isNotEmpty) {
       _showErrorDialog(
         l10n.requiredFields,
-        '${l10n.pleaseCompleteFields}:\n- ${missingFields.join('\n- ')}',
+        '${l10n.pleaseCompleteFields}:\n- ${missing.join('\n- ')}',
       );
       return;
     }
 
     setState(() => _isLoading = true);
-
     try {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       final schoolProvider =
           Provider.of<SchoolProvider>(context, listen: false);
 
-      if (userProvider.currentUser?.escuelaId == null) {
-        _showErrorDialog(
-          l10n.error,
-          l10n.noAssociatedSchool,
-        );
+      final escuelaId = userProvider.currentUser?.escuelaId;
+      if (escuelaId == null || escuelaId.isEmpty) {
+        _showErrorDialog(l10n.error, l10n.noAssociatedSchool);
         return;
       }
 
-      // Get current school data
       final currentSchool = schoolProvider.currentSchool;
       if (currentSchool == null) {
-        _showErrorDialog(
-          l10n.error,
-          l10n.couldNotGetSchoolInfo,
-        );
+        _showErrorDialog(l10n.error, l10n.couldNotGetSchoolInfo);
         return;
       }
 
-      // Update selected niveles from the boolean flags
       _updateSelectedNivelesFromBooleans();
 
-      // Update school data
       final updatedSchool = currentSchool.copyWith(
         nombre: _nombreController.text.trim(),
-        codigo: _codigoController.text.trim(),
+        codigo: _codigoController.text.trim().isEmpty
+            ? null
+            : _codigoController.text.trim(),
         tipo: _selectedTipo,
         nivelesEducativos: _selectedNiveles,
         direccion: _direccionController.text.trim(),
@@ -504,103 +455,83 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
             : _descripcionController.text.trim(),
       );
 
-      final success =
+      final ok =
           await schoolProvider.updateSchool(updatedSchool, context: context);
 
-      if (mounted) {
-        setState(() => _isLoading = false);
+      if (!mounted) return;
+      setState(() => _isLoading = false);
 
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                l10n.settingsUpdated,
-                style:
-                    AppTheme.getCaption(MediaQuery.of(context).size).copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              backgroundColor: AppTheme.successColor,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(
-                    AppTheme.getSmallRadius(MediaQuery.of(context).size)),
+      if (ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n.settingsUpdated,
+              style: AppTheme.getCaption(MediaQuery.of(context).size).copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          );
-        } else {
-          _showErrorDialog(
-            l10n.error,
-            schoolProvider.error ?? l10n.unknownError,
-          );
-        }
+            backgroundColor: AppTheme.successColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(
+                AppTheme.getSmallRadius(MediaQuery.of(context).size),
+              ),
+            ),
+          ),
+        );
+      } else {
+        _showErrorDialog(l10n.error, schoolProvider.error ?? l10n.unknownError);
       }
     } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        final l10n = AppLocalizations.of(context);
-        _showErrorDialog(
-          l10n.error,
-          '${l10n.errorSavingChanges}: ${e.toString()}',
-        );
-      }
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      final l10n = AppLocalizations.of(context);
+      _showErrorDialog(l10n.error, '${l10n.errorSavingChanges}: $e');
     }
   }
 
   void _showErrorDialog(String title, String message) {
+    final screenSize = MediaQuery.of(context).size;
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        final l10n = AppLocalizations.of(context);
-        final screenSize = MediaQuery.of(context).size;
-
-        return AlertDialog(
-          title: Text(title),
-          content: Text(message),
-          backgroundColor: AppTheme.getCardColor(context),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(
-              AppTheme.getMediumRadius(screenSize),
-            ),
+      builder: (_) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        backgroundColor: AppTheme.getCardColor(context),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(
+            AppTheme.getMediumRadius(screenSize),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                l10n.ok,
-                style: TextStyle(color: AppTheme.accentPurple),
-              ),
-            ),
-          ],
-        );
-      },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(AppLocalizations.of(context).ok,
+                style: TextStyle(color: AppTheme.accentPurple)),
+          ),
+        ],
+      ),
     );
   }
 
-  // Helper method to update selected niveles list from boolean flags
   void _updateSelectedNivelesFromBooleans() {
-    _selectedNiveles = [];
+    final niveles = <NivelEducativo>[];
+    if (_hasPreescolar) niveles.add(NivelEducativo.preescolar);
+    if (_hasPrimaria) niveles.add(NivelEducativo.primaria);
+    if (_hasSecundaria) niveles.add(NivelEducativo.secundaria);
+    if (_hasBachillerato) niveles.add(NivelEducativo.bachillerato);
 
-    if (_hasPreescolar) {
-      _selectedNiveles.add(NivelEducativo.preescolar);
-    }
-    if (_hasPrimaria) {
-      _selectedNiveles.add(NivelEducativo.primaria);
-    }
-    if (_hasSecundaria) {
-      _selectedNiveles.add(NivelEducativo.secundaria);
-    }
-    if (_hasBachillerato) {
-      _selectedNiveles.add(NivelEducativo.bachillerato);
-    }
-
-    // Default to primaria if nothing is selected
-    if (_selectedNiveles.isEmpty) {
-      _selectedNiveles.add(NivelEducativo.primaria);
+    if (niveles.isEmpty) {
+      // por defecto primaria
       _hasPrimaria = true;
+      niveles.add(NivelEducativo.primaria);
     }
+    _selectedNiveles = niveles;
   }
+}
 
-  // This method was removed as it's no longer needed
+extension on PlatformDispatcher {
+  // para compatibilidad en algunos entornos
+  FlutterView? get firstOrNull => views.isNotEmpty ? views.first : null;
 }

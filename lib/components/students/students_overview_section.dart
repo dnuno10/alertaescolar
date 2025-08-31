@@ -7,7 +7,7 @@ import '../../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../../managers/student_provider.dart';
-import '../../models/alumno.dart';
+import '../../models/models.dart';
 import '../../views/user/students/student_detail_view.dart';
 
 class StudentsOverviewSection extends StatelessWidget {
@@ -77,7 +77,7 @@ class StudentsOverviewSection extends StatelessWidget {
                   child: Padding(
                     padding: EdgeInsets.symmetric(
                         vertical: AppTheme.getMediumPadding(screenSize)),
-                    child: CircularProgressIndicator(
+                    child: const CircularProgressIndicator(
                       color: AppTheme.accentPurple,
                       strokeWidth: 3,
                     ),
@@ -113,19 +113,22 @@ class StudentsOverviewSection extends StatelessWidget {
                   return GestureDetector(
                     onTap: () {
                       HapticFeedback.mediumImpact();
-                      // Convertir StudentDetails a Alumno
+
+                      // Mapear StudentDetails -> Alumno (modelo nuevo)
                       final alumno = Alumno(
                         id: student.id,
                         nombre: student.nombre,
-                        id_grupo: student.grupoId,
+                        idGrupo: student.grupoId,
                         grupo: student.grupo,
-                        id_escuela: student.escuelaId,
-                        id_llave: student.llaveId ?? '',
-                        vinculado: student.llaveActiva,
+                        idEscuela: student.escuelaId,
                         matricula: student.matricula,
-                        fecha_registro: student.fechaRegistro,
+                        fechaRegistro: student.fechaRegistro,
+                        idTurno: (student.turnoId ?? '').toString(),
                         turno: _mapStringToTurnoEnum(student.turno),
+                        idLlave: student.llaveId, // puede ser null
+                        vinculado: student.llaveActiva,
                       );
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -150,13 +153,12 @@ class StudentsOverviewSection extends StatelessWidget {
     );
   }
 
-  // Helper para convertir string a TurnoEnum
+  // Helper: string -> TurnoEnum (default: desconocido)
   TurnoEnum _mapStringToTurnoEnum(String? turnoStr) {
-    if (turnoStr == null) return TurnoEnum.matutino;
-    return TurnoEnum.values.firstWhere(
-      (e) => e.name.toLowerCase() == turnoStr.toLowerCase(),
-      orElse: () => TurnoEnum.matutino,
-    );
+    final s = (turnoStr ?? '').toLowerCase().trim();
+    if (s.contains('vespertino')) return TurnoEnum.vespertino;
+    if (s.contains('matutino')) return TurnoEnum.matutino;
+    return TurnoEnum.desconocido;
   }
 }
 
@@ -211,7 +213,9 @@ class StudentListItem extends StatelessWidget {
             ),
             child: Center(
               child: Text(
-                student.nombre[0].toUpperCase(),
+                student.nombre.isNotEmpty
+                    ? student.nombre[0].toUpperCase()
+                    : '?',
                 style: AppTheme.getH2(screenSize).copyWith(
                   color: Colors.white,
                   letterSpacing: -0.2,

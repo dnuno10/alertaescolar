@@ -1,38 +1,48 @@
+import 'package:flutter/material.dart';
+
 import 'package:alertaescolar/models/alumno.dart';
 import 'package:alertaescolar/managers/student_provider.dart';
+
+// User
+import 'package:alertaescolar/views/user/home/home_view.dart';
+import 'package:alertaescolar/views/user/profile/profile_view.dart';
+import 'package:alertaescolar/views/user/students/students_view.dart';
+import 'package:alertaescolar/views/user/students/student_detail_view.dart';
+import 'package:alertaescolar/views/user/notifications/notifications_view.dart';
+import 'package:alertaescolar/views/user/students/student_confirmation_view.dart';
+
+// Profile - subrutas
+import 'package:alertaescolar/views/user/profile/personal_data_navigation_view.dart';
+import 'package:alertaescolar/views/user/profile/personal_info/contact_information_view.dart';
+import 'package:alertaescolar/views/user/profile/personal_info/personal_information_view_new.dart'
+    as personal_info;
+import 'package:alertaescolar/views/user/profile/notification_settings_view_new.dart'
+    as notification_settings;
+import 'package:alertaescolar/views/user/profile/family_information_view.dart';
+
+// Admin
 import 'package:alertaescolar/views/admin/home/admin_dashboard_view.dart';
 import 'package:alertaescolar/views/admin/profile/admin_profile_view.dart';
-import 'package:alertaescolar/views/admin/qr_and_notifications/announcements_view.dart';
 import 'package:alertaescolar/views/admin/qr_and_notifications/attendance_control_view.dart';
+import 'package:alertaescolar/views/admin/qr_and_notifications/announcements_view.dart';
+import 'package:alertaescolar/views/admin/students/students_directory_view.dart';
+import 'package:alertaescolar/views/admin/students/student_profile_admin_view.dart';
 import 'package:alertaescolar/views/admin/schedule/schedule_management_view.dart';
 import 'package:alertaescolar/views/admin/school/school_settings_view.dart';
-import 'package:alertaescolar/views/admin/students/student_profile_admin_view.dart';
-import 'package:alertaescolar/views/admin/students/students_directory_view.dart';
+
+// Legal
 import 'package:alertaescolar/views/legal/privacy_view.dart';
 import 'package:alertaescolar/views/legal/terms_view.dart';
-import 'package:alertaescolar/views/user/students/students_view_new.dart';
-import 'package:alertaescolar/views/user/students/student_detail_view.dart';
-import 'package:flutter/material.dart';
-import '../views/user/home/home_view.dart';
-import '../views/user/profile/profile_view.dart';
-import '../views/user/profile/personal_data_navigation_view.dart';
-import '../views/user/profile/personal_info/contact_information_view.dart';
-import '../views/user/profile/personal_info/personal_information_view_new.dart'
-    as personal_info;
 
-import '../views/user/profile/notification_settings_view_new.dart'
-    as notification_settings;
-import '../views/user/profile/family_information_view.dart';
-import '../views/user/notifications/notifications_view.dart';
-import '../widgets/custom_snack_bar.dart';
+// Auth
+import 'package:alertaescolar/views/auth/intro_view.dart';
+import 'package:alertaescolar/views/auth/login_view.dart';
+import 'package:alertaescolar/views/auth/signup_view.dart';
+import 'package:alertaescolar/views/auth/verify_magic_link_view.dart';
+import 'package:alertaescolar/views/auth/finish_setting_up_view.dart';
 
-// Auth view imports
-import '../views/auth/intro_view.dart';
-import '../views/auth/login_view.dart';
-import '../views/auth/signup_view.dart';
-import '../views/auth/verify_magic_link_view.dart';
-import '../views/auth/finish_setting_up_view.dart';
-import '../views/user/students/student_confirmation_view.dart';
+// UI
+import 'package:alertaescolar/widgets/custom_snack_bar.dart';
 
 class AppRoutes {
   // Auth routes
@@ -46,6 +56,7 @@ class AppRoutes {
   static const String terms = '/terms';
   static const String privacy = '/privacy';
 
+  // User routes
   static const String home = '/';
   static const String profile = '/profile';
   static const String students = '/students';
@@ -84,55 +95,52 @@ class AppRoutes {
     debugPrint(
         "AppRoutes: onGenerateRoute called with route: ${settings.name}");
 
-    // Add extra debugging for admin routes
     if (settings.name == adminDashboard) {
       debugPrint(
-          "AppRoutes: Admin dashboard route requested - this should be the final destination");
+          "AppRoutes: Admin dashboard route requested - final admin destination");
     }
 
     switch (settings.name) {
+      // Legal
       case terms:
         return MaterialPageRoute(
           builder: (context) => const TermsView(),
           settings: const RouteSettings(name: terms),
         );
-
       case privacy:
         return MaterialPageRoute(
           builder: (context) => const PrivacyView(),
           settings: const RouteSettings(name: privacy),
         );
 
-      // Auth routes
+      // Auth
       case intro:
-        debugPrint("AppRoutes: Building IntroView");
         return MaterialPageRoute(
           builder: (context) => const IntroView(),
-          settings: RouteSettings(name: intro),
+          settings: const RouteSettings(name: intro),
         );
       case login:
-        debugPrint("AppRoutes: Building LoginView");
         return MaterialPageRoute(
           builder: (context) => const LoginView(),
-          settings: RouteSettings(name: login),
+          settings: const RouteSettings(name: login),
         );
       case signup:
-        debugPrint("AppRoutes: Building SignUpView");
         return MaterialPageRoute(
           builder: (context) => const SignUpView(),
-          settings: RouteSettings(name: signup),
+          settings: const RouteSettings(name: signup),
         );
       case verifyMagicLink:
         final email = settings.arguments as String?;
-
         if (email == null) {
           return MaterialPageRoute(
+            settings: const RouteSettings(name: verifyMagicLink),
             builder: (context) => Scaffold(
               body: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text("Se requiere un correo electrónico para verificar"),
+                    const Text(
+                        "Se requiere un correo electrónico para verificar"),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
@@ -145,110 +153,99 @@ class AppRoutes {
                         Navigator.pushReplacementNamed(
                             context, AppRoutes.login);
                       },
-                      child: Text("Volver al inicio de sesión"),
+                      child: const Text("Volver al inicio de sesión"),
                     ),
                   ],
                 ),
               ),
             ),
-            settings: RouteSettings(name: verifyMagicLink),
           );
         }
         return MaterialPageRoute(
           builder: (context) => VerifyMagicLinkView(email: email),
-          settings: RouteSettings(name: verifyMagicLink),
+          settings: const RouteSettings(name: verifyMagicLink),
         );
-
       case finishSettingUp:
-        debugPrint("AppRoutes: Building FinishSettingUpView");
         return MaterialPageRoute(
           builder: (context) => const FinishSettingUpView(),
-          settings: RouteSettings(name: finishSettingUp),
+          settings: const RouteSettings(name: finishSettingUp),
         );
 
+      // User
       case home:
-        debugPrint("AppRoutes: Building HomeView");
         return MaterialPageRoute(
           builder: (context) => const HomeView(),
-          settings: RouteSettings(name: home),
+          settings: const RouteSettings(name: home),
         );
       case profile:
-        debugPrint("AppRoutes: Building ProfileView");
         return MaterialPageRoute(
           builder: (context) => const ProfileView(),
-          settings: RouteSettings(name: profile),
+          settings: const RouteSettings(name: profile),
         );
       case students:
-        debugPrint("AppRoutes: Building StudentsView");
         return MaterialPageRoute(
           builder: (context) => const StudentsView(),
-          settings: RouteSettings(name: students),
+          settings: const RouteSettings(name: students),
         );
       case notifications:
-        debugPrint("AppRoutes: Building NotificationsView");
         return MaterialPageRoute(
           builder: (context) => const NotificationsView(),
-          settings: RouteSettings(name: notifications),
+          settings: const RouteSettings(name: notifications),
         );
+
+      // Profile subroutes
       case personalDataNavigation:
         return MaterialPageRoute(
           builder: (context) => const PersonalDataNavigationView(),
-          settings: RouteSettings(name: personalDataNavigation),
+          settings: const RouteSettings(name: personalDataNavigation),
         );
       case contactInformation:
         return MaterialPageRoute(
           builder: (context) => const ContactInformationView(),
-          settings: RouteSettings(name: contactInformation),
+          settings: const RouteSettings(name: contactInformation),
         );
       case personalInformation:
         return MaterialPageRoute(
           builder: (context) => const personal_info.PersonalInformationView(),
-          settings: RouteSettings(name: personalInformation),
+          settings: const RouteSettings(name: personalInformation),
         );
-
       case notificationSettings:
         return MaterialPageRoute(
           builder: (context) =>
               const notification_settings.NotificationSettingsView(),
-          settings: RouteSettings(name: notificationSettings),
+          settings: const RouteSettings(name: notificationSettings),
         );
       case familyInformation:
         return MaterialPageRoute(
           builder: (context) => const FamilyInformationView(),
-          settings: RouteSettings(name: familyInformation),
+          settings: const RouteSettings(name: familyInformation),
         );
 
-      // Admin routes
+      // Admin
       case adminDashboard:
-        debugPrint(
-            "AppRoutes: Building AdminDashboardView - FINAL ADMIN DESTINATION");
         return MaterialPageRoute(
           builder: (context) => const AdminDashboardView(),
-          settings: RouteSettings(name: adminDashboard),
+          settings: const RouteSettings(name: adminDashboard),
         );
       case adminProfile:
-        debugPrint("AppRoutes: Building AdminProfileView");
         return MaterialPageRoute(
           builder: (context) => const AdminProfileView(),
-          settings: RouteSettings(name: adminProfile),
+          settings: const RouteSettings(name: adminProfile),
         );
       case adminAttendanceControl:
-        debugPrint("AppRoutes: Building AttendanceControlView");
         return MaterialPageRoute(
           builder: (context) => const AttendanceControlView(),
-          settings: RouteSettings(name: adminAttendanceControl),
+          settings: const RouteSettings(name: adminAttendanceControl),
         );
       case adminAnnouncements:
-        debugPrint("AppRoutes: Building AnnouncementsView");
         return MaterialPageRoute(
           builder: (context) => const AnnouncementsView(),
-          settings: RouteSettings(name: adminAnnouncements),
+          settings: const RouteSettings(name: adminAnnouncements),
         );
       case adminStudentsDirectory:
-        debugPrint("AppRoutes: Building StudentsDirectoryView");
         return MaterialPageRoute(
           builder: (context) => const StudentsDirectoryView(),
-          settings: RouteSettings(name: adminStudentsDirectory),
+          settings: const RouteSettings(name: adminStudentsDirectory),
         );
       case adminStudentProfile:
         final student = settings.arguments as Alumno?;
@@ -256,100 +253,103 @@ class AppRoutes {
           return MaterialPageRoute(
             builder: (context) => const Scaffold(
               body: Center(
-                child: Text("Se requiere un correo electrónico para verificar"),
+                child: Text("Se requiere un estudiante para abrir el perfil"),
               ),
             ),
-            settings: RouteSettings(name: adminStudentProfile),
+            settings: const RouteSettings(name: adminStudentProfile),
           );
         }
         final studentDetails = _convertAlumnoToStudentDetails(student);
-        debugPrint("AppRoutes: Building StudentProfileAdminView");
         return MaterialPageRoute(
           builder: (context) =>
               StudentProfileAdminView(student: studentDetails),
-          settings: RouteSettings(name: adminStudentProfile),
+          settings: const RouteSettings(name: adminStudentProfile),
         );
       case adminScheduleManagement:
-        debugPrint("AppRoutes: Building ScheduleManagementView");
         return MaterialPageRoute(
           builder: (context) => const ScheduleManagementView(),
-          settings: RouteSettings(name: adminScheduleManagement),
+          settings: const RouteSettings(name: adminScheduleManagement),
         );
       case adminSchoolSettings:
-        debugPrint("AppRoutes: Building SchoolSettingsView");
         return MaterialPageRoute(
           builder: (context) => const SchoolSettingsView(),
-          settings: RouteSettings(name: adminSchoolSettings),
+          settings: const RouteSettings(name: adminSchoolSettings),
         );
+
+      // User: Student detail & confirmation
       case studentDetail:
         final student = settings.arguments as Alumno?;
         if (student == null) {
           return MaterialPageRoute(
             builder: (context) => const Scaffold(
               body: Center(
-                child: Text("Se requiere un correo electrónico para verificar"),
+                child: Text("Se requiere un estudiante para ver el detalle"),
               ),
             ),
-            settings: RouteSettings(name: studentDetail),
+            settings: const RouteSettings(name: studentDetail),
           );
         }
-        debugPrint("AppRoutes: Building StudentDetailView");
         return MaterialPageRoute(
           builder: (context) => StudentDetailView(student: student),
-          settings: RouteSettings(name: studentDetail),
+          settings: const RouteSettings(name: studentDetail),
         );
+
       case studentConfirmation:
         final validationResult = settings.arguments as Map<String, dynamic>?;
         if (validationResult == null) {
           return MaterialPageRoute(
             builder: (context) => const Scaffold(
               body: Center(
-                child: Text("Se requiere un correo electrónico para verificar"),
+                child: Text("Se requiere información de validación"),
               ),
             ),
-            settings: RouteSettings(name: studentConfirmation),
+            settings: const RouteSettings(name: studentConfirmation),
           );
         }
-        debugPrint("AppRoutes: Building StudentConfirmationView");
         return MaterialPageRoute(
           builder: (context) =>
               StudentConfirmationView(validationResult: validationResult),
-          settings: RouteSettings(name: studentConfirmation),
+          settings: const RouteSettings(name: studentConfirmation),
         );
 
+      // Not found
       default:
         debugPrint("AppRoutes: Route not found: ${settings.name}");
         return MaterialPageRoute(
           builder: (context) => const Scaffold(
-            body: Center(
-              child: Text("Página no encontrada"),
-            ),
+            body: Center(child: Text("Página no encontrada")),
           ),
-          settings: RouteSettings(name: 'not_found'),
+          settings: const RouteSettings(name: 'not_found'),
         );
     }
   }
 
-  // Helper method to convert Alumno to StudentDetails
+  /// Helper: convierte `Alumno` (modelo ligero) a `StudentDetails` (detallado)
+  /// Ajustado para el nuevo modelo de Alumno:
+  /// - idGrupo, idEscuela, idTurno, idLlave
+  /// - turno: enum TurnoEnum (se usa `.name` como string)
   static StudentDetails _convertAlumnoToStudentDetails(Alumno alumno) {
     return StudentDetails(
       id: alumno.id,
       nombre: alumno.nombre,
       matricula: alumno.matricula,
-      escuelaId: alumno.id_escuela,
-      grupoId: alumno.id_grupo,
+      escuelaId: alumno.idEscuela,
+      grupoId: alumno.idGrupo,
       grupo: alumno.grupo,
-      nivelEducativo: '', // Will be populated from database joins
-      turnoId: null,
-      turno: alumno.turno.toString().split('.').last,
-      llaveId: alumno.id_llave,
+      nivelEducativo: '', // se puede completar desde joins si hace falta
+      turnoId: alumno.idTurno.isEmpty ? null : alumno.idTurno,
+      turno: alumno.turno.name, // matutino/vespertino/desconocido
+      horaInicioTurno: null,
+      horaFinTurno: null,
+      llaveId: alumno.idLlave,
       llaveCodigo: null,
       llaveActiva: alumno.vinculado,
-      fechaRegistro: alumno.fecha_registro,
+      fechaRegistro: alumno.fechaRegistro,
       fechaRegistroLlave: null,
+      fechaDesactivacionLlave: null,
       limiteVinculacion: null,
-      tutores: [],
-      familyContacts: [], // Add this field
+      tutores: const [],
+      familyContacts: const [],
     );
   }
 }

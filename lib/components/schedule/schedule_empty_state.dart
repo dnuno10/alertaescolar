@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
-import '../../models/models.dart';
 import '../../app/app_theme.dart';
 
 class ScheduleEmptyState extends StatelessWidget {
-  final DiaSemana day;
+  final String dayKey; // ej. "lunes", "martes"
   final Size screenSize;
 
   const ScheduleEmptyState({
     super.key,
-    required this.day,
+    required this.dayKey,
     required this.screenSize,
   });
 
@@ -47,7 +46,7 @@ class ScheduleEmptyState extends StatelessWidget {
             ),
             SizedBox(height: AppTheme.getSmallPadding(screenSize)),
             Text(
-              l10n.noClassesScheduledForDay(day.name),
+              l10n.noClassesScheduledForDay(_getDayName(context, dayKey)),
               style: AppTheme.getBodyMedium(screenSize).copyWith(
                 color: AppTheme.getTextSecondaryColor(context),
               ),
@@ -57,5 +56,27 @@ class ScheduleEmptyState extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _getDayName(BuildContext context, String dayKey) {
+    final l10n = AppLocalizations.of(context);
+    switch (dayKey.toLowerCase()) {
+      case 'lunes':
+        return l10n.monday;
+      case 'martes':
+        return l10n.tuesday;
+      case 'miercoles':
+        return l10n.wednesday;
+      case 'jueves':
+        return l10n.thursday;
+      case 'viernes':
+        return l10n.friday;
+      case 'sabado':
+        return l10n.saturday;
+      case 'domingo':
+        return l10n.sunday;
+      default:
+        return l10n.unknown; // asegúrate de definirlo en l10n
+    }
   }
 }

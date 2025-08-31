@@ -12,6 +12,7 @@ import 'package:alertaescolar/components/buttons/solid_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
 import '../../../providers/theme_provider.dart';
 import '../../../managers/student_provider.dart';
 import '../../../managers/group_provider.dart';
@@ -19,11 +20,9 @@ import '../../../managers/turno_provider.dart';
 import '../../../managers/user_provider.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../models/comunicado.dart';
+import '../../../models/models.dart'; // <-- unificado: Alumno, Grupo, Turno, enums
 import '../students/selectable_students_directory_view.dart';
 import '../../../widgets/custom_snack_bar.dart';
-import '../../../models/grupo.dart';
-import '../../../models/turno.dart';
 import 'notification_review_view.dart';
 
 class NotificationSendView extends StatefulWidget {
@@ -46,14 +45,14 @@ class _NotificationSendViewState extends State<NotificationSendView>
   String _selectedType = 'permiso';
   bool _sendPushNotification = true;
 
-  // Comunicado specific fields
-  TipoComunicado _selectedComunicadoType = TipoComunicado.informativo;
+  // Comunicado specific fields (models.dart)
+  TipoComunicacion _selectedComunicadoType = TipoComunicacion.informativo;
   PrioridadComunicado _selectedPriority = PrioridadComunicado.media;
 
   // Selection variables
-  Map<String, dynamic>? _selectedStudent;
-  List<Grupo> _selectedGroups = []; // Changed to list for multiple selection
-  List<String> _selectedNivelesEducativos = []; // For educational levels
+  Alumno? _selectedStudent; // <-- ahora Alumno?
+  List<Grupo> _selectedGroups = [];
+  List<String> _selectedNivelesEducativos = [];
   Turno? _selectedShift;
 
   late AnimationController _animationController;
@@ -63,21 +62,16 @@ class _NotificationSendViewState extends State<NotificationSendView>
   void initState() {
     super.initState();
 
-    // Handle preselected type
     if (widget.preselectedType != null && widget.preselectedType!.isNotEmpty) {
       _selectedType = widget.preselectedType!;
     }
 
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
+        duration: const Duration(milliseconds: 800), vsync: this);
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-    );
+        CurvedAnimation(parent: _animationController, curve: Curves.easeOut));
     _animationController.forward();
 
-    // Load data when widget is ready
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInitialData();
     });
@@ -96,7 +90,6 @@ class _NotificationSendViewState extends State<NotificationSendView>
     if (escuelaId == null) return;
 
     try {
-      // Load groups, turnos, and students for the school
       await Future.wait([
         groupProvider.loadGroups(escuelaId: escuelaId),
         turnoProvider.loadTurnos(escuelaId: escuelaId),
@@ -136,11 +129,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
               child: CustomScrollView(
                 physics: const BouncingScrollPhysics(),
                 slivers: [
-                  NavHeader(
-                    title: l10n.sendNotification,
-                  ),
-
-                  // Main content
+                  NavHeader(title: l10n.sendNotification),
                   SliverToBoxAdapter(
                     child: Padding(
                       padding:
@@ -188,12 +177,13 @@ class _NotificationSendViewState extends State<NotificationSendView>
                           SizedBox(
                               height: AppTheme.getLargePadding(screenSize)),
 
-                          // Comunicado Type Section (only show when comunicado is selected)
+                          // Comunicado Type Section
                           if (_selectedType == 'comunicado') ...[
                             SectionContainer(
                               title: l10n.communicationType,
                               screenSize: screenSize,
                               child: ComunicadoTypeSelector(
+                                // Ajusta este widget para usar TipoComunicacion si aún usa TipoComunicado
                                 selectedType: _selectedComunicadoType,
                                 onTypeSelected: (type) => setState(
                                     () => _selectedComunicadoType = type),
@@ -280,8 +270,26 @@ class _NotificationSendViewState extends State<NotificationSendView>
                                   SizedBox(
                                       height: AppTheme.getMediumPadding(
                                           screenSize)),
+                                  // StudentSelector sigue recibiendo Map? Si no lo has migrado aún, pásale un map de display
                                   StudentSelector(
-                                    selectedStudent: _selectedStudent,
+                                    selectedStudent: _selectedStudent == null
+                                        ? null
+                                        : {
+                                            'name': _selectedStudent!.nombre,
+                                            'matricula':
+                                                _selectedStudent!.matricula,
+                                            'nivelEducativo': _selectedStudent!
+                                                    .grupo.isNotEmpty
+                                                ? ''
+                                                : '',
+                                            'group': _selectedStudent!.grupo,
+                                            'active':
+                                                _selectedStudent!.vinculado,
+                                            'status':
+                                                _selectedStudent!.vinculado
+                                                    ? 'Vinculado'
+                                                    : 'No vinculado',
+                                          },
                                     screenSize: screenSize,
                                     onSelectStudent:
                                         _navigateToStudentDirectory,
@@ -400,10 +408,10 @@ class _NotificationSendViewState extends State<NotificationSendView>
                 ),
               ),
             ),
-          ), // Cierre del GestureDetector
-        ); // Cierre del Scaffold
-      }, // Cierre del Consumer builder
-    ); // Cierre del Consumer
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildGroupSelector(BuildContext context, Size screenSize) {
@@ -430,11 +438,9 @@ class _NotificationSendViewState extends State<NotificationSendView>
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.info_outline_rounded,
-                    color: AppTheme.accentBlue,
-                    size: screenSize.height * 0.02,
-                  ),
+                  Icon(Icons.info_outline_rounded,
+                      color: AppTheme.accentBlue,
+                      size: screenSize.height * 0.02),
                   SizedBox(width: AppTheme.getSmallPadding(screenSize)),
                   Expanded(
                     child: Text(
@@ -584,11 +590,9 @@ class _NotificationSendViewState extends State<NotificationSendView>
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.info_outline_rounded,
-                    color: AppTheme.accentOrange,
-                    size: screenSize.height * 0.02,
-                  ),
+                  Icon(Icons.info_outline_rounded,
+                      color: AppTheme.accentOrange,
+                      size: screenSize.height * 0.02),
                   SizedBox(width: AppTheme.getSmallPadding(screenSize)),
                   Expanded(
                     child: Text(
@@ -674,7 +678,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                                   AppTheme.getSmallPadding(screenSize) * 0.3),
                           Text(
                             _selectedShift != null
-                                ? '${_selectedShift!.horaInicio} - ${_selectedShift!.horaFin}'
+                                ? _selectedShift!.horarioCompleto
                                 : 'Toca para elegir turno',
                             style:
                                 AppTheme.getCaptionSmall(screenSize).copyWith(
@@ -719,7 +723,6 @@ class _NotificationSendViewState extends State<NotificationSendView>
     final l10n = AppLocalizations.of(context);
     final screenSize = MediaQuery.of(context).size;
 
-    // Move these outside the builder to maintain state
     List<Grupo> tempSelectedGroups = List<Grupo>.from(_selectedGroups);
     List<String> tempSelectedLevels =
         List<String>.from(_selectedNivelesEducativos);
@@ -758,11 +761,9 @@ class _NotificationSendViewState extends State<NotificationSendView>
                           borderRadius: BorderRadius.circular(
                               AppTheme.getSmallRadius(screenSize)),
                         ),
-                        child: Icon(
-                          Icons.class_rounded,
-                          color: AppTheme.accentBlue,
-                          size: screenSize.height * 0.025,
-                        ),
+                        child: Icon(Icons.class_rounded,
+                            color: AppTheme.accentBlue,
+                            size: screenSize.height * 0.025),
                       ),
                       SizedBox(width: AppTheme.getMediumPadding(screenSize)),
                       Expanded(
@@ -788,10 +789,8 @@ class _NotificationSendViewState extends State<NotificationSendView>
                       ),
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: Icon(
-                          Icons.close_rounded,
-                          color: AppTheme.getTextSecondaryColor(context),
-                        ),
+                        icon: Icon(Icons.close_rounded,
+                            color: AppTheme.getTextSecondaryColor(context)),
                       ),
                     ],
                   ),
@@ -874,7 +873,6 @@ class _NotificationSendViewState extends State<NotificationSendView>
                                       setDialogState(() {
                                         if (selected == true) {
                                           tempSelectedGroups.add(group);
-                                          // Check if all groups in level are selected
                                           if (groups.every((g) =>
                                               tempSelectedGroups.contains(g))) {
                                             if (!tempSelectedLevels
@@ -996,11 +994,9 @@ class _NotificationSendViewState extends State<NotificationSendView>
                       borderRadius: BorderRadius.circular(
                           AppTheme.getSmallRadius(screenSize)),
                     ),
-                    child: Icon(
-                      Icons.schedule_rounded,
-                      color: AppTheme.accentOrange,
-                      size: screenSize.height * 0.025,
-                    ),
+                    child: Icon(Icons.schedule_rounded,
+                        color: AppTheme.accentOrange,
+                        size: screenSize.height * 0.025),
                   ),
                   SizedBox(width: AppTheme.getMediumPadding(screenSize)),
                   Expanded(
@@ -1025,10 +1021,8 @@ class _NotificationSendViewState extends State<NotificationSendView>
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: Icon(
-                      Icons.close_rounded,
-                      color: AppTheme.getTextSecondaryColor(context),
-                    ),
+                    icon: Icon(Icons.close_rounded,
+                        color: AppTheme.getTextSecondaryColor(context)),
                   ),
                 ],
               ),
@@ -1057,11 +1051,9 @@ class _NotificationSendViewState extends State<NotificationSendView>
                               borderRadius: BorderRadius.circular(
                                   AppTheme.getSmallRadius(screenSize)),
                             ),
-                            child: Icon(
-                              Icons.schedule_rounded,
-                              color: AppTheme.accentOrange,
-                              size: screenSize.height * 0.025,
-                            ),
+                            child: Icon(Icons.schedule_rounded,
+                                color: AppTheme.accentOrange,
+                                size: screenSize.height * 0.025),
                           ),
                           title: Text(
                             turno.turno,
@@ -1071,16 +1063,14 @@ class _NotificationSendViewState extends State<NotificationSendView>
                             ),
                           ),
                           subtitle: Text(
-                            '${turno.horaInicio} - ${turno.horaFin}',
+                            turno.horarioCompleto,
                             style: AppTheme.getBodyMedium(screenSize).copyWith(
                               color: AppTheme.getTextSecondaryColor(context),
                             ),
                           ),
-                          trailing: Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            color: AppTheme.getTextSecondaryColor(context),
-                            size: screenSize.height * 0.02,
-                          ),
+                          trailing: Icon(Icons.arrow_forward_ios_rounded,
+                              color: AppTheme.getTextSecondaryColor(context),
+                              size: screenSize.height * 0.02),
                           onTap: () {
                             setState(() {
                               _selectedShift = turno;
@@ -1100,8 +1090,10 @@ class _NotificationSendViewState extends State<NotificationSendView>
     );
   }
 
+  /// Navega al directorio y convierte el resultado a `Alumno`.
+  /// Si tu vista devuelve ya un `Alumno`, ajusta el tipo del `Navigator.push` a `Alumno`.
   void _navigateToStudentDirectory() async {
-    final result = await Navigator.push<Map<String, dynamic>>(
+    final result = await Navigator.push<Map<String, dynamic>?>(
       context,
       MaterialPageRoute(
         builder: (context) => const SelectableStudentsDirectoryView(
@@ -1112,9 +1104,34 @@ class _NotificationSendViewState extends State<NotificationSendView>
     );
 
     if (result != null) {
-      setState(() {
-        _selectedStudent = result;
-      });
+      // Intentamos construir Alumno desde el map devuelto
+      try {
+        final alumno = Alumno.fromJson(result);
+        setState(() {
+          _selectedStudent = alumno;
+        });
+      } catch (_) {
+        // Fallback mínimo si el map no calza 1:1 con Alumno
+        setState(() {
+          _selectedStudent = Alumno(
+            id: (result['id'] ?? '').toString(),
+            nombre: (result['nombre'] ?? result['name'] ?? '').toString(),
+            idGrupo: (result['id_grupo'] ?? '').toString(),
+            grupo: (result['grupo'] ?? result['group'] ?? '').toString(),
+            idEscuela: (result['id_escuela'] ?? '').toString(),
+            matricula: (result['matricula'] ?? '').toString(),
+            fechaRegistro: DateTime.tryParse((result['fecha_registro'] ??
+                        DateTime.now().toIso8601String())
+                    .toString()) ??
+                DateTime.now(),
+            idTurno: (result['id_turno'] ?? '').toString(),
+            turno: TurnoEnum.desconocido,
+            idLlave: result['id_llave']?.toString(),
+            vinculado:
+                (result['vinculado'] ?? result['active'] ?? false) == true,
+          );
+        });
+      }
     }
   }
 
@@ -1135,13 +1152,9 @@ class _NotificationSendViewState extends State<NotificationSendView>
         hasValidRecipient;
   }
 
-  void _sendNotification() async {
-    // Validar que todos los campos requeridos estén completos
-    if (!_validateForm()) {
-      return;
-    }
+  void _sendNotification() {
+    if (!_validateForm()) return;
 
-    // Navegar a la vista de revisión en lugar de enviar directamente
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -1154,7 +1167,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
               _selectedType == 'comunicado' ? _selectedComunicadoType : null,
           prioridadComunicado:
               _selectedType == 'comunicado' ? _selectedPriority : null,
-          selectedStudent: _selectedStudent,
+          selectedStudent: _selectedStudent, // <-- Alumno?
           selectedGroups: _selectedGroups,
           selectedShift: _selectedShift,
         ),
@@ -1163,7 +1176,6 @@ class _NotificationSendViewState extends State<NotificationSendView>
   }
 
   bool _validateForm() {
-    // Validar título
     if (_titleController.text.trim().isEmpty) {
       CustomSnackBar.show(
         context: context,
@@ -1173,7 +1185,6 @@ class _NotificationSendViewState extends State<NotificationSendView>
       return false;
     }
 
-    // Validar mensaje
     if (_messageController.text.trim().isEmpty) {
       CustomSnackBar.show(
         context: context,
@@ -1183,7 +1194,6 @@ class _NotificationSendViewState extends State<NotificationSendView>
       return false;
     }
 
-    // Validar selección de destinatario
     switch (_selectedRecipient) {
       case 'individual':
         if (_selectedStudent == null) {
@@ -1216,7 +1226,6 @@ class _NotificationSendViewState extends State<NotificationSendView>
         }
         break;
       case 'todos':
-        // No requiere validación adicional
         break;
     }
 

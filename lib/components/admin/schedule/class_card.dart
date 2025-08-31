@@ -23,7 +23,7 @@ class ClassCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final String subjectName = subject?.nombre ?? 'Materia no especificada';
     final String professor = subject?.profesor ?? 'Profesor no asignado';
-    final String description = ''; // Description not available in current model
+    final String description = '';
     final Color cardColor = _getSubjectColor(subject?.color ?? '#9B5DE5');
 
     return TweenAnimationBuilder<double>(
@@ -53,7 +53,7 @@ class ClassCard extends StatelessWidget {
                       AppTheme.getLargeRadius(screenSize)),
                   onTap: () {
                     HapticFeedback.mediumImpact();
-                    // Add functionality to view/edit class details
+                    // TODO: ver/editar detalles de la clase
                   },
                   child: Padding(
                     padding:
@@ -61,11 +61,11 @@ class ClassCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Header with subject icon and main info
+                        // Header con icono y datos principales
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Subject Icon
+                            // Icono de la materia
                             Container(
                               width: screenSize.width * 0.14,
                               height: screenSize.width * 0.14,
@@ -79,7 +79,8 @@ class ClassCard extends StatelessWidget {
                                   end: Alignment.bottomRight,
                                 ),
                                 borderRadius: BorderRadius.circular(
-                                    AppTheme.getMediumRadius(screenSize)),
+                                  AppTheme.getMediumRadius(screenSize),
+                                ),
                                 boxShadow: [
                                   BoxShadow(
                                     color: cardColor.withOpacity(0.3),
@@ -94,11 +95,9 @@ class ClassCard extends StatelessWidget {
                                 size: screenSize.width * 0.07,
                               ),
                             ),
-
                             SizedBox(
                                 width: AppTheme.getMediumPadding(screenSize)),
-
-                            // Subject Details
+                            // Detalles de la materia
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -165,21 +164,22 @@ class ClassCard extends StatelessWidget {
 
                         SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-                        // Time and Location Info
+                        // Horario y Aula
                         Container(
                           padding: EdgeInsets.all(
                               AppTheme.getSmallPadding(screenSize)),
                           decoration: BoxDecoration(
                             color: cardColor.withOpacity(0.05),
                             borderRadius: BorderRadius.circular(
-                                AppTheme.getSmallRadius(screenSize)),
+                              AppTheme.getSmallRadius(screenSize),
+                            ),
                             border: Border.all(
                               color: cardColor.withOpacity(0.1),
                             ),
                           ),
                           child: Row(
                             children: [
-                              // Time Information
+                              // Horario
                               Expanded(
                                 flex: clase.aula.isNotEmpty ? 3 : 2,
                                 child: _buildInfoChip(
@@ -190,12 +190,11 @@ class ClassCard extends StatelessWidget {
                                   screenSize: screenSize,
                                 ),
                               ),
-
                               if (clase.aula.isNotEmpty) ...[
                                 SizedBox(
                                     width:
                                         AppTheme.getSmallPadding(screenSize)),
-                                // Location Information
+                                // Aula
                                 Expanded(
                                   flex: 2,
                                   child: _buildInfoChip(
@@ -211,7 +210,7 @@ class ClassCard extends StatelessWidget {
                           ),
                         ),
 
-                        // Day indicator if needed and showDay is true
+                        // Días activos (si se solicita)
                         if (showDay) ...[
                           SizedBox(
                               height: AppTheme.getSmallPadding(screenSize)),
@@ -224,7 +223,8 @@ class ClassCard extends StatelessWidget {
                             decoration: BoxDecoration(
                               color: AppTheme.accentPurple.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(
-                                  AppTheme.getSmallRadius(screenSize)),
+                                AppTheme.getSmallRadius(screenSize),
+                              ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -236,7 +236,7 @@ class ClassCard extends StatelessWidget {
                                 ),
                                 SizedBox(width: screenSize.width * 0.01),
                                 Text(
-                                  _getDayName(clase.dia),
+                                  _getActiveDaysLabel(clase),
                                   style: AppTheme.getCaptionSmall(screenSize)
                                       .copyWith(
                                     fontWeight: FontWeight.w600,
@@ -271,11 +271,7 @@ class ClassCard extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(
-              icon,
-              size: screenSize.width * 0.035,
-              color: color,
-            ),
+            Icon(icon, size: screenSize.width * 0.035, color: color),
             SizedBox(width: screenSize.width * 0.01),
             Text(
               label,
@@ -300,30 +296,25 @@ class ClassCard extends StatelessWidget {
     );
   }
 
-  String _getDayName(DiaSemana day) {
-    switch (day) {
-      case DiaSemana.lunes:
-        return 'Lunes';
-      case DiaSemana.martes:
-        return 'Martes';
-      case DiaSemana.miercoles:
-        return 'Miércoles';
-      case DiaSemana.jueves:
-        return 'Jueves';
-      case DiaSemana.viernes:
-        return 'Viernes';
-      case DiaSemana.sabado:
-        return 'Sábado';
-      case DiaSemana.domingo:
-        return 'Domingo';
-    }
+  // Construye etiqueta de días activos a partir de flags bool del modelo.
+  String _getActiveDaysLabel(ClaseHorario c) {
+    final days = <String>[
+      if (c.lunes) 'Lunes',
+      if (c.martes) 'Martes',
+      if (c.miercoles) 'Miércoles',
+      if (c.jueves) 'Jueves',
+      if (c.viernes) 'Viernes',
+      if (c.sabado) 'Sábado',
+      if (c.domingo) 'Domingo',
+    ];
+    return days.isNotEmpty ? days.join(', ') : 'Sin día asignado';
   }
 
   Color _getSubjectColor(String hexColor) {
     try {
       final hex = hexColor.replaceAll('#', '');
       return Color(int.parse('FF$hex', radix: 16));
-    } catch (e) {
+    } catch (_) {
       return AppTheme.accentPurple;
     }
   }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../models/comunicado.dart';
+import '../../../models/models.dart';
 
 class PrioritySelector extends StatelessWidget {
   final PrioridadComunicado selectedPriority;
@@ -19,26 +19,26 @@ class PrioritySelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    final priorities = [
+    final List<Map<String, Object>> priorities = [
       {
         'value': PrioridadComunicado.baja,
         'label': l10n.low,
-        'color': AppTheme.accentBlue
+        'color': AppTheme.accentBlue,
       },
       {
         'value': PrioridadComunicado.media,
         'label': l10n.medium,
-        'color': AppTheme.accentOrange
+        'color': AppTheme.accentOrange,
       },
       {
         'value': PrioridadComunicado.alta,
         'label': l10n.high,
-        'color': AppTheme.warningColor
+        'color': AppTheme.warningColor,
       },
       {
         'value': PrioridadComunicado.critica,
         'label': l10n.critical,
-        'color': AppTheme.errorColor
+        'color': AppTheme.errorColor,
       },
     ];
 
@@ -54,25 +54,24 @@ class PrioritySelector extends StatelessWidget {
       ),
       itemCount: priorities.length,
       itemBuilder: (context, index) {
-        final priority = priorities[index];
-        final isSelected = selectedPriority == priority['value'];
+        final item = priorities[index];
+        final value = item['value'] as PrioridadComunicado;
+        final color = item['color'] as Color;
+        final isSelected = selectedPriority == value;
 
         return GestureDetector(
-          onTap: () =>
-              onPriorityChanged(priority['value'] as PrioridadComunicado),
+          onTap: () => onPriorityChanged(value),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
             decoration: BoxDecoration(
               color: isSelected
-                  ? (priority['color'] as Color).withOpacity(0.1)
+                  ? color.withOpacity(0.1)
                   : AppTheme.getBackgroundColor(context),
               borderRadius:
                   BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
               border: Border.all(
-                color: isSelected
-                    ? priority['color'] as Color
-                    : AppTheme.getBorderColor(context),
+                color: isSelected ? color : AppTheme.getBorderColor(context),
                 width: isSelected ? 2 : 1,
               ),
             ),
@@ -88,23 +87,22 @@ class PrioritySelector extends StatelessWidget {
                     maxHeight: 40,
                   ),
                   decoration: BoxDecoration(
-                    color: (priority['color'] as Color)
-                        .withOpacity(isSelected ? 0.2 : 0.1),
+                    color: color.withOpacity(isSelected ? 0.2 : 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.priority_high_rounded,
-                    color: priority['color'] as Color,
+                    color: color,
                     size: screenSize.height * 0.02,
                   ),
                 ),
                 SizedBox(width: AppTheme.getSmallPadding(screenSize) * 0.8),
                 Expanded(
                   child: Text(
-                    priority['label'] as String,
+                    item['label'] as String,
                     style: AppTheme.getCaptionSmall(screenSize).copyWith(
                       color: isSelected
-                          ? priority['color'] as Color
+                          ? color
                           : AppTheme.getTextPrimaryColor(context),
                       fontWeight:
                           isSelected ? FontWeight.w700 : FontWeight.w500,
@@ -116,7 +114,7 @@ class PrioritySelector extends StatelessWidget {
                 if (isSelected)
                   Icon(
                     Icons.check_circle_rounded,
-                    color: priority['color'] as Color,
+                    color: color,
                     size: screenSize.height * 0.018,
                   ),
               ],
