@@ -1,5 +1,6 @@
 import 'package:alertaescolar/app/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // <-- necesario para TextInputFormatter
 
 class CustomInputField extends StatefulWidget {
   final TextEditingController controller;
@@ -17,6 +18,11 @@ class CustomInputField extends StatefulWidget {
   final bool? enableSuggestions;
   final bool? autocorrect;
 
+  // NUEVO: soportar onSubmitted, readOnly e inputFormatters
+  final ValueChanged<String>? onSubmitted;
+  final bool readOnly;
+  final List<TextInputFormatter>? inputFormatters;
+
   const CustomInputField({
     super.key,
     required this.controller,
@@ -32,6 +38,9 @@ class CustomInputField extends StatefulWidget {
     this.autofillHints,
     this.enableSuggestions,
     this.autocorrect,
+    this.onSubmitted, // nuevo
+    this.readOnly = false, // nuevo
+    this.inputFormatters, // nuevo
   });
 
   @override
@@ -67,6 +76,8 @@ class _CustomInputFieldState extends State<CustomInputField> {
           enableSuggestions: widget.enableSuggestions ?? true,
           autocorrect: widget.autocorrect ?? true,
           autofillHints: widget.autofillHints,
+          readOnly: widget.readOnly, // <-- nuevo
+          inputFormatters: widget.inputFormatters, // <-- nuevo
           keyboardAppearance: theme.brightness == Brightness.dark
               ? Brightness.dark
               : Brightness.light,
@@ -74,8 +85,10 @@ class _CustomInputFieldState extends State<CustomInputField> {
             fontWeight: FontWeight.w500,
             color: themeTextColor,
           ),
-          onFieldSubmitted: (_) {
-            if (widget.textInputAction == TextInputAction.next) {
+          onFieldSubmitted: (value) {
+            if (widget.onSubmitted != null) {
+              widget.onSubmitted!(value); // <-- nuevo
+            } else if (widget.textInputAction == TextInputAction.next) {
               FocusScope.of(context).nextFocus();
             }
           },

@@ -44,8 +44,8 @@ class _ContactInformationViewState extends State<ContactInformationView> {
         _isLoadingSchool = true;
       });
 
-      final school = await schoolProvider.getSchoolById(
-          userProvider.currentUser!.escuelaId!, context);
+      final school = await schoolProvider
+          .getSchoolById(userProvider.currentUser!.escuelaId!);
 
       if (mounted) {
         setState(() {

@@ -1,13 +1,13 @@
+// lib/managers/schedule_provider.dart
+import 'package:alertaescolar/main.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../components/loading_dialog.dart';
+import '../components/loading_dialog.dart'; // opcional si pasas context
 import '../models/models.dart';
-import '../utils/time_format.dart';
+import '../utils/time_format.dart'; // si lo usas en otros métodos, lo mantenemos
 
 class ScheduleProvider with ChangeNotifier {
-  final SupabaseClient _supabase = Supabase.instance.client;
-
   List<Materia> _materias = [];
   List<Grupo> _grupos = [];
   List<Map<String, dynamic>> _nivelesEducativos = [];
@@ -53,7 +53,7 @@ class ScheduleProvider with ChangeNotifier {
       }
       _safeNotifyListeners();
 
-      final response = await _supabase
+      final response = await supabase
           .from('niveles_educativos')
           .select()
           .eq('id_escuela', escuelaId)
@@ -85,7 +85,7 @@ class ScheduleProvider with ChangeNotifier {
       }
       _safeNotifyListeners();
 
-      final response = await _supabase
+      final response = await supabase
           .from('materias')
           .select()
           .eq('id_escuela', escuelaId)
@@ -110,9 +110,9 @@ class ScheduleProvider with ChangeNotifier {
   Future<void> loadGrupos({
     required String escuelaId,
     String?
-        nivelEducativoId, // si quieres filtrar por id de nivel (tabla niveles_educativos)
+        nivelEducativoId, // opcional: filtrar por id de nivel (tabla niveles_educativos)
     String?
-        nivelEducativoNombre, // o directo por nombre (lo que guarda grupos.nivel_educativo)
+        nivelEducativoNombre, // opcional: filtrar por nombre (lo que guarda grupos.nivel_educativo)
     bool loadAll = false,
     BuildContext? context,
   }) async {
@@ -123,7 +123,7 @@ class ScheduleProvider with ChangeNotifier {
       }
       _safeNotifyListeners();
 
-      var query = _supabase.from('grupos').select().eq('id_escuela', escuelaId);
+      var query = supabase.from('grupos').select().eq('id_escuela', escuelaId);
 
       if (!loadAll) {
         if (nivelEducativoNombre != null && nivelEducativoNombre.isNotEmpty) {
@@ -145,10 +145,11 @@ class ScheduleProvider with ChangeNotifier {
 
       _error = null;
 
-      debugPrint('Grupos cargados: ${_grupos.length}');
-      for (final g in _grupos) {
-        debugPrint('Grupo: ${g.grupo} | Nivel: ${g.nivelEducativo}');
-      }
+      // Debug útil
+      // debugPrint('Grupos cargados: ${_grupos.length}');
+      // for (final g in _grupos) {
+      //   debugPrint('Grupo: ${g.grupo} | Nivel: ${g.nivelEducativo}');
+      // }
     } catch (e) {
       _error = 'Error al cargar grupos: $e';
       debugPrint(_error);
@@ -164,7 +165,7 @@ class ScheduleProvider with ChangeNotifier {
   // ===== Horarios =====
   Future<void> loadHorarios({
     required String escuelaId,
-    String? grupoId, // opcional para filtrar por un grupo específico
+    String? grupoId, // si lo pasas, filtra por un grupo específico
     BuildContext? context,
   }) async {
     try {
@@ -175,7 +176,7 @@ class ScheduleProvider with ChangeNotifier {
       _safeNotifyListeners();
 
       var query =
-          _supabase.from('horarios').select().eq('id_escuela', escuelaId);
+          supabase.from('horarios').select().eq('id_escuela', escuelaId);
 
       if (grupoId != null && grupoId.isNotEmpty) {
         query = query.eq('id_grupo', grupoId);
@@ -185,7 +186,13 @@ class ScheduleProvider with ChangeNotifier {
       final list =
           (response as List).map((r) => ClaseHorario.fromJson(r)).toList();
 
-      _horariosPorGrupoId.clear();
+      // Si pasaron grupoId, solo poblamos ese; si no, limpiamos/repoblamos todo
+      if (grupoId == null || grupoId.isEmpty) {
+        _horariosPorGrupoId.clear();
+      } else {
+        _horariosPorGrupoId[grupoId] = [];
+      }
+
       for (final ch in list) {
         _horariosPorGrupoId.putIfAbsent(ch.idGrupo, () => []).add(ch);
       }
@@ -203,7 +210,7 @@ class ScheduleProvider with ChangeNotifier {
     }
   }
 
-  // ===== Helpers de consulta (por ID y por nombre para compatibilidad UI) =====
+  // ===== Helpers =====
 
   Grupo? getGrupoById(String grupoId) {
     return _firstOrNull(_grupos.where((g) => g.id == grupoId));
@@ -230,7 +237,7 @@ class ScheduleProvider with ChangeNotifier {
     return _firstOrNull(_materias.where((m) => m.id == materiaId));
   }
 
-  // ===== Listas de nombres para UI =====
+  // ===== Listas de nombres para UI (opcionales) =====
   List<String> getGruposNames() => _grupos.map((g) => g.grupo).toList();
 
   List<String> getNivelesEducativosNames() =>
@@ -251,14 +258,12 @@ class ScheduleProvider with ChangeNotifier {
     }
     final nombre = (nivel['nombre'] ?? '').toString();
     final res = _grupos.where((g) => g.nivelEducativo == nombre).toList();
-    debugPrint('Grupos filtrados para nivel $nombre: ${res.length}');
     return res;
   }
 
-  // Filtra grupos por **nombre** de nivel educativo (lo que guarda la tabla grupos)
+  // Filtra grupos por **nombre** de nivel educativo
   List<Grupo> getGruposByNivelEducativoName(String nivelNombre) {
     final res = _grupos.where((g) => g.nivelEducativo == nivelNombre).toList();
-    debugPrint('Grupos filtrados para nivel $nivelNombre: ${res.length}');
     return res;
   }
 
@@ -274,19 +279,7 @@ class ScheduleProvider with ChangeNotifier {
     return g?.nivelEducativo;
   }
 
-  // ===== Debug =====
-  void debugPrintAllData() {
-    debugPrint('=== NIVELES EDUCATIVOS ===');
-    for (var n in _nivelesEducativos) {
-      debugPrint('ID: ${n['id']}, Nombre: ${n['nombre']}');
-    }
-    debugPrint('=== GRUPOS ===');
-    for (var g in _grupos) {
-      debugPrint('ID: ${g.id}, Grupo: ${g.grupo}, Nivel: ${g.nivelEducativo}');
-    }
-  }
-
-  // ===== Inicialización =====
+  // ===== Inicialización de todo (opcional) =====
   Future<void> initialize(String escuelaId, {BuildContext? context}) async {
     await loadNivelesEducativos(escuelaId: escuelaId, context: context);
     await loadMaterias(escuelaId: escuelaId, context: context);

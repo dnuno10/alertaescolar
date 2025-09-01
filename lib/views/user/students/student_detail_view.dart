@@ -1,17 +1,20 @@
+// lib/views/students/student_detail_view.dart
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'package:alertaescolar/app/app_theme.dart';
 import 'package:alertaescolar/components/headers/nav_header.dart';
 import 'package:alertaescolar/components/buttons/solid_button.dart';
 import 'package:alertaescolar/components/loading_dialog.dart';
-import 'package:alertaescolar/components/students/student_profile_card.dart';
 import 'package:alertaescolar/components/students/student_academic_info_card.dart';
 import 'package:alertaescolar/components/students/student_key_info_card.dart';
 import 'package:alertaescolar/components/students/student_action_buttons.dart';
-import 'package:alertaescolar/managers/student_provider.dart';
+
+import 'package:alertaescolar/l10n/app_localizations.dart';
+import 'package:alertaescolar/models/models.dart'; // Alumno, etc.
+import 'package:alertaescolar/managers/student_provider.dart'; // StudentDetails, TutorInfo, StudentProvider
 import 'package:alertaescolar/managers/school_provider.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../l10n/app_localizations.dart';
-import '../../../models/models.dart';
-import '../../../app/app_theme.dart';
+
 import '../schedule/schedule_view.dart';
 import '../school/school_info_view.dart';
 
@@ -30,7 +33,6 @@ class StudentDetailView extends StatefulWidget {
 class _StudentDetailViewState extends State<StudentDetailView> {
   bool _isLoading = true;
   StudentDetails? _studentDetails;
-  Escuela? _schoolData;
 
   @override
   void initState() {
@@ -50,38 +52,36 @@ class _StudentDetailViewState extends State<StudentDetailView> {
     });
 
     try {
-      final studentProvider =
-          Provider.of<StudentProvider>(context, listen: false);
-      final schoolProvider =
-          Provider.of<SchoolProvider>(context, listen: false);
+      final studentProvider = context.read<StudentProvider>();
+      final schoolProvider = context.read<SchoolProvider>();
 
-      // Carga/refresh desde el provider (usa el id en camelCase)
+      // Cargar/refresh desde el provider de estudiantes
       await studentProvider.loadStudentById(studentId: widget.student.id);
 
       if (!mounted) return;
 
-      // Si el provider no trae nada, usa fallback a partir del Alumno recibido
-      final studentDetails = studentProvider.selectedStudent ??
+      // Fallback a partir del Alumno recibido si no hay selectedStudent
+      final details = studentProvider.selectedStudent ??
           _convertToStudentDetails(widget.student);
 
-      // Si tenemos escuelaId, traer la escuela con loadSchool (consistente con el resto de tu app)
-      if (studentDetails.escuelaId.isNotEmpty) {
-        final schoolData = await schoolProvider.loadSchool(
-          studentDetails.escuelaId,
-          context: context,
-        );
+      // Si hay escuela, cargarla en el provider correspondiente (sin dialog)
+      if (details.escuelaId.isNotEmpty) {
+        await schoolProvider.loadSchool(details.escuelaId, forceRefresh: false);
+      }
 
-        if (!mounted) return;
-        setState(() {
-          _studentDetails = studentDetails;
-          _schoolData = schoolData;
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _studentDetails = studentDetails;
-          _isLoading = false;
-        });
+      if (!mounted) return;
+      setState(() {
+        _studentDetails = details;
+        _isLoading = false;
+      });
+
+      // Mostrar error de escuela si ocurrió
+      final spErr = schoolProvider.error;
+      if (spErr != null && spErr.isNotEmpty && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(spErr)),
+        );
+        schoolProvider.clearError();
       }
     } catch (e) {
       if (!mounted) return;
@@ -94,7 +94,7 @@ class _StudentDetailViewState extends State<StudentDetailView> {
     }
   }
 
-  // Fallback: convierte Alumno (modelo camelCase) -> StudentDetails
+  // Fallback: convierte Alumno (modelo camelCase) -> StudentDetails (del StudentProvider)
   StudentDetails _convertToStudentDetails(Alumno alumno) {
     return StudentDetails(
       id: alumno.id,
@@ -103,7 +103,7 @@ class _StudentDetailViewState extends State<StudentDetailView> {
       escuelaId: alumno.idEscuela,
       grupoId: alumno.idGrupo,
       grupo: alumno.grupo,
-      nivelEducativo: '', // si necesitas, puedes derivarlo con el Grupo
+      nivelEducativo: '', // Derívalo si lo necesitas con info del Grupo
       turnoId: alumno.idTurno,
       turno: alumno.turno.name, // 'matutino' | 'vespertino' | 'desconocido'
       llaveId: alumno.idLlave,
@@ -127,10 +127,12 @@ class _StudentDetailViewState extends State<StudentDetailView> {
   }
 
   void _navigateToSchoolInfo() {
+    final school = context.read<SchoolProvider>().currentSchool;
+    if (school == null) return;
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => SchoolInfoView(school: _schoolData),
+        builder: (context) => SchoolInfoView(school: school),
       ),
     );
   }
@@ -139,6 +141,7 @@ class _StudentDetailViewState extends State<StudentDetailView> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final screenSize = MediaQuery.of(context).size;
+    final escuela = context.watch<SchoolProvider>().currentSchool;
 
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
@@ -149,7 +152,7 @@ class _StudentDetailViewState extends State<StudentDetailView> {
             child: _isLoading
                 ? const SizedBox
                     .shrink() // mientras se muestra el LoadingDialog
-                : _buildContent(context, l10n, screenSize),
+                : _buildContent(context, l10n, screenSize, escuela),
           ),
         ],
       ),
@@ -157,24 +160,21 @@ class _StudentDetailViewState extends State<StudentDetailView> {
   }
 
   Widget _buildContent(
-      BuildContext context, AppLocalizations l10n, Size screenSize) {
+    BuildContext context,
+    AppLocalizations l10n,
+    Size screenSize,
+    Escuela? school,
+  ) {
     if (_studentDetails == null) {
       return _buildErrorState(l10n, screenSize);
     }
+
+    final canOpenSchool = school != null;
 
     return Padding(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
       child: Column(
         children: [
-          // Tarjeta de perfil
-          StudentProfileCard(
-            color: AppTheme.accentBlue,
-            student: _studentDetails!,
-            screenSize: screenSize,
-          ),
-
-          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
           // Botones de navegación
           Column(
             children: [
@@ -190,11 +190,20 @@ class _StudentDetailViewState extends State<StudentDetailView> {
               SolidButton(
                 width: double.infinity,
                 label: l10n.schoolInfo,
-                onPressed: _navigateToSchoolInfo,
+                onPressed: canOpenSchool ? _navigateToSchoolInfo : null,
                 backgroundColor: AppTheme.accentBlue,
                 icon: Icons.school_rounded,
                 screenSize: screenSize,
               ),
+              SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+
+              // Acciones (si hay tutores)
+              if (_studentDetails!.tutores.isNotEmpty)
+                StudentActionButtons(
+                  student: _studentDetails!,
+                  screenSize: screenSize,
+                  schoolName: school?.nombre ?? '-',
+                ),
             ],
           ),
 
@@ -215,13 +224,6 @@ class _StudentDetailViewState extends State<StudentDetailView> {
           ),
 
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-          // Acciones (si hay tutores)
-          if (_studentDetails!.tutores.isNotEmpty)
-            StudentActionButtons(
-              student: _studentDetails!,
-              screenSize: screenSize,
-            ),
         ],
       ),
     );

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-import '../models/notificacion.dart'; // <- usamos tu modelo de notificación
+import '../models/notificacion.dart';
 import '../models/grupo.dart';
 import '../models/turno.dart';
 import 'fcm_service.dart';

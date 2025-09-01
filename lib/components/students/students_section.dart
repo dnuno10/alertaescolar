@@ -26,30 +26,15 @@ class StudentsSection extends StatefulWidget {
 }
 
 class _StudentsSectionState extends State<StudentsSection> {
-  late List<Alumno> filteredStudents;
-
-  @override
-  void initState() {
-    super.initState();
-    filteredStudents = [];
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
     return Consumer2<StudentProvider, UserProvider>(
       builder: (context, studentProvider, userProvider, child) {
-        // Convert StudentDetails to Alumno using the provider's method
+        // ¡Usa directamente el provider!
         final alumnosList = studentProvider.getAlumnosFromStudents();
 
-        // Sin loader local: sólo sincronizamos la lista mostrada
-        if (filteredStudents.isEmpty ||
-            filteredStudents.length != alumnosList.length) {
-          filteredStudents = List.from(alumnosList);
-        }
-
-        // Errores -> estado de error
         if (studentProvider.error != null) {
           return StudentsErrorState(
             studentProvider: studentProvider,
@@ -57,21 +42,17 @@ class _StudentsSectionState extends State<StudentsSection> {
           );
         }
 
-        // Sin alumnos -> estado vacío (el overlay global de StudentsView cubre la carga inicial)
         if (alumnosList.isEmpty) {
           return Center(
             child: Column(
               children: [
                 SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
-                StudentsEmptyState(
-                  screenSize: widget.screenSize,
-                ),
+                StudentsEmptyState(screenSize: widget.screenSize),
               ],
             ),
           );
         }
 
-        // Lista de alumnos
         return Padding(
           padding: EdgeInsets.symmetric(
             horizontal: AppTheme.getMediumPadding(widget.screenSize),
@@ -80,8 +61,6 @@ class _StudentsSectionState extends State<StudentsSection> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(height: AppTheme.getLargePadding(widget.screenSize)),
-
-              // Title and student count
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -105,7 +84,7 @@ class _StudentsSectionState extends State<StudentsSection> {
                       ),
                     ),
                     child: Text(
-                      '${filteredStudents.length} ${l10n.students}',
+                      '${alumnosList.length} ${l10n.students}',
                       style:
                           AppTheme.getCaptionSmall(widget.screenSize).copyWith(
                         color: AppTheme.accentBlue,
@@ -115,12 +94,9 @@ class _StudentsSectionState extends State<StudentsSection> {
                   ),
                 ],
               ),
-
               SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
-
-              // Students list
               StudentsList(
-                students: filteredStudents,
+                students: alumnosList, // <- ya no usamos estado local
                 isWide: widget.isWide,
                 screenSize: widget.screenSize,
               ),

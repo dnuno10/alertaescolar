@@ -34,26 +34,6 @@ class SchoolHeaderCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Icon with modern styling
-          Container(
-            padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
-            decoration: BoxDecoration(
-              color: AppTheme.accentPurple.withOpacity(0.1),
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
-              border: Border.all(
-                color: AppTheme.accentPurple.withOpacity(0.2),
-                width: 2,
-              ),
-            ),
-            child: Icon(
-              Icons.school_rounded,
-              size: screenSize.height * 0.06,
-              color: AppTheme.accentPurple,
-            ),
-          ),
-          SizedBox(height: AppTheme.getLargePadding(screenSize)),
-
           // Title with enhanced typography
           Text(
             schoolName,

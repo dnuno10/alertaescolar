@@ -1,3 +1,4 @@
+// lib/components/students/student_key_info_card.dart
 import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../../managers/student_provider.dart';
@@ -18,7 +19,27 @@ class StudentKeyInfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
+    // Normalización de campos mostrables
+    final String keyCode = (student.llaveCodigo?.trim().isNotEmpty == true)
+        ? student.llaveCodigo!.trim()
+        : l10n.notAssigned;
+
+    final String statusText = _buildStatusText(l10n);
+    final String remainingText = _calculateRemainingTime(context);
+
+    // Color del ícono de “tiempo restante”:
+    // - Si ya expiró → error
+    // - Si faltan <= 7 días → warning
+    // - En otro caso → azul/acento
+    final _RemainingState remainingState = _remainingState();
+    final Color remainingIconColor = switch (remainingState) {
+      _RemainingState.expired => AppTheme.errorColor,
+      _RemainingState.urgent => AppTheme.warningColor,
+      _ => AppTheme.accentBlue,
+    };
+
     return Container(
+      constraints: const BoxConstraints(maxWidth: 720),
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
@@ -33,122 +54,110 @@ class StudentKeyInfoCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.keyInformation,
-            style: AppTheme.getSubtitle1(screenSize).copyWith(
-              color: AppTheme.getTextPrimaryColor(context),
+      child: Semantics(
+        container: true,
+        label: l10n.keyInformation,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.keyInformation,
+              style: AppTheme.getSubtitle1(screenSize).copyWith(
+                color: AppTheme.getTextPrimaryColor(context),
+              ),
             ),
-          ),
-          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-          StudentDetailRow(
-            icon: Icons.key_rounded,
-            label: l10n.keyCode,
-            value: student.llaveCodigo?.isNotEmpty == true
-                ? student.llaveCodigo!
-                : l10n.notAssigned,
-            iconColor: AppTheme.accentYellow,
-            screenSize: screenSize,
-          ),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-          StudentDetailRow(
-            icon: Icons.power_settings_new_rounded,
-            label: l10n.status,
-            value: _buildStatusText(l10n),
-            iconColor: student.llaveActiva
-                ? AppTheme.successColor
-                : AppTheme.errorColor,
-            screenSize: screenSize,
-          ),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-          StudentDetailRow(
-            icon: Icons.schedule_rounded,
-            label: l10n.remainingTime,
-            value: _calculateRemainingTime(context),
-            iconColor: AppTheme.accentBlue,
-            screenSize: screenSize,
-          ),
-        ],
+            SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+
+            // Código de llave (seleccionable)
+            StudentDetailRow(
+              icon: Icons.key_rounded,
+              label: l10n.keyCode,
+              value: keyCode,
+              iconColor: AppTheme.accentYellow,
+              screenSize: screenSize,
+              selectableValue: true,
+              semanticsValue: '${l10n.keyCode}: $keyCode',
+            ),
+            SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+
+            // Estado (activada/desactivada + # de tutores)
+            StudentDetailRow(
+              icon: Icons.power_settings_new_rounded,
+              label: l10n.status,
+              value: statusText,
+              iconColor: student.llaveActiva
+                  ? AppTheme.successColor
+                  : AppTheme.errorColor,
+              screenSize: screenSize,
+              semanticsValue: '${l10n.status}: $statusText',
+            ),
+            SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+
+            // Tiempo restante
+            StudentDetailRow(
+              icon: Icons.schedule_rounded,
+              label: l10n.remainingTime,
+              value: remainingText,
+              iconColor: remainingIconColor,
+              screenSize: screenSize,
+              semanticsValue: '${l10n.remainingTime}: $remainingText',
+            ),
+          ],
+        ),
       ),
     );
   }
 
   String _buildStatusText(AppLocalizations l10n) {
-    if (!student.llaveActiva) {
-      return l10n.deactivated;
-    }
+    if (!student.llaveActiva) return l10n.deactivated;
 
-    final linkedTutorsCount = student.tutores.length;
-    if (linkedTutorsCount == 0) {
-      return l10n.activated;
-    }
+    final int linkedTutors = student.tutores.length;
+    if (linkedTutors <= 0) return l10n.activated;
 
-    return '${l10n.activated} ($linkedTutorsCount ${linkedTutorsCount == 1 ? l10n.linkedTutor : l10n.linkedTutors})';
+    // “Activada (1 tutor vinculado)” / “Activada (N tutores vinculados)”
+    return '${l10n.activated} ($linkedTutors ${linkedTutors == 1 ? l10n.linkedTutor : l10n.linkedTutors})';
   }
 
+  /// Devuelve el texto humanizado del tiempo restante con soporte para:
+  /// - Información no disponible
+  /// - Sin caducidad
+  /// - Expirada
+  /// - Días / Horas / Minutos
   String _calculateRemainingTime(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    // Check if we have the required data from the llaves table
+    final DateTime now = DateTime.now();
+
+    // Si no sabemos cuándo se registró la llave, no podemos calcular de forma confiable
     if (student.fechaRegistroLlave == null) {
       return l10n.informationNotAvailable;
     }
 
-    // Get the current time
-    final now = DateTime.now();
-
-    // If fechaDesactivacionLlave is null, the key doesn't expire
-    if (student.fechaDesactivacionLlave == null) {
+    // Si no hay fecha de desactivación → sin límite
+    final DateTime? expirationDate = student.fechaDesactivacionLlave;
+    if (expirationDate == null) {
       return l10n.noTimeLimit;
     }
 
-    // The remaining time is the difference between now and fecha_desactivacion
-    final expirationDate = student.fechaDesactivacionLlave!;
-
-    // Check if already expired
+    // ¿Ya expiró?
     if (expirationDate.isBefore(now)) {
       return l10n.expired;
     }
 
-    // Calculate remaining time
-    final difference = expirationDate.difference(now);
+    final Duration diff = expirationDate.difference(now);
 
-    if (difference.inDays > 0) {
-      final days = difference.inDays;
-      final hours = difference.inHours % 24;
-
-      if (days > 0) {
-        return days == 1 ? l10n.oneDayRemaining : l10n.daysRemaining(days);
-      } else if (hours > 0) {
-        return hours == 1 ? l10n.oneHourRemaining : l10n.hoursRemaining(hours);
-      } else if (difference.inMinutes > 0) {
-        final minutes = difference.inMinutes;
-        return minutes == 1
-            ? l10n.oneMinuteRemaining
-            : l10n.minutesRemaining(minutes);
-      } else {
-        return l10n.lessThanOneMinuteRemaining;
-      }
+    // Redondeo simple: si faltan 36 horas, muestra 1 día, etc.
+    if (diff.inDays >= 1) {
+      final int days = diff.inDays;
+      return days == 1 ? l10n.oneDayRemaining : l10n.daysRemaining(days);
     }
 
-    if (difference.inHours > 0) {
-      final hours = difference.inHours;
-      final minutes = difference.inMinutes % 60;
-
-      if (hours > 0) {
-        return hours == 1 ? l10n.oneHourRemaining : l10n.hoursRemaining(hours);
-      } else if (minutes > 0) {
-        return minutes == 1
-            ? l10n.oneMinuteRemaining
-            : l10n.minutesRemaining(minutes);
-      } else {
-        return l10n.lessThanOneMinuteRemaining;
-      }
+    if (diff.inHours >= 1) {
+      final int hours = diff.inHours;
+      return hours == 1 ? l10n.oneHourRemaining : l10n.hoursRemaining(hours);
     }
 
-    if (difference.inMinutes > 0) {
-      final minutes = difference.inMinutes;
+    if (diff.inMinutes >= 1) {
+      final int minutes = diff.inMinutes;
       return minutes == 1
           ? l10n.oneMinuteRemaining
           : l10n.minutesRemaining(minutes);
@@ -156,4 +165,25 @@ class StudentKeyInfoCard extends StatelessWidget {
 
     return l10n.lessThanOneMinuteRemaining;
   }
+
+  /// Clasifica el estado del tiempo restante para darle un color de señal
+  _RemainingState _remainingState() {
+    final DateTime now = DateTime.now();
+
+    // Sin datos confiables
+    if (student.fechaRegistroLlave == null) return _RemainingState.normal;
+
+    final DateTime? expirationDate = student.fechaDesactivacionLlave;
+    if (expirationDate == null) return _RemainingState.normal;
+
+    if (expirationDate.isBefore(now)) return _RemainingState.expired;
+
+    final Duration diff = expirationDate.difference(now);
+    // Umbral "urgente": 7 días o menos
+    if (diff.inDays <= 7) return _RemainingState.urgent;
+
+    return _RemainingState.normal;
+  }
 }
+
+enum _RemainingState { normal, urgent, expired }

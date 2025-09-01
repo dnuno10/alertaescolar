@@ -10,7 +10,8 @@ CREATE TABLE public.admin_access_list (
   tipo_administrador text,
   nombre text,
   apellido text,
-  CONSTRAINT admin_access_list_pkey PRIMARY KEY (id)
+  CONSTRAINT admin_access_list_pkey PRIMARY KEY (id),
+  CONSTRAINT admin_access_list_id_escuela_fkey FOREIGN KEY (id_escuela) REFERENCES public.escuelas(id)
 );
 CREATE TABLE public.alumno_tutores (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -30,9 +31,9 @@ CREATE TABLE public.alumnos (
   fecha_registro timestamp with time zone NOT NULL DEFAULT now(),
   id_turno uuid NOT NULL,
   CONSTRAINT alumnos_pkey PRIMARY KEY (id),
-  CONSTRAINT alumnos_id_escuela_fkey FOREIGN KEY (id_escuela) REFERENCES public.escuelas(id),
+  CONSTRAINT alumnos_id_grupo_fkey FOREIGN KEY (id_grupo) REFERENCES public.grupos(id),
   CONSTRAINT alumnos_id_turno_fkey FOREIGN KEY (id_turno) REFERENCES public.turnos(id),
-  CONSTRAINT alumnos_id_grupo_fkey FOREIGN KEY (id_grupo) REFERENCES public.grupos(id)
+  CONSTRAINT alumnos_id_escuela_fkey FOREIGN KEY (id_escuela) REFERENCES public.escuelas(id)
 );
 CREATE TABLE public.contacto_webpage (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -68,10 +69,6 @@ CREATE TABLE public.escuelas (
   email text NOT NULL,
   fecha_registro timestamp with time zone NOT NULL DEFAULT now(),
   descripcion text,
-  preescolar boolean,
-  primaria boolean,
-  secundaria boolean,
-  preparatoria boolean,
   sitio_web text,
   CONSTRAINT escuelas_pkey PRIMARY KEY (id)
 );
@@ -102,20 +99,18 @@ CREATE TABLE public.horarios (
   fecha_registro timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT horarios_pkey PRIMARY KEY (id),
   CONSTRAINT horarios_id_escuela_fkey FOREIGN KEY (id_escuela) REFERENCES public.escuelas(id),
-  CONSTRAINT horarios_id_materia_fkey FOREIGN KEY (id_materia) REFERENCES public.materias(id),
-  CONSTRAINT horarios_id_grupo_fkey FOREIGN KEY (id_grupo) REFERENCES public.grupos(id)
+  CONSTRAINT horarios_id_grupo_fkey FOREIGN KEY (id_grupo) REFERENCES public.grupos(id),
+  CONSTRAINT horarios_id_materia_fkey FOREIGN KEY (id_materia) REFERENCES public.materias(id)
 );
 CREATE TABLE public.llaves (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  codigo text NOT NULL,
-  id_alumno uuid NOT NULL DEFAULT gen_random_uuid(),
-  id_escuela uuid NOT NULL DEFAULT gen_random_uuid(),
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  codigo text,
+  id_alumno uuid DEFAULT gen_random_uuid(),
   fecha_registro timestamp with time zone NOT NULL DEFAULT now(),
-  fecha_desactivacion timestamp with time zone NOT NULL,
-  limite_vinculacion bigint NOT NULL DEFAULT '2'::bigint,
+  fecha_desactivacion timestamp with time zone,
+  limite_vinculacion bigint,
   activo boolean DEFAULT false,
   CONSTRAINT llaves_pkey PRIMARY KEY (id),
-  CONSTRAINT llaves_id_escuela_fkey FOREIGN KEY (id_escuela) REFERENCES public.escuelas(id),
   CONSTRAINT llaves_id_alumno_fkey FOREIGN KEY (id_alumno) REFERENCES public.alumnos(id)
 );
 CREATE TABLE public.materias (
@@ -157,15 +152,15 @@ CREATE TABLE public.notificaciones (
   estado text NOT NULL DEFAULT 'nueva'::text,
   fecha_registro timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT notificaciones_pkey PRIMARY KEY (id),
-  CONSTRAINT notificacion_id_alumno_fkey FOREIGN KEY (id_alumno) REFERENCES public.alumnos(id),
-  CONSTRAINT notificacion_id_admin_fkey FOREIGN KEY (id_admin) REFERENCES public.usuarios(id)
+  CONSTRAINT notificacion_id_admin_fkey FOREIGN KEY (id_admin) REFERENCES public.usuarios(id),
+  CONSTRAINT notificacion_id_alumno_fkey FOREIGN KEY (id_alumno) REFERENCES public.alumnos(id)
 );
 CREATE TABLE public.turnos (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   turno text NOT NULL,
   hora_inicio time with time zone NOT NULL,
   hora_fin time with time zone NOT NULL,
-  fecha-registro timestamp with time zone NOT NULL,
+  fecha_registro timestamp with time zone NOT NULL,
   id_escuela uuid NOT NULL DEFAULT gen_random_uuid(),
   tolerancia bigint DEFAULT '15'::bigint,
   CONSTRAINT turnos_pkey PRIMARY KEY (id),
@@ -179,7 +174,5 @@ CREATE TABLE public.usuarios (
   tipo text NOT NULL,
   tipo_administrador text,
   fecha_registro timestamp with time zone NOT NULL DEFAULT now(),
-  id_escuela uuid,
-  CONSTRAINT usuarios_pkey PRIMARY KEY (id),
-  CONSTRAINT usuarios_id_escuela_fkey FOREIGN KEY (id_escuela) REFERENCES public.escuelas(id)
+  CONSTRAINT usuarios_pkey PRIMARY KEY (id)
 );

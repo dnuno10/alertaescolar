@@ -114,14 +114,15 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
           Provider.of<SchoolProvider>(context, listen: false);
       final l10n = AppLocalizations.of(context);
 
-      final escuelaId = userProvider.currentUser?.escuelaId;
+      // Asegura escuelaId
+      final escuelaId = await userProvider.ensureEscuelaIdLoaded();
+
       if (escuelaId == null || escuelaId.isEmpty) {
         _showErrorDialog(l10n.error, l10n.noAssociatedSchool);
         return;
       }
 
-      final school =
-          await schoolProvider.loadSchool(escuelaId, context: context);
+      final school = await schoolProvider.loadSchool(escuelaId);
       if (school == null) {
         _showErrorDialog(l10n.error, l10n.errorLoadingSchoolInfo);
         return;
@@ -130,7 +131,7 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
       if (!mounted) return;
       setState(() {
         _nombreController.text = school.nombre;
-        _codigoController.text = school.codigo ?? ''; // <- null-safe
+        _codigoController.text = school.codigo ?? '';
         _direccionController.text = school.direccion;
         _telefonoController.text = school.telefono;
         _emailController.text = school.email;
@@ -138,7 +139,6 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
         _descripcionController.text = school.descripcion ?? '';
         _selectedTipo = school.tipo;
 
-        // map niveles -> banderas
         _hasPreescolar =
             school.nivelesEducativos.contains(NivelEducativo.preescolar);
         _hasPrimaria =
@@ -147,11 +147,8 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
             school.nivelesEducativos.contains(NivelEducativo.secundaria);
         _hasBachillerato =
             school.nivelesEducativos.contains(NivelEducativo.bachillerato);
-
-        // mantener lista en sync
         _updateSelectedNivelesFromBooleans();
 
-        // usa año del registro como “fundación” (si luego tienes otro campo, cámbialo aquí)
         _yearFoundedController.text = school.fechaRegistro.year.toString();
       });
     } catch (e) {
@@ -455,8 +452,7 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
             : _descripcionController.text.trim(),
       );
 
-      final ok =
-          await schoolProvider.updateSchool(updatedSchool, context: context);
+      final ok = await schoolProvider.updateSchool(updatedSchool);
 
       if (!mounted) return;
       setState(() => _isLoading = false);

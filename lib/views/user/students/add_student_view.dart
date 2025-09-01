@@ -24,7 +24,7 @@ class AddStudentView extends StatefulWidget {
 class _AddStudentViewState extends State<AddStudentView> {
   final _keyController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  bool _isLoading = false;
+  bool _handledScan = false;
 
   @override
   void dispose() {
@@ -37,14 +37,16 @@ class _AddStudentViewState extends State<AddStudentView> {
     final l10n = AppLocalizations.of(context);
     final screenSize = MediaQuery.of(context).size;
 
+    final isLoggedIn = context.select<UserProvider, bool>((p) => p.isLoggedIn);
+    final spLoading = context.select<StudentProvider, bool>((p) => p.isLoading);
+
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         return Scaffold(
           backgroundColor: AppTheme.getBackgroundColor(context),
           body: GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: () => FocusScope.of(context)
-                .unfocus(), // cierra teclado al tocar fuera
+            onTap: () => FocusScope.of(context).unfocus(),
             child: CustomScrollView(
               slivers: [
                 NavHeader(title: l10n.addStudent),
@@ -58,33 +60,50 @@ class _AddStudentViewState extends State<AddStudentView> {
                     child: Column(
                       children: [
                         SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                        QRScanOptionCard(
-                          onTap: () => _openQRScanner(l10n),
-                          screenSize: screenSize,
-                        ),
-                        SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                        OptionDivider(screenSize: screenSize),
-                        SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                        ManualInputCard(
-                          formKey: _formKey,
-                          keyController: _keyController,
-                          screenSize: screenSize,
-                        ),
-                        SizedBox(height: AppTheme.getLargePadding(screenSize)),
-                        SolidButton(
-                          width: double.infinity,
-                          icon: Icons.search_rounded,
-                          onPressed: _isLoading
-                              ? null
-                              : () {
-                                  FocusScope.of(context).unfocus();
-                                  _validateKeyCode(l10n);
-                                },
-                          label: l10n.validateCode,
-                          semanticsLabel: l10n.validateCode,
-                          screenSize: screenSize,
-                        ),
-                        SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+                        if (!isLoggedIn)
+                          _NoSessionCard(
+                            onReload: () {
+                              context
+                                  .read<UserProvider>()
+                                  .loadCurrentUser(context, showDialog: true);
+                            },
+                          )
+                        else ...[
+                          QRScanOptionCard(
+                            onTap:
+                                spLoading ? null : () => _openQRScanner(l10n),
+                          ),
+                          SizedBox(
+                              height: AppTheme.getMediumPadding(screenSize)),
+                          OptionDivider(label: l10n.or),
+                          SizedBox(
+                              height: AppTheme.getMediumPadding(screenSize)),
+                          ManualInputCard(
+                            formKey: _formKey,
+                            keyController: _keyController,
+                            enabled: !spLoading,
+                            onSubmitted: () {
+                              if (!spLoading) _validateKeyCode(l10n);
+                            },
+                          ),
+                          SizedBox(
+                              height: AppTheme.getLargePadding(screenSize)),
+                          SolidButton(
+                            width: double.infinity,
+                            icon: Icons.search_rounded,
+                            onPressed: spLoading
+                                ? null
+                                : () {
+                                    FocusScope.of(context).unfocus();
+                                    _validateKeyCode(l10n);
+                                  },
+                            label: l10n.validateCode,
+                            semanticsLabel: l10n.validateCode,
+                            screenSize: screenSize,
+                          ),
+                          SizedBox(
+                              height: AppTheme.getMediumPadding(screenSize)),
+                        ],
                       ],
                     ),
                   ),
@@ -98,21 +117,35 @@ class _AddStudentViewState extends State<AddStudentView> {
   }
 
   void _openQRScanner(AppLocalizations l10n) {
-    if (_isLoading) return; // evita abrir el scanner durante carga
+    final isLoggedIn = context.read<UserProvider>().isLoggedIn;
+    final spLoading = context.read<StudentProvider>().isLoading;
+    if (spLoading) return;
+    if (!isLoggedIn) {
+      _showErrorSnackBar(l10n.errorValidatingCode);
+      return;
+    }
+
     FocusScope.of(context).unfocus();
+    _handledScan = false;
 
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => QRScannerView(
-          onCodeScanned: (code) {
-            if (!mounted || _isLoading)
-              return; // blindaje doble por si llega tarde
+          onCodeScanned: (code) async {
+            if (!mounted ||
+                context.read<StudentProvider>().isLoading ||
+                _handledScan) return;
+            _handledScan = true;
             Navigator.of(context).pop();
             _keyController.text = code;
             FocusScope.of(context).unfocus();
             _validateKeyCode(l10n);
           },
-          onClose: () => Navigator.of(context).pop(),
+          onClose: () {
+            if (!_handledScan && Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            }
+          },
         ),
         fullscreenDialog: true,
       ),
@@ -120,43 +153,35 @@ class _AddStudentViewState extends State<AddStudentView> {
   }
 
   void _validateKeyCode(AppLocalizations l10n) async {
-    if (_isLoading) return; // evita dobles envíos
     if (!_formKey.currentState!.validate()) return;
 
-    final keyCode = _keyController.text.trim();
+    final keyCode = _keyController.text.replaceAll(' ', '').toUpperCase();
     if (keyCode.isEmpty) return;
 
     FocusScope.of(context).unfocus();
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    // Loader modal único (sin spinner inline en el botón)
     LoadingDialog.show(context, message: l10n.validatingCode);
 
     try {
-      final studentProvider =
-          Provider.of<StudentProvider>(context, listen: false);
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-
-      final currentUser = userProvider.currentUser;
-      if (currentUser == null) {
-        throw Exception(l10n.userNotFound);
-      }
+      final studentProvider = context.read<StudentProvider>();
+      final currentUser = context.read<UserProvider>().requireCurrentUser();
 
       final validationResult =
           await studentProvider.validateStudentKeyCode(keyCode);
-
       if (!mounted) return;
 
       if (validationResult != null && validationResult['isValid'] == true) {
-        // Checa si ya existe relación tutor-estudiante
-        final alreadyHasStudent =
-            await studentProvider.checkIfUserAlreadyHasStudent(
-          studentId: validationResult['student']['id'],
-          tutorId: currentUser.id,
-        );
+        bool alreadyHasStudent;
+        try {
+          alreadyHasStudent =
+              await studentProvider.checkIfUserAlreadyHasStudent(
+            studentId: validationResult['student']['id'],
+            tutorId: currentUser.id,
+          );
+        } catch (e) {
+          LoadingDialog.hide(context);
+          _showErrorSnackBar('${l10n.errorValidatingCode}: $e');
+          return;
+        }
 
         LoadingDialog.hide(context);
 
@@ -166,7 +191,6 @@ class _AddStudentViewState extends State<AddStudentView> {
           return;
         }
 
-        // Pequeño delay para asegurar que el diálogo cerró antes de navegar
         await Future.delayed(const Duration(milliseconds: 50));
         if (!mounted) return;
 
@@ -176,51 +200,29 @@ class _AddStudentViewState extends State<AddStudentView> {
           arguments: validationResult,
         );
       } else {
+        // Mostrar ÚNICAMENTE el error que dejó el provider y limpiarlo para evitar duplicados
+        final error =
+            (context.read<StudentProvider>().error) ?? l10n.invalidStudentCode;
+        context.read<StudentProvider>().clearError();
+
         LoadingDialog.hide(context);
-        final error = studentProvider.error ?? l10n.invalidStudentCode;
         _showErrorSnackBar(error);
       }
     } catch (e) {
       if (!mounted) return;
       LoadingDialog.hide(context);
       _showErrorSnackBar('${l10n.errorValidatingCode}: $e');
-    } finally {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
     }
   }
 
-  void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        duration: const Duration(seconds: 3),
-        content: Text(
-          message,
-          style: AppTheme.getCaption(MediaQuery.of(context).size).copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        backgroundColor: AppTheme.successColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-            AppTheme.getSmallRadius(MediaQuery.of(context).size),
-          ),
-        ),
-      ),
-    );
-  }
-
   void _showErrorSnackBar(String message) {
+    final size = MediaQuery.of(context).size;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         duration: const Duration(seconds: 4),
         content: Text(
           message,
-          style: AppTheme.getCaption(MediaQuery.of(context).size).copyWith(
+          style: AppTheme.getCaption(size).copyWith(
             color: Colors.white,
             fontWeight: FontWeight.w600,
           ),
@@ -228,10 +230,56 @@ class _AddStudentViewState extends State<AddStudentView> {
         backgroundColor: AppTheme.errorColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-            AppTheme.getSmallRadius(MediaQuery.of(context).size),
-          ),
+          borderRadius: BorderRadius.circular(AppTheme.getSmallRadius(size)),
         ),
+      ),
+    );
+  }
+}
+
+class _NoSessionCard extends StatelessWidget {
+  final VoidCallback onReload;
+  const _NoSessionCard({required this.onReload});
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return Container(
+      padding: EdgeInsets.all(AppTheme.getMediumPadding(size)),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
+        border: Border.all(color: AppTheme.getBorderColor(context)),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.getShadowColor(context),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Inicia sesión para agregar estudiantes',
+              style: AppTheme.getSubtitle1(size)
+                  .copyWith(color: AppTheme.getTextPrimaryColor(context))),
+          SizedBox(height: AppTheme.getSmallPadding(size)),
+          Text(
+            'No encontramos una sesión activa. Vuelve a cargar tus datos o inicia sesión.',
+            style: AppTheme.getBodyMedium(size)
+                .copyWith(color: AppTheme.getTextSecondaryColor(context)),
+          ),
+          SizedBox(height: AppTheme.getMediumPadding(size)),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: onReload,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Cargar usuario'),
+            ),
+          ),
+        ],
       ),
     );
   }

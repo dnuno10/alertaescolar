@@ -32,7 +32,6 @@ class Usuario {
     required this.fechaRegistro,
   });
 
-  // ---------- Helpers de parseo seguro ----------
   static String _asString(dynamic v) => v?.toString() ?? '';
   static String? _asNullableString(dynamic v) {
     if (v == null) return null;

@@ -189,6 +189,15 @@ class StudentProvider with ChangeNotifier {
 
   int _lastConvertedCount = 0;
 
+  // --- Realtime (canales)
+  RealtimeChannel? _chAlumnos;
+  RealtimeChannel? _chLlaves;
+  RealtimeChannel? _chVinculos;
+
+  // Contexto actual para recargar según modo
+  String? _currentSchoolId;
+  String? _currentUserIdMode;
+
   // Getters
   List<StudentDetails> get students => _students;
   List<StudentDetails> get filteredStudents => _filteredStudents;
@@ -202,15 +211,64 @@ class StudentProvider with ChangeNotifier {
   // Helpers privados
   // ------------------------------
 
+  /// Normaliza UUIDs: convierte null o cadena vacía en null seguro.
+  String? _normalizeUuid(String? raw) {
+    final s = (raw ?? '').trim();
+    return s.isEmpty ? null : s;
+  }
+
   /// Encuentra la llave activa de forma segura.
   Map<String, dynamic>? _findActiveLlave(List? llavesRaw) {
     if (llavesRaw == null) return null;
     for (final item in llavesRaw) {
       if (item is Map && (item['activo'] == true)) {
-        return Map<String, dynamic>.from(item as Map);
+        return Map<String, dynamic>.from(item);
       }
     }
     return null;
+  }
+
+  final Map<String, String> _adminEscuelaCacheByUserId = {};
+
+  /// Resuelve id_escuela para ADMIN: usuarios.email -> admin_access_list.id_escuela
+  Future<String?> getAdminEscuelaUuidByUserId(String userId) async {
+    if (_adminEscuelaCacheByUserId.containsKey(userId)) {
+      return _adminEscuelaCacheByUserId[userId];
+    }
+
+    try {
+      final userRow = await _supabase
+          .from('usuarios')
+          .select('email')
+          .eq('id', userId)
+          .maybeSingle();
+
+      final email = (userRow?['email']?.toString() ?? '').trim().toLowerCase();
+      if (email.isEmpty) {
+        debugPrint('getAdminEscuelaUuidByUserId: email vacío para $userId');
+        return null;
+      }
+
+      final adminRow = await _supabase
+          .from('admin_access_list')
+          .select('id_escuela')
+          .ilike('email', email)
+          .maybeSingle();
+
+      final escuelaUuid = _normalizeUuid(adminRow?['id_escuela']?.toString());
+
+      if (escuelaUuid != null) {
+        _adminEscuelaCacheByUserId[userId] = escuelaUuid;
+      } else {
+        debugPrint(
+            'getAdminEscuelaUuidByUserId: no match en admin_access_list para $email');
+      }
+
+      return escuelaUuid;
+    } catch (e) {
+      debugPrint('getAdminEscuelaUuidByUserId error: $e');
+      return null;
+    }
   }
 
   /// Formatea hora (time o timestamp/timestamptz) a `HH:mm`.
@@ -249,24 +307,110 @@ class StudentProvider with ChangeNotifier {
     Future.microtask(notifyListeners);
   }
 
+  void _disposeRealtime() {
+    _chAlumnos?.unsubscribe();
+    _chLlaves?.unsubscribe();
+    _chVinculos?.unsubscribe();
+    _chAlumnos = _chLlaves = _chVinculos = null;
+  }
+
+  void _startRealtimeForUser(String userId) {
+    _disposeRealtime();
+
+    _chAlumnos = _supabase.channel('alumnos_user_$userId')
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'alumnos',
+        callback: (payload) async {
+          await loadStudentsForUser(userId: userId, forceReload: true);
+        },
+      )
+      ..subscribe();
+
+    _chLlaves = _supabase.channel('llaves_user_$userId')
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'llaves',
+        callback: (payload) async {
+          await loadStudentsForUser(userId: userId, forceReload: true);
+        },
+      )
+      ..subscribe();
+
+    _chVinculos = _supabase.channel('alumno_tutores_user_$userId')
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'alumno_tutores',
+        callback: (payload) async {
+          await loadStudentsForUser(userId: userId, forceReload: true);
+        },
+      )
+      ..subscribe();
+  }
+
+  void _startRealtimeForSchool(String schoolId) {
+    _disposeRealtime();
+
+    _chAlumnos = _supabase.channel('alumnos_school_$schoolId')
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'alumnos',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'id_escuela',
+          value: schoolId,
+        ),
+        callback: (payload) async {
+          await loadStudents(escuelaId: schoolId);
+        },
+      )
+      ..subscribe();
+
+    _chLlaves = _supabase.channel('llaves_school_$schoolId')
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'llaves',
+        callback: (payload) async {
+          await loadStudents(escuelaId: schoolId);
+        },
+      )
+      ..subscribe();
+
+    _chVinculos = _supabase.channel('alumno_tutores_school_$schoolId')
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'alumno_tutores',
+        callback: (payload) async {
+          await loadStudents(escuelaId: schoolId);
+        },
+      )
+      ..subscribe();
+  }
+
   // ------------------------------
   // API pública
   // ------------------------------
 
   void clearError() => _setError(null);
 
+  /// Resuelve escuela de un TUTOR, mirando alumno_tutores → alumnos.id_escuela
   Future<String?> getUserSchoolId(String userId) async {
     debugPrint('getUserSchoolId: userId=$userId');
     try {
       final resp = await _supabase.from('alumno_tutores').select('''
-        alumnos!inner(
-          id_escuela
-        )
-      ''').eq('id_tutor', userId).limit(1);
+            alumnos!inner(id_escuela)
+          ''').eq('id_tutor', userId).limit(1);
 
       if (resp.isNotEmpty) {
-        final alumno = resp[0]['alumnos'] as Json;
-        return alumno['id_escuela']?.toString();
+        final alumno = resp[0]['alumnos'] as Json?;
+        final id = _normalizeUuid(alumno?['id_escuela']?.toString());
+        return id;
       }
       return null;
     } catch (e) {
@@ -347,7 +491,6 @@ class StudentProvider with ChangeNotifier {
         final fechaVinc = item['fecha_vinculacion']?.toString() ??
             DateTime.now().toIso8601String();
 
-        // Inyectamos estructura para el mapper "con contactos"
         alumno['alumno_tutores'] = [
           {
             'id_tutor': userId,
@@ -368,6 +511,22 @@ class StudentProvider with ChangeNotifier {
 
       _students = list;
       _filteredStudents = List.from(_students);
+      _currentUserIdMode = userId;
+
+      // Intenta resolver escuela (tutor → admin fallback)
+      String? resolvedSchool = _normalizeUuid(await getUserSchoolId(userId)) ??
+          _normalizeUuid(await getAdminEscuelaUuidByUserId(userId));
+
+      _currentSchoolId = resolvedSchool;
+      debugPrint('loadStudentsForUser: resolved schoolId = $_currentSchoolId');
+
+      // Realtime: si hay escuela, suscríbete por escuela; si no, por usuario
+      if (_currentSchoolId != null) {
+        _startRealtimeForSchool(_currentSchoolId!);
+      } else {
+        _startRealtimeForUser(userId);
+      }
+
       _setError(null);
     } catch (e) {
       _setError('Error al cargar estudiantes del usuario: $e');
@@ -452,13 +611,26 @@ class StudentProvider with ChangeNotifier {
       _setLoading(true, mode: 'admin');
       _setError(null);
 
-      String? schoolId = escuelaId;
+      // Normaliza inputs
+      String? schoolId = _normalizeUuid(escuelaId);
+
+      // Si viene userId, intenta derivar escuela (tutor → admin)
       if (userId != null && schoolId == null) {
-        schoolId = await getUserSchoolId(userId);
+        schoolId = _normalizeUuid(await getUserSchoolId(userId));
+        if (schoolId == null) {
+          schoolId = _normalizeUuid(await getAdminEscuelaUuidByUserId(userId));
+          if (schoolId != null) {
+            debugPrint('loadStudents: escuela resuelta por ADMIN ($schoolId)');
+          }
+        } else {
+          debugPrint('loadStudents: escuela resuelta por TUTOR ($schoolId)');
+        }
+
         if (schoolId == null) {
           throw Exception('No se encontró escuela asociada al usuario');
         }
       }
+
       if (schoolId == null) {
         throw Exception(
             'Se requiere escuelaId o userId para cargar estudiantes');
@@ -497,7 +669,14 @@ class StudentProvider with ChangeNotifier {
           id_tutor,
           fecha_vinculacion
         )
-      ''').eq('id_escuela', schoolId);
+      ''');
+
+      // Guard contra UUID vacío (previene 22P02)
+      if (schoolId.trim().isEmpty) {
+        throw Exception('El id_escuela resuelto está vacío');
+      }
+
+      query = query.eq('id_escuela', schoolId);
 
       if (grupoId != null) query = query.eq('id_grupo', grupoId);
       if (turnoId != null) query = query.eq('id_turno', turnoId);
@@ -513,6 +692,12 @@ class StudentProvider with ChangeNotifier {
       }
 
       _filteredStudents = List.from(_students);
+      _currentSchoolId = schoolId;
+      _currentUserIdMode = null;
+
+      // Realtime por escuela ya resuelta
+      _startRealtimeForSchool(schoolId);
+
       _setError(null);
     } catch (e) {
       _setError('Error al cargar estudiantes: $e');
@@ -540,8 +725,7 @@ class StudentProvider with ChangeNotifier {
     if (tutoresBasic != null && tutoresBasic.isNotEmpty) {
       for (final tb in tutoresBasic) {
         final tutorId = tb['id_tutor']?.toString();
-        final fechaVinc = _parseDate(tb['fecha_vinculacion']) ??
-            DateTime.now(); // fallback defensivo
+        final fechaVinc = _parseDate(tb['fecha_vinculacion']) ?? DateTime.now();
         if (tutorId == null) continue;
 
         try {
@@ -672,11 +856,17 @@ class StudentProvider with ChangeNotifier {
   // ------------------------------
 
   Future<void> _loadFilteringData(String escuelaId) async {
+    final eid = _normalizeUuid(escuelaId);
+    if (eid == null) {
+      debugPrint('_loadFilteringData: escuelaId vacío, skip');
+      return;
+    }
+
     try {
       final gruposResponse = await _supabase
           .from('grupos')
           .select()
-          .eq('id_escuela', escuelaId)
+          .eq('id_escuela', eid)
           .order('nivel_educativo')
           .order('grupo');
 
@@ -686,7 +876,7 @@ class StudentProvider with ChangeNotifier {
       final turnosResponse = await _supabase
           .from('turnos')
           .select()
-          .eq('id_escuela', escuelaId)
+          .eq('id_escuela', eid)
           .order('turno');
 
       _availableTurnos = (turnosResponse as List)
@@ -787,6 +977,7 @@ class StudentProvider with ChangeNotifier {
         if (_selectedStudent != null) {
           _students[idx] = _selectedStudent!;
           _filteredStudents = List.from(_students);
+          notifyListeners();
         }
       }
       return true;
@@ -858,12 +1049,13 @@ class StudentProvider with ChangeNotifier {
       await _supabase.from('alumno_tutores').insert({
         'id_alumno': studentId,
         'id_tutor': tutorId,
-      });
+        'fecha_vinculacion': DateTime.now().toIso8601String(),
+      }).select('id');
 
-      await loadStudentById(studentId: studentId);
+      await loadStudentsForUser(userId: tutorId, forceReload: true);
       return true;
     } catch (e) {
-      _setError('Error al vincular tutor: $e');
+      _setError(e.toString());
       return false;
     } finally {
       _setLoading(false);
@@ -945,7 +1137,6 @@ class StudentProvider with ChangeNotifier {
 
     try {
       return studentsToConvert.map((s) {
-        // Para UI: puedes seguir mostrando "Nivel - Grupo"
         final displayGroup = s.nivelEducativo.isNotEmpty && s.grupo.isNotEmpty
             ? '${s.nivelEducativo} - ${s.grupo}'
             : s.grupo;
@@ -993,10 +1184,18 @@ class StudentProvider with ChangeNotifier {
   }
 
   void clearStudents() {
+    _disposeRealtime();
     _students.clear();
     _filteredStudents.clear();
     _selectedStudent = null;
+    _availableGrupos.clear();
+    _availableTurnos.clear();
+    _isLoading = false;
+    _error = null;
     _currentLoadingMode = null;
+    _currentSchoolId = null;
+    _currentUserIdMode = null;
+    _lastConvertedCount = 0;
     Future.microtask(notifyListeners);
   }
 
@@ -1038,66 +1237,37 @@ class StudentProvider with ChangeNotifier {
       _setLoading(true);
       _setError(null);
 
-      // Paso 1: existencia de la llave
+      // 1) Buscar la llave por código
       final keyExists = await _supabase
           .from('llaves')
-          .select('id, codigo, id_alumno, id_escuela, activo')
+          .select('id, codigo, id_alumno, activo')
           .eq('codigo', keyCode)
           .maybeSingle();
 
       if (keyExists == null) {
-        throw Exception('Código de estudiante no encontrado');
+        _setError('Código de estudiante no encontrado');
+        return null;
       }
 
-      // Paso 2: alumno existe
-      final alumnoExists = await _supabase
-          .from('alumnos')
-          .select('id, nombre')
-          .eq('id', keyExists['id_alumno'])
-          .maybeSingle();
-      if (alumnoExists == null) {
-        throw Exception('Estudiante asociado al código no encontrado');
-      }
-
-      // Paso 3: escuela existe
-      final escuelaExists = await _supabase
-          .from('escuelas')
-          .select('id, nombre')
-          .eq('id', keyExists['id_escuela'])
-          .maybeSingle();
-      if (escuelaExists == null) {
-        throw Exception('Escuela asociada al código no encontrada');
-      }
-
-      // Paso 4: datos completos
-      final keyResponse = await _supabase.from('llaves').select('''
+      // 2) Alumno + escuela
+      final alumnoWithSchool = await _supabase.from('alumnos').select('''
         id,
-        codigo,
-        id_alumno,
+        nombre,
+        matricula,
+        id_grupo,
+        id_turno,
         id_escuela,
         fecha_registro,
-        fecha_desactivacion,
-        limite_vinculacion,
-        activo,
-        alumnos(
+        grupos(
           id,
-          nombre,
-          matricula,
-          id_grupo,
-          id_turno,
-          id_escuela,
-          fecha_registro,
-          grupos(
-            id,
-            grupo,
-            nivel_educativo
-          ),
-          turnos(
-            id,
-            turno,
-            hora_inicio,
-            hora_fin
-          )
+          grupo,
+          nivel_educativo
+        ),
+        turnos(
+          id,
+          turno,
+          hora_inicio,
+          hora_fin
         ),
         escuelas(
           id,
@@ -1107,53 +1277,92 @@ class StudentProvider with ChangeNotifier {
           direccion,
           telefono,
           email,
+          fecha_registro,
           descripcion,
-          preescolar,
-          primaria,
-          secundaria,
-          preparatoria
+          sitio_web
         )
+      ''').eq('id', keyExists['id_alumno']).maybeSingle();
+
+      if (alumnoWithSchool == null) {
+        _setError('Estudiante asociado al código no encontrado');
+        return null;
+      }
+
+      // 3) Info completa de la llave
+      final keyData = await _supabase.from('llaves').select('''
+        id,
+        codigo,
+        id_alumno,
+        fecha_registro,
+        fecha_desactivacion,
+        limite_vinculacion,
+        activo
       ''').eq('codigo', keyCode).single();
 
-      final keyData = keyResponse as Json;
-      final alumnoData = keyData['alumnos'] as Json?;
-      final escuelaData = keyData['escuelas'] as Json?;
-
-      if (alumnoData == null) {
-        throw Exception('Datos del estudiante no disponibles');
-      }
-      if (escuelaData == null) {
-        throw Exception('Datos de la escuela no disponibles');
-      }
-
-      final grupoData = alumnoData['grupos'] as Json?;
-      final turnoData = alumnoData['turnos'] as Json?;
-
       // Validaciones de ventana/limite
+      final now = DateTime.now();
       final int? limiteV = keyData['limite_vinculacion'] is num
           ? (keyData['limite_vinculacion'] as num).toInt()
           : null;
+
       if (limiteV == null || limiteV <= 0) {
-        throw Exception('Este código ya no permite más registros');
+        _setError('Este código ya no permite más registros');
+        return null;
       }
 
-      final now = DateTime.now();
-      final fRegistro = _parseDate(keyData['fecha_registro']) ?? now;
-      final fDesact = _parseDate(keyData['fecha_desactivacion']);
+      DateTime? _pDate(dynamic v) {
+        if (v == null) return null;
+        try {
+          return DateTime.parse(v.toString());
+        } catch (_) {
+          return null;
+        }
+      }
+
+      String _fmtIso(dynamic ts) =>
+          _pDate(ts)?.toIso8601String() ?? ts?.toString() ?? '';
+
+      final fRegistro = _pDate(keyData['fecha_registro']) ?? now;
+      final fDesact = _pDate(keyData['fecha_desactivacion']);
 
       if (now.isBefore(fRegistro)) {
-        throw Exception('Este código aún no está activo');
+        _setError('Este código aún no está activo');
+        return null;
       }
       if (fDesact != null && now.isAfter(fDesact)) {
-        throw Exception('Este código ha expirado');
+        _setError('Este código ha expirado');
+        return null;
       }
 
       final remainingDays = fDesact?.difference(now).inDays;
 
-      String _fmtIso(dynamic ts) =>
-          _parseDate(ts)?.toIso8601String() ?? ts?.toString() ?? '';
+      // Armado de respuesta
+      final alumnoData = Map<String, dynamic>.from(alumnoWithSchool);
+      final grupoData = alumnoData['grupos'] as Map?;
+      final turnoData = alumnoData['turnos'] as Map?;
+      final escuelaData = alumnoData['escuelas'] as Map?;
 
-      final result = {
+      if (escuelaData == null) {
+        _setError('Datos de la escuela no disponibles');
+        return null;
+      }
+
+      String? _fmtHoraLocal(dynamic v) {
+        if (v == null) return null;
+        final s = v.toString();
+        if (RegExp(r'^\d{2}:\d{2}$').hasMatch(s)) return s;
+        if (RegExp(r'^\d{2}:\d{2}:\d{2}$').hasMatch(s)) {
+          return s.substring(0, 5);
+        }
+        try {
+          final dt = DateTime.parse(s);
+          return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+        } catch (_) {
+          return null;
+        }
+      }
+
+      return {
         'isValid': true,
         'keyId': keyData['id'].toString(),
         'limiteVinculacion': limiteV,
@@ -1165,8 +1374,8 @@ class StudentProvider with ChangeNotifier {
           'nivelEducativo':
               (grupoData?['nivel_educativo'] ?? 'Sin nivel').toString(),
           'turno': (turnoData?['turno'] ?? 'Sin turno').toString(),
-          'horaInicioTurno': _fmtHora(turnoData?['hora_inicio']),
-          'horaFinTurno': _fmtHora(turnoData?['hora_fin']),
+          'horaInicioTurno': _fmtHoraLocal(turnoData?['hora_inicio']),
+          'horaFinTurno': _fmtHoraLocal(turnoData?['hora_fin']),
           'escuelaId': alumnoData['id_escuela'].toString(),
           'fechaRegistroAlumno': _fmtIso(alumnoData['fecha_registro']),
         },
@@ -1179,12 +1388,13 @@ class StudentProvider with ChangeNotifier {
           'telefono': escuelaData['telefono'],
           'email': escuelaData['email'],
           'descripcion': escuelaData['descripcion'],
+          'sitio_web': escuelaData['sitio_web'],
           'nivelesEducativos': {
-            'preescolar': escuelaData['preescolar'] ?? false,
-            'primaria': escuelaData['primaria'] ?? false,
-            'secundaria': escuelaData['secundaria'] ?? false,
-            'preparatoria': escuelaData['preparatoria'] ?? false,
-          }
+            'preescolar': false,
+            'primaria': false,
+            'secundaria': false,
+            'preparatoria': false,
+          },
         },
         'key': {
           'id': keyData['id'].toString(),
@@ -1198,12 +1408,8 @@ class StudentProvider with ChangeNotifier {
           'activo': keyData['activo'] == true,
         }
       };
-
-      return result;
     } catch (e) {
       _setError(e.toString());
-
-      // Debug auxiliar no-crítico
       try {
         final like = '%${keyCode.substring(0, math.min(keyCode.length, 5))}%';
         await _supabase
@@ -1227,43 +1433,70 @@ class StudentProvider with ChangeNotifier {
       _setLoading(true);
       _setError(null);
 
+      final keyRow = await _supabase.from('llaves').select('''
+        id, codigo, id_alumno, fecha_registro, fecha_desactivacion,
+        limite_vinculacion, activo
+      ''').eq('id', keyId).maybeSingle();
+
+      if (keyRow == null) {
+        _setError('Código de estudiante no encontrado');
+        return false;
+      }
+
+      if (keyRow['id_alumno']?.toString() != studentId) {
+        _setError('El código no corresponde a este estudiante');
+        return false;
+      }
+
+      final String codigo = keyRow['codigo']?.toString() ?? '';
+      final reval = await validateStudentKeyCode(codigo);
+      if (reval == null || reval['isValid'] != true) {
+        if (_error == null) {
+          _setError('No fue posible validar el código');
+        }
+        return false;
+      }
+
       final existing = await _supabase
           .from('alumno_tutores')
           .select('id')
           .eq('id_alumno', studentId)
           .eq('id_tutor', tutorId)
           .maybeSingle();
-
       if (existing != null) {
-        throw Exception('Ya tienes este estudiante registrado');
+        _setError('Ya tienes este estudiante registrado');
+        return false;
       }
 
       final keyBefore = await _supabase
           .from('llaves')
-          .select('id, codigo, limite_vinculacion, activo, id_alumno')
+          .select('id, limite_vinculacion')
           .eq('id', keyId)
           .single();
 
-      final currentLimit = (keyBefore['limite_vinculacion'] as num).toInt();
+      final currentLimit =
+          (keyBefore['limite_vinculacion'] as num?)?.toInt() ?? 0;
       if (currentLimit <= 0) {
-        throw Exception('Este código ya no permite más registros');
+        _setError('Este código ya no permite más registros');
+        return false;
       }
 
       final newLimit = currentLimit - 1;
 
       final updateResult = await _supabase
           .from('llaves')
-          .update({'limite_vinculacion': newLimit, 'activo': true})
+          .update({
+            'limite_vinculacion': newLimit,
+            'activo': newLimit > 0,
+          })
           .eq('id', keyId)
-          .select('id, limite_vinculacion, activo');
+          .select('id, limite_vinculacion, activo')
+          .maybeSingle();
 
-      if (updateResult.isEmpty) {
-        throw Exception('Error al actualizar la llave - no encontrada');
-      }
-
-      final updated = updateResult.first;
-      if ((updated['limite_vinculacion'] as num).toInt() != newLimit) {
-        throw Exception('Error al actualizar el límite de vinculación');
+      if (updateResult == null ||
+          (updateResult['limite_vinculacion'] as num).toInt() != newLimit) {
+        _setError('No fue posible actualizar el límite de la llave');
+        return false;
       }
 
       await _supabase.from('alumno_tutores').insert({
@@ -1276,14 +1509,6 @@ class StudentProvider with ChangeNotifier {
       return true;
     } catch (e) {
       _setError(e.toString());
-      // Debug estado llave (no crítico)
-      try {
-        await _supabase
-            .from('llaves')
-            .select('id, codigo, limite_vinculacion, activo')
-            .eq('id', keyId)
-            .maybeSingle();
-      } catch (_) {}
       return false;
     } finally {
       _setLoading(false);
@@ -1318,12 +1543,12 @@ class StudentProvider with ChangeNotifier {
       return existing != null;
     } catch (e) {
       debugPrint('checkIfUserAlreadyHasStudent error: $e');
-      // Preferimos permitir continuar en caso de falla de red puntual
-      return false;
+      rethrow;
     }
   }
 
   void clearAllData() {
+    _disposeRealtime();
     _students.clear();
     _filteredStudents.clear();
     _selectedStudent = null;
@@ -1332,7 +1557,15 @@ class StudentProvider with ChangeNotifier {
     _isLoading = false;
     _error = null;
     _currentLoadingMode = null;
+    _currentSchoolId = null;
+    _currentUserIdMode = null;
     _lastConvertedCount = 0;
     Future.microtask(notifyListeners);
+  }
+
+  @override
+  void dispose() {
+    _disposeRealtime();
+    super.dispose();
   }
 }

@@ -1,14 +1,13 @@
 import 'package:alertaescolar/components/headers/nav_header.dart';
 import 'package:alertaescolar/components/buttons/solid_button.dart';
-import 'package:alertaescolar/components/buttons/custom_outline_button.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:alertaescolar/managers/user_provider.dart';
 import 'package:alertaescolar/managers/student_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart'; // <-- NUEVO
 import '../../../l10n/app_localizations.dart';
 import '../../../app/app_theme.dart';
-import '../../../components/loading_dialog.dart';
 
 class StudentConfirmationView extends StatefulWidget {
   final Map<String, dynamic> validationResult;
@@ -30,9 +29,18 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final screenSize = MediaQuery.of(context).size;
-    final studentData = widget.validationResult['student'];
-    final schoolData = widget.validationResult['school'];
-    final keyData = widget.validationResult['key'];
+
+    final Map<String, dynamic> studentData =
+        (widget.validationResult['student'] as Map?)?.cast<String, dynamic>() ??
+            <String, dynamic>{};
+
+    final Map<String, dynamic> schoolData =
+        (widget.validationResult['school'] as Map?)?.cast<String, dynamic>() ??
+            <String, dynamic>{};
+
+    final Map<String, dynamic> keyData =
+        (widget.validationResult['key'] as Map?)?.cast<String, dynamic>() ??
+            <String, dynamic>{};
 
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
@@ -49,40 +57,40 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
                       padding: EdgeInsets.only(
                         left: AppTheme.getMediumPadding(screenSize),
                         right: AppTheme.getMediumPadding(screenSize),
-                        bottom: MediaQuery.of(context).size.height *
-                            0.16, // Space for fixed buttons
+                        bottom: screenSize.height * 0.16, // espacio para footer
                       ),
                       child: Column(
                         children: [
                           SizedBox(
-                              height: AppTheme.getLargePadding(screenSize)),
-
-                          // Success Icon
-                          Container(
-                            width: screenSize.width * 0.25,
-                            height: screenSize.width * 0.25,
-                            decoration: BoxDecoration(
-                              color: AppTheme.successColor.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.check_circle_rounded,
-                              color: AppTheme.successColor,
-                              size: screenSize.width * 0.15,
-                            ),
-                          ),
-
-                          SizedBox(
-                              height: AppTheme.getLargePadding(screenSize)),
+                              height: AppTheme.getMediumPadding(screenSize)),
 
                           // Title
-                          Text(
-                            l10n.studentToRegister,
-                            style: AppTheme.getH2(screenSize).copyWith(
-                              color: AppTheme.getTextPrimaryColor(context),
-                              fontWeight: FontWeight.w600,
-                            ),
-                            textAlign: TextAlign.center,
+                          Row(
+                            children: [
+                              // Success Icon
+                              Container(
+                                width: screenSize.width * 0.10,
+                                height: screenSize.width * 0.10,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.successColor.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.check_circle_rounded,
+                                  color: AppTheme.successColor,
+                                  size: screenSize.width * 0.07,
+                                ),
+                              ),
+                              SizedBox(width: AppTheme.paddingSmall),
+                              Text(
+                                l10n.studentToRegister,
+                                style: AppTheme.getH2(screenSize).copyWith(
+                                  color: AppTheme.getTextPrimaryColor(context),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
 
                           SizedBox(
@@ -108,42 +116,69 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
                           SizedBox(
                               height: AppTheme.getMediumPadding(screenSize)),
 
-                          // Confirmation message
+                          // ----------- NUEVO: Aviso y botón para enviar correo -----------
                           Container(
                             padding: EdgeInsets.all(
                                 AppTheme.getMediumPadding(screenSize)),
                             decoration: BoxDecoration(
-                              color: AppTheme.warningColor.withOpacity(0.1),
+                              color: AppTheme.warningColor.withOpacity(0.08),
                               borderRadius: BorderRadius.circular(
                                 AppTheme.getMediumRadius(screenSize),
                               ),
                               border: Border.all(
-                                color: AppTheme.warningColor.withOpacity(0.3),
+                                color: AppTheme.warningColor.withOpacity(0.25),
                               ),
                             ),
-                            child: Row(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(
-                                  Icons.info_outline_rounded,
-                                  color: AppTheme.warningColor,
-                                  size: screenSize.height * 0.025,
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline_rounded,
+                                      color: AppTheme.warningColor,
+                                      size: screenSize.height * 0.025,
+                                    ),
+                                    SizedBox(
+                                        width: AppTheme.getSmallPadding(
+                                            screenSize)),
+                                    Expanded(
+                                      child: Text(
+                                        'Si ves que algún dato no coincide con el alumno, '
+                                        'por favor contacta al equipo de Alerta Escolar por correo.',
+                                        style:
+                                            AppTheme.getBodyMedium(screenSize)
+                                                .copyWith(
+                                          color: AppTheme.getTextPrimaryColor(
+                                              context),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 SizedBox(
-                                    width:
+                                    height:
                                         AppTheme.getSmallPadding(screenSize)),
-                                Expanded(
-                                  child: Text(
-                                    l10n.confirmRegistrationMessage,
-                                    style: AppTheme.getBodyMedium(screenSize)
-                                        .copyWith(
-                                      color:
-                                          AppTheme.getTextPrimaryColor(context),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: ElevatedButton.icon(
+                                    onPressed: _emailSupport,
+                                    icon: const Icon(
+                                      Icons.email_rounded,
+                                      color: Colors.white,
+                                    ),
+                                    label: const Text('Enviar correo'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.amber,
+                                      foregroundColor: Colors.white,
                                     ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
+                          // ----------------------------------------------------------------
                         ],
                       ),
                     ),
@@ -183,25 +218,16 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
                   child: Row(
                     children: [
                       Expanded(
-                        child: CustomOutlineButton(
-                          onPressed: _isLoading ? () {} : _cancelRegistration,
-                          label: l10n.cancel,
-                          icon: Icons.close_rounded,
-                          color: AppTheme.getTextSecondaryColor(context),
-                          screenSize: screenSize,
-                        ),
-                      ),
-                      SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-                      Expanded(
                         flex: 2,
                         child: SolidButton(
-                          onPressed: _isLoading ? () {} : _confirmRegistration,
-                          label: _isLoading
-                              ? l10n.registering
-                              : l10n.confirmRegistration,
+                          onPressed: _isLoading ? null : _confirmRegistration,
+                          label: l10n.confirmRegistration,
                           icon: _isLoading ? null : Icons.check_rounded,
                           backgroundColor: AppTheme.successColor,
+                          foregroundColor: Colors.white,
                           screenSize: screenSize,
+                          isLoading: _isLoading,
+                          semanticsLabel: l10n.confirmRegistration,
                         ),
                       ),
                     ],
@@ -215,8 +241,20 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
     );
   }
 
+  // ----------------- Helpers UI existentes -----------------
+
   Widget _buildStudentInfoCard(Map<String, dynamic> studentData,
       Size screenSize, AppLocalizations l10n, BuildContext context) {
+    final nombre = (studentData['nombre'] ?? '').toString().trim();
+    final inicial = nombre.isNotEmpty ? nombre[0].toUpperCase() : '?';
+
+    final nivelEducativo =
+        (studentData['nivelEducativo'] ?? 'N/A').toString().trim();
+    final grupo = (studentData['grupo'] ?? 'N/A').toString().trim();
+    final turno = (studentData['turno'] ?? 'N/A').toString().trim();
+    final horaInicioTurno = studentData['horaInicioTurno']?.toString();
+    final horaFinTurno = studentData['horaFinTurno']?.toString();
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -270,7 +308,7 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
                 ),
                 child: Center(
                   child: Text(
-                    studentData['nombre'][0].toUpperCase(),
+                    inicial,
                     style: AppTheme.getH2(screenSize).copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -284,7 +322,7 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      studentData['nombre'],
+                      nombre.isNotEmpty ? nombre : '—',
                       style: AppTheme.getH2(screenSize).copyWith(
                         color: AppTheme.getTextPrimaryColor(context),
                         fontWeight: FontWeight.w600,
@@ -307,24 +345,24 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
           // Academic Information
-          _buildInfoRow('Nivel Educativo:', studentData['nivelEducativo'],
+          _buildInfoRow('Nivel Educativo:', nivelEducativo,
               Icons.school_rounded, AppTheme.accentPurple, screenSize, context),
           SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-          _buildInfoRow('Grupo:', studentData['grupo'], Icons.class_rounded,
+          _buildInfoRow('Grupo:', grupo, Icons.class_rounded,
               AppTheme.accentBlue, screenSize, context),
           SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-          _buildInfoRow('Turno:', studentData['turno'], Icons.schedule_rounded,
+          _buildInfoRow('Turno:', turno, Icons.schedule_rounded,
               AppTheme.successColor, screenSize, context),
-          if (studentData['horaInicioTurno'] != null &&
-              studentData['horaFinTurno'] != null) ...[
+          if (horaInicioTurno != null && horaFinTurno != null) ...[
             SizedBox(height: AppTheme.getSmallPadding(screenSize)),
             _buildInfoRow(
-                'Horario:',
-                '${_formatTime(studentData['horaInicioTurno'])} - ${_formatTime(studentData['horaFinTurno'])}',
-                Icons.access_time_rounded,
-                AppTheme.warningColor,
-                screenSize,
-                context),
+              'Horario:',
+              '${_formatTime(horaInicioTurno)} - ${_formatTime(horaFinTurno)}',
+              Icons.access_time_rounded,
+              AppTheme.warningColor,
+              screenSize,
+              context,
+            ),
           ],
         ],
       ),
@@ -334,19 +372,17 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
   Widget _buildSchoolInfoCard(Map<String, dynamic> schoolData, Size screenSize,
       AppLocalizations l10n, BuildContext context) {
     final nivelesEducativos =
-        schoolData['nivelesEducativos'] as Map<String, dynamic>;
+        (schoolData['nivelesEducativos'] as Map?)?.cast<String, dynamic>() ??
+            <String, dynamic>{};
     final nivelesActivos = <String>[];
 
-    if (nivelesEducativos['preescolar'] == true) {
+    if (nivelesEducativos['preescolar'] == true)
       nivelesActivos.add('Preescolar');
-    }
     if (nivelesEducativos['primaria'] == true) nivelesActivos.add('Primaria');
-    if (nivelesEducativos['secundaria'] == true) {
+    if (nivelesEducativos['secundaria'] == true)
       nivelesActivos.add('Secundaria');
-    }
-    if (nivelesEducativos['preparatoria'] == true) {
+    if (nivelesEducativos['preparatoria'] == true)
       nivelesActivos.add('Preparatoria');
-    }
 
     return Container(
       width: double.infinity,
@@ -388,15 +424,15 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
 
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-          _buildInfoRow('Nombre:', schoolData['nombre'], Icons.school_rounded,
-              AppTheme.successColor, screenSize, context),
+          _buildInfoRow('Nombre:', (schoolData['nombre'] ?? '—').toString(),
+              Icons.school_rounded, AppTheme.successColor, screenSize, context),
           SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-          _buildInfoRow('Código:', schoolData['codigo'], Icons.tag_rounded,
-              AppTheme.accentBlue, screenSize, context),
+          _buildInfoRow('Código:', (schoolData['codigo'] ?? '—').toString(),
+              Icons.tag_rounded, AppTheme.accentBlue, screenSize, context),
           SizedBox(height: AppTheme.getSmallPadding(screenSize)),
           _buildInfoRow(
               'Tipo:',
-              _capitalizeFirst(schoolData['tipo']),
+              _capitalizeFirst((schoolData['tipo'] ?? '—').toString()),
               Icons.category_rounded,
               AppTheme.accentPurple,
               screenSize,
@@ -404,7 +440,7 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
           SizedBox(height: AppTheme.getSmallPadding(screenSize)),
           _buildInfoRow(
               'Dirección:',
-              schoolData['direccion'],
+              (schoolData['direccion'] ?? '—').toString(),
               Icons.location_on_rounded,
               AppTheme.warningColor,
               screenSize,
@@ -427,10 +463,24 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
   Widget _buildKeyInfoCard(Map<String, dynamic> keyData, Size screenSize,
       AppLocalizations l10n, BuildContext context) {
     final fechaRegistro = _parseTimestamptz(keyData['fechaRegistro']);
-    final fechaDesactivacion = keyData['fechaDesactivacion'] != null
+    final DateTime? fechaDesactivacion = keyData['fechaDesactivacion'] != null
         ? _parseTimestamptz(keyData['fechaDesactivacion'])
         : null;
-    final remainingDays = keyData['remainingDays'] as int?;
+
+    // Si el back no manda remainingDays, lo calculamos local:
+    final int? remainingDaysFromApi = keyData['remainingDays'] is int
+        ? keyData['remainingDays'] as int
+        : null;
+    final int? remainingDaysFallback = (fechaDesactivacion != null)
+        ? fechaDesactivacion.difference(DateTime.now()).inDays
+        : null;
+    final int? remainingDays = remainingDaysFromApi ?? remainingDaysFallback;
+
+    final limiteVinculacion =
+        (keyData['limiteVinculacion'] ?? keyData['limite_vinculacion'])
+            ?.toString();
+
+    final codigo = (keyData['codigo'] ?? '—').toString();
 
     return Container(
       width: double.infinity,
@@ -472,16 +522,11 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
 
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-          _buildInfoRow('Código:', keyData['codigo'], Icons.qr_code_rounded,
+          _buildInfoRow('Código:', codigo, Icons.qr_code_rounded,
               AppTheme.warningColor, screenSize, context),
           SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-          _buildInfoRow(
-              'Registros Restantes:',
-              keyData['limiteVinculacion'].toString(),
-              Icons.people_rounded,
-              AppTheme.accentBlue,
-              screenSize,
-              context),
+          _buildInfoRow('Registros Restantes:', limiteVinculacion ?? '—',
+              Icons.people_rounded, AppTheme.accentBlue, screenSize, context),
           SizedBox(height: AppTheme.getSmallPadding(screenSize)),
           _buildInfoRow(
               'Fecha de Registro:',
@@ -503,12 +548,13 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
           if (remainingDays != null) ...[
             SizedBox(height: AppTheme.getSmallPadding(screenSize)),
             _buildInfoRow(
-                'Días Restantes:',
-                remainingDays > 0 ? '$remainingDays días' : 'Expirado',
-                Icons.timelapse_rounded,
-                remainingDays > 0 ? AppTheme.successColor : AppTheme.errorColor,
-                screenSize,
-                context),
+              'Días Restantes:',
+              remainingDays > 0 ? '$remainingDays días' : 'Expirado',
+              Icons.timelapse_rounded,
+              remainingDays > 0 ? AppTheme.successColor : AppTheme.errorColor,
+              screenSize,
+              context,
+            ),
           ],
         ],
       ),
@@ -555,40 +601,37 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
   String _formatTime(String? timeString) {
     if (timeString == null) return 'N/A';
     try {
-      // Handle both time-only strings and full timestamps
       DateTime time;
       if (timeString.contains('T') || timeString.contains(' ')) {
-        // It's a full timestamp (timestamptz format)
         time = DateTime.parse(timeString);
       } else {
-        // It's a time-only string
-        time = DateTime.parse('2023-01-01 $timeString');
+        time = DateTime.parse('2023-01-01T$timeString');
       }
-      return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+      final hh = time.hour.toString().padLeft(2, '0');
+      final mm = time.minute.toString().padLeft(2, '0');
+      return '$hh:$mm';
     } catch (e) {
       debugPrint('_formatTime: Error formatting time: $e');
       return timeString;
     }
   }
 
-  // New method to parse timestamptz format
   DateTime _parseTimestamptz(dynamic timestampField) {
     try {
-      if (timestampField is String) {
-        return DateTime.parse(timestampField);
-      } else if (timestampField is DateTime) {
-        return timestampField;
-      } else {
-        return DateTime.parse(timestampField.toString());
-      }
+      if (timestampField == null) return DateTime.now();
+      if (timestampField is DateTime) return timestampField;
+      return DateTime.parse(timestampField.toString());
     } catch (e) {
       debugPrint('_parseTimestamptz: Error parsing timestamp: $e');
-      return DateTime.now(); // Fallback to current time
+      return DateTime.now();
     }
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+    final dd = date.day.toString().padLeft(2, '0');
+    final mm = date.month.toString().padLeft(2, '0');
+    final yyyy = date.year.toString();
+    return '$dd/$mm/$yyyy';
   }
 
   String _capitalizeFirst(String text) {
@@ -596,20 +639,11 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
     return text[0].toUpperCase() + text.substring(1).toLowerCase();
   }
 
-  void _cancelRegistration() {
-    Navigator.of(context).pop();
-  }
-
-  void _confirmRegistration() async {
+  Future<void> _confirmRegistration() async {
     final l10n = AppLocalizations.of(context);
+    if (_isLoading) return;
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    // Show loading dialog
-    LoadingDialog.show(context, message: l10n.registering);
-
+    setState(() => _isLoading = true);
     try {
       final studentProvider =
           Provider.of<StudentProvider>(context, listen: false);
@@ -617,90 +651,60 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
 
       final currentUser = userProvider.currentUser;
       if (currentUser == null) {
-        throw Exception(l10n.userNotFound);
-      }
-
-      debugPrint('_confirmRegistration: Starting registration process');
-      debugPrint(
-          '_confirmRegistration: Key ID: ${widget.validationResult['keyId']}');
-      debugPrint(
-          '_confirmRegistration: Student ID: ${widget.validationResult['student']['id']}');
-      debugPrint('_confirmRegistration: Tutor ID: ${currentUser.id}');
-
-      // Check if user already has this student registered
-      debugPrint(
-          '_confirmRegistration: Checking if user already has this student');
-      final alreadyHasStudent =
-          await studentProvider.checkIfUserAlreadyHasStudent(
-        studentId: widget.validationResult['student']['id'],
-        tutorId: currentUser.id,
-      );
-
-      if (alreadyHasStudent) {
-        debugPrint(
-            '_confirmRegistration: User already has this student registered');
-        // Hide loading dialog
-        LoadingDialog.hide(context);
-        _showErrorSnackBar('Ya tienes este estudiante registrado en tu cuenta');
+        _showErrorSnackBar(l10n.userNotFound);
         return;
       }
 
-      debugPrint(
-          '_confirmRegistration: User does not have this student, proceeding with registration');
+      final keyId = widget.validationResult['key']?['id'] ??
+          widget.validationResult['keyId'];
+      final studentId = widget.validationResult['student']?['id'];
 
-      // Show current key state before registration
-      final keyStateBefore =
-          await studentProvider.getKeyState(widget.validationResult['keyId']);
-      if (keyStateBefore != null) {
-        debugPrint('_confirmRegistration: Key state BEFORE registration:');
-        debugPrint('  - Limite: ${keyStateBefore['limite_vinculacion']}');
-        debugPrint('  - Activo: ${keyStateBefore['activo']}');
-      }
-
-      final success = await studentProvider.registerStudentWithKey(
-        keyId: widget.validationResult['keyId'],
-        studentId: widget.validationResult['student']['id'],
+      // Registro con revalidación interna (el provider revalida la llave justo antes)
+      final ok = await studentProvider.registerStudentWithKey(
+        keyId: keyId.toString(),
+        studentId: studentId.toString(),
         tutorId: currentUser.id,
       );
 
-      // Show key state after registration
-      final keyStateAfter =
-          await studentProvider.getKeyState(widget.validationResult['keyId']);
-      if (keyStateAfter != null) {
-        debugPrint('_confirmRegistration: Key state AFTER registration:');
-        debugPrint('  - Limite: ${keyStateAfter['limite_vinculacion']}');
-        debugPrint('  - Activo: ${keyStateAfter['activo']}');
-      }
+      if (!mounted) return;
 
-      if (mounted) {
-        // Hide loading dialog
-        LoadingDialog.hide(context);
-
-        if (success) {
-          debugPrint('_confirmRegistration: Registration successful');
-          _showSuccessSnackBar(l10n.studentRegisteredSuccessfully);
-
-          // Navigate back to students list (pop twice to go back to students view)
-          Navigator.of(context).pop(); // Close confirmation view
-          Navigator.of(context).pop(); // Close add student view
-        } else {
-          final error = studentProvider.error ?? l10n.errorRegisteringStudent;
-          debugPrint('_confirmRegistration: Registration failed: $error');
-          _showErrorSnackBar(error);
-        }
+      if (ok) {
+        _showSuccessSnackBar(l10n.studentRegisteredSuccessfully);
+        Navigator.of(context).pop(true);
+      } else {
+        final msg = studentProvider.error ?? l10n.errorRegisteringStudent;
+        studentProvider.clearError();
+        _showErrorSnackBar(msg);
       }
     } catch (e) {
-      debugPrint('_confirmRegistration: Exception during registration: $e');
-      if (mounted) {
-        // Hide loading dialog
-        LoadingDialog.hide(context);
-        _showErrorSnackBar('${l10n.errorRegisteringStudent}: $e');
-      }
+      if (!mounted) return;
+      _showErrorSnackBar('${l10n.errorRegisteringStudent}: $e');
     } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // ---------- NUEVO: abrir mailto ----------
+  Future<void> _emailSupport() async {
+    final uri = Uri(
+      scheme: 'mailto',
+      path: 'contacto@alertaescolar.mx',
+      queryParameters: {
+        'subject': 'Soporte - Datos de alumno no coinciden',
+        'body':
+            'Hola equipo de Alerta Escolar,\n\nHe detectado que algunos datos no coinciden con el alumno mostrado en la app. '
+                '¿Podrían ayudarme a revisarlo por favor?\n\nGracias.',
+      },
+    );
+
+    try {
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok && mounted) {
+        _showErrorSnackBar('No se pudo abrir el cliente de correo.');
+      }
+    } catch (e) {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        _showErrorSnackBar('No se pudo abrir el cliente de correo.');
       }
     }
   }

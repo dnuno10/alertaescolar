@@ -61,21 +61,28 @@ class _SelectableStudentsDirectoryViewState
         Provider.of<StudentProvider>(context, listen: false);
     final groupProvider = Provider.of<GroupProvider>(context, listen: false);
 
-    // Get escuelaId from user session or arguments
-    final escuelaId = userProvider.currentUser?.escuelaId ??
-        widget.arguments?['escuelaId'] ??
-        'ESC001';
+    final userId = userProvider.currentUser?.id;
+    String? escuelaId =
+        userProvider.currentUser?.escuelaId ?? widget.arguments?['escuelaId'];
 
     try {
-      // Load both students and groups in parallel
+      escuelaId ??= await studentProvider.getUserSchoolId(userId ?? '');
+      escuelaId ??=
+          await studentProvider.getAdminEscuelaUuidByUserId(userId ?? '');
+
+      debugPrint(
+          'Resolved escuelaId for selectable directory: $escuelaId (userId=$userId)');
+
+      if (escuelaId == null) {
+        throw Exception('No se encontró escuela asociada al usuario');
+      }
+
       await Future.wait([
-        studentProvider.loadStudents(escuelaId: escuelaId),
+        studentProvider.loadStudents(escuelaId: escuelaId, userId: userId),
         groupProvider.loadGroups(escuelaId: escuelaId),
       ]);
 
-      if (mounted) {
-        _filterStudents();
-      }
+      if (mounted) _filterStudents();
     } catch (e) {
       debugPrint('Error loading initial data: $e');
     }

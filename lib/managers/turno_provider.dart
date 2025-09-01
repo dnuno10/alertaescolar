@@ -1,252 +1,296 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/turno.dart';
-import '../components/loading_dialog.dart';
-import '../utils/time_format.dart';
+import '../models/turno.dart' as turno_model;
 
-class TurnoProvider with ChangeNotifier {
+/// Proveedor para gestionar turnos (dinámico, N turnos) por escuela.
+class TurnoProvider extends ChangeNotifier {
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  List<Turno> _turnos = [];
-  Turno? _selectedTurno;
+  // Estado
+  final List<turno_model.Turno> _turnos = [];
   bool _isLoading = false;
   String? _error;
+  String? _currentEscuelaId;
+
+  // Realtime
+  RealtimeChannel? _chTurnos;
 
   // Getters
-  List<Turno> get turnos => _turnos;
-  Turno? get selectedTurno => _selectedTurno;
+  List<turno_model.Turno> get turnos => List.unmodifiable(_turnos);
   bool get isLoading => _isLoading;
   String? get error => _error;
+  String? get currentEscuelaId => _currentEscuelaId;
 
-  // Clear error message
-  void clearError() {
+  // ---------------- Helpers privados ----------------
+
+  void _setLoading(bool v) {
+    _isLoading = v;
+    Future.microtask(notifyListeners);
+  }
+
+  void _setError(String? msg) {
+    _error = msg;
+    Future.microtask(notifyListeners);
+  }
+
+  void _disposeRealtime() {
+    _chTurnos?.unsubscribe();
+    _chTurnos = null;
+  }
+
+  void _startRealtimeForSchool(String escuelaId) {
+    _disposeRealtime();
+    _chTurnos = _supabase.channel('turnos_school_$escuelaId')
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'turnos',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'id_escuela',
+          value: escuelaId,
+        ),
+        callback: (payload) async {
+          try {
+            await loadTurnos(escuelaId: escuelaId);
+          } catch (_) {}
+        },
+      )
+      ..subscribe();
+  }
+
+  void _replaceOrAdd(turno_model.Turno t) {
+    final idx = _turnos.indexWhere((x) => x.id == t.id);
+    if (idx == -1) {
+      _turnos.add(t);
+    } else {
+      _turnos[idx] = t;
+    }
+  }
+
+  // ---------------- API pública ----------------
+
+  void clearError() => _setError(null);
+
+  /// Limpia todo y cierra realtime.
+  void clearAllData() {
+    _disposeRealtime();
+    _turnos.clear();
+    _isLoading = false;
     _error = null;
-    notifyListeners();
+    _currentEscuelaId = null;
+    Future.microtask(notifyListeners);
   }
 
-  // Load all turnos for a school
-  Future<void> loadTurnos({
-    required String escuelaId,
-    BuildContext? context,
-  }) async {
+  /// Parsea 'HH:mm' / 'HH:mm:ss' / ISO -> TimeOfDay.
+  TimeOfDay? parseTimeString(dynamic value) {
+    if (value == null) return null;
+    final s = value.toString();
     try {
-      _isLoading = true;
-      _error = null;
-      if (context != null && context.mounted) {
-        LoadingDialog.show(context, message: 'Cargando turnos...');
+      if (RegExp(r'^\d{2}:\d{2}$').hasMatch(s)) {
+        final parts = s.split(':');
+        return TimeOfDay(
+            hour: int.parse(parts[0]), minute: int.parse(parts[1]));
       }
-      notifyListeners();
-
-      final response = await _supabase
-          .from('turnos')
-          .select()
-          .eq('id_escuela', escuelaId)
-          .order('turno');
-
-      _turnos = (response as List).map((item) => Turno.fromJson(item)).toList();
-
-      _error = null;
-      debugPrint('Loaded ${_turnos.length} turnos from database');
-    } catch (e) {
-      _error = 'Error al cargar turnos: $e';
-      debugPrint(_error);
-    } finally {
-      _isLoading = false;
-      if (context != null && context.mounted) {
-        LoadingDialog.hide(context);
+      if (RegExp(r'^\d{2}:\d{2}:\d{2}$').hasMatch(s)) {
+        final parts = s.split(':');
+        return TimeOfDay(
+            hour: int.parse(parts[0]), minute: int.parse(parts[1]));
       }
-      notifyListeners();
-    }
-  }
-
-  // Get turno by type (e.g., "Matutino", "Vespertino")
-  Turno? getTurnoByType(String turnoType) {
-    return _turnos
-        .where((turno) => turno.turno.toLowerCase() == turnoType.toLowerCase())
-        .firstOrNull;
-  }
-
-  // Get morning shift (assuming it's named "Matutino")
-  Turno? getMorningShift() {
-    return getTurnoByType('Matutino');
-  }
-
-  // Get afternoon shift (assuming it's named "Vespertino")
-  Turno? getAfternoonShift() {
-    return getTurnoByType('Vespertino');
-  }
-
-  // Update turno configuration
-  Future<bool> updateTurnoConfig({
-    required String turnoId,
-    required String horaInicio,
-    required String horaFin,
-    required int tolerancia,
-    BuildContext? context,
-  }) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      if (context != null && context.mounted) {
-        LoadingDialog.show(context, message: 'Actualizando configuración...');
-      }
-      notifyListeners();
-
-      // Format time for PostgreSQL time with timezone
-      // PostgreSQL expects: "HH:MM:SS+00"
-      final formattedHoraInicio = "$horaInicio:00+00";
-      final formattedHoraFin = "$horaFin:00+00";
-
-      await _supabase.from('turnos').update({
-        'hora_inicio': formattedHoraInicio,
-        'hora_fin': formattedHoraFin,
-        'tolerancia': tolerancia,
-      }).eq('id', turnoId);
-
-      // Update the local copy as well
-      final index = _turnos.indexWhere((turno) => turno.id == turnoId);
-      if (index != -1) {
-        _turnos[index] = _turnos[index].copyWith(
-          horaInicio: horaInicio,
-          horaFin: horaFin,
-          tolerancia: tolerancia,
-        );
-      }
-
-      _error = null;
-      debugPrint('Updated turno configuration for id: $turnoId');
-      return true;
-    } catch (e) {
-      _error = 'Error al actualizar configuración: $e';
-      debugPrint(_error);
-      return false;
-    } finally {
-      _isLoading = false;
-      if (context != null && context.mounted) {
-        LoadingDialog.hide(context);
-      }
-      notifyListeners();
-    }
-  }
-
-  // Update multiple turnos at once (for scanner configuration)
-  Future<bool> updateScannerConfiguration({
-    required String escuelaId,
-    required String morningTurnoId,
-    required TimeOfDay morningStartTime,
-    required TimeOfDay morningEndTime,
-    required String afternoonTurnoId,
-    required TimeOfDay afternoonStartTime,
-    required TimeOfDay afternoonEndTime,
-    required int tolerance,
-    BuildContext? context,
-  }) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      if (context != null && context.mounted) {
-        LoadingDialog.show(context,
-            message: 'Actualizando configuración del escáner...');
-      }
-      notifyListeners();
-
-      // Format morning time values
-      final morningStartFormatted = _formatTimeOfDay(morningStartTime);
-      final morningEndFormatted = _formatTimeOfDay(morningEndTime);
-
-      // Format afternoon time values
-      final afternoonStartFormatted = _formatTimeOfDay(afternoonStartTime);
-      final afternoonEndFormatted = _formatTimeOfDay(afternoonEndTime);
-
-      // Update morning shift
-      await _supabase.from('turnos').update({
-        'hora_inicio': "$morningStartFormatted:00+00",
-        'hora_fin': "$morningEndFormatted:00+00",
-        'tolerancia': tolerance,
-      }).eq('id', morningTurnoId);
-
-      // Update afternoon shift
-      await _supabase.from('turnos').update({
-        'hora_inicio': "$afternoonStartFormatted:00+00",
-        'hora_fin': "$afternoonEndFormatted:00+00",
-        'tolerancia': tolerance,
-      }).eq('id', afternoonTurnoId);
-
-      // Update local copies
-      await loadTurnos(escuelaId: escuelaId); // Reload turnos to get fresh data
-
-      _error = null;
-      debugPrint('Updated scanner configuration for school: $escuelaId');
-      return true;
-    } catch (e) {
-      _error = 'Error al actualizar configuración del escáner: $e';
-      debugPrint(_error);
-      return false;
-    } finally {
-      _isLoading = false;
-      if (context != null && context.mounted) {
-        LoadingDialog.hide(context);
-      }
-      notifyListeners();
-    }
-  }
-
-  // Helper to format TimeOfDay to "HH:MM" string
-  String _formatTimeOfDay(TimeOfDay time) {
-    return TimeFormat.format24to12(
-        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}');
-  }
-
-  // Helper to convert "HH:MM" string to TimeOfDay
-  TimeOfDay? parseTimeString(String? timeString) {
-    if (timeString == null || timeString.isEmpty) return null;
-
-    final parts = timeString.split(':');
-    if (parts.length < 2) return null;
-
-    try {
-      final hour = int.parse(parts[0]);
-      final minute = int.parse(parts[1]);
-      return TimeOfDay(hour: hour, minute: minute);
-    } catch (e) {
-      debugPrint('Error parsing time string: $e');
+      final dt = DateTime.parse(s);
+      return TimeOfDay(hour: dt.hour, minute: dt.minute);
+    } catch (_) {
       return null;
     }
   }
 
-  // Get turno names
-  List<String> getTurnoNames() {
-    return _turnos.map((turno) => turno.turno).toList();
+  /// Formatea TimeOfDay -> 'HH:mm'
+  String formatTimeOfDay(TimeOfDay t) {
+    final h = t.hour.toString().padLeft(2, '0');
+    final m = t.minute.toString().padLeft(2, '0');
+    return '$h:$m';
   }
 
-  // Get turno by name
-  Turno? getTurnoByName(String name) {
-    return _turnos.where((turno) => turno.turno == name).firstOrNull;
+  /// Carga todos los turnos de una escuela.
+  Future<void> loadTurnos({
+    required String escuelaId,
+    BuildContext? context,
+  }) async {
+    if (escuelaId.trim().isEmpty) {
+      _setError('Escuela no válida');
+      return;
+    }
+
+    _setLoading(true);
+    _setError(null);
+
+    try {
+      final resp = await _supabase
+          .from('turnos')
+          .select('id, turno, hora_inicio, hora_fin, tolerancia, id_escuela')
+          .eq('id_escuela', escuelaId)
+          .order('turno');
+
+      _turnos
+        ..clear()
+        ..addAll((resp as List).map((e) => turno_model.Turno.fromJson(e)));
+
+      _currentEscuelaId = escuelaId;
+
+      // Inicia realtime
+      _startRealtimeForSchool(escuelaId);
+    } catch (e) {
+      _setError('Error al cargar turnos: $e');
+    } finally {
+      _setLoading(false);
+    }
   }
 
-  // Get turno by ID
-  Turno? getTurnoById(String id) {
-    return _turnos.where((turno) => turno.id == id).firstOrNull;
+  /// Busca turno por ID.
+  turno_model.Turno? getTurnoById(String id) {
+    try {
+      return _turnos.firstWhere((t) => t.id == id);
+    } catch (_) {
+      return null;
+    }
   }
 
-  // Set selected turno
-  void setSelectedTurno(Turno? turno) {
-    _selectedTurno = turno;
-    notifyListeners();
+  /// Busca turno por nombre (case-insensitive).
+  turno_model.Turno? getTurnoByName(String name) {
+    final target = name.trim().toLowerCase();
+    try {
+      return _turnos.firstWhere(
+        (t) => t.turno.trim().toLowerCase() == target,
+      );
+    } catch (_) {
+      return null;
+    }
   }
 
-  // Clear turnos list
-  void clearTurnos() {
-    _turnos.clear();
-    _selectedTurno = null;
-    notifyListeners();
+  /// Crea turno.
+  Future<turno_model.Turno?> createTurno({
+    required String escuelaId,
+    required String nombre,
+    required TimeOfDay horaInicio,
+    required TimeOfDay horaFin,
+    required int tolerancia,
+  }) async {
+    try {
+      final inserted = await _supabase
+          .from('turnos')
+          .insert({
+            'id_escuela': escuelaId,
+            'turno': nombre.trim(),
+            'hora_inicio': formatTimeOfDay(horaInicio),
+            'hora_fin': formatTimeOfDay(horaFin),
+            'tolerancia': tolerancia,
+          })
+          .select()
+          .single();
+
+      final t = turno_model.Turno.fromJson(inserted);
+      _replaceOrAdd(t);
+      notifyListeners();
+      return t;
+    } catch (e) {
+      _setError('Error al crear turno: $e');
+      return null;
+    }
   }
 
-  void clearAllData() {
-    _turnos.clear();
-    _selectedTurno = null;
-    _isLoading = false;
-    _error = null;
-    notifyListeners();
+  /// Actualiza un turno por ID.
+  Future<bool> updateTurno({
+    required String turnoId,
+    String? nombre,
+    TimeOfDay? horaInicio,
+    TimeOfDay? horaFin,
+    int? tolerancia,
+  }) async {
+    try {
+      final data = <String, dynamic>{};
+      if (nombre != null) data['turno'] = nombre.trim();
+      if (horaInicio != null) data['hora_inicio'] = formatTimeOfDay(horaInicio);
+      if (horaFin != null) data['hora_fin'] = formatTimeOfDay(horaFin);
+      if (tolerancia != null) data['tolerancia'] = tolerancia;
+
+      if (data.isEmpty) return true;
+
+      final updated = await _supabase
+          .from('turnos')
+          .update(data)
+          .eq('id', turnoId)
+          .select()
+          .single();
+
+      _replaceOrAdd(turno_model.Turno.fromJson(updated));
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _setError('Error al actualizar turno: $e');
+      return false;
+    }
   }
+
+  /// Elimina un turno.
+  Future<bool> deleteTurno(String turnoId) async {
+    try {
+      await _supabase.from('turnos').delete().eq('id', turnoId);
+      _turnos.removeWhere((t) => t.id == turnoId);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _setError('Error al eliminar turno: $e');
+      return false;
+    }
+  }
+
+  /// Actualiza múltiples turnos (horas + tolerancia) en lote.
+  Future<bool> updateTurnosBatch(List<TurnoPatch> patches) async {
+    if (patches.isEmpty) return true;
+    _setLoading(true);
+    _setError(null);
+
+    try {
+      for (final p in patches) {
+        final updated = await _supabase
+            .from('turnos')
+            .update({
+              'hora_inicio': formatTimeOfDay(p.start),
+              'hora_fin': formatTimeOfDay(p.end),
+              'tolerancia': p.tolerancia,
+            })
+            .eq('id', p.id)
+            .select()
+            .single();
+        _replaceOrAdd(turno_model.Turno.fromJson(updated));
+      }
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _setError('Error al guardar turnos: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _disposeRealtime();
+    super.dispose();
+  }
+}
+
+/// Patch por turno para guardado en lote (para la vista de escáner).
+class TurnoPatch {
+  final String id;
+  final TimeOfDay start;
+  final TimeOfDay end;
+  final int tolerancia;
+  TurnoPatch({
+    required this.id,
+    required this.start,
+    required this.end,
+    required this.tolerancia,
+  });
 }

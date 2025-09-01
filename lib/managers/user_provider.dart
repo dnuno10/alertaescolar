@@ -16,9 +16,48 @@ class UserProvider extends ChangeNotifier {
   bool get isLoggedIn => _currentUser != null;
 
   final SupabaseClient _supabase = Supabase.instance.client;
+  Future<String?> _resolveEscuelaIdForUser({
+    required String userId,
+    required String emailNorm,
+    required String tipoUsuario, // 'administrador' | 'padre' | etc
+  }) async {
+    // Si es admin: admin_access_list → id_escuela (por email)
+    if (tipoUsuario.toLowerCase() == 'administrador' ||
+        tipoUsuario.toLowerCase() == 'admin') {
+      final adminRow = await _supabase
+          .from('admin_access_list')
+          .select('id_escuela')
+          .eq('email', emailNorm)
+          .eq('activo', true) // si tu esquema lo usa
+          .order('created_at', ascending: false)
+          .maybeSingle();
+
+      final escuelaUuid = adminRow?['id_escuela']?.toString();
+      if (escuelaUuid != null && escuelaUuid.isNotEmpty) {
+        return escuelaUuid;
+      }
+    }
+
+    // Si no es admin (o no hubo match): deducir por vínculo tutor→alumno
+    try {
+      final resp = await _supabase.from('alumno_tutores').select('''
+        alumnos!inner(
+          id_escuela
+        )
+      ''').eq('id_tutor', userId).limit(1);
+
+      if (resp.isNotEmpty) {
+        final alumno = resp[0]['alumnos'] as Map<String, dynamic>?;
+        final escuelaUuid = alumno?['id_escuela']?.toString();
+        if (escuelaUuid != null && escuelaUuid.isNotEmpty) {
+          return escuelaUuid;
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
 
   /// Carga el usuario actual desde Supabase.
-  /// `showDialog` permite evitar doble loader si el caller ya muestra uno.
   Future<void> loadCurrentUser(BuildContext context,
       {bool showDialog = true}) async {
     if (!context.mounted) return;
@@ -26,54 +65,97 @@ class UserProvider extends ChangeNotifier {
     final l10n = AppLocalizations.of(context);
     bool dialogShown = false;
 
+    String? _nn(String? s) => (s == null || s.trim().isEmpty) ? null : s.trim();
+
     try {
       _isLoading = true;
       _error = null;
       notifyListeners();
 
-      // Muestra diálogo solo si estamos en una ruta interactiva y el caller lo permite
       if (showDialog && (ModalRoute.of(context)?.isCurrent ?? false)) {
         LoadingDialog.show(context, message: l10n.loadingUserData);
         dialogShown = true;
       }
 
-      // Verifica sesión activa
-      final user = _supabase.auth.currentUser;
-      if (user == null) {
+      final authUser = _supabase.auth.currentUser;
+      if (authUser == null) {
         debugPrint('No active user session found');
         _currentUser = null;
         return;
       }
 
-      // Obtén datos de la tabla usuarios
-      final dynamic userData = await _supabase
+      final row = await _supabase
           .from('usuarios')
           .select('*')
-          .eq('id', user.id)
+          .eq('id', authUser.id)
           .maybeSingle();
 
-      if (userData != null) {
-        debugPrint('User found in database: ${user.id}');
-        _currentUser = Usuario.fromJson(userData as Map<String, dynamic>);
-      } else {
-        debugPrint('User authenticated but not in database: ${user.id}');
-        // Podrías construir un Usuario básico aquí si lo requieres
+      if (row == null) {
+        debugPrint('User authenticated but not in database: ${authUser.id}');
+        _currentUser = null;
+        return;
       }
+
+      // 1) Usuario base
+      var u = Usuario.fromJson(Map<String, dynamic>.from(row));
+
+      // 2) Si es admin y no tiene escuelaId en memoria, resolverla por email en admin_access_list
+      if (u.esAdministrador && (_nn(u.escuelaId) == null)) {
+        final emailNorm = u.email.trim().toLowerCase();
+        final adminRow = await _supabase
+            .from('admin_access_list')
+            .select('id_escuela, activo')
+            .eq('email', emailNorm) // usa eq (email normalizado)
+            .eq('activo', true) // opcional pero recomendable
+            .maybeSingle();
+
+        final escuelaUuid = _nn(adminRow?['id_escuela']?.toString());
+        if (escuelaUuid != null) {
+          u = u.copyWith(escuelaId: escuelaUuid);
+        }
+      }
+
+      _currentUser = u;
+      debugPrint('User loaded: ${u.id} (${u.email}) escuelaId=${u.escuelaId}');
     } catch (e) {
       debugPrint('Error loading user data: $e');
       _error = e.toString();
     } finally {
-      // Cierra el diálogo si lo abrimos y el contexto sigue vivo
       if (dialogShown && context.mounted) {
         try {
           LoadingDialog.hide(context);
-        } catch (e) {
-          debugPrint('Error hiding loading dialog: $e');
-        }
+        } catch (_) {}
       }
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<String?> ensureEscuelaIdLoaded() async {
+    final u = _currentUser;
+    if (u == null) return null;
+    if (u.escuelaId != null && u.escuelaId!.isNotEmpty) return u.escuelaId;
+    final escuelaId = await _resolveEscuelaIdForUser(
+      userId: u.id,
+      emailNorm: u.email.trim().toLowerCase(),
+      tipoUsuario: u.tipo.name,
+    );
+    if (escuelaId != null && escuelaId.isNotEmpty) {
+      _currentUser = u.copyWith(escuelaId: escuelaId);
+      notifyListeners();
+      return escuelaId;
+    }
+    return null;
+  }
+
+  /// Helper: devuelve el usuario actual o lanza si no existe.
+  /// Útil para centralizar validación en los callers.
+  Usuario requireCurrentUser() {
+    final u = _currentUser;
+    if (u == null) {
+      throw StateError('No hay usuario activo');
+    }
+    return u;
   }
 
   /// Actualiza el usuario en memoria y opcionalmente en la base de datos.
@@ -102,12 +184,10 @@ class UserProvider extends ChangeNotifier {
             'nombre': user.nombre,
             'apellido': user.apellido,
             'tipo': user.tipo.name,
-            'id_escuela': user.escuelaId,
             'tipo_administrador': user.tipoAdministrador?.name,
             'fecha_registro': fechaUtc.toIso8601String(),
           },
-          onConflict:
-              'id', // ajusta si tu índice único es distinto (ej. 'email' o 'id,email')
+          onConflict: 'id',
         );
         debugPrint('User data saved to database: ${user.id}');
       }
@@ -120,12 +200,11 @@ class UserProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error updating user: $e');
       _error = e.toString();
-      rethrow; // Permite que el llamador maneje el error si lo desea
+      rethrow;
     } finally {
       if (setLoading) {
         _isLoading = false;
       }
-      // Notificamos siempre cambios de usuario o de estado
       notifyListeners();
     }
   }
@@ -160,7 +239,6 @@ class UserProvider extends ChangeNotifier {
       final nombreTrim = nombre.trim();
       final apellidoTrim = apellido.trim();
 
-      // Verificar si hay cambios
       if (_currentUser!.nombre == nombreTrim &&
           _currentUser!.apellido == apellidoTrim) {
         debugPrint('No hay cambios en el nombre o apellido');
@@ -173,7 +251,6 @@ class UserProvider extends ChangeNotifier {
         return;
       }
 
-      // Actualizar en la base de datos
       await _supabase.from('usuarios').update({
         'nombre': nombreTrim,
         'apellido': apellidoTrim,
@@ -182,7 +259,6 @@ class UserProvider extends ChangeNotifier {
       debugPrint(
           'Información personal actualizada en la base de datos: ${_currentUser!.id}');
 
-      // Actualizar en memoria
       _currentUser = _currentUser!.copyWith(
         nombre: nombreTrim,
         apellido: apellidoTrim,
@@ -190,7 +266,6 @@ class UserProvider extends ChangeNotifier {
       debugPrint(
           'Información personal actualizada en el provider: ${_currentUser!.id}');
 
-      // Mostrar mensaje de éxito
       if (context.mounted) {
         CustomSnackBar.show(
           context: context,

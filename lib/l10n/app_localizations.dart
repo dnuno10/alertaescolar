@@ -77,10 +77,16 @@ abstract class AppLocalizations {
   String get appleNotAvailable;
   String get sessionExpiredOrNoUser;
 
+  String get credentialSavedSuccessfully;
+  String get errorSavingCredential;
+
+  String get refresh;
+
 // Time related
   String get timeSeparator;
   String get am;
   String get pm;
+  String get tapToOpenCamera;
 
 // QR Scanner
   String get qrScannerPointCamera;
@@ -1401,9 +1407,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get am => 'AM';
   @override
   String get pm => 'PM';
+
+  @override
+  String get refresh => 'Refresh';
+
+  @override
+  String get credentialSavedSuccessfully => 'Credential saved successfully';
+
+  @override
+  String get errorSavingCredential => 'Error saving credential';
+
   @override
   String get sessionExpiredOrNoUser =>
       'Session expired or no user is signed in. Please sign in again.';
+  @override
+  String get tapToOpenCamera => 'Tap to open the camera';
 
   @override
   String get signInCanceled => 'Sign-in process canceled';
@@ -2305,7 +2323,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get next => 'Next';
 
   @override
-  String get saveConfiguration => 'Save Configuration';
+  String get saveConfiguration => 'Save';
 
   @override
   String get configurationSavedSuccessfully =>
@@ -4483,6 +4501,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get am => 'AM';
   @override
   String get pm => 'PM';
+  @override
+  String get tapToOpenCamera => 'Toca para abrir la cámara';
+
+  @override
+  String get credentialSavedSuccessfully => 'Credencial guardada correctamente';
+
+  @override
+  String get errorSavingCredential => 'Error al guardar la credencial';
 
   @override
   String get sessionExpiredOrNoUser =>
@@ -4493,6 +4519,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get registerCanceled => 'Proceso de registro cancelado';
+
+  @override
+  String get refresh => 'Actualizar';
 
 // QR Scanner
   @override
@@ -5163,8 +5192,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Esta información será utilizada para tu perfil y para personalizar tu experiencia';
 
   @override
-  String get enterCompleteCode =>
-      'Por favor ingresa el código de verificación completo';
+  String get enterCompleteCode => 'Por favor ingresa  verificación completo';
 
   @override
   String get codeVerifiedSuccessfully => '¡Código verificado exitosamente!';
@@ -5281,7 +5309,7 @@ class AppLocalizationsEs extends AppLocalizations {
       '¡Enlace mágico enviado! Revisa tu correo para continuar.';
 
   @override
-  String get saveConfiguration => 'Guardar Configuración';
+  String get saveConfiguration => 'Guardar';
 
   @override
   String get configurationSavedSuccessfully =>

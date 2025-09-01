@@ -20,7 +20,7 @@ import '../../../managers/turno_provider.dart';
 import '../../../managers/user_provider.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../models/models.dart'; // <-- unificado: Alumno, Grupo, Turno, enums
+import '../../../models/models.dart';
 import '../students/selectable_students_directory_view.dart';
 import '../../../widgets/custom_snack_bar.dart';
 import 'notification_review_view.dart';

@@ -1,16 +1,18 @@
-import 'package:alertaescolar/components/admin/students/class_card_schedule.dart';
+// lib/views/schedule/schedule_view.dart
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'package:alertaescolar/app/app_theme.dart';
 import 'package:alertaescolar/components/headers/nav_header.dart';
 import 'package:alertaescolar/components/schedule/schedule_student_card.dart';
 import 'package:alertaescolar/components/schedule/day_selector.dart';
 import 'package:alertaescolar/components/schedule/schedule_loading_state.dart';
 import 'package:alertaescolar/components/schedule/schedule_empty_state.dart';
-import 'package:alertaescolar/providers/theme_provider.dart';
+import 'package:alertaescolar/components/admin/students/class_card_schedule.dart';
+
+import 'package:alertaescolar/l10n/app_localizations.dart';
+import 'package:alertaescolar/models/models.dart';
 import 'package:alertaescolar/managers/schedule_provider.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../l10n/app_localizations.dart';
-import '../../../models/models.dart';
-import '../../../app/app_theme.dart';
 
 class ScheduleView extends StatefulWidget {
   final Alumno student;
@@ -29,16 +31,20 @@ class _ScheduleViewState extends State<ScheduleView>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
-  /// Mapa de horarios por clave de día: 'lunes'..'domingo'
+  /// Mapa de horarios por día: 'lunes'..'domingo'
   Map<String, List<ClaseHorario>> _scheduleByDay = {
     for (final d in _orderedDays) d: <ClaseHorario>[],
   };
 
   bool _isLoading = true;
+
+  /// Índice seleccionado en UI:
+  /// 0 = Todos, 1..7 = L..D (map a _orderedDays[ index - 1 ])
   int _selectedDayIndex = 0;
+
   String? _errorMessage;
 
-  // Orden fijo de días
+  // Orden fijo de días (para datos)
   static const List<String> _orderedDays = [
     'lunes',
     'martes',
@@ -49,19 +55,22 @@ class _ScheduleViewState extends State<ScheduleView>
     'domingo',
   ];
 
+  static const int _allIndex = 0; // “Todos”
+
   @override
   void initState() {
     super.initState();
 
-    // Día actual por defecto (0=lunes .. 6=domingo)
-    _selectedDayIndex = _getCurrentDayIndex();
+    // Por solicitud: arrancar en "Todos"
+    _selectedDayIndex = _allIndex;
 
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 240),
       vsync: this,
     );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    _fadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -71,8 +80,7 @@ class _ScheduleViewState extends State<ScheduleView>
     _animationController.forward();
   }
 
-  /// 0=lunes .. 6=domingo
-  int _getCurrentDayIndex() => DateTime.now().weekday - 1;
+  int _clampDayIndex(int i) => i.clamp(0, _orderedDays.length); // 0..7
 
   @override
   void dispose() {
@@ -92,40 +100,28 @@ class _ScheduleViewState extends State<ScheduleView>
       final scheduleProvider =
           Provider.of<ScheduleProvider>(context, listen: false);
 
-      // Cargar materias (sin dialog)
       await scheduleProvider.loadMaterias(
         escuelaId: widget.student.idEscuela,
         context: null,
       );
 
-      // Cargar horarios del grupo del alumno (sin dialog)
+      await scheduleProvider.loadGrupos(
+        escuelaId: widget.student.idEscuela,
+        loadAll: true,
+        context: null,
+      );
+
       await scheduleProvider.loadHorarios(
         escuelaId: widget.student.idEscuela,
         grupoId: widget.student.idGrupo,
         context: null,
       );
 
-      // Obtener datos del grupo (objeto Grupo)
-      final grupo = scheduleProvider.getGrupoById(widget.student.idGrupo);
-      final grupoName = grupo?.grupo ?? '';
-
       if (!mounted) return;
 
-      if (grupoName.isEmpty) {
-        setState(() {
-          _scheduleByDay = {
-            for (final d in _orderedDays) d: <ClaseHorario>[],
-          };
-          _isLoading = false;
-          _errorMessage = 'No se encontró información del grupo del estudiante';
-        });
-        return;
-      }
+      final horarios =
+          scheduleProvider.getHorariosForGroupId(widget.student.idGrupo);
 
-      // Horarios del grupo por NOMBRE (helper del provider)
-      final horarios = scheduleProvider.getHorariosForGroupName(grupoName);
-
-      // Organizar por día
       final organized = _organizeScheduleByDay(horarios);
 
       setState(() {
@@ -141,7 +137,7 @@ class _ScheduleViewState extends State<ScheduleView>
     }
   }
 
-  /// Devuelve mapa { 'lunes': [...], ... } ordenado por horaInicio
+  /// Devuelve mapa { 'lunes': [...], ... } ordenado por horaInicio (HH:MM)
   Map<String, List<ClaseHorario>> _organizeScheduleByDay(
       List<ClaseHorario> horarios) {
     final byDay = {
@@ -175,7 +171,6 @@ class _ScheduleViewState extends State<ScheduleView>
       }
     }
 
-    // Ordenar por hora de inicio (HH:MM)
     for (final d in _orderedDays) {
       byDay[d]!.sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
     }
@@ -188,49 +183,48 @@ class _ScheduleViewState extends State<ScheduleView>
     final l10n = AppLocalizations.of(context);
     final screenSize = MediaQuery.of(context).size;
 
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return Scaffold(
-          backgroundColor: AppTheme.getBackgroundColor(context),
-          body: CustomScrollView(
-            slivers: [
-              NavHeader(title: l10n.weeklySchedule),
-              SliverToBoxAdapter(
-                child: Column(
-                  children: [
-                    SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                    ScheduleStudentCard(
-                      student: widget.student,
+    return Scaffold(
+      backgroundColor: AppTheme.getBackgroundColor(context),
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: CustomScrollView(
+          slivers: [
+            NavHeader(title: l10n.weeklySchedule),
+            SliverToBoxAdapter(
+              child: Column(
+                children: [
+                  SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+                  ScheduleStudentCard(
+                    student: widget.student,
+                    screenSize: screenSize,
+                  ),
+                  SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+                  if (!_isLoading)
+                    DaySelector(
+                      selectedDayIndex: _selectedDayIndex,
+                      onDaySelected: (index) {
+                        setState(() {
+                          _selectedDayIndex = _clampDayIndex(index);
+                        });
+                      },
                       screenSize: screenSize,
                     ),
-                    SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                    if (!_isLoading)
-                      DaySelector(
-                        selectedDayIndex: _selectedDayIndex,
-                        onDaySelected: (index) {
-                          setState(() {
-                            _selectedDayIndex = index;
-                          });
-                        },
-                        screenSize: screenSize,
-                      ),
-                  ],
-                ),
+                ],
               ),
-              if (_isLoading)
-                SliverToBoxAdapter(
-                  child: ScheduleLoadingState(screenSize: screenSize),
-                )
-              else if (_errorMessage != null)
-                SliverToBoxAdapter(
-                  child: _buildErrorState(context, screenSize),
-                )
-              else
-                _buildScheduleContent(context, l10n, screenSize),
-            ],
-          ),
-        );
-      },
+            ),
+            if (_isLoading)
+              SliverToBoxAdapter(
+                child: ScheduleLoadingState(screenSize: screenSize),
+              )
+            else if (_errorMessage != null)
+              SliverToBoxAdapter(
+                child: _buildErrorState(context, screenSize),
+              )
+            else
+              _buildScheduleContent(context, l10n, screenSize),
+          ],
+        ),
+      ),
     );
   }
 
@@ -269,9 +263,22 @@ class _ScheduleViewState extends State<ScheduleView>
 
   SliverPadding _buildScheduleContent(
       BuildContext context, AppLocalizations l10n, Size screenSize) {
-    final selectedDayKey = _orderedDays[_selectedDayIndex];
-    final daySchedule =
-        _scheduleByDay[selectedDayKey] ?? const <ClaseHorario>[];
+    // Si es "Todos", fusionamos todos los días en orden L..D
+    final isAll = _selectedDayIndex == _allIndex;
+
+    final List<ClaseHorario> daySchedule;
+    if (isAll) {
+      final merged = <ClaseHorario>[];
+      for (final d in _orderedDays) {
+        merged.addAll(_scheduleByDay[d] ?? const <ClaseHorario>[]);
+      }
+      daySchedule = merged;
+    } else {
+      final selectedDayKey = _orderedDays[_selectedDayIndex - 1]; // 1->lunes
+      daySchedule = _scheduleByDay[selectedDayKey] ?? const <ClaseHorario>[];
+    }
+
+    final isEmpty = daySchedule.isEmpty;
 
     return SliverPadding(
       padding: EdgeInsets.only(
@@ -279,11 +286,10 @@ class _ScheduleViewState extends State<ScheduleView>
         right: AppTheme.getMediumPadding(screenSize),
         bottom: AppTheme.getMediumPadding(screenSize),
       ),
-      sliver: daySchedule.isEmpty
+      sliver: isEmpty
           ? SliverToBoxAdapter(
               child: ScheduleEmptyState(
-                // Si tu widget acepta otra cosa, ajusta aquí.
-                dayKey: selectedDayKey,
+                dayKey: isAll ? 'todos' : _orderedDays[_selectedDayIndex - 1],
                 screenSize: screenSize,
               ),
             )
@@ -293,10 +299,8 @@ class _ScheduleViewState extends State<ScheduleView>
                   final clase = daySchedule[index];
                   return Consumer<ScheduleProvider>(
                     builder: (context, scheduleProvider, child) {
-                      // OJO: el modelo usa idMateria
                       final materia =
                           scheduleProvider.getMateriaById(clase.idMateria);
-
                       return ClassCardSchedule(
                         clase: clase,
                         materia: materia,

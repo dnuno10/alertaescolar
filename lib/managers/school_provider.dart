@@ -1,13 +1,15 @@
-import 'package:alertaescolar/main.dart';
+// lib/managers/school_provider.dart
+import 'package:alertaescolar/main.dart'; // expone: final supabase = Supabase.instance.client;
 import 'package:alertaescolar/models/escuela.dart';
-import 'package:flutter/material.dart';
-import 'package:alertaescolar/components/loading_dialog.dart';
-import 'package:alertaescolar/l10n/app_localizations.dart';
+import 'package:flutter/foundation.dart';
 
 class SchoolProvider with ChangeNotifier {
   Escuela? _currentSchool;
   bool _isLoading = false;
   String? _error;
+
+  // Guard para evitar cargas concurrentes del mismo recurso.
+  bool _loadingSchool = false;
 
   Escuela? get currentSchool => _currentSchool;
   bool get isLoading => _isLoading;
@@ -22,77 +24,82 @@ class SchoolProvider with ChangeNotifier {
     _currentSchool = null;
     _isLoading = false;
     _error = null;
+    _loadingSchool = false;
     notifyListeners();
   }
 
-  Future<Escuela?> getSchoolById(String schoolId, BuildContext context) async {
-    final l10n = AppLocalizations.of(context);
-    // Remove LoadingDialog from here since it's already shown in the calling method
+  /// Lectura directa sin tocar el estado interno (útil para utilidades/validaciones).
+  Future<Escuela?> getSchoolById(String schoolId) async {
     try {
-      _isLoading = true;
-      notifyListeners();
-
       final response =
           await supabase.from('escuelas').select().eq('id', schoolId).single();
-
-      final school = Escuela.fromJson(response);
-      return school;
-        } catch (e) {
-      _error = '${l10n.errorFetchingSchool}: $e';
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      return Escuela.fromJson(response);
+    } catch (e) {
+      if (kDebugMode) {
+        print('SchoolProvider.getSchoolById error: $e');
+      }
+      return null;
     }
-    return null;
   }
 
+  /// Carga en memoria (y cachea). Si `forceRefresh=false` y ya es la misma escuela, reaprovecha.
+  /// Evita llamadas simultáneas con un guard sencillo.
   Future<Escuela?> loadSchool(String schoolId,
-      {required BuildContext context}) async {
-    final l10n = AppLocalizations.of(context);
-    LoadingDialog.show(context, message: l10n.loading);
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
+      {bool forceRefresh = false}) async {
+    if (_loadingSchool) {
+      // Si ya hay una carga en curso, devolvemos lo último conocido.
+      return _currentSchool;
+    }
 
+    if (!forceRefresh && _currentSchool?.id == schoolId) {
+      return _currentSchool;
+    }
+
+    _loadingSchool = true;
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
       final response =
           await supabase.from('escuelas').select().eq('id', schoolId).single();
 
       _currentSchool = Escuela.fromJson(response);
-        } catch (e) {
-      _error = '${l10n.errorLoadingSchool}: $e';
+      return _currentSchool;
+    } catch (e) {
+      _error = 'Error loading school: $e';
+      if (kDebugMode) {
+        print('SchoolProvider.loadSchool error: $e');
+      }
+      return null;
     } finally {
-      LoadingDialog.hide(context);
-
+      _loadingSchool = false;
       _isLoading = false;
       notifyListeners();
     }
-    return _currentSchool;
   }
 
-  Future<bool> updateSchool(Escuela updatedSchool,
-      {required BuildContext context}) async {
-    final l10n = AppLocalizations.of(context);
-    LoadingDialog.show(context, message: l10n.updatingSchoolInformation);
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
+  /// Actualiza en BD y sincroniza el cache local.
+  Future<bool> updateSchool(Escuela updatedSchool) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
 
+    try {
       await supabase
           .from('escuelas')
-          .update(
-            updatedSchool.toJson(),
-          )
+          .update(updatedSchool.toJson())
           .eq('id', updatedSchool.id);
 
       _currentSchool = updatedSchool;
       return true;
     } catch (e) {
-      _error = '${l10n.errorUpdatingSchool}: $e';
+      _error = 'Error updating school: $e';
+      if (kDebugMode) {
+        print('SchoolProvider.updateSchool error: $e');
+      }
       return false;
     } finally {
-      LoadingDialog.hide(context);
       _isLoading = false;
       notifyListeners();
     }

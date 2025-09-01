@@ -15,6 +15,10 @@ class SolidButton extends StatelessWidget {
   final bool expand; // llena el ancho por defecto
   final bool isLoading; // estado de carga opcional
 
+  // NUEVOS: control fino del loader
+  final bool showLoaderInIconSlot; // muestra loader en el espacio del icono
+  final double? loadingIndicatorSize; // tamaño del loader
+
   const SolidButton({
     super.key,
     required this.label,
@@ -28,6 +32,8 @@ class SolidButton extends StatelessWidget {
     this.semanticsLabel,
     this.expand = true,
     this.isLoading = false,
+    this.showLoaderInIconSlot = true,
+    this.loadingIndicatorSize,
   });
 
   @override
@@ -73,7 +79,8 @@ class SolidButton extends StatelessWidget {
       elevation: MaterialStateProperty.all(0),
     );
 
-    Widget labelWidget = Text(
+    // Label sin loader inline (el loader va en el slot del icono)
+    final Widget labelWidget = Text(
       label,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
@@ -84,35 +91,38 @@ class SolidButton extends StatelessWidget {
       ),
     );
 
-    if (isLoading) {
-      // Loader simple inline; sustitúyelo por tu widget de loading si quieres
-      labelWidget = Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(onColor),
-            ),
-          ),
-          const SizedBox(width: 8),
-          labelWidget,
-        ],
+    // onPressed se deshabilita automáticamente si está cargando
+    final VoidCallback? effectiveOnPressed =
+        isLoading ? null : _wrapHaptics(onPressed);
+
+    // Icono efectivo: loader en el slot si isLoading
+    final double spinnerSize = loadingIndicatorSize ?? 16;
+    Widget? effectiveIcon;
+    if (isLoading && showLoaderInIconSlot) {
+      effectiveIcon = SizedBox(
+        width: spinnerSize,
+        height: spinnerSize,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          valueColor: AlwaysStoppedAnimation<Color>(onColor),
+        ),
       );
+    } else if (icon != null) {
+      effectiveIcon =
+          Icon(icon, size: screenSize.width * 0.045, color: onColor);
+    } else {
+      effectiveIcon = null;
     }
 
-    final Widget buttonChild = icon != null
+    final Widget buttonChild = effectiveIcon != null
         ? ElevatedButton.icon(
-            onPressed: _wrapHaptics(onPressed),
-            icon: Icon(icon, size: screenSize.width * 0.045, color: onColor),
+            onPressed: effectiveOnPressed,
+            icon: effectiveIcon,
             label: labelWidget,
             style: style,
           )
         : ElevatedButton(
-            onPressed: _wrapHaptics(onPressed),
+            onPressed: effectiveOnPressed,
             style: style,
             child: labelWidget,
           );
@@ -120,7 +130,7 @@ class SolidButton extends StatelessWidget {
     final Widget semantic = Semantics(
       button: true,
       label: semanticsLabel ?? label,
-      enabled: onPressed != null,
+      enabled: effectiveOnPressed != null,
       child: buttonChild,
     );
 
@@ -144,14 +154,11 @@ class SolidButton extends StatelessWidget {
   }
 
   Color _bestOnColor(Color bg, ThemeData theme) {
-    // heurística simple: si el fondo es oscuro, usa onPrimary de theme si contrasta,
-    // si es claro, usa colorScheme.onSurface o Colors.black.
     final brightness = ThemeData.estimateBrightnessForColor(bg);
     if (brightness == Brightness.dark) {
       return theme.colorScheme.onPrimary;
     } else {
-      // texto oscuro para fondo claro
-      return theme.colorScheme.onSurface; // o Colors.black87
+      return theme.colorScheme.onSurface;
     }
   }
 }

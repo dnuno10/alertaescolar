@@ -39,43 +39,6 @@ class StudentProfileCard extends StatelessWidget {
         child: Column(
           children: [
             Container(
-              width: screenSize.width * 0.25,
-              height: screenSize.width * 0.25,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius:
-                    BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withOpacity(0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  student.nombre.isNotEmpty
-                      ? student.nombre[0].toUpperCase()
-                      : 'A',
-                  style: AppTheme.getH1(screenSize).copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.onPrimaryColor,
-                    letterSpacing: 0.1,
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-            Text(
-              student.nombre,
-              style: AppTheme.getH1(screenSize).copyWith(
-                color: AppTheme.getTextPrimaryColor(context),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: screenSize.height * 0.01),
-            Container(
               padding: EdgeInsets.symmetric(
                 horizontal: AppTheme.getSmallPadding(screenSize),
                 vertical: screenSize.height * 0.01,

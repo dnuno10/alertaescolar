@@ -1,10 +1,11 @@
+// lib/components/schedule/day_selector.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../l10n/app_localizations.dart';
 import '../../app/app_theme.dart';
 
 class DaySelector extends StatelessWidget {
-  final int selectedDayIndex;
+  final int selectedDayIndex; // 0 = Todos, 1..7 = L..D
   final Function(int) onDaySelected;
   final Size screenSize;
 
@@ -18,7 +19,11 @@ class DaySelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final dayNames = [
+
+    // Índice 0 = "Todos"
+    final items = <String>[
+      // Si no tienes una clave en l10n para "all", usa 'Todos'
+      (l10n.tryLookup('all') ?? 'Todos'),
       l10n.monday,
       l10n.tuesday,
       l10n.wednesday,
@@ -30,9 +35,10 @@ class DaySelector extends StatelessWidget {
 
     return Container(
       padding: EdgeInsets.only(
-          left: AppTheme.getMediumPadding(screenSize),
-          right: AppTheme.getMediumPadding(screenSize),
-          bottom: AppTheme.getMediumPadding(screenSize)),
+        left: AppTheme.getMediumPadding(screenSize),
+        right: AppTheme.getMediumPadding(screenSize),
+        bottom: AppTheme.getMediumPadding(screenSize),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -49,12 +55,13 @@ class DaySelector extends StatelessWidget {
             height: screenSize.height * 0.06,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              itemCount: dayNames.length,
+              itemCount: items.length, // ahora son 8 (Todos + 7 días)
               itemBuilder: (context, index) {
                 final isSelected = index == selectedDayIndex;
                 return Padding(
                   padding: EdgeInsets.only(
-                      right: AppTheme.getSmallPadding(screenSize)),
+                    right: AppTheme.getSmallPadding(screenSize),
+                  ),
                   child: GestureDetector(
                     onTap: () {
                       HapticFeedback.mediumImpact();
@@ -71,7 +78,8 @@ class DaySelector extends StatelessWidget {
                             ? AppTheme.accentPurple
                             : AppTheme.getSurfaceColor(context),
                         borderRadius: BorderRadius.circular(
-                            AppTheme.getMediumRadius(screenSize)),
+                          AppTheme.getMediumRadius(screenSize),
+                        ),
                         border: Border.all(
                           color: isSelected
                               ? AppTheme.accentPurple
@@ -90,7 +98,7 @@ class DaySelector extends StatelessWidget {
                       ),
                       child: Center(
                         child: Text(
-                          dayNames[index],
+                          items[index],
                           style: AppTheme.getCaption(screenSize).copyWith(
                             fontWeight: FontWeight.w600,
                             color: isSelected
@@ -108,5 +116,18 @@ class DaySelector extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+// Añade este helper si no lo tienes en tu l10n:
+extension _TryLookup on AppLocalizations {
+  String? tryLookup(String key) {
+    // Evita crashear si no existe la clave; puedes mapear si tienes gen_l10n
+    switch (key) {
+      case 'all':
+        // Crea la clave real en tus ARB si prefieres (ej. "all": "Todos")
+        return 'Todos';
+    }
+    return null;
   }
 }

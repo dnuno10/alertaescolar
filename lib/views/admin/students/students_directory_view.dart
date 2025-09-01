@@ -52,68 +52,68 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
         Provider.of<StudentProvider>(context, listen: false);
     final groupProvider = Provider.of<GroupProvider>(context, listen: false);
 
-    final escuelaId = userProvider.currentUser?.escuelaId;
-
-    debugPrint('Loading initial data for escuelaId: $escuelaId');
+    final userId = userProvider.currentUser?.id;
+    String? escuelaId = userProvider.currentUser?.escuelaId;
 
     try {
-      if (escuelaId != null) {
-        // Load both students and groups in parallel
-        await Future.wait([
-          studentProvider.loadStudents(escuelaId: escuelaId),
-          groupProvider.loadGroups(escuelaId: escuelaId),
-        ]);
-      } else {
-        // Fallback
-        debugPrint('No escuelaId found for current user, using fallback');
-        await Future.wait([
-          studentProvider.loadStudents(escuelaId: 'ESC001'),
-          groupProvider.loadGroups(escuelaId: 'ESC001'),
-        ]);
+      // Resolver escuelaId si viene null (tutor o admin)
+      escuelaId ??= await studentProvider.getUserSchoolId(userId ?? '');
+      escuelaId ??=
+          await studentProvider.getAdminEscuelaUuidByUserId(userId ?? '');
+
+      debugPrint(
+          'Resolved escuelaId for admin directory: $escuelaId (userId=$userId)');
+
+      if (escuelaId == null) {
+        // No más fallback a 'ESC001'
+        throw Exception('No se encontró escuela asociada al usuario');
       }
 
-      // Apply current filters after loading
-      if (mounted) {
-        _filterStudents();
-      }
+      await Future.wait([
+        studentProvider.loadStudents(escuelaId: escuelaId, userId: userId),
+        groupProvider.loadGroups(escuelaId: escuelaId),
+      ]);
 
-      debugPrint('Students loaded: ${studentProvider.students.length}');
-      debugPrint('Groups loaded: ${groupProvider.grupos.length}');
-
-      if (studentProvider.error != null) {
-        debugPrint('Error loading students: ${studentProvider.error}');
-      }
+      if (mounted) _filterStudents();
     } catch (e) {
       debugPrint('Error in _loadInitialData: $e');
+      if (mounted) {
+        // aquí tu diálogo/snackbar si quieres
+      }
     }
   }
 
   Future<void> _loadStudents() async {
     if (!mounted) return;
-
     final studentProvider =
         Provider.of<StudentProvider>(context, listen: false);
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final escuelaId = userProvider.currentUser?.escuelaId;
-
-    debugPrint('Loading students for escuelaId: $escuelaId');
 
     try {
-      if (escuelaId != null) {
-        await studentProvider.loadStudents(escuelaId: escuelaId);
-      } else {
-        debugPrint('No escuelaId found for current user, using fallback');
-        await studentProvider.loadStudents(escuelaId: 'ESC001');
+      String? escuelaUuid = userProvider.currentUser?.escuelaId;
+      if (escuelaUuid == null || escuelaUuid.isEmpty) {
+        final String? userId = userProvider.currentUser?.id;
+        if (userId != null && userId.isNotEmpty) {
+          escuelaUuid =
+              await studentProvider.getAdminEscuelaUuidByUserId(userId);
+        }
       }
 
-      if (mounted) {
-        _filterStudents();
+      if (escuelaUuid == null || escuelaUuid.isEmpty) {
+        debugPrint('No se pudo resolver el UUID de la escuela del admin.');
+        return;
       }
 
+      await studentProvider.loadStudents(escuelaId: escuelaUuid);
+
+      if (mounted) _filterStudents();
+
       debugPrint(
-          'After load and filter - Students loaded: ${studentProvider.students.length}');
+        'After load and filter - Students loaded: ${studentProvider.students.length}',
+      );
       debugPrint(
-          'After load and filter - Filtered students: ${studentProvider.filteredStudents.length}');
+        'After load and filter - Filtered students: ${studentProvider.filteredStudents.length}',
+      );
 
       if (studentProvider.error != null) {
         debugPrint('Error loading students: ${studentProvider.error}');
