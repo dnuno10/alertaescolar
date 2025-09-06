@@ -180,6 +180,7 @@ class StudentProvider with ChangeNotifier {
   // Filtros auxiliares
   List<Grupo> _availableGrupos = [];
   List<turno_model.Turno> _availableTurnos = [];
+  List<String> _availableNivelesEducativos = [];
 
   bool _isLoading = false;
   String? _error;
@@ -196,7 +197,6 @@ class StudentProvider with ChangeNotifier {
 
   // Contexto actual para recargar según modo
   String? _currentSchoolId;
-  String? _currentUserIdMode;
 
   // Getters
   List<StudentDetails> get students => _students;
@@ -204,6 +204,8 @@ class StudentProvider with ChangeNotifier {
   StudentDetails? get selectedStudent => _selectedStudent;
   List<Grupo> get availableGrupos => _availableGrupos;
   List<turno_model.Turno> get availableTurnos => _availableTurnos;
+  List<String> get availableNivelesEducativos => _availableNivelesEducativos;
+
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -229,6 +231,25 @@ class StudentProvider with ChangeNotifier {
   }
 
   final Map<String, String> _adminEscuelaCacheByUserId = {};
+
+// NUEVO: grupos por nivel educativo
+  List<Grupo> getGruposByNivelEducativo(String nivelEducativo) {
+    if (nivelEducativo.trim().isEmpty) return const [];
+    return _availableGrupos
+        .where((g) => g.nivelEducativo == nivelEducativo)
+        .toList();
+  }
+
+// NUEVO: nombres (string) de grupo por nivel educativo (ordenados, únicos)
+  List<String> getGrupoNamesByNivelEducativo(String nivelEducativo) {
+    final names = getGruposByNivelEducativo(nivelEducativo)
+        .map((g) => g.grupo)
+        .where((s) => s.isNotEmpty)
+        .toSet()
+        .toList();
+    names.sort();
+    return names;
+  }
 
   /// Resuelve id_escuela para ADMIN: usuarios.email -> admin_access_list.id_escuela
   Future<String?> getAdminEscuelaUuidByUserId(String userId) async {
@@ -511,7 +532,6 @@ class StudentProvider with ChangeNotifier {
 
       _students = list;
       _filteredStudents = List.from(_students);
-      _currentUserIdMode = userId;
 
       // Intenta resolver escuela (tutor → admin fallback)
       String? resolvedSchool = _normalizeUuid(await getUserSchoolId(userId)) ??
@@ -534,6 +554,61 @@ class StudentProvider with ChangeNotifier {
     } finally {
       _setLoading(false);
     }
+  }
+
+  /// Devuelve una lista filtrada SIN mutar el estado (_filteredStudents).
+  /// Útil para autocompletados / sugerencias en tiempo real.
+  List<StudentDetails> getFilteredBy({
+    String? searchQuery,
+    String? grupo, // nombre de grupo o 'all'
+    String? nivelEducativo, // nombre de nivel o 'all'
+    String? status, // 'all' | 'active' | 'inactive'
+    String? turno, // nombre de turno o 'all'
+    int? limit,
+  }) {
+    final q = (searchQuery ?? '').trim().toLowerCase();
+
+    final results = _students.where((s) {
+      // Búsqueda por nombre/matrícula/id
+      bool matchesSearch = true;
+      if (q.isNotEmpty) {
+        matchesSearch = s.nombre.toLowerCase().contains(q) ||
+            s.matricula.toLowerCase().contains(q) ||
+            s.id.toLowerCase().contains(q);
+      }
+
+      // Filtros cruzados
+      final matchesGrupo =
+          (grupo == null || grupo == 'all') ? true : s.grupo == grupo;
+
+      final matchesNivel = (nivelEducativo == null || nivelEducativo == 'all')
+          ? true
+          : s.nivelEducativo == nivelEducativo;
+
+      // Semántica solicitada:
+      // ACTIVO = tiene al menos un tutor vinculado (alumno_tutores) Y llave activa = TRUE
+      // INACTIVO = lo contrario
+      bool matchesStatus = true;
+      if (status != null && status != 'all') {
+        final consideredActive = (s.hasTutores && s.llaveActiva);
+        matchesStatus = (status == 'active' && consideredActive) ||
+            (status == 'inactive' && !consideredActive);
+      }
+
+      final matchesTurno =
+          (turno == null || turno == 'all') ? true : (s.turno ?? '') == turno;
+
+      return matchesSearch &&
+          matchesGrupo &&
+          matchesNivel &&
+          matchesStatus &&
+          matchesTurno;
+    }).toList();
+
+    if (limit != null && limit > 0 && results.length > limit) {
+      return results.sublist(0, limit);
+    }
+    return results;
   }
 
   Future<void> loadStudentById({required String studentId}) async {
@@ -693,7 +768,6 @@ class StudentProvider with ChangeNotifier {
 
       _filteredStudents = List.from(_students);
       _currentSchoolId = schoolId;
-      _currentUserIdMode = null;
 
       // Realtime por escuela ya resuelta
       _startRealtimeForSchool(schoolId);
@@ -854,7 +928,6 @@ class StudentProvider with ChangeNotifier {
   // ------------------------------
   // Filtros y catálogos
   // ------------------------------
-
   Future<void> _loadFilteringData(String escuelaId) async {
     final eid = _normalizeUuid(escuelaId);
     if (eid == null) {
@@ -863,6 +936,21 @@ class StudentProvider with ChangeNotifier {
     }
 
     try {
+      // 1) NIVELES EDUCATIVOS (tabla niveles_educativos.nombre)
+      final nivelesResponse = await _supabase
+          .from('niveles_educativos')
+          .select('nombre')
+          .eq('id_escuela', eid)
+          .order('nombre');
+
+      _availableNivelesEducativos = (nivelesResponse as List)
+          .map((row) => (row['nombre'] ?? '').toString())
+          .where((s) => s.isNotEmpty)
+          .toSet()
+          .toList()
+        ..sort();
+
+      // 2) GRUPOS (tabla grupos) - se usan para el combo de "Grupo"
       final gruposResponse = await _supabase
           .from('grupos')
           .select()
@@ -873,6 +961,7 @@ class StudentProvider with ChangeNotifier {
       _availableGrupos =
           (gruposResponse as List).map((item) => Grupo.fromJson(item)).toList();
 
+      // 3) TURNOS (tabla turnos)
       final turnosResponse = await _supabase
           .from('turnos')
           .select()
@@ -891,8 +980,8 @@ class StudentProvider with ChangeNotifier {
     String? searchQuery,
     String? grupo, // nombre de grupo
     String? nivelEducativo,
-    String? status,
-    String? turno,
+    String? status, // 'all' | 'active' | 'inactive'
+    String? turno, // nombre de turno
   }) {
     _filteredStudents = _students.where((s) {
       bool matchesSearch = true;
@@ -903,27 +992,21 @@ class StudentProvider with ChangeNotifier {
             s.id.toLowerCase().contains(q);
       }
 
-      bool matchesGrupo = true;
-      if (grupo != null && grupo != 'all') {
-        matchesGrupo = s.grupo == grupo;
-      }
-
-      bool matchesNivel = true;
-      if (nivelEducativo != null && nivelEducativo != 'all') {
-        matchesNivel = s.nivelEducativo == nivelEducativo;
-      }
+      bool matchesGrupo =
+          (grupo == null || grupo == 'all') ? true : s.grupo == grupo;
+      bool matchesNivel = (nivelEducativo == null || nivelEducativo == 'all')
+          ? true
+          : s.nivelEducativo == nivelEducativo;
 
       bool matchesStatus = true;
       if (status != null && status != 'all') {
-        final isActive = s.llaveActiva;
-        matchesStatus = (status == 'active' && isActive) ||
-            (status == 'inactive' && !isActive);
+        final consideredActive = (s.hasTutores && s.llaveActiva);
+        matchesStatus = (status == 'active' && consideredActive) ||
+            (status == 'inactive' && !consideredActive);
       }
 
-      bool matchesTurno = true;
-      if (turno != null && turno != 'all') {
-        matchesTurno = (s.turno ?? '') == turno;
-      }
+      bool matchesTurno =
+          (turno == null || turno == 'all') ? true : (s.turno ?? '') == turno;
 
       return matchesSearch &&
           matchesGrupo &&
@@ -940,9 +1023,8 @@ class StudentProvider with ChangeNotifier {
   }
 
   List<String> getAvailableNivelesEducativos() {
-    final list = _availableGrupos.map((g) => g.nivelEducativo).toSet().toList();
-    list.sort();
-    return list;
+    // Devuelve EXACTAMENTE lo que hay en niveles_educativos.nombre (ordenado, único)
+    return List<String>.from(_availableNivelesEducativos);
   }
 
   List<String> getAvailableTurnoNames() {
@@ -1194,7 +1276,6 @@ class StudentProvider with ChangeNotifier {
     _error = null;
     _currentLoadingMode = null;
     _currentSchoolId = null;
-    _currentUserIdMode = null;
     _lastConvertedCount = 0;
     Future.microtask(notifyListeners);
   }
@@ -1558,7 +1639,6 @@ class StudentProvider with ChangeNotifier {
     _error = null;
     _currentLoadingMode = null;
     _currentSchoolId = null;
-    _currentUserIdMode = null;
     _lastConvertedCount = 0;
     Future.microtask(notifyListeners);
   }

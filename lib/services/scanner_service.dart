@@ -1,111 +1,190 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'fcm_service.dart';
+import '../managers/turno_provider.dart';
 
 enum ScannerAccessType { entry, exit, automatic }
 
+/// Tipos válidos en la columna `tipo` de `notificaciones`
+/// (alineado al resto del sistema: 'entrada'|'salida'|'retraso'|...)
 enum NotificationType { entrada, salida, retraso }
+
+/// Represents a time window for a specific shift
+class ShiftWindow {
+  final DateTime start;
+  final DateTime end;
+  final String shiftName;
+  final ScannerAccessType type;
+
+  ShiftWindow({
+    required this.start,
+    required this.end,
+    required this.shiftName,
+    required this.type,
+  });
+}
 
 class ScannerService {
   final SupabaseClient _supabase = Supabase.instance.client;
   final FCMService _fcmService = FCMService();
 
-  /// Process a scanned QR code with complete validation and notification creation
-  ///
-  /// Comprehensive validation includes:
-  /// 1. Basic input validation (non-empty code)
-  /// 2. Student existence validation by matricula
-  /// 3. Student data completeness (turno, escuela, grupo, etc.)
-  /// 4. Admin user existence and school assignment validation
-  /// 5. School association validation (student belongs to admin's school)
-  /// 6. Student-tutor relationship validation (student registered by family)
-  /// 7. Student key validation (active and not expired)
-  /// 8. Data consistency validation (group and turno belong to same school)
-  /// 9. Student status validation (if 'activo' field exists)
-  /// 10. Duplicate scan prevention (no recent notifications within 2 minutes)
-  /// 11. Time-based access validation and tardiness detection
-  ///
-  /// Returns a map with success status and student data or error message
+  // ⚡ OPTIMIZACIÓN: Cache para turnos para evitar consultas repetidas
+  static final Map<String, Map<String, dynamic>> _turnoCache = {};
+  static final Map<String, DateTime> _cacheTimestamps = {};
+  static const Duration _cacheExpiry = Duration(minutes: 5);
+
+  // ⚡ OPTIMIZACIÓN: Cache para estudiantes para consultas repetidas
+  static final Map<String, Map<String, dynamic>> _studentCache = {};
+  static final Map<String, DateTime> _studentCacheTimestamps = {};
+  static const Duration _studentCacheExpiry = Duration(minutes: 2);
+
   Future<Map<String, dynamic>> processScannedCode({
     required String scannedCode,
     required String adminId,
+    required String escuelaIdFromContext,
     required ScannerAccessType accessType,
     bool isDefaultEntryConfig = true,
+    TurnoProvider? turnoProvider,
   }) async {
     try {
-      // Step 1: Validate that a value was captured
       if (scannedCode.trim().isEmpty) {
         return {
           'success': false,
           'error': 'No se detectó ningún código válido',
-          'shouldTerminate': true,
+          'shouldTerminate': true
         };
       }
 
-      // Step 2: Find student by matricula
-      final studentData = await _findStudentByMatricula(scannedCode.trim());
+      final currentTime = DateTime.now(); // ⚡ Capturar tiempo inmediatamente
+
+      // ⚡ OPTIMIZACIÓN 1: Buscar alumno + validar escaneado reciente en paralelo
+      debugPrint(
+          'ProcessScannedCode: Step 1 - Parallel student lookup and duplicate check for matricula: $scannedCode');
+
+      final results = await Future.wait([
+        _findStudentByMatricula(scannedCode.trim()),
+      ]);
+
+      final studentData = results[0];
+
       if (studentData == null) {
+        debugPrint(
+            'ProcessScannedCode: Student not found with matricula: $scannedCode');
         return {
           'success': false,
           'error': 'Estudiante no encontrado con matrícula: $scannedCode',
-          'shouldTerminate': true,
+          'shouldTerminate': true
         };
       }
+      debugPrint(
+          'ProcessScannedCode: Student found → ${studentData['nombre']}');
 
-      // Step 3: Get student's turno information for time validation
+      final String studentId = studentData['id']?.toString() ?? '';
       final String? turnoValue = studentData['id_turno']?.toString();
-      final String? escuelaId = studentData['id_escuela']?.toString();
+      final String? escuelaIdAlumno = studentData['id_escuela']?.toString();
 
-      if (turnoValue == null || escuelaId == null) {
+      if (studentId.isEmpty || turnoValue == null || escuelaIdAlumno == null) {
+        debugPrint('ProcessScannedCode: Incomplete student data');
         return {
           'success': false,
-          'error':
-              'Datos del estudiante incompletos (turno o escuela faltante)',
+          'error': 'Datos del estudiante incompletos',
+          'shouldTerminate': true
+        };
+      }
+
+      // ⚡ OPTIMIZACIÓN 2: Validación de escuela + obtener turno + check duplicados en paralelo
+      debugPrint('ProcessScannedCode: Step 2-4 - Parallel operations');
+
+      final parallelResults = await Future.wait([
+        _getStudentTurno(turnoValue, escuelaIdAlumno),
+        _checkRecentNotification(studentId, currentTime,
+            expectedType:
+                NotificationType.entrada), // Asumimos entrada por defecto
+      ]);
+
+      final turnoData = parallelResults[0];
+      final recentNotification = parallelResults[1];
+
+      // Validar escuela sincrónicamente (es rápido)
+      if (escuelaIdFromContext.trim().isNotEmpty &&
+          escuelaIdAlumno.trim() != escuelaIdFromContext.trim()) {
+        return {
+          'success': false,
+          'error': 'El alumno pertenece a otra escuela.',
           'shouldTerminate': true,
         };
       }
 
-      final turnoData = await _getStudentTurno(turnoValue, escuelaId);
       if (turnoData == null) {
+        debugPrint('ProcessScannedCode: Turno data not found');
         return {
           'success': false,
           'error': 'No se pudo obtener información del turno del estudiante',
+          'shouldTerminate': true
+        };
+      }
+
+      // ⚡ Check duplicados temprano
+      if (recentNotification != null) {
+        debugPrint(
+            'ProcessScannedCode: Duplicate scan detected within 1 minute');
+        return {
+          'success': false,
+          'error':
+              'Este alumno ya fue escaneado hace menos de 1 minuto. Espera antes de volver a escanearlo.',
+          'reason': 'recentDuplicate',
           'shouldTerminate': true,
         };
       }
 
-      // Step 4: Determine access type and validate timing
-      final currentTime = DateTime.now();
+      debugPrint(
+          'ProcessScannedCode: Turno data found → ${turnoData['turno']}');
+
+      // ⚡ OPTIMIZACIÓN 3: Validación de tiempo (sincrónico, rápido)
       final timeValidation = _validateAccessTime(
         currentTime: currentTime,
         turno: turnoData,
         accessType: accessType,
         isDefaultEntryConfig: isDefaultEntryConfig,
+        turnoProvider: turnoProvider,
+        escuelaIdFromContext: escuelaIdFromContext,
       );
 
-      // Step 5: Create notification with appropriate type and content
+      // ⚡ OPTIMIZACIÓN 4: Crear notificación con FCM asíncrono
+      debugPrint(
+          'ProcessScannedCode: Step 5 - Creating notification with async FCM');
       final notificationResult = await _createNotification(
         studentData: studentData,
         adminId: adminId,
+        escuelaIdContext: escuelaIdFromContext,
         accessInfo: timeValidation,
         timestamp: currentTime,
       );
 
-      if (!notificationResult['success']) {
-        return notificationResult;
+      if (notificationResult['success'] != true) {
+        final errorMessage = notificationResult['error']?.toString() ??
+            'Error desconocido en la creación de notificación';
+        debugPrint(
+            'ProcessScannedCode: Returning notification error → $errorMessage');
+        return {
+          'success': false,
+          'error': errorMessage,
+          'shouldTerminate': true,
+        };
       }
 
-      // Step 6: Return success with complete student and access information
       return {
         'success': true,
         'student': {
-          'id': studentData['id']?.toString() ?? '',
+          'id': studentId,
           'name': studentData['nombre']?.toString() ?? 'Sin nombre',
           'matricula': studentData['matricula']?.toString() ?? '',
-          'grupo': studentData['grupos'] != null && studentData['grupos'] is Map
+          'grupo': studentData['grupos'] is Map
               ? (studentData['grupos']['grupo']?.toString() ?? 'N/A')
               : 'N/A',
-          'nivel': studentData['grupos'] != null && studentData['grupos'] is Map
+          'nivel': studentData['grupos'] is Map
               ? (studentData['grupos']['nivel_educativo']?.toString() ?? 'N/A')
               : 'N/A',
           'turno': turnoData['turno']?.toString() ?? 'Sin turno',
@@ -120,47 +199,70 @@ class ScannerService {
       };
     } catch (e) {
       debugPrint('Error processing scanned code: $e');
+      debugPrint('Error stack trace: ${StackTrace.current}');
       return {
         'success': false,
         'error': 'Error interno al procesar el código: $e',
-        'shouldTerminate': true,
+        'shouldTerminate': true
       };
     }
   }
 
-  /// Find student by matricula with related data
+  /// === DB QUERIES Y VALIDACIONES OPTIMIZADAS ===
   Future<Map<String, dynamic>?> _findStudentByMatricula(
       String matricula) async {
     try {
-      final response = await _supabase.from('alumnos').select('''
-        id,
-        nombre,
-        matricula,
-        id_grupo,
-        id_escuela,
-        id_turno,
-        grupos!inner(
-          grupo,
-          nivel_educativo
-        )
-      ''').eq('matricula', matricula).maybeSingle();
+      final m = matricula.trim();
+      if (m.isEmpty) return null;
 
-      print('Response from findStudentByMatricula: $response');
+      // ⚡ OPTIMIZACIÓN: Check cache first
+      final cacheKey = 'student_$m';
+      final now = DateTime.now();
 
-      if (response == null) {
-        return null;
+      if (_studentCache.containsKey(cacheKey) &&
+          _studentCacheTimestamps.containsKey(cacheKey)) {
+        final cacheTime = _studentCacheTimestamps[cacheKey]!;
+        if (now.difference(cacheTime) < _studentCacheExpiry) {
+          debugPrint('⚡ Cache HIT: Student $m found in cache');
+          return _studentCache[cacheKey];
+        } else {
+          // Cache expired, remove it
+          _studentCache.remove(cacheKey);
+          _studentCacheTimestamps.remove(cacheKey);
+        }
       }
 
-      // Validate essential student fields
+      debugPrint('⚡ Cache MISS: Querying database for student $m');
+      final response = await _supabase.from('alumnos').select('''
+          id,
+          nombre,
+          matricula,
+          id_grupo,
+          id_escuela,
+          id_turno,
+          grupos!inner(
+            grupo,
+            nivel_educativo
+          ),
+          turnos(turno)
+        ''').eq('matricula', m).maybeSingle();
+
+      if (response == null) return null;
+
+      // Validación de campos mínimos para el flujo del escáner
       if (response['id'] == null ||
           response['nombre'] == null ||
           response['matricula'] == null ||
           response['id_escuela'] == null ||
           response['id_turno'] == null) {
-        debugPrint('Student data incomplete: missing required fields');
-        debugPrint('Available fields: ${response.keys.toList()}');
+        debugPrint('Student data incomplete: ${response.keys.toList()}');
         return null;
       }
+
+      // ⚡ OPTIMIZACIÓN: Store in cache
+      _studentCache[cacheKey] = response;
+      _studentCacheTimestamps[cacheKey] = now;
+      debugPrint('⚡ Cache STORED: Student $m cached');
 
       return response;
     } catch (e) {
@@ -169,32 +271,42 @@ class ScannerService {
     }
   }
 
-  /// Get turno information for time validation using turno ID
   Future<Map<String, dynamic>?> _getStudentTurno(
       String turnoId, String escuelaId) async {
     try {
-      if (turnoId.isEmpty || escuelaId.isEmpty) {
-        debugPrint('Invalid turno ID or escuela parameters');
-        return null;
+      if (turnoId.isEmpty || escuelaId.isEmpty) return null;
+
+      // ⚡ OPTIMIZACIÓN: Check cache first
+      final cacheKey = 'turno_${turnoId}_$escuelaId';
+      final now = DateTime.now();
+
+      if (_turnoCache.containsKey(cacheKey) &&
+          _cacheTimestamps.containsKey(cacheKey)) {
+        final cacheTime = _cacheTimestamps[cacheKey]!;
+        if (now.difference(cacheTime) < _cacheExpiry) {
+          debugPrint('⚡ Cache HIT: Turno $turnoId found in cache');
+          return _turnoCache[cacheKey];
+        } else {
+          // Cache expired, remove it
+          _turnoCache.remove(cacheKey);
+          _cacheTimestamps.remove(cacheKey);
+        }
       }
 
+      debugPrint('⚡ Cache MISS: Querying database for turno $turnoId');
       final response = await _supabase
           .from('turnos')
           .select('*')
-          .eq('id', turnoId) // Use turno ID instead of enum
+          .eq('id', turnoId)
           .eq('id_escuela', escuelaId)
           .maybeSingle();
 
-      if (response == null) {
-        debugPrint('No turno found for ID: $turnoId in school: $escuelaId');
-        return null;
-      }
+      if (response == null || response['hora_inicio'] == null) return null;
 
-      // Validate essential turno fields
-      if (response['hora_inicio'] == null) {
-        debugPrint('Turno data incomplete: missing hora_inicio');
-        return null;
-      }
+      // ⚡ OPTIMIZACIÓN: Store in cache
+      _turnoCache[cacheKey] = response;
+      _cacheTimestamps[cacheKey] = now;
+      debugPrint('⚡ Cache STORED: Turno $turnoId cached');
 
       return response;
     } catch (e) {
@@ -203,329 +315,328 @@ class ScannerService {
     }
   }
 
-  /// Validate access time and determine notification type
   Map<String, dynamic> _validateAccessTime({
     required DateTime currentTime,
     required Map<String, dynamic> turno,
     required ScannerAccessType accessType,
     required bool isDefaultEntryConfig,
+    TurnoProvider? turnoProvider,
+    String? escuelaIdFromContext,
   }) {
+    // Debug: Log all input parameters
+    debugPrint('=== _validateAccessTime DEBUG ===');
+    debugPrint('currentTime: $currentTime');
+    debugPrint('turno data: $turno');
+    debugPrint('accessType: $accessType');
+    debugPrint('isDefaultEntryConfig: $isDefaultEntryConfig');
+
+    // Resuelve el tipo real de acceso (fijo/auto) respetando la configuración
+    final actualAccess = _getActualAccessType(
+      accessType,
+      isDefaultEntryConfig,
+      currentTime: currentTime,
+      turno: turno,
+      turnoProvider: turnoProvider,
+      escuelaId: escuelaIdFromContext,
+    );
+
+    debugPrint('actualAccess resolved to: $actualAccess');
+
     final String? turnoInicioStr = turno['hora_inicio']?.toString();
     final int tolerancia = turno['tolerancia'] is int
         ? turno['tolerancia']
-        : (int.tryParse(turno['tolerancia']?.toString() ?? '0') ?? 0);
+        : (int.tryParse('${turno['tolerancia'] ?? '0'}') ?? 15);
 
-    if (turnoInicioStr == null || turnoInicioStr.isEmpty) {
-      // If we can't get turno time, default to not late
-      return {
-        'accessType': _getActualAccessType(accessType, isDefaultEntryConfig),
-        'isLate': false,
-        'turnoDateTime': currentTime,
-        'lateThreshold': currentTime,
-        'currentTime': currentTime,
-        'message': 'Horario de turno no disponible',
-      };
-    }
+    debugPrint('turnoInicioStr: $turnoInicioStr');
+    debugPrint('tolerancia: $tolerancia');
 
-    // Parse turno time - handle different formats
-    try {
-      DateTime turnoDateTime;
+    // IMPORTANTE: Solo aplicamos validación de tardanza para ENTRADA
+    // Si es SALIDA, nunca se considera tardanza
+    bool isLate = false;
+    String message;
 
-      // Check if it's a full datetime string (PostgreSQL time format)
-      if (turnoInicioStr.contains(':') && turnoInicioStr.length > 5) {
-        // Handle formats like "06:30:00+00", "06:30:00", etc.
-        String timeOnly =
-            turnoInicioStr.split('+')[0]; // Remove timezone if present
-        timeOnly = timeOnly.split('T')[0]; // Remove date part if present
+    debugPrint('🕐 LATENESS CHECK: actualAccess=$actualAccess');
+    debugPrint('🕐 LATENESS CHECK: turnoInicioStr=$turnoInicioStr');
 
-        final timeParts = timeOnly.split(':');
-        if (timeParts.length >= 2) {
-          final turnoHour = int.parse(timeParts[0]);
-          final turnoMinute = int.parse(timeParts[1]);
+    if (actualAccess == ScannerAccessType.entry &&
+        turnoInicioStr != null &&
+        turnoInicioStr.isNotEmpty) {
+      debugPrint('🕐 ENTRY MODE: Checking for lateness...');
+      // Solo para ENTRADA validamos tardanza
+      try {
+        final parts = turnoInicioStr.split(':');
+        if (parts.length >= 2) {
+          final hour = int.parse(parts[0]);
+          final minute = int.parse(parts[1]);
 
-          // Create turno datetime for today
-          turnoDateTime = DateTime(
+          final turnoDt = DateTime(
             currentTime.year,
             currentTime.month,
             currentTime.day,
-            turnoHour,
-            turnoMinute,
+            hour,
+            minute,
           );
+
+          final lateThreshold = turnoDt.add(Duration(minutes: tolerancia));
+
+          debugPrint('turnoDt: $turnoDt');
+          debugPrint('lateThreshold: $lateThreshold');
+          debugPrint(
+              'currentTime.isAfter(lateThreshold): ${currentTime.isAfter(lateThreshold)}');
+
+          if (currentTime.isAfter(lateThreshold)) {
+            isLate = true;
+            message = 'Llegada tardía (tolerancia: $tolerancia min)';
+            debugPrint(
+                'MARKED AS LATE: currentTime ($currentTime) > lateThreshold ($lateThreshold)');
+          } else {
+            message = 'Llegada a tiempo';
+            debugPrint(
+                'ON TIME: currentTime ($currentTime) <= lateThreshold ($lateThreshold)');
+          }
         } else {
-          throw FormatException('Invalid time format: $turnoInicioStr');
+          message = 'Llegada registrada';
+          debugPrint('Invalid time format, no lateness check');
         }
-      } else {
-        // Handle simple HH:mm format
-        final turnoTimeParts = turnoInicioStr.split(':');
-        if (turnoTimeParts.length != 2) {
-          throw FormatException('Invalid time format: $turnoInicioStr');
-        }
-
-        final turnoHour = int.parse(turnoTimeParts[0]);
-        final turnoMinute = int.parse(turnoTimeParts[1]);
-
-        // Create turno datetime for today
-        turnoDateTime = DateTime(
-          currentTime.year,
-          currentTime.month,
-          currentTime.day,
-          turnoHour,
-          turnoMinute,
-        );
+      } catch (e) {
+        debugPrint('Error parsing turno time: $e');
+        message = 'Llegada registrada';
       }
-
-      // Add tolerance to get the late threshold
-      final lateThreshold = turnoDateTime.add(Duration(minutes: tolerancia));
-
-      // Determine actual access type
-      final actualAccessType =
-          _getActualAccessType(accessType, isDefaultEntryConfig);
-
-      // Determine if it's late (only for entries)
-      bool isLate = false;
-      String message = '';
-
-      if (actualAccessType == ScannerAccessType.entry &&
-          currentTime.isAfter(lateThreshold)) {
-        isLate = true;
-        message = 'Llegada tardía (tolerancia: $tolerancia min)';
-      } else if (actualAccessType == ScannerAccessType.entry) {
-        message = 'Llegada a tiempo';
-      } else {
+    } else {
+      // Para SALIDA o cuando no hay hora de inicio válida
+      if (actualAccess == ScannerAccessType.exit) {
         message = 'Salida registrada';
+        debugPrint('🕐 EXIT MODE: No lateness check applied');
+      } else {
+        message = 'Acceso registrado';
+        debugPrint('🕐 ENTRY without valid turno time: No lateness check');
       }
-
-      debugPrint('Turno start time: ${_formatTime(turnoDateTime)}');
-      debugPrint('Late threshold: ${_formatTime(lateThreshold)}');
-      debugPrint('Current time: ${_formatTime(currentTime)}');
-      debugPrint('Is late: $isLate');
-
-      return {
-        'accessType': actualAccessType,
-        'isLate': isLate,
-        'turnoDateTime': turnoDateTime,
-        'lateThreshold': lateThreshold,
-        'currentTime': currentTime,
-        'message': message,
-      };
-    } catch (e) {
-      debugPrint('Error parsing turno time: $e');
-      debugPrint('Turno time string was: $turnoInicioStr');
-      return {
-        'accessType': _getActualAccessType(accessType, isDefaultEntryConfig),
-        'isLate': false,
-        'turnoDateTime': currentTime,
-        'lateThreshold': currentTime,
-        'currentTime': currentTime,
-        'message': 'Error al validar horario',
-      };
     }
+
+    debugPrint('Final result: isLate=$isLate, message="$message"');
+    debugPrint('=== END _validateAccessTime DEBUG ===');
+
+    return {
+      'accessType': actualAccess,
+      'isLate': isLate,
+      'currentTime': currentTime,
+      'message': message,
+    };
   }
 
-  /// Helper method to determine actual access type
   ScannerAccessType _getActualAccessType(
-      ScannerAccessType accessType, bool isDefaultEntryConfig) {
-    switch (accessType) {
-      case ScannerAccessType.automatic:
-        return isDefaultEntryConfig
-            ? ScannerAccessType.entry
-            : ScannerAccessType.exit;
-      case ScannerAccessType.entry:
-      case ScannerAccessType.exit:
-        return accessType;
+    ScannerAccessType accessType,
+    bool isDefaultEntryConfig, {
+    DateTime? currentTime,
+    Map<String, dynamic>? turno,
+    TurnoProvider? turnoProvider,
+    String? escuelaId,
+  }) {
+    debugPrint('=== _getActualAccessType DEBUG ===');
+    debugPrint('accessType: $accessType');
+    debugPrint('isDefaultEntryConfig: $isDefaultEntryConfig');
+
+    // Si es fijo, se respeta literalmente.
+    if (accessType == ScannerAccessType.entry ||
+        accessType == ScannerAccessType.exit) {
+      debugPrint('Fixed access type, returning: $accessType');
+      return accessType;
     }
+
+    // Para automático, SIEMPRE respetamos la configuración de isDefaultEntryConfig
+    // que viene desde AttendanceControlHeader
+    final automaticType =
+        isDefaultEntryConfig ? ScannerAccessType.entry : ScannerAccessType.exit;
+
+    debugPrint('🚨 IMPORTANTE: Automatic mode configuration');
+    debugPrint('🚨 isDefaultEntryConfig=$isDefaultEntryConfig');
+    debugPrint('🚨 Resolved automaticType=$automaticType');
+    debugPrint(
+        '🚨 This means: ${automaticType == ScannerAccessType.entry ? "ENTRADA (can have lateness)" : "SALIDA (never late)"}');
+
+    return automaticType;
   }
 
-  /// Create notification with proper type and content and comprehensive validation
   Future<Map<String, dynamic>> _createNotification({
     required Map<String, dynamic> studentData,
     required String adminId,
+    required String escuelaIdContext,
     required Map<String, dynamic> accessInfo,
     required DateTime timestamp,
   }) async {
     try {
+      debugPrint('_createNotification: Starting notification creation');
       final String studentName =
           studentData['nombre']?.toString() ?? 'Estudiante';
       final String? studentId = studentData['id']?.toString();
       final String? studentSchoolId = studentData['id_escuela']?.toString();
 
+      debugPrint(
+          '_createNotification: Basic data → studentName=$studentName, studentId=$studentId, studentSchoolId=$studentSchoolId');
+
       if (studentId == null || studentId.isEmpty) {
-        return {
-          'success': false,
-          'error': 'ID del estudiante no válido',
-        };
+        debugPrint('_createNotification: Invalid student ID');
+        return {'success': false, 'error': 'ID del estudiante no válido'};
       }
-
       if (studentSchoolId == null || studentSchoolId.isEmpty) {
-        return {
-          'success': false,
-          'error': 'Escuela del estudiante no válida',
-        };
-      }
-
-      // Step 1: Validate admin user and school association
-      final adminInfo = await _getAdminUserInfo(adminId);
-      if (adminInfo == null) {
-        return {
-          'success': false,
-          'error': 'Usuario administrador no encontrado',
-        };
-      }
-
-      final String? adminSchoolId = adminInfo['id_escuela']?.toString();
-      final String? userType = adminInfo['tipo']?.toString();
-
-      // Validate admin has school assigned (if is admin type)
-      if (userType == 'administrador' &&
-          (adminSchoolId == null || adminSchoolId.isEmpty)) {
-        return {
-          'success': false,
-          'error': 'El administrador no tiene escuela asignada',
-        };
-      }
-
-      // Validate student belongs to admin's school
-      if (userType == 'administrador' && adminSchoolId != studentSchoolId) {
-        return {
-          'success': false,
-          'error': 'La escuela del alumno escaneado no pertenece a la actual',
-        };
-      }
-
-      // Step 2: Validate student has tutor registration and valid key
-      debugPrint('Validating student registration for ID: $studentId');
-      final validationResult = await _validateStudentKeyAndTutor(studentId);
-      debugPrint('Validation result: $validationResult');
-
-      if (!validationResult['isValid']) {
-        debugPrint('Student validation failed: ${validationResult['error']}');
-        return {
-          'success': false,
-          'error': validationResult['error'],
-        };
+        debugPrint('_createNotification: Invalid student school ID');
+        return {'success': false, 'error': 'Escuela del estudiante no válida'};
       }
 
       debugPrint(
-          'Student validation passed, proceeding with notification creation');
-
-      // Step 3: Validate data consistency - group belongs to same school
-      final String? groupId = studentData['id_grupo']?.toString();
-      if (groupId != null) {
-        final groupValidation = await _validateStudentGroupConsistency(
-            studentId, studentSchoolId, groupId);
-        if (!groupValidation['isValid']) {
-          return {
-            'success': false,
-            'error': groupValidation['error'],
-          };
-        }
-      }
-
-      // Step 4: Validate turno belongs to same school
-      final String? turnoId = studentData['id_turno']?.toString();
-      if (turnoId != null) {
-        final turnoValidation =
-            await _validateTurnoSchoolConsistency(turnoId, studentSchoolId);
-        if (!turnoValidation['isValid']) {
-          return {
-            'success': false,
-            'error': turnoValidation['error'],
-          };
-        }
-      }
-
-      // Step 5: Additional validation - check if student is active (if field exists)
-      if (studentData['activo'] != null && studentData['activo'] == false) {
+          '_createNotification: Getting admin info for adminId=$adminId');
+      final adminInfo = await _getAdminUserInfo(adminId);
+      if (adminInfo == null) {
+        debugPrint('_createNotification: Admin not found');
         return {
           'success': false,
-          'error': 'El alumno está inactivo en el sistema',
+          'error': 'Usuario administrador no encontrado'
         };
       }
+      final String tipoUsuario =
+          (adminInfo['tipo']?.toString() ?? '').toLowerCase();
+      final String? adminSchoolId = adminInfo['id_escuela']?.toString();
+      debugPrint(
+          '_createNotification: Admin info → tipoUsuario=$tipoUsuario, adminSchoolId=$adminSchoolId');
 
-      // Step 6: Validate no duplicate notification in short time window (prevent double scans)
-      final recentNotification =
-          await _checkRecentNotification(studentId, timestamp);
-      if (recentNotification != null) {
-        final minutes = recentNotification['minutes'] as int;
-        final displayMinutes =
-            minutes <= 0 ? 1 : minutes; // Show minimum 1 minute
+      if (tipoUsuario == 'administrador') {
+        if (adminSchoolId == null || adminSchoolId.isEmpty) {
+          return {
+            'success': false,
+            'error': 'El administrador no tiene escuela asignada'
+          };
+        }
+        if (adminSchoolId != studentSchoolId) {
+          return {
+            'success': false,
+            'error':
+                'La escuela del alumno no coincide con la del administrador'
+          };
+        }
+        if (escuelaIdContext.trim().isNotEmpty &&
+            adminSchoolId != escuelaIdContext.trim()) {
+          return {
+            'success': false,
+            'error':
+                'La escuela de la sesión no coincide con la del administrador'
+          };
+        }
+      } else {
+        if (escuelaIdContext.trim().isNotEmpty &&
+            escuelaIdContext.trim() != studentSchoolId) {
+          return {
+            'success': false,
+            'error': 'El alumno pertenece a otra escuela (contexto)'
+          };
+        }
+      }
 
+      debugPrint('_createNotification: Validating student key and tutor');
+      final validationResult = await _validateStudentKeyAndTutor(studentId);
+      if (validationResult['isValid'] != true) {
+        debugPrint(
+            '_createNotification: Student key/tutor validation failed → ${validationResult['error']}');
+        return {'success': false, 'error': validationResult['error']};
+      }
+      debugPrint('_createNotification: Student key/tutor validation passed');
+
+      final String? groupId = studentData['id_grupo']?.toString();
+      if (groupId != null && groupId.isNotEmpty) {
+        final gval = await _validateStudentGroupConsistency(
+            studentId, studentSchoolId, groupId);
+        if (gval['isValid'] != true) {
+          return {'success': false, 'error': gval['error']};
+        }
+      }
+
+      final String? turnoId = studentData['id_turno']?.toString();
+      if (turnoId != null && turnoId.isNotEmpty) {
+        final tval =
+            await _validateTurnoSchoolConsistency(turnoId, studentSchoolId);
+        if (tval['isValid'] != true) {
+          return {'success': false, 'error': tval['error']};
+        }
+      }
+
+      // === Uso estricto del tipo real de acceso y tardanza ===
+      final ScannerAccessType acType =
+          accessInfo['accessType'] as ScannerAccessType;
+      final bool isLate = (accessInfo['isLate'] ?? false) as bool;
+
+      // Título y cuerpo según el tipo de acceso resuelto:
+      // - Salida: "ha salido"
+      // - Entrada: si tarde -> "llegó tarde", si no -> "ha llegado"
+      final NotificationType notifType = (acType == ScannerAccessType.exit)
+          ? NotificationType.salida
+          : (isLate ? NotificationType.retraso : NotificationType.entrada);
+
+      final String hora = _formatTime12h(timestamp); // 12h para FCM
+      final String titulo = (acType == ScannerAccessType.exit)
+          ? '$studentName ha salido'
+          : (isLate ? '$studentName llegó tarde' : '$studentName ha llegado');
+
+      final String mensaje = (acType == ScannerAccessType.exit)
+          ? '$studentName salió de la escuela a las $hora'
+          : (isLate
+              ? '$studentName llegó tarde a la escuela a las $hora'
+              : '$studentName llegó a la escuela a las $hora');
+
+// Dedupe por fecha_registro (60s). Si existe, return a specific error message.
+      final recent = await _checkRecentNotification(studentId, timestamp,
+          expectedType: notifType);
+      if (recent != null) {
+        debugPrint(
+            '_createNotification: Duplicate scan detected within 1 minute');
         return {
           'success': false,
           'error':
-              'Ya existe un registro reciente para este alumno (hace $displayMinutes minuto${displayMinutes == 1 ? '' : 's'})',
+              'Debes esperar 1 minuto antes de volver a escanear al mismo estudiante',
+          'duplicateIgnored': true,
+          'notification': {
+            'id': recent['id'],
+            'titulo': recent['titulo'],
+            'mensaje': recent['mensaje'],
+            'tipo': recent['tipo_notificacion'],
+            'fecha': recent['fecha_registro'],
+          },
         };
       }
+      // Logging para auditoría
+      debugPrint(
+          'NOTIF BUILD → accessType=${acType.name} isLate=$isLate title="$titulo" body="$mensaje"');
 
-      final ScannerAccessType accessType = accessInfo['accessType'];
-      final bool isLate = accessInfo['isLate'] ?? false;
-
-      // Determine notification type
-      NotificationType notificationType;
-      if (accessType == ScannerAccessType.exit) {
-        notificationType = NotificationType.salida;
-      } else if (isLate) {
-        notificationType = NotificationType.retraso;
-      } else {
-        notificationType = NotificationType.entrada;
-      }
-
-      // Generate title based on access type and timing
-      String titulo;
-      if (accessType == ScannerAccessType.exit) {
-        titulo = '$studentName ha salido';
-      } else if (isLate) {
-        titulo = '$studentName llegó tarde';
-      } else {
-        titulo = '$studentName ha llegado';
-      }
-
-      // Generate message with exact timestamp
-      String mensaje;
-      final timeString = _formatTime(timestamp);
-      if (accessType == ScannerAccessType.exit) {
-        mensaje = '$studentName salió de la escuela a las $timeString';
-      } else if (isLate) {
-        mensaje = '$studentName llegó tarde a la escuela a las $timeString';
-      } else {
-        mensaje = '$studentName llegó a la escuela a las $timeString';
-      }
-
-      // Create notification in database
-      final response = await _supabase
+      // ⚡ OPTIMIZACIÓN: Insertar notificación y devolver éxito inmediatamente
+      // El FCM se enviará en background sin bloquear la UI
+      final inserted = await _supabase
           .from('notificaciones')
           .insert({
             'id_alumno': studentId,
             'id_admin': adminId,
             'titulo': titulo,
             'mensaje': mensaje,
-            'tipo_notificacion': notificationType.name,
+            'tipo_notificacion': notifType.name,
             'estado': 'nueva',
-            'fecha_registro':
-                timestamp.toUtc().toIso8601String(), // Ensure UTC storage
+            'fecha_registro': timestamp.toUtc().toIso8601String(),
           })
-          .select()
+          .select('id')
           .single();
 
-      // Send push notification to student's tutors
-      final notificationId = response['id']?.toString() ?? '';
-      try {
-        await _fcmService.sendNotificationToStudentTutors(
-          studentId: studentId,
-          title: titulo,
-          body: mensaje,
-          notificationId: notificationId,
-          additionalData: {
-            'access_type': accessType.name,
-            'is_late': isLate.toString(),
-            'timestamp': timestamp.toIso8601String(),
-          },
-        );
-        debugPrint('FCM: Push notification sent successfully for attendance');
-      } catch (e) {
-        debugPrint('FCM: Error sending push notification for attendance: $e');
-        // Don't fail the whole process if push notification fails
-      }
+      final String notificationId = inserted['id']?.toString() ?? '';
+
+      // ⚡ OPTIMIZACIÓN: FCM completamente asíncrono - NO BLOQUEA LA UI
+      // Se ejecuta en background sin usar unawaited para evitar warnings
+      _sendFCMInBackground(
+        studentId: studentId,
+        titulo: titulo,
+        mensaje: mensaje,
+        notificationId: notificationId,
+        notifType: notifType,
+        adminSchoolId: adminSchoolId,
+        studentSchoolId: studentSchoolId,
+        acType: acType,
+        isLate: isLate,
+        timestamp: timestamp,
+      );
 
       return {
         'success': true,
@@ -533,31 +644,70 @@ class ScannerService {
           'id': notificationId,
           'titulo': titulo,
           'mensaje': mensaje,
-          'tipo': notificationType.name,
+          'tipo': notifType.name,
           'fecha': timestamp.toIso8601String(),
         },
       };
     } catch (e) {
       debugPrint('Error creating notification: $e');
-      return {
-        'success': false,
-        'error': 'Error al crear la notificación: $e',
-      };
+      return {'success': false, 'error': 'Error al crear la notificación: $e'};
     }
   }
 
-  /// Format time for display in messages
-  String _formatTime(DateTime dateTime) {
-    final hour = dateTime.hour.toString().padLeft(2, '0');
-    final minute = dateTime.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
+  /// ⚡ OPTIMIZACIÓN: Envío de FCM en background sin bloquear la UI
+  void _sendFCMInBackground({
+    required String studentId,
+    required String titulo,
+    required String mensaje,
+    required String notificationId,
+    required NotificationType notifType,
+    required String? adminSchoolId,
+    required String studentSchoolId,
+    required ScannerAccessType acType,
+    required bool isLate,
+    required DateTime timestamp,
+  }) {
+    // Ejecutar en background sin bloquear la UI
+    Future.microtask(() async {
+      try {
+        debugPrint('⚡ FCM: Starting background notification send');
+        await _fcmService.sendNotificationToStudentTutors(
+          studentId: studentId,
+          title: titulo,
+          body: mensaje,
+          notificationId: notificationId,
+          additionalData: {
+            'tipo': notifType.name,
+            'id_escuela': adminSchoolId ?? studentSchoolId,
+            'access_type': acType.name,
+            'is_late': isLate.toString(),
+            'timestamp': timestamp.toIso8601String(),
+          },
+        );
+        debugPrint('⚡ FCM: Background notification sent successfully');
+      } catch (e) {
+        debugPrint('⚡ FCM: Background notification error: $e');
+      }
+    });
   }
 
-  /// Convert ScannerAccessType to string for display
+  String _formatTime12h(DateTime dateTime) {
+    final local = dateTime.toLocal();
+    int h = local.hour;
+    final m = local.minute.toString().padLeft(2, '0');
+    final suffix = (h >= 12) ? 'PM' : 'AM';
+    if (h == 0) {
+      h = 12;
+    } else if (h > 12) {
+      h -= 12;
+    }
+    return '$h:$m $suffix';
+  }
+
+  /// === Metadatos UI para indicadores ===
+
   String getAccessTypeDisplayName(
-    ScannerAccessType accessType,
-    bool isDefaultEntryConfig,
-  ) {
+      ScannerAccessType accessType, bool isDefaultEntryConfig) {
     switch (accessType) {
       case ScannerAccessType.automatic:
         return isDefaultEntryConfig
@@ -570,11 +720,8 @@ class ScannerService {
     }
   }
 
-  /// Get appropriate color for access type
   Color getAccessTypeColor(
-    ScannerAccessType accessType,
-    bool isDefaultEntryConfig,
-  ) {
+      ScannerAccessType accessType, bool isDefaultEntryConfig) {
     switch (accessType) {
       case ScannerAccessType.automatic:
         return isDefaultEntryConfig ? Colors.green : Colors.red;
@@ -585,11 +732,8 @@ class ScannerService {
     }
   }
 
-  /// Get appropriate icon for access type
   IconData getAccessTypeIcon(
-    ScannerAccessType accessType,
-    bool isDefaultEntryConfig,
-  ) {
+      ScannerAccessType accessType, bool isDefaultEntryConfig) {
     switch (accessType) {
       case ScannerAccessType.automatic:
         return isDefaultEntryConfig
@@ -602,55 +746,92 @@ class ScannerService {
     }
   }
 
-  /// Get admin user information for validation
+  /// === Helpers de validación ===
+
+  /// Obtiene info del usuario y resuelve id_escuela de forma compatible con el esquema:
+  /// - Si es ADMIN: admin_access_list por email (activo=true, más reciente)
+  /// - Si NO es admin: primer alumno vinculado (alumno_tutores → alumnos.id_escuela)
   Future<Map<String, dynamic>?> _getAdminUserInfo(String adminId) async {
     try {
-      final response = await _supabase
+      // 1) Leer usuario base (¡OJO! usuarios NO tiene id_escuela)
+      final userRow = await _supabase
           .from('usuarios')
-          .select('id, id_escuela, tipo, tipo_administrador')
+          .select('id, email, tipo, tipo_administrador')
           .eq('id', adminId)
           .maybeSingle();
 
-      if (response == null) {
+      if (userRow == null) {
         debugPrint('Admin user not found with ID: $adminId');
         return null;
       }
 
-      return response;
+      final String email =
+          (userRow['email']?.toString() ?? '').trim().toLowerCase();
+      final String tipo =
+          (userRow['tipo']?.toString() ?? '').trim().toLowerCase();
+
+      String? escuelaId;
+
+      if (tipo == 'administrador' || tipo == 'admin') {
+        // 2) Resolver escuela por admin_access_list
+        final adminAccess = await _supabase
+            .from('admin_access_list')
+            .select('id_escuela')
+            .eq('email', email)
+            .eq('activo', true)
+            .order('created_at', ascending: false)
+            .limit(1)
+            .maybeSingle();
+
+        escuelaId = adminAccess?['id_escuela']?.toString();
+      } else {
+        // 3) Si no es admin: deducir por vínculo tutor→alumno
+        try {
+          final resp = await _supabase.from('alumno_tutores').select('''
+            alumnos!inner(
+              id_escuela
+            )
+          ''').eq('id_tutor', adminId).limit(1);
+
+          if (resp.isNotEmpty) {
+            final alumno = resp[0]['alumnos'] as Map<String, dynamic>?;
+            escuelaId = alumno?['id_escuela']?.toString();
+          }
+        } catch (_) {}
+      }
+
+      return {
+        'id': userRow['id'],
+        'email': email,
+        'tipo': userRow['tipo'],
+        'tipo_administrador': userRow['tipo_administrador'],
+        // devolvemos id_escuela normalizado (puede ser null si no se resuelve)
+        'id_escuela': escuelaId,
+      };
     } catch (e) {
       debugPrint('Error getting admin user info: $e');
       return null;
     }
   }
 
-  /// Validate if student has valid key registration
   Future<Map<String, dynamic>> _validateStudentKeyAndTutor(
       String studentId) async {
     try {
-      debugPrint('Checking tutor registration for student ID: $studentId');
-
-      // Check if student has any tutor registration
+      // Tutor registrado
       final tutorResponse = await _supabase
           .from('alumno_tutores')
           .select('id')
           .eq('id_alumno', studentId)
           .maybeSingle();
-
-      debugPrint('Tutor registration query result: $tutorResponse');
-
       if (tutorResponse == null) {
-        debugPrint('No tutor registration found for student ID: $studentId');
         return {
           'isValid': false,
           'error': 'El alumno aún no ha sido registrado por un familiar',
         };
       }
 
-      debugPrint(
-          'Tutor registration found, checking key validity for student ID: $studentId');
-
-      // Check if student has a valid (not expired) key
-      final currentDateTime = DateTime.now();
+      // Llave activa vigente
+      final now = DateTime.now();
       final keyResponse = await _supabase
           .from('llaves')
           .select('id, fecha_registro, fecha_desactivacion, activo')
@@ -661,99 +842,75 @@ class ScannerService {
       if (keyResponse == null) {
         return {
           'isValid': false,
-          'error': 'El alumno no tiene una llave activa asignada',
+          'error': 'El alumno no tiene una llave activa asignada'
         };
       }
 
-      // Parse dates and validate key is not expired
       try {
-        final fechaRegistro = DateTime.parse(keyResponse['fecha_registro']);
-        final fechaDesactivacion =
-            DateTime.parse(keyResponse['fecha_desactivacion']);
-
-        if (currentDateTime.isBefore(fechaRegistro) ||
-            currentDateTime.isAfter(fechaDesactivacion)) {
+        final from = DateTime.parse(keyResponse['fecha_registro']);
+        final to = DateTime.parse(keyResponse['fecha_desactivacion']);
+        if (now.isBefore(from) || now.isAfter(to)) {
           return {
             'isValid': false,
-            'error': 'La llave del alumno está vencida',
+            'error': 'La llave del alumno está vencida'
           };
         }
       } catch (e) {
-        debugPrint('Error parsing key dates: $e');
         return {
           'isValid': false,
-          'error': 'Error al validar fechas de la llave del alumno',
+          'error': 'Error al validar fechas de la llave del alumno'
         };
       }
 
-      return {
-        'isValid': true,
-      };
+      return {'isValid': true};
     } catch (e) {
       debugPrint('Error validating student key and tutor: $e');
       return {
         'isValid': false,
-        'error': 'Error interno al validar registro del alumno: $e',
+        'error': 'Error interno al validar registro del alumno: $e'
       };
     }
   }
 
-  /// Check for recent notifications to prevent duplicate scans
   Future<Map<String, dynamic>?> _checkRecentNotification(
-      String studentId, DateTime currentTime) async {
+    String studentId,
+    DateTime currentTime, {
+    required NotificationType expectedType,
+  }) async {
+    final window = currentTime.subtract(const Duration(seconds: 60));
     try {
-      // Check for notifications in the last 2 minutes to prevent duplicate scans
-      final twoMinutesAgo = currentTime.subtract(const Duration(minutes: 2));
-
-      final response = await _supabase
+      final r = await _supabase
           .from('notificaciones')
-          .select('id, fecha_registro')
+          .select('id, fecha_registro, tipo_notificacion')
           .eq('id_alumno', studentId)
-          .gte('fecha_registro',
-              twoMinutesAgo.toUtc().toIso8601String()) // Convert to UTC
+          .eq('tipo_notificacion', expectedType.name) // <--- filtra por tipo
+          .gte('fecha_registro', window.toUtc().toIso8601String())
           .order('fecha_registro', ascending: false)
           .limit(1)
           .maybeSingle();
 
-      if (response != null) {
-        // Parse the timestamp and ensure it's in UTC, then convert to local
-        final notificationTimeStr = response['fecha_registro'].toString();
-
-        DateTime notificationTime;
-        if (notificationTimeStr.endsWith('Z') ||
-            notificationTimeStr.contains('+')) {
-          // Already has timezone info
-          notificationTime = DateTime.parse(notificationTimeStr).toLocal();
-        } else {
-          // Assume it's UTC and convert to local
-          notificationTime =
-              DateTime.parse('${notificationTimeStr}Z').toLocal();
+      if (r != null) {
+        final tStr = r['fecha_registro']?.toString();
+        if (tStr != null && tStr.isNotEmpty) {
+          DateTime t = DateTime.parse(tStr);
+          if (!tStr.endsWith('Z') && !tStr.contains('+')) t = t.toUtc();
+          final diff = currentTime.difference(t).inSeconds;
+          if (diff < 60) {
+            return {
+              'id': r['id'],
+              'fecha_registro': r['fecha_registro'],
+              'tipo_notificacion': r['tipo_notificacion'],
+              'seconds': diff,
+            };
+          }
         }
-
-        // Calculate difference using local times
-        final diffInMinutes =
-            currentTime.difference(notificationTime).inMinutes;
-
-        // Debug information
-        debugPrint('Current time (local): ${currentTime.toIso8601String()}');
-        debugPrint(
-            'Notification time (parsed to local): ${notificationTime.toIso8601String()}');
-        debugPrint('Difference in minutes: $diffInMinutes');
-
-        return {
-          'minutes': diffInMinutes,
-          'notification_id': response['id'],
-        };
       }
-
-      return null;
     } catch (e) {
-      debugPrint('Error checking recent notifications: $e');
-      return null; // Allow registration if we can't check (fail-open for better UX)
+      debugPrint('recent by fecha_registro failed: $e');
     }
+    return null;
   }
 
-  /// Validate student group belongs to the same school
   Future<Map<String, dynamic>> _validateStudentGroupConsistency(
       String studentId, String studentSchoolId, String groupId) async {
     try {
@@ -762,35 +919,28 @@ class ScannerService {
           .select('id_escuela')
           .eq('id', groupId)
           .maybeSingle();
-
       if (response == null) {
         return {
           'isValid': false,
-          'error': 'El grupo del estudiante no existe en el sistema',
+          'error': 'El grupo del estudiante no existe en el sistema'
         };
       }
-
-      final String? groupSchoolId = response['id_escuela']?.toString();
-      if (groupSchoolId != studentSchoolId) {
+      if ((response['id_escuela']?.toString() ?? '') != studentSchoolId) {
         return {
           'isValid': false,
           'error': 'El grupo del estudiante no pertenece a la escuela correcta',
         };
       }
-
-      return {
-        'isValid': true,
-      };
+      return {'isValid': true};
     } catch (e) {
       debugPrint('Error validating student group consistency: $e');
       return {
         'isValid': false,
-        'error': 'Error interno al validar grupo del estudiante: $e',
+        'error': 'Error interno al validar grupo del estudiante: $e'
       };
     }
   }
 
-  /// Validate turno belongs to the same school as student
   Future<Map<String, dynamic>> _validateTurnoSchoolConsistency(
       String turnoId, String studentSchoolId) async {
     try {
@@ -799,30 +949,24 @@ class ScannerService {
           .select('id_escuela')
           .eq('id', turnoId)
           .maybeSingle();
-
       if (response == null) {
         return {
           'isValid': false,
-          'error': 'El turno del estudiante no existe en el sistema',
+          'error': 'El turno del estudiante no existe en el sistema'
         };
       }
-
-      final String? turnoSchoolId = response['id_escuela']?.toString();
-      if (turnoSchoolId != studentSchoolId) {
+      if ((response['id_escuela']?.toString() ?? '') != studentSchoolId) {
         return {
           'isValid': false,
           'error': 'El turno del estudiante no pertenece a la escuela correcta',
         };
       }
-
-      return {
-        'isValid': true,
-      };
+      return {'isValid': true};
     } catch (e) {
       debugPrint('Error validating turno school consistency: $e');
       return {
         'isValid': false,
-        'error': 'Error interno al validar turno del estudiante: $e',
+        'error': 'Error interno al validar turno del estudiante: $e'
       };
     }
   }

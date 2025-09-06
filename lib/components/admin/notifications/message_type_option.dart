@@ -1,16 +1,18 @@
+// components/admin/notifications/message_type_option.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../app/app_theme.dart';
+import '../../../models/models.dart'; // <- para TipoNotificacion
 
 class MessageTypeOption extends StatelessWidget {
   final String title;
-  final String value;
+  final TipoNotificacion value; // <- antes String
   final IconData icon;
   final Color color;
   final String description;
   final Size screenSize;
-  final String selectedType;
-  final Function(String) onSelect;
+  final TipoNotificacion selectedType; // <- antes String
+  final Function(TipoNotificacion) onSelect; // <- callback tipado
 
   const MessageTypeOption({
     super.key,
@@ -94,15 +96,9 @@ class MessageTypeOption extends StatelessWidget {
             if (isSelected)
               Container(
                 padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.check_rounded,
-                  color: Colors.white,
-                  size: screenSize.height * 0.018,
-                ),
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                child: Icon(Icons.check_rounded,
+                    color: Colors.white, size: screenSize.height * 0.018),
               ),
           ],
         ),

@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../providers/theme_provider.dart';
@@ -92,6 +93,7 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
     _telefonoFocusNode.dispose();
     _emailFocusNode.dispose();
     _sitioWebFocusNode.dispose();
+
     super.dispose();
   }
 
@@ -106,6 +108,40 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
     }
   }
 
+  /// Espera breve y defensiva a que el UserProvider resuelva escuelaId
+  /// Espera más generosa a que el UserProvider resuelva escuelaId (primer arranque)
+  Future<String?> _waitForEscuelaId(UserProvider up,
+      {Duration timeout = const Duration(seconds: 8)}) async {
+    final start = DateTime.now();
+    String? id = up.currentUser?.escuelaId;
+
+    while ((id == null || id.isEmpty) &&
+        DateTime.now().difference(start) < timeout) {
+      await Future.delayed(const Duration(milliseconds: 150));
+      id = await up.ensureEscuelaIdLoaded();
+      id ??= up.currentUser?.escuelaId;
+    }
+    return id;
+  }
+
+  /// Intenta cargar la escuela con reintentos y backoff
+  Future<Escuela?> _loadSchoolWithRetry(SchoolProvider sp, String escuelaId,
+      {int maxAttempts = 3}) async {
+    int attempt = 0;
+    Duration wait = const Duration(milliseconds: 350);
+
+    while (attempt < maxAttempts) {
+      final school = await sp.loadSchool(escuelaId);
+      if (school != null) return school;
+
+      // Si hubo error de red/latencia, espera y reintenta
+      await Future.delayed(wait);
+      wait *= 2;
+      attempt++;
+    }
+    return null;
+  }
+
   Future<void> _loadSchoolData() async {
     setState(() => _isLoading = true);
     try {
@@ -114,17 +150,70 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
           Provider.of<SchoolProvider>(context, listen: false);
       final l10n = AppLocalizations.of(context);
 
-      // Asegura escuelaId
-      final escuelaId = await userProvider.ensureEscuelaIdLoaded();
-
+      // 1) Espera (más larga) por escuelaId
+      final escuelaId = await _waitForEscuelaId(userProvider);
       if (escuelaId == null || escuelaId.isEmpty) {
         _showErrorDialog(l10n.error, l10n.noAssociatedSchool);
         return;
       }
 
-      final school = await schoolProvider.loadSchool(escuelaId);
+      // 2) Carga con reintentos (absorbe el lag del primer login)
+      Escuela? school = await _loadSchoolWithRetry(schoolProvider, escuelaId);
+
+      // 3) Si sigue null y es admin → no mostrar diálogo; abrir formulario vacío con defaults
+      final isAdmin = userProvider.isAdmin();
+      if (school == null && isAdmin) {
+        if (!mounted) return;
+        // Estado “suave”: formulario en blanco, sin modal de error
+        setState(() {
+          _nombreController.text = '';
+          _codigoController.text = '';
+          _direccionController.text = '';
+          _telefonoController.text = '';
+          _emailController.text = userProvider.currentUser?.email ?? '';
+          _sitioWebController.text = '';
+          _descripcionController.text = '';
+          _selectedTipo = TipoEscuela.publica;
+
+          _hasPreescolar = false;
+          _hasPrimaria = true; // default para no dejar vacío
+          _hasSecundaria = false;
+          _hasBachillerato = false;
+          _updateSelectedNivelesFromBooleans();
+
+          _yearFoundedController.text =
+              DateTime.now().year.toString(); // placeholder
+        });
+
+        // Mensaje no intrusivo (SnackBar) en lugar de diálogo
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                l10n.couldNotGetSchoolInfo, // Mantén tu string
+                style: AppTheme.getCaption(MediaQuery.of(context).size)
+                    .copyWith(color: Colors.white, fontWeight: FontWeight.w600),
+              ),
+              backgroundColor: AppTheme.warningColor,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(
+                  AppTheme.getSmallRadius(MediaQuery.of(context).size),
+                ),
+              ),
+            ),
+          );
+        }
+        return; // ✅ No abrimos diálogo
+      }
+
+      // 4) Caso normal: school cargada
       if (school == null) {
-        _showErrorDialog(l10n.error, l10n.errorLoadingSchoolInfo);
+        // Usuario no admin (padre/tutor) o error real persistente
+        final msg = (schoolProvider.error?.isNotEmpty ?? false)
+            ? '${l10n.errorLoadingSchoolInfo}: ${schoolProvider.error}'
+            : l10n.couldNotGetSchoolInfo;
+        _showErrorDialog(l10n.error, msg);
         return;
       }
 
@@ -177,8 +266,18 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
         AppTheme.getMediumPadding(screenSize) * 2 +
         64; // alto aproximado del TabBar
 
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
+    // Render defensivo: mientras el UserProvider se hidrata, muestra loader y evita diálogos prematuros.
+    return Consumer3<ThemeProvider, UserProvider, SchoolProvider>(
+      builder: (context, themeProvider, userProvider, schoolProvider, child) {
+        final userLoading = userProvider.isLoadingUser == true;
+
+        if (userLoading) {
+          return Scaffold(
+            backgroundColor: AppTheme.getBackgroundColor(context),
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+
         return Scaffold(
           backgroundColor: AppTheme.getBackgroundColor(context),
           body: GestureDetector(
@@ -403,8 +502,9 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
     if (_direccionController.text.trim().isEmpty) missing.add(l10n.address);
     if (_telefonoController.text.trim().isEmpty) missing.add(l10n.phone);
     if (_emailController.text.trim().isEmpty) missing.add(l10n.email);
-    if (_yearFoundedController.text.trim().isEmpty)
+    if (_yearFoundedController.text.trim().isEmpty) {
       missing.add(l10n.foundedYear);
+    }
 
     if (missing.isNotEmpty) {
       _showErrorDialog(
@@ -420,7 +520,8 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
       final schoolProvider =
           Provider.of<SchoolProvider>(context, listen: false);
 
-      final escuelaId = userProvider.currentUser?.escuelaId;
+      // Unificar con el flujo de carga: usa ensureEscuelaIdLoaded
+      final escuelaId = await userProvider.ensureEscuelaIdLoaded();
       if (escuelaId == null || escuelaId.isEmpty) {
         _showErrorDialog(l10n.error, l10n.noAssociatedSchool);
         return;

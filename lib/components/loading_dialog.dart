@@ -50,15 +50,17 @@ class LoadingDialog extends StatelessWidget {
   // -------- Manejo idempotente --------
   static bool _isShowing = false;
 
-  static void show(
+  static bool get isVisible => _isShowing;
+
+  static Future<void> show(
     BuildContext context, {
     required String message,
     Color? color,
-  }) {
+  }) async {
     if (_isShowing) return;
     _isShowing = true;
 
-    showGeneralDialog(
+    await showGeneralDialog(
       context: context,
       barrierDismissible: false,
       barrierLabel: _routeName,
@@ -74,18 +76,18 @@ class LoadingDialog extends StatelessWidget {
   }
 
   static void hide(BuildContext context) {
-    if (!_isShowing) return; // nada que cerrar
+    if (!_isShowing) return;
+    _isShowing = false;
+
     try {
       final navigator = Navigator.of(context, rootNavigator: true);
-      // Quita únicamente el diálogo si está arriba de la pila
-      navigator.popUntil((route) {
-        // Detente cuando el route de arriba YA NO sea el loading
-        return route.settings.name != _routeName;
-      });
+      if (navigator.canPop()) {
+        final topRoute = navigator.widget;
+        // Forzamos a cerrar solo si el diálogo está visible
+        navigator.pop();
+      }
     } catch (e) {
       debugPrint('Error hiding loading dialog: $e');
-    } finally {
-      _isShowing = false;
     }
   }
 }

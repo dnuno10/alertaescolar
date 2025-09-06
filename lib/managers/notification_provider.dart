@@ -1,13 +1,15 @@
-import 'package:alertaescolar/services/notification_service.dart';
+import 'package:alertaescolar/services/notification_send_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
 
 class NotificationProvider extends ChangeNotifier {
+  final SupabaseClient _supabase = Supabase.instance.client;
+  final NotificationSendService _sendService = NotificationSendService();
+
   List<Notificacion> _notifications = [];
   bool _isLoading = false;
   String? _error;
-  final SupabaseClient _supabase = Supabase.instance.client;
 
   List<Notificacion> get notifications => List.unmodifiable(_notifications);
   List<Notificacion> get unreadNotifications => _notifications
@@ -19,119 +21,140 @@ class NotificationProvider extends ChangeNotifier {
   int get unreadCount => unreadNotifications.length;
   bool get hasNotifications => _notifications.isNotEmpty;
 
-  // Keep mock service for backward compatibility
-  final NotificationService _notificationService = NotificationService();
-
-  // Load real notifications for current user's children
-  Future<void> loadNotifications() async {
+  /// Carga notificaciones para los hijos del usuario autenticado (tutor).
+  Future<void> loadNotifications({int limit = 300}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      // Get current authenticated user
       final currentUser = _supabase.auth.currentUser;
       if (currentUser == null) {
         throw Exception('Usuario no autenticado');
       }
 
-      // First, get the children IDs for this user
-      final childrenResponse = await _supabase
+      // 1) Ids de alumnos vinculados a este tutor
+      final childrenRows = await _supabase
           .from('alumno_tutores')
           .select('id_alumno')
           .eq('id_tutor', currentUser.id);
 
-      if (childrenResponse.isEmpty) {
+      if (childrenRows.isEmpty) {
         _notifications = [];
+        _isLoading = false;
+        notifyListeners();
         return;
       }
 
-      final childrenIds = childrenResponse
-          .map<String>((record) => record['id_alumno'] as String)
+      final childrenIds = childrenRows
+          .map<String>((r) => (r['id_alumno'] ?? '').toString())
+          .where((s) => s.isNotEmpty)
           .toList();
 
-      // Then, fetch notifications for these children
-      final response = await _supabase
-          .from('notificaciones')
-          .select('''
-            *,
-            alumnos:id_alumno (
-              nombre,
-              matricula,
-              id_grupo,
-              id_turno,
-              grupos:id_grupo (
-                grupo,
-                nivel_educativo
-              ),
-              turnos:id_turno (
-                turno
-              )
-            )
-          ''')
-          .inFilter('id_alumno', childrenIds)
-          .order('fecha_registro', ascending: false);
+      // 2) Notificaciones de esos alumnos (filtros ANTES de order/limit)
+      // 2) Notificaciones de esos alumnos (filtros ANTES de order/limit)
+      var query = _supabase.from('notificaciones').select(r'''
+  id,
+  id_alumno,
+  id_admin,
+  titulo,
+  mensaje,
+  estado,
+  fecha_registro,
+  tipo_notificacion,
+  tipo,
+  datos_adicionales,
+  alumnos:id_alumno (
+    nombre,
+    matricula,
+    id_grupo,
+    id_turno,
+    grupos:id_grupo (
+      grupo,
+      nivel_educativo
+    ),
+    turnos:id_turno (
+      turno
+    )
+  )
+''');
 
-      // Convert to our Notificacion model
-      _notifications = _mapNotificationsFromDb(response);
+      query = query.inFilter('id_alumno', childrenIds);
 
-      debugPrint('Loaded $_notifications notifications for user');
+// Intentamos ordenar por fecha_registro; si falla, ordenaremos localmente tras mapear.
+      List rows;
+      try {
+        rows =
+            await query.order('fecha_registro', ascending: false).limit(limit);
+      } catch (_) {
+        rows = await query.limit(limit);
+      }
+
+      _notifications = _mapNotificationsFromDb(rows);
+
+// Si no pudimos ordenar en la DB, ordenamos localmente.
+      _notifications.sort((a, b) => b.fechaHora.compareTo(a.fechaHora));
+
+      debugPrint('Loaded ${_notifications.length} notifications for user');
     } catch (e) {
       debugPrint('Error loading notifications: $e');
       _error = e.toString();
-
-      // Fallback to mock data if error
-      try {
-        _notifications = await _notificationService.getNotifications();
-      } catch (_) {
-        // If even mock fails, keep empty list
-        _notifications = [];
-      }
+      // En error dejamos la lista vacía (ya no usamos mock/legacy service)
+      _notifications = [];
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Map database response to Notificacion model
+  /// Mapea filas de Supabase → modelo Notificacion (esquema actual).
   List<Notificacion> _mapNotificationsFromDb(List<dynamic> data) {
-    return data.map((record) {
-      final fechaRegistro = DateTime.parse(record['fecha_registro']);
-      final tipoNotificacion = record['tipo_notificacion'] ?? '';
-      final estado = record['estado'] == EstadoNotificacion.leida.name
-          ? EstadoNotificacion.leida
-          : EstadoNotificacion.nueva;
+    return data.map<Notificacion>((record) {
+      // Fecha: preferimos fecha_registro; si no, created_at; si no, ahora.
+      final fechaStr =
+          (record['fecha_registro'] ?? record['created_at'] ?? '').toString();
+      final fecha = DateTime.tryParse(fechaStr) ?? DateTime.now();
 
-      // Additional data to include in datosAdicionales
-      final Map<String, dynamic> additionalData = {
-        'tipo_notificacion': tipoNotificacion,
-        'id_alumno': record['id_alumno'],
-        'id_admin': record['id_admin'],
-        'tipo_comunicado': record['tipo_comunicado'],
-        'prioridad_comunicado': record['prioridad_comunicado'],
-        'destinatarios_comunicado': record['destinatarios_comunicado'],
-        'alumno_nombre': record['alumnos']?['nombre'] ?? 'Estudiante',
-        'alumno_grupo': record['alumnos']?['grupos']?['grupo'] ?? '',
-        'alumno_nivel_educativo':
-            record['alumnos']?['grupos']?['nivel_educativo'] ?? '',
-      };
+      // Tipo: preferimos tipo_notificacion; si no, tipo.
+      final tipoDb =
+          (record['tipo_notificacion'] ?? record['tipo'] ?? '').toString();
+
+      final estadoDb = (record['estado'] ?? '').toString().toLowerCase();
+
+      final alumnos = record['alumnos'] as Map<String, dynamic>?;
+      final grupos = alumnos?['grupos'] as Map<String, dynamic>?;
+      final turnos = alumnos?['turnos'] as Map<String, dynamic>?;
+
+      final Map<String, dynamic> datosAd = (record['datos_adicionales'] is Map)
+          ? Map<String, dynamic>.from(record['datos_adicionales'])
+          : <String, dynamic>{};
+
+      datosAd.addAll({
+        'alumno_nombre': alumnos?['nombre'] ?? '',
+        'alumno_matricula': alumnos?['matricula'] ?? '',
+        'alumno_grupo': grupos?['grupo'] ?? '',
+        'alumno_nivel_educativo': grupos?['nivel_educativo'] ?? '',
+        'alumno_turno': turnos?['turno'] ?? '',
+      });
 
       return Notificacion(
-        id: record['id'],
-        alumnoId: record['id_alumno'],
-        adminId: record['id_admin'],
-        titulo: record['titulo'] ?? '',
-        mensaje: record['mensaje'] ?? '',
-        tipo: _mapTipoNotificacion(tipoNotificacion),
-        estado: estado,
-        fechaHora: fechaRegistro,
-        datosAdicionales: additionalData,
+        id: (record['id'] ?? '').toString(),
+        alumnoId: (record['id_alumno'] ?? '').toString(),
+        adminId: (record['id_admin'] ?? '').toString(),
+        titulo: (record['titulo'] ?? '') as String,
+        mensaje: (record['mensaje'] ?? '') as String,
+        tipo: _mapTipoFromDb(tipoDb),
+        estado: estadoDb == EstadoNotificacion.leida.name
+            ? EstadoNotificacion.leida
+            : EstadoNotificacion.nueva,
+        fechaHora: fecha,
+        datosAdicionales: datosAd,
       );
     }).toList();
   }
 
-  // Map string tipo_notificacion to TipoNotificacion enum
-  TipoNotificacion _mapTipoNotificacion(String tipo) {
+  /// Mapea `tipo` (DB) → enum.
+  TipoNotificacion _mapTipoFromDb(String tipo) {
     switch (tipo.toLowerCase()) {
       case 'entrada':
         return TipoNotificacion.entrada;
@@ -139,40 +162,38 @@ class NotificationProvider extends ChangeNotifier {
         return TipoNotificacion.salida;
       case 'retraso':
         return TipoNotificacion.retraso;
+      case 'ausencia':
+        return TipoNotificacion.ausencia;
       case 'permisoespecial':
         return TipoNotificacion.permisoEspecial;
       case 'comunicado':
         return TipoNotificacion.comunicado;
       default:
-        return TipoNotificacion
-            .entrada; // Defaulting to entrada instead of otro
+        // Fallback seguro
+        return TipoNotificacion.comunicado;
     }
   }
 
   Future<void> markAsRead(String notificationId) async {
     try {
-      // Update the notification state in the database
       await _supabase.from('notificaciones').update(
           {'estado': EstadoNotificacion.leida.name}).eq('id', notificationId);
 
-      // Also update in the local state
-      final index = _notifications.indexWhere((n) => n.id == notificationId);
-      if (index != -1) {
-        _notifications[index] = _notifications[index].copyWith(
-          estado: EstadoNotificacion.leida,
-        );
+      final i = _notifications.indexWhere((n) => n.id == notificationId);
+      if (i != -1) {
+        _notifications[i] =
+            _notifications[i].copyWith(estado: EstadoNotificacion.leida);
         notifyListeners();
       }
     } catch (e) {
       debugPrint('Error marking notification as read: $e');
       _error = e.toString();
 
-      // Still update local state if database update fails
-      final index = _notifications.indexWhere((n) => n.id == notificationId);
-      if (index != -1) {
-        _notifications[index] = _notifications[index].copyWith(
-          estado: EstadoNotificacion.leida,
-        );
+      // Aún actualizamos localmente para mantener UX responsiva
+      final i = _notifications.indexWhere((n) => n.id == notificationId);
+      if (i != -1) {
+        _notifications[i] =
+            _notifications[i].copyWith(estado: EstadoNotificacion.leida);
         notifyListeners();
       }
     }
@@ -180,24 +201,22 @@ class NotificationProvider extends ChangeNotifier {
 
   Future<void> markAllAsRead() async {
     try {
-      // Get current authenticated user
       final currentUser = _supabase.auth.currentUser;
       if (currentUser == null) {
         throw Exception('Usuario no autenticado');
       }
 
-      // First, get the children IDs for this user
-      final childrenResponse = await _supabase
+      final childrenRows = await _supabase
           .from('alumno_tutores')
           .select('id_alumno')
           .eq('id_tutor', currentUser.id);
 
-      if (childrenResponse.isNotEmpty) {
-        final childrenIds = childrenResponse
-            .map<String>((record) => record['id_alumno'] as String)
+      if (childrenRows.isNotEmpty) {
+        final childrenIds = childrenRows
+            .map<String>((r) => (r['id_alumno'] ?? '').toString())
+            .where((s) => s.isNotEmpty)
             .toList();
 
-        // Update all unread notifications for these children
         await _supabase
             .from('notificaciones')
             .update({'estado': EstadoNotificacion.leida.name})
@@ -205,7 +224,6 @@ class NotificationProvider extends ChangeNotifier {
             .eq('estado', EstadoNotificacion.nueva.name);
       }
 
-      // Update local state
       _notifications = _notifications
           .map((n) => n.copyWith(estado: EstadoNotificacion.leida))
           .toList();
@@ -213,8 +231,6 @@ class NotificationProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error marking all notifications as read: $e');
       _error = e.toString();
-
-      // Still update local state if database update fails
       _notifications = _notifications
           .map((n) => n.copyWith(estado: EstadoNotificacion.leida))
           .toList();
@@ -231,22 +247,22 @@ class NotificationProvider extends ChangeNotifier {
   }
 
   List<Notificacion> getRecentNotifications({int limit = 5}) {
-    final sorted = List<Notificacion>.from(_notifications);
-    sorted.sort((a, b) => b.fechaHora.compareTo(a.fechaHora));
+    final sorted = List<Notificacion>.from(_notifications)
+      ..sort((a, b) => b.fechaHora.compareTo(a.fechaHora));
     return sorted.take(limit).toList();
   }
 
   Notificacion? getNotificationById(String id) {
     try {
       return _notifications.firstWhere((n) => n.id == id);
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }
 
   Future<void> deleteNotification(String notificationId) async {
     try {
-      await _notificationService.deleteNotification(notificationId);
+      await _sendService.deleteNotification(notificationId);
       _notifications.removeWhere((n) => n.id == notificationId);
       notifyListeners();
     } catch (e) {
@@ -255,24 +271,20 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
-  // Get notification statistics for a student within a period
+  /// Estadísticas rápidas por alumno en una ventana de días.
   Map<String, int> getNotificationStatsByStudent(String studentId, int days) {
     final now = DateTime.now();
     final startDate = now.subtract(Duration(days: days));
 
-    final notifications = _notifications
-        .where((n) =>
-            n.alumnoId == studentId &&
-            n.fechaHora.isAfter(startDate) &&
-            n.fechaHora.isBefore(now))
-        .toList();
+    final items = _notifications.where((n) {
+      return n.alumnoId == studentId &&
+          n.fechaHora.isAfter(startDate) &&
+          n.fechaHora.isBefore(now);
+    }).toList();
 
-    int entries = 0;
-    int lateArrivals = 0;
-    int exits = 0;
-
-    for (var notification in notifications) {
-      switch (notification.tipo) {
+    int entries = 0, lateArrivals = 0, exits = 0;
+    for (final n in items) {
+      switch (n.tipo) {
         case TipoNotificacion.entrada:
           entries++;
           break;
@@ -283,13 +295,10 @@ class NotificationProvider extends ChangeNotifier {
           exits++;
           break;
         default:
-          // Skip other notification types
           break;
       }
     }
 
-    // Calculate attendance rate based on school days
-    // Assuming 5 school days per week
     final schoolDays = (days / 7 * 5).ceil();
     final attendanceCount = entries + lateArrivals;
     final attendanceRate = schoolDays > 0
@@ -305,45 +314,33 @@ class NotificationProvider extends ChangeNotifier {
     };
   }
 
-  // Get period comparison for attendance rate change
+  /// Cambio de tasa de asistencia entre dos periodos consecutivos del mismo tamaño.
   double getAttendanceRateChange(String studentId, int days) {
     final now = DateTime.now();
-    final currentPeriodStart = now.subtract(Duration(days: days));
-    final previousPeriodStart =
-        currentPeriodStart.subtract(Duration(days: days));
+    final currentStart = now.subtract(Duration(days: days));
+    final previousStart = currentStart.subtract(Duration(days: days));
 
-    // Current period stats
     final currentStats = getNotificationStatsByStudent(studentId, days);
 
-    // Calculate previous period stats manually
-    final previousPeriodNotifications = _notifications
-        .where((n) =>
-            n.alumnoId == studentId &&
-            n.fechaHora.isAfter(previousPeriodStart) &&
-            n.fechaHora.isBefore(currentPeriodStart))
-        .toList();
+    final prevItems = _notifications.where((n) {
+      return n.alumnoId == studentId &&
+          n.fechaHora.isAfter(previousStart) &&
+          n.fechaHora.isBefore(currentStart);
+    }).toList();
 
-    int previousEntries = 0;
-    int previousLateArrivals = 0;
-
-    for (var notification in previousPeriodNotifications) {
-      if (notification.tipo == TipoNotificacion.entrada) {
-        previousEntries++;
-      } else if (notification.tipo == TipoNotificacion.retraso) {
-        previousLateArrivals++;
-      }
+    int prevEntries = 0, prevLate = 0;
+    for (final n in prevItems) {
+      if (n.tipo == TipoNotificacion.entrada) prevEntries++;
+      if (n.tipo == TipoNotificacion.retraso) prevLate++;
     }
 
-    // Calculate previous attendance rate
     final schoolDays = (days / 7 * 5).ceil();
-    final previousAttendanceCount = previousEntries + previousLateArrivals;
-    final previousAttendanceRate = schoolDays > 0
-        ? ((previousAttendanceCount / schoolDays) * 100).clamp(0, 100)
+    final prevAttendanceCount = prevEntries + prevLate;
+    final prevAttendanceRate = schoolDays > 0
+        ? ((prevAttendanceCount / schoolDays) * 100).clamp(0, 100)
         : 0;
 
-    // Calculate change
-    return (currentStats['attendanceRate']! - previousAttendanceRate)
-        .toDouble();
+    return (currentStats['attendanceRate']! - prevAttendanceRate).toDouble();
   }
 
   void clearAllData() {

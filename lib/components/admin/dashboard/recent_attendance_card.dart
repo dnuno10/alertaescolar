@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -19,33 +20,81 @@ class RecentAttendanceCard extends StatefulWidget {
 }
 
 class _RecentAttendanceCardState extends State<RecentAttendanceCard> {
+  final _supabase = Supabase.instance.client;
+
   List<Map<String, dynamic>> _recentNotifications = [];
   bool _isLoading = true;
   String? _error;
   bool _isInitialized = false;
 
-  @override
-  void initState() {
-    super.initState();
-    // Don't load data here - move to didChangeDependencies
-  }
+  RealtimeChannel? _realtimeChannel;
+  Timer? _debounceReloadTimer;
+  String? _escuelaIdInUse;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_isInitialized) {
       _isInitialized = true;
-      _loadRecentNotifications();
+      _setupAndLoad();
     }
+  }
+
+  Future<void> _setupAndLoad() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final escuelaId = userProvider.currentUser?.escuelaId;
+
+    if (escuelaId == null) {
+      final l10n = AppLocalizations.of(context);
+      setState(() {
+        _error = l10n.couldNotGetUserSchool;
+        _isLoading = false;
+      });
+      return;
+    }
+
+    _escuelaIdInUse = escuelaId;
+
+    // 1) Carga inicial
+    await _loadRecentNotifications();
+
+    // 2) Suscripción a Realtime (si ya existía, la limpiamos)
+    await _subscribeToRealtime();
+  }
+
+  Future<void> _subscribeToRealtime() async {
+    // Limpia suscripción previa si la hubiera
+    if (_realtimeChannel != null) {
+      try {
+        await _supabase.removeChannel(_realtimeChannel!);
+      } catch (_) {}
+      _realtimeChannel = null;
+    }
+
+    // Suscríbete a cambios de la tabla notificaciones
+    _realtimeChannel = _supabase.channel('notificaciones-recent-card')
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'notificaciones',
+        // Si tu tabla notificaciones tiene un campo 'alumno_id' y quieres reducir eventos,
+        // podrías filtrar aquí por fecha de hoy o por algún criterio.
+        // filter: PostgresChangeFilter.eq('alumno_id', '...'),
+        callback: (payload) {
+          // Pequeño debounce para agrupar ráfagas de eventos
+          _debounceReloadTimer?.cancel();
+          _debounceReloadTimer = Timer(const Duration(milliseconds: 250), () {
+            if (mounted) _loadRecentNotifications();
+          });
+        },
+      )
+      ..subscribe();
   }
 
   Future<void> _loadRecentNotifications() async {
     final l10n = AppLocalizations.of(context);
     try {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      final escuelaId = userProvider.currentUser?.escuelaId;
-
-      if (escuelaId == null) {
+      if (_escuelaIdInUse == null) {
         setState(() {
           _error = l10n.couldNotGetUserSchool;
           _isLoading = false;
@@ -53,10 +102,13 @@ class _RecentAttendanceCardState extends State<RecentAttendanceCard> {
         return;
       }
 
-      final supabase = Supabase.instance.client;
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
 
-      // Get the last 3 attendance notifications
-      final response = await supabase
+      // Consulta de las 3 más recientes
+      final response = await _supabase
           .from('notificaciones')
           .select('''
             *,
@@ -70,22 +122,35 @@ class _RecentAttendanceCardState extends State<RecentAttendanceCard> {
               )
             )
           ''')
-          .eq('alumnos.id_escuela', escuelaId)
+          .eq('alumnos.id_escuela', _escuelaIdInUse!)
           .inFilter('tipo_notificacion', ['entrada', 'salida', 'retraso'])
           .order('fecha_registro', ascending: false)
           .limit(3);
 
+      if (!mounted) return;
       setState(() {
         _recentNotifications = List<Map<String, dynamic>>.from(response);
         _isLoading = false;
       });
     } catch (e) {
       debugPrint('Error loading recent notifications: $e');
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _debounceReloadTimer?.cancel();
+    if (_realtimeChannel != null) {
+      try {
+        _supabase.removeChannel(_realtimeChannel!);
+      } catch (_) {}
+    }
+    super.dispose();
   }
 
   @override
@@ -128,7 +193,8 @@ class _RecentAttendanceCardState extends State<RecentAttendanceCard> {
           decoration: BoxDecoration(
             color: AppTheme.getCardColor(context),
             borderRadius: BorderRadius.circular(
-                AppTheme.getLargeRadius(widget.screenSize)),
+              AppTheme.getLargeRadius(widget.screenSize),
+            ),
             boxShadow: [
               BoxShadow(
                 color: AppTheme.getShadowColor(context),
@@ -353,14 +419,13 @@ class _AttendanceItem extends StatelessWidget {
     final difference = now.difference(timestamp);
 
     if (difference.inMinutes < 1) {
-      return l10n.timeAgoNow; // Replaced hardcoded text
+      return l10n.timeAgoNow;
     } else if (difference.inMinutes < 60) {
-      return l10n
-          .timeAgoMinutes(difference.inMinutes); // Replaced hardcoded text
+      return l10n.timeAgoMinutes(difference.inMinutes);
     } else if (difference.inHours < 24) {
-      return l10n.timeAgoHours(difference.inHours); // Replaced hardcoded text
+      return l10n.timeAgoHours(difference.inHours);
     } else {
-      return l10n.timeAgoDays(difference.inDays); // Replaced hardcoded text
+      return l10n.timeAgoDays(difference.inDays);
     }
   }
 }

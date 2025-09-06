@@ -104,30 +104,43 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
     try {
       final supabase = Supabase.instance.client;
 
-      // Query notifications with student data, ensuring only students from the same school
-      // Only include attendance-related notifications (entrada, salida, retraso)
+      // Solo columnas que existen en notificaciones + join a alumnos
       final response = await supabase
           .from('notificaciones')
-          .select('''
-            *,
-            alumnos!inner(
-              id,
-              nombre,
-              matricula,
-              id_grupo,
-              id_turno,
-              id_escuela,
-              grupos!inner(
-                grupo,
-                nivel_educativo
-              ),
-              turnos!inner(
-                turno
-              )
+          .select(r'''
+          id,
+          id_alumno,
+          id_admin,
+          titulo,
+          mensaje,
+          estado,
+          fecha_registro,
+          tipo_notificacion,
+          tipo,
+          datos_adicionales,
+          alumnos!inner(
+            id,
+            nombre,
+            matricula,
+            id_grupo,
+            id_turno,
+            id_escuela,
+            grupos!inner(
+              grupo,
+              nivel_educativo
+            ),
+            turnos!inner(
+              turno
             )
-          ''')
+          )
+        ''')
+          // Asegura pertenencia a la escuela vía el join
           .eq('alumnos.id_escuela', escuelaId)
-          .inFilter('tipo_notificacion', ['entrada', 'salida', 'retraso'])
+          // Acepta ambas columnas de tipo (tipo_notificacion | tipo)
+          .or(
+            'tipo.eq.entrada,tipo.eq.salida,tipo.eq.retraso,'
+            'tipo_notificacion.eq.entrada,tipo_notificacion.eq.salida,tipo_notificacion.eq.retraso',
+          )
           .order('fecha_registro', ascending: false);
 
       setState(() {
@@ -193,9 +206,10 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
       // Filter by access type (entrada, salida, retraso)
       if (_selectedAccess != 'all') {
         filtered = filtered.where((notification) {
-          final tipoNotificacion =
-              notification['tipo_notificacion']?.toString() ?? '';
-          return tipoNotificacion == _selectedAccess;
+          final tipo =
+              (notification['tipo_notificacion'] ?? notification['tipo'] ?? '')
+                  .toString();
+          return tipo == _selectedAccess;
         }).toList();
       }
 
@@ -518,8 +532,11 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
   Widget _buildNotificationCard(BuildContext context, Size screenSize,
       Map<String, dynamic> notification) {
     final student = notification['alumnos'];
-    final tipoNotificacion = notification['tipo_notificacion'] ?? '';
+    final tipoNotificacion =
+        (notification['tipo_notificacion'] ?? notification['tipo'] ?? '')
+            .toString();
     final fechaRegistro = DateTime.parse(notification['fecha_registro']);
+
     final horaAmPm = TimeFormat.format24to12(
         '${fechaRegistro.hour.toString().padLeft(2, '0')}:${fechaRegistro.minute.toString().padLeft(2, '0')}');
 

@@ -11,13 +11,14 @@ class NavHeader extends StatelessWidget {
 
     return SliverAppBar(
       floating: false,
-      toolbarHeight: screenSize.width * 0.2,
       pinned: true,
       elevation: 0,
       backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
       leadingWidth: 0,
       leading: const SizedBox.shrink(),
+      // Altura: clamp razonable
+      toolbarHeight: (screenSize.width * 0.2).clamp(56.0, 96.0),
       flexibleSpace: FlexibleSpaceBar(
         titlePadding: EdgeInsets.zero,
         title: Container(
@@ -33,45 +34,53 @@ class NavHeader extends StatelessWidget {
           ),
           child: Padding(
             padding: EdgeInsets.symmetric(
-                horizontal: AppTheme.getMediumPadding(screenSize)),
+              horizontal: AppTheme.getMediumPadding(screenSize),
+            ),
             child: SafeArea(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    children: [
-                      Container(
+              child: Center(
+                child: Row(
+                  children: [
+                    Semantics(
+                      label: 'Regresar',
+                      button: true,
+                      child: Container(
                         width: screenSize.width * 0.1,
                         height: screenSize.width * 0.1,
                         decoration: BoxDecoration(
                           color: AppTheme.accentPurple.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(
-                              AppTheme.getSmallRadius(screenSize)),
+                            AppTheme.getSmallRadius(screenSize),
+                          ),
                         ),
                         child: IconButton(
+                          tooltip: 'Regresar',
                           icon: Icon(
                             Icons.arrow_back_ios_new,
                             color: AppTheme.accentPurple,
                             size: screenSize.width * 0.05,
                           ),
-                          onPressed: () => Navigator.pop(context),
+                          onPressed: () {
+                            FocusScope.of(context).unfocus();
+                            Navigator.maybePop(context);
+                          },
                         ),
                       ),
-                      SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: AppTheme.getH2(screenSize).copyWith(
-                            color: AppTheme.getTextPrimaryColor(context),
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.3,
-                          ),
+                    ),
+                    SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+                    Expanded(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTheme.getH2(screenSize).copyWith(
+                          color: AppTheme.getTextPrimaryColor(context),
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.3,
                         ),
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

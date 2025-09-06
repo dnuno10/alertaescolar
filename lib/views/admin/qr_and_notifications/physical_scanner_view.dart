@@ -1,23 +1,25 @@
+// physical_scanner_view.dart
+import 'dart:async';
+
 import 'package:alertaescolar/components/headers/nav_header.dart';
 import 'package:alertaescolar/managers/user_provider.dart';
+import 'package:alertaescolar/models/usuario.dart';
 import 'package:alertaescolar/services/scanner_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:lottie/lottie.dart';
+
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import 'processing_view.dart';
+import '../../../widgets/custom_snack_bar.dart';
 
-/// Physical Scanner View para lectores de QR conectados
-///
-/// Esta vista está diseñada para funcionar con un lector de QR físico conectado
-/// al dispositivo. No muestra cámara y está preparado para recibir datos reales
-/// del ScannerService.
-///
-/// Para integrar con un lector físico:
-/// 1. Configurar el listener del dispositivo físico
-/// 2. Llamar al método onPhysicalScanReceived(String code) cuando se detecte un código
-/// 3. El resto del procesamiento es automático usando datos reales de la base de datos
+/// Vista para lectores de QR físicos (USB/Bluetooth) que emulan teclado.
+/// - Captura el input de teclado y lo "commitea" al presionar Enter/Tab o tras un
+///   breve periodo de inactividad (buffer).
+/// - Evita reentradas mientras procesa y asegura el enfoque del teclado.
+/// - Integra con `scanner_service.dart` vía `ProcessingView`.
 class PhysicalScannerView extends StatefulWidget {
   final Function(String) onCodeScanned;
   final ScannerAccessType? accessType;
@@ -34,62 +36,51 @@ class PhysicalScannerView extends StatefulWidget {
   State<PhysicalScannerView> createState() => _PhysicalScannerViewState();
 }
 
-class _PhysicalScannerViewState extends State<PhysicalScannerView>
-    with SingleTickerProviderStateMixin {
-  bool _isListening = true;
-  bool _hasScanned = false;
+class _PhysicalScannerViewState extends State<PhysicalScannerView> {
+  // Estado de escucha / proceso
+  bool _listening = true; // UI/animación
+  bool _busy = false; // evita reentradas mientras navegamos
 
-  // Focus node and keyboard input handling for physical scanner
+  // Switch: revisión del alumno (ProcessingView full vs headless)
+  bool _showResultInProcessing = true;
+
+  // Buffer de entrada
   final FocusNode _focusNode = FocusNode();
-  String _currentInput = '';
-  DateTime? _lastInputTime;
+  String _buffer = '';
+  DateTime? _lastKeyAt;
+  Timer? _commitTimer;
 
-  // Single animation controller for smooth listening effect
-  late AnimationController _animationController;
-  late Animation<double> _pulseAnimation;
-  late Animation<double> _scanAnimation;
+  // Rutas Lottie (cámbialas si usas otros nombres)
+  static const String _lottieScan = 'assets/anim/qr_code_scanner.json';
+  static const String _lottieProcessing = 'assets/anim/processing_spinner.json';
 
   @override
   void initState() {
     super.initState();
 
-    // Initialize smooth animations
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
+    // Oculta el teclado del sistema en móviles (no lo necesitamos para scanners)
+    SystemChannels.textInput.invokeMethod('TextInput.hide');
 
-    // Pulse animation for the icon (subtle)
-    _pulseAnimation = Tween<double>(
-      begin: 0.95,
-      end: 1.05,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-
-    // Scan line animation (smooth horizontal movement)
-    _scanAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-
-    // Start animation if listening
-    if (_isListening) {
-      _animationController.repeat(reverse: true);
-    }
-
-    // Request focus for keyboard input with delay to ensure widget is ready
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _focusNode.requestFocus();
-      }
+    // Asegurar foco para recibir eventos del lector
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      _focusNode.requestFocus();
+      try {
+        await context.read<UserProvider>().ensureEscuelaIdLoaded();
+      } catch (_) {}
     });
   }
 
+  @override
+  void dispose() {
+    _commitTimer?.cancel();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  // ========================
+  // Helpers de UI / meta
+  // ========================
   String _getAccessTypeText() {
     final accessType = widget.accessType ?? ScannerAccessType.automatic;
     final isDefaultEntry = widget.isDefaultEntryConfig ?? true;
@@ -119,167 +110,230 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
     }
   }
 
+  // ========================
+  // Entrada del lector (teclado)
+  // ========================
+
   void _onKeyEvent(KeyEvent event) {
-    if (!mounted || !_isListening) return;
+    if (!mounted || _busy) return; // si estamos procesando, ignorar input
+    if (event is! KeyDownEvent) return;
 
-    try {
-      if (event is KeyDownEvent) {
-        final character = event.character;
-        final now = DateTime.now();
+    final key = event.logicalKey;
 
-        // Debug information más detallada
-        debugPrint(
-            'Key event: character="$character", code=${event.logicalKey.keyId}, physicalKey=${event.physicalKey.debugName}');
-
-        // Timeout más largo para computadoras (500ms en lugar de 100ms)
-        if (_lastInputTime != null &&
-            now.difference(_lastInputTime!).inMilliseconds > 500) {
-          debugPrint('Input timeout, resetting current input: $_currentInput');
-          _currentInput = '';
-        }
-        _lastInputTime = now;
-
-        if (character != null) {
-          // Manejo más amplio de caracteres de terminación
-          if (character == '\n' ||
-              character == '\r' ||
-              character == '\r\n' ||
-              event.logicalKey == LogicalKeyboardKey.enter ||
-              event.logicalKey == LogicalKeyboardKey.numpadEnter) {
-            debugPrint('End of input detected, final input: "$_currentInput"');
-            if (_currentInput.isNotEmpty && _currentInput.length >= 3) {
-              _processScannedCode(_currentInput.trim());
-            } else {
-              debugPrint(
-                  'Input too short or empty, ignoring: "$_currentInput"');
-            }
-            _currentInput = '';
-          } else if (character.codeUnitAt(0) >= 32 &&
-              character.codeUnitAt(0) <= 126) {
-            // Solo caracteres ASCII imprimibles
-            if (mounted) {
-              setState(() {
-                _currentInput += character;
-              });
-              debugPrint(
-                  'Building input: "$_currentInput" (length: ${_currentInput.length})');
-            }
-          } else {
-            debugPrint(
-                'Non-printable character ignored: code=${character.codeUnitAt(0)}');
-          }
-        } else {
-          // Manejo de teclas especiales sin representación de carácter
-          if (event.logicalKey == LogicalKeyboardKey.enter ||
-              event.logicalKey == LogicalKeyboardKey.numpadEnter) {
-            debugPrint(
-                'Enter key detected without character, final input: "$_currentInput"');
-            if (_currentInput.isNotEmpty && _currentInput.length >= 3) {
-              _processScannedCode(_currentInput.trim());
-            }
-            _currentInput = '';
-          }
-        }
-
-        // Auto-completar si el input se vuelve muy largo (medida de seguridad)
-        if (_currentInput.length > 100) {
-          debugPrint('Input too long, auto-completing: "$_currentInput"');
-          _processScannedCode(_currentInput.trim());
-          _currentInput = '';
-        }
-      }
-    } catch (e) {
-      debugPrint('Key event error: $e');
-      if (mounted) {
-        setState(() {
-          _currentInput = '';
-        });
-      }
-    }
-  }
-
-  /// Navigate to ProcessingView when QR code is detected
-  Future<void> _processScannedCode(String code) async {
-    if (_hasScanned) return;
-
-    setState(() {
-      _hasScanned = true;
-      _isListening = false;
-    });
-
-    // Pause animation during processing
-    _animationController.stop();
-
-    // Get current user (admin) ID
-    final userProvider = context.read<UserProvider>();
-    final adminId = userProvider.currentUser?.id;
-
-    if (adminId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).unauthenticatedUser),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        ),
-      );
-      _resetForNextScan();
+    // ESC → limpiar buffer
+    if (key == LogicalKeyboardKey.escape) {
+      _clearBuffer();
       return;
     }
 
-    // Navigate to ProcessingView
-    final result = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (context) => ProcessingView(
-          scannedCode: code,
-          adminId: adminId,
-          accessType: widget.accessType ?? ScannerAccessType.automatic,
-          isDefaultEntryConfig: widget.isDefaultEntryConfig ?? true,
-        ),
-      ),
-    );
+    // Backspace → eliminar último caracter si existe
+    if (key == LogicalKeyboardKey.backspace) {
+      if (_buffer.isNotEmpty) {
+        _buffer = _buffer.substring(0, _buffer.length - 1);
+      }
+      return;
+    }
 
-    // Reset scanner for next scan when returning
-    _resetForNextScan();
+    try {
+      final now = DateTime.now();
 
-    // Call the callback if processing was successful
-    if (result == true) {
-      widget.onCodeScanned(code);
+      // Reinicio de buffer si hubo pausa larga (>350ms)
+      if (_lastKeyAt != null &&
+          now.difference(_lastKeyAt!).inMilliseconds > 350) {
+        _buffer = '';
+      }
+      _lastKeyAt = now;
+
+      final ch = event.character;
+
+      // Commit explícito (Enter / NumpadEnter / Tab)
+      final isCommitKey = key == LogicalKeyboardKey.enter ||
+          key == LogicalKeyboardKey.numpadEnter ||
+          key == LogicalKeyboardKey.tab;
+
+      if (isCommitKey || ch == '\n' || ch == '\r') {
+        _commitBuffer();
+        return;
+      }
+
+      // Agregar caracteres imprimibles
+      if (ch != null &&
+          ch.isNotEmpty &&
+          ch.codeUnitAt(0) >= 32 &&
+          ch.codeUnitAt(0) <= 126) {
+        _buffer += ch;
+
+        // Seguridad: si el buffer es demasiado largo → commit
+        if (_buffer.length > 100) {
+          _commitBuffer();
+          return;
+        }
+
+        // Reprogramar commit automático por inactividad (200ms típico HID)
+        _commitTimer?.cancel();
+        _commitTimer = Timer(const Duration(milliseconds: 200), _commitBuffer);
+      }
+      // otras teclas se ignoran
+    } catch (e) {
+      debugPrint('Key event error: $e');
+      _clearBuffer();
     }
   }
 
-  void _resetForNextScan() {
+  void _clearBuffer() {
+    _commitTimer?.cancel();
+    _commitTimer = null;
+    _buffer = '';
+    _lastKeyAt = null;
+  }
+
+  void _commitBuffer() {
+    _commitTimer?.cancel();
+    _commitTimer = null;
+
+    final code = _buffer.replaceAll('\r', '').replaceAll('\n', '').trim();
+    _clearBuffer();
+    if (code.isEmpty || code.length < 3) return;
+    if (_busy) return;
+
+    _busy = true;
+    _setListening(false);
+    _processScannedCode(code);
+  }
+
+  void _setListening(bool value) {
+    if (!mounted) return;
+    setState(() => _listening = value);
+
+    // Recuperar foco para el siguiente escaneo
+    if (value) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _focusNode.requestFocus();
+      });
+    }
+  }
+
+  // ========================
+  // Flujo de proceso
+  // ========================
+
+  Future<void> _processScannedCode(String code) async {
     if (!mounted) return;
 
     try {
-      setState(() {
-        _hasScanned = false;
-        _isListening = true;
-      });
-      _currentInput = '';
+      final userProvider = context.read<UserProvider>();
 
-      // Restart animation smoothly when ready to listen again
-      if (_isListening) {
-        _animationController.repeat(reverse: true);
+      // 1) Usuario autenticado
+      late final Usuario admin;
+      try {
+        admin = userProvider.requireCurrentUser();
+      } catch (_) {
+        if (!mounted) return;
+        CustomSnackBar.show(
+          context: context,
+          message: 'Error: Usuario no autenticado',
+          isError: true,
+        );
+        return;
       }
 
-      // Refocus for next scan
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _focusNode.requestFocus();
+      // 2) Asegurar escuelaId
+      String escuelaId;
+      try {
+        escuelaId = await userProvider.ensureEscuelaIdOrThrow();
+      } catch (_) {
+        await userProvider.ensureEscuelaIdLoaded(); // intento suave
+        final cached = userProvider.currentUser?.escuelaId;
+        if (cached == null || cached.isEmpty) {
+          if (!mounted) return;
+          CustomSnackBar.show(
+            context: context,
+            message: 'No se pudo determinar la escuela del usuario',
+            isError: true,
+          );
+          return;
         }
-      });
+        escuelaId = cached;
+      }
+
+      // 3) Elegir modo según el switch
+      final displayMode = _showResultInProcessing
+          ? ProcessingDisplayMode.full
+          : ProcessingDisplayMode.headless;
+
+      final returnDetailed = !_showResultInProcessing; // si headless => true
+
+      // 4) Navegar a ProcessingView con parámetros completos
+      final result = await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ProcessingView(
+            scannedCode: code,
+            adminId: admin.id,
+            escuelaId: escuelaId,
+            accessType: widget.accessType ?? ScannerAccessType.automatic,
+            isDefaultEntryConfig: widget.isDefaultEntryConfig ?? true,
+            displayMode: displayMode,
+            returnDetailedResult: returnDetailed,
+          ),
+        ),
+      );
+
+      if (!mounted) return;
+
+      // 5) Manejo de retorno
+      if (_showResultInProcessing) {
+        // Modo clásico: ProcessingView ya mostró UI. Solo propagar OK a caller.
+        if (result == true ||
+            (result is ProcessingOutcome && result.success == true)) {
+          widget.onCodeScanned(code);
+        }
+        return; // IMPORTANTE: Salir aquí para NO mostrar CustomSnackBar
+      }
+
+      // Headless: esperamos un ProcessingOutcome para mostrar mensaje
+      if (result is ProcessingOutcome) {
+        final success = result.success;
+        final msg = result.message ??
+            (success
+                ? 'Notificación enviada correctamente.'
+                : 'No se pudo registrar el escaneo.');
+        CustomSnackBar.show(
+          context: context,
+          message: msg,
+          isError: !success,
+        );
+        if (success) widget.onCodeScanned(code);
+      } else if (result == true) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Notificación enviada correctamente.',
+        );
+        widget.onCodeScanned(code);
+      } else {
+        CustomSnackBar.show(
+          context: context,
+          message: 'No se pudo registrar el escaneo (sin detalles).',
+          isError: true,
+        );
+      }
     } catch (e) {
-      debugPrint('Reset for next scan error: $e');
+      debugPrint('Error processing scanned code: $e');
+      if (!mounted) return;
+      CustomSnackBar.show(
+        context: context,
+        message: '${AppLocalizations.of(context).errorProcessingCode}: $e',
+        isError: true,
+      );
+    } finally {
+      // Siempre reiniciar para el siguiente escaneo
+      _busy = false;
+      _setListening(true);
     }
   }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
+  // ========================
+  // UI
+  // ========================
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -293,17 +347,16 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
           physics: const NeverScrollableScrollPhysics(),
           slivers: [
             // Header
-            NavHeader(
-              title: 'Escáner Físico',
-            ),
+            NavHeader(title: 'Escáner Físico'),
 
             // Main content
             SliverFillRemaining(
+              hasScrollBody: false,
               child: Padding(
                 padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
                 child: Column(
                   children: [
-                    // Access type indicator
+                    // Indicador de tipo de acceso
                     Container(
                       padding: EdgeInsets.symmetric(
                         horizontal: AppTheme.getMediumPadding(screenSize),
@@ -342,451 +395,126 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
 
                     SizedBox(height: AppTheme.getLargePadding(screenSize) * 2),
 
-                    // Scanner visualization
+                    // Visualización del "área" de escaneo usando Lottie
                     Expanded(
                       child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            if (_isListening) ...[
-                              // Enhanced animated scanning area with corrected opacity values
-                              Container(
-                                width: 280,
-                                height: 120,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color:
-                                        AppTheme.accentOrange.withOpacity(0.2),
-                                    width: 1,
-                                  ),
+                        child: SizedBox(
+                          width: 340,
+                          // altura generosa para efecto
+                          child: AspectRatio(
+                            aspectRatio: 16 / 9,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
                                   color:
-                                      AppTheme.accentOrange.withOpacity(0.03),
+                                      AppTheme.accentOrange.withOpacity(0.25),
+                                  width: 1,
                                 ),
-                                child: Stack(
-                                  children: [
-                                    // Corner indicators with clamped opacity values
-                                    ...List.generate(4, (index) {
-                                      return AnimatedBuilder(
-                                        animation: _pulseAnimation,
-                                        builder: (context, child) {
-                                          final opacityValue = (0.3 +
-                                                  (0.4 * _pulseAnimation.value))
-                                              .clamp(0.0, 1.0);
-                                          return Positioned(
-                                            top: index < 2 ? 8 : null,
-                                            bottom: index >= 2 ? 8 : null,
-                                            left: index % 2 == 0 ? 8 : null,
-                                            right: index % 2 == 1 ? 8 : null,
-                                            child: Container(
-                                              width: 20,
-                                              height: 20,
-                                              decoration: BoxDecoration(
-                                                border: Border(
-                                                  top: index < 2
-                                                      ? BorderSide(
-                                                          color: AppTheme
-                                                              .accentOrange
-                                                              .withOpacity(
-                                                                  opacityValue),
-                                                          width: 3,
-                                                        )
-                                                      : BorderSide.none,
-                                                  bottom: index >= 2
-                                                      ? BorderSide(
-                                                          color: AppTheme
-                                                              .accentOrange
-                                                              .withOpacity(
-                                                                  opacityValue),
-                                                          width: 3,
-                                                        )
-                                                      : BorderSide.none,
-                                                  left: index % 2 == 0
-                                                      ? BorderSide(
-                                                          color: AppTheme
-                                                              .accentOrange
-                                                              .withOpacity(
-                                                                  opacityValue),
-                                                          width: 3,
-                                                        )
-                                                      : BorderSide.none,
-                                                  right: index % 2 == 1
-                                                      ? BorderSide(
-                                                          color: AppTheme
-                                                              .accentOrange
-                                                              .withOpacity(
-                                                                  opacityValue),
-                                                          width: 3,
-                                                        )
-                                                      : BorderSide.none,
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    }),
-
-                                    // Main scanning line with enhanced effects
-                                    Center(
-                                      child: Container(
-                                        width: 240,
-                                        height: 4,
-                                        decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(30),
-                                          color: AppTheme.accentOrange
-                                              .withOpacity(0.1),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: AppTheme.accentOrange
-                                                  .withOpacity(0.1),
-                                              blurRadius: 8,
-                                              spreadRadius: 1,
-                                            ),
-                                          ],
-                                        ),
-                                        child: AnimatedBuilder(
-                                          animation: _scanAnimation,
-                                          builder: (context, child) {
-                                            return Stack(
-                                              children: [
-                                                // Main scanning beam
-                                                Align(
-                                                  alignment: Alignment(
-                                                    -1 +
-                                                        (2 *
-                                                            _scanAnimation
-                                                                .value),
-                                                    0,
-                                                  ),
-                                                  child: Container(
-                                                    width: 80,
-                                                    height: 4,
-                                                    decoration: BoxDecoration(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              30),
-                                                      gradient: LinearGradient(
-                                                        colors: [
-                                                          AppTheme.accentOrange
-                                                              .withOpacity(0.0),
-                                                          AppTheme.accentOrange
-                                                              .withOpacity(0.3),
-                                                          AppTheme.accentOrange
-                                                              .withOpacity(0.8),
-                                                          AppTheme.accentOrange
-                                                              .withOpacity(0.8),
-                                                          AppTheme.accentOrange
-                                                              .withOpacity(0.3),
-                                                          AppTheme.accentOrange
-                                                              .withOpacity(0.0),
-                                                        ],
-                                                        stops: const [
-                                                          0.0,
-                                                          0.2,
-                                                          0.4,
-                                                          0.6,
-                                                          0.8,
-                                                          1.0
-                                                        ],
-                                                      ),
-                                                      boxShadow: [
-                                                        BoxShadow(
-                                                          color: AppTheme
-                                                              .accentOrange
-                                                              .withOpacity(0.4),
-                                                          blurRadius: 12,
-                                                          spreadRadius: 2,
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ),
-
-                                                // Leading light effect
-                                                Align(
-                                                  alignment: Alignment(
-                                                    -1 +
-                                                        (2 *
-                                                            _scanAnimation
-                                                                .value),
-                                                    0,
-                                                  ),
-                                                  child: Transform.translate(
-                                                    offset: const Offset(40, 0),
-                                                    child: Container(
-                                                      width: 20,
-                                                      height: 8,
-                                                      decoration: BoxDecoration(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(30),
-                                                        gradient:
-                                                            RadialGradient(
-                                                          colors: [
-                                                            AppTheme
-                                                                .accentOrange
-                                                                .withOpacity(
-                                                                    0.8),
-                                                            AppTheme
-                                                                .accentOrange
-                                                                .withOpacity(
-                                                                    0.3),
-                                                            AppTheme
-                                                                .accentOrange
-                                                                .withOpacity(
-                                                                    0.0),
-                                                          ],
-                                                        ),
-                                                        boxShadow: [
-                                                          BoxShadow(
-                                                            color: AppTheme
-                                                                .accentOrange
-                                                                .withOpacity(
-                                                                    0.5),
-                                                            blurRadius: 15,
-                                                            spreadRadius: 3,
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-
-                                                // Trailing particles effect
-                                                ...List.generate(3, (index) {
-                                                  return Align(
-                                                    alignment: Alignment(
-                                                      -1 +
-                                                          (2 *
-                                                              _scanAnimation
-                                                                  .value),
-                                                      0,
-                                                    ),
-                                                    child: Transform.translate(
-                                                      offset: Offset(
-                                                          -20.0 - (index * 8),
-                                                          0),
-                                                      child: AnimatedBuilder(
-                                                        animation:
-                                                            _pulseAnimation,
-                                                        builder:
-                                                            (context, child) {
-                                                          final particleOpacity = ((0.6 -
-                                                                      (index *
-                                                                          0.15)) *
-                                                                  _pulseAnimation
-                                                                      .value)
-                                                              .clamp(0.0, 1.0);
-                                                          return Container(
-                                                            width: 4 -
-                                                                (index * 0.5),
-                                                            height: 4 -
-                                                                (index * 0.5),
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              shape: BoxShape
-                                                                  .circle,
-                                                              color: AppTheme
-                                                                  .accentOrange
-                                                                  .withOpacity(
-                                                                      particleOpacity),
-                                                              boxShadow: [
-                                                                BoxShadow(
-                                                                  color: AppTheme
-                                                                      .accentOrange
-                                                                      .withOpacity(
-                                                                          particleOpacity *
-                                                                              0.5),
-                                                                  blurRadius: 6,
-                                                                  spreadRadius:
-                                                                      1,
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          );
-                                                        },
-                                                      ),
-                                                    ),
-                                                  );
-                                                }),
-                                              ],
-                                            );
-                                          },
-                                        ),
+                                color: AppTheme.accentOrange.withOpacity(0.03),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: _listening
+                                    ? _LottieBox(
+                                        asset: _lottieScan,
+                                        repeat: true,
+                                        hintIcon: Icons.qr_code_scanner,
+                                        hintText:
+                                            'Escanea un código QR con tu lector físico',
+                                      )
+                                    : _LottieBox(
+                                        asset: _lottieProcessing,
+                                        repeat: true,
+                                        hintIcon: Icons.hourglass_empty,
+                                        hintText: 'Procesando...',
                                       ),
-                                    ),
-
-                                    // Data stream lines
-                                    ...List.generate(2, (index) {
-                                      return Positioned(
-                                        top: 35 + (index * 45),
-                                        left: 20,
-                                        right: 20,
-                                        child: AnimatedBuilder(
-                                          animation: _scanAnimation,
-                                          builder: (context, child) {
-                                            final offset =
-                                                (_scanAnimation.value +
-                                                        (index * 0.3)) %
-                                                    1.0;
-                                            return Row(
-                                              children:
-                                                  List.generate(8, (dotIndex) {
-                                                final dotOpacity = (offset >
-                                                            (dotIndex / 8) &&
-                                                        offset <
-                                                            ((dotIndex + 2) /
-                                                                8))
-                                                    ? 0.6
-                                                    : 0.1;
-                                                return Expanded(
-                                                  child: Center(
-                                                    child: Container(
-                                                      width: 3,
-                                                      height: 3,
-                                                      margin: const EdgeInsets
-                                                          .symmetric(
-                                                          horizontal: 2),
-                                                      decoration: BoxDecoration(
-                                                        shape: BoxShape.circle,
-                                                        color: AppTheme
-                                                            .accentOrange
-                                                            .withOpacity(
-                                                                dotOpacity),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                );
-                                              }),
-                                            );
-                                          },
-                                        ),
-                                      );
-                                    }),
-
-                                    // Central focus indicator
-                                    Center(
-                                      child: AnimatedBuilder(
-                                        animation: _pulseAnimation,
-                                        builder: (context, child) {
-                                          final borderOpacity = (0.3 +
-                                                  (0.4 * _pulseAnimation.value))
-                                              .clamp(0.0, 1.0);
-                                          final fillOpacity = (0.1 +
-                                                  (0.2 * _pulseAnimation.value))
-                                              .clamp(0.0, 1.0);
-                                          final iconOpacity = (0.5 +
-                                                  (0.3 * _pulseAnimation.value))
-                                              .clamp(0.0, 1.0);
-
-                                          return Container(
-                                            width:
-                                                100, // Increased from 40 to 60
-                                            height:
-                                                100, // Increased from 40 to 60
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: AppTheme.accentOrange
-                                                    .withOpacity(borderOpacity),
-                                                width:
-                                                    3, // Increased border width from 2 to 3
-                                              ),
-                                            ),
-                                            child: Container(
-                                              margin: const EdgeInsets.all(
-                                                  10), // Increased margin from 8 to 10
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                color: AppTheme.accentOrange
-                                                    .withOpacity(fillOpacity),
-                                              ),
-                                              child: Icon(
-                                                Icons.qr_code_2,
-                                                size:
-                                                    49, // Increased icon size from 16 to 28
-                                                color: AppTheme.accentOrange
-                                                    .withOpacity(iconOpacity),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                ),
                               ),
-                            ],
-                            SizedBox(
-                                height: AppTheme.getLargePadding(screenSize)),
-
-                            // Status text
-                            Text(
-                              _isListening
-                                  ? 'Listo para escanear'
-                                  : 'Procesando...',
-                              style: AppTheme.getH2(screenSize).copyWith(
-                                color: AppTheme.getTextPrimaryColor(context),
-                                fontWeight: FontWeight.w300,
-                              ),
-                              textAlign: TextAlign.center,
                             ),
+                          ),
+                        ),
+                      ),
+                    ),
 
-                            SizedBox(
-                                height: AppTheme.getMediumPadding(screenSize)),
+                    SizedBox(height: AppTheme.getLargePadding(screenSize)),
 
-                            // Instruction text
+                    // Estado
+                    Text(
+                      _listening ? 'Listo para escanear' : 'Procesando...',
+                      style: AppTheme.getH2(screenSize).copyWith(
+                        color: AppTheme.getTextPrimaryColor(context),
+                        fontWeight: FontWeight.w300,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+
+                    SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+
+                    // Buffer visible (opcional/debug)
+                    if (_buffer.isNotEmpty) ...[
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppTheme.getMediumPadding(screenSize),
+                          vertical: AppTheme.getSmallPadding(screenSize),
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentOrange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: AppTheme.accentOrange.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          _buffer,
+                          style: AppTheme.getBodyMedium(screenSize).copyWith(
+                            color: AppTheme.accentOrange,
+                            fontFamily: 'monospace',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+                    ],
+
+                    // Switch "Revisión de alumno" (fondo, centrado)
+                    Padding(
+                      padding: EdgeInsets.only(
+                        bottom: AppTheme.getLargePadding(screenSize),
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: AppTheme.getTextSecondaryColor(context)
+                                .withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.person_search_rounded, size: 18),
+                            const SizedBox(width: 8),
                             Text(
-                              _isListening
-                                  ? 'Escanea un código QR con tu lector físico'
-                                  : 'Espera un momento...',
-                              style:
-                                  AppTheme.getBodyMedium(screenSize).copyWith(
-                                color: AppTheme.getTextSecondaryColor(context),
-                              ),
-                              textAlign: TextAlign.center,
+                              'Revisión de alumno',
+                              style: AppTheme.getCaption(screenSize),
                             ),
-
-                            if (_currentInput.isNotEmpty) ...[
-                              SizedBox(
-                                  height: AppTheme.getLargePadding(screenSize)),
-
-                              // Show current input being built
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal:
-                                      AppTheme.getMediumPadding(screenSize),
-                                  vertical:
-                                      AppTheme.getSmallPadding(screenSize),
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.accentOrange.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color:
-                                        AppTheme.accentOrange.withOpacity(0.3),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  _currentInput,
-                                  style: AppTheme.getBodyMedium(screenSize)
-                                      .copyWith(
-                                    color: AppTheme.accentOrange,
-                                    fontFamily: 'monospace',
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
+                            const SizedBox(width: 8),
+                            Switch(
+                              value: _showResultInProcessing,
+                              onChanged: (v) =>
+                                  setState(() => _showResultInProcessing = v),
+                              activeColor: AppTheme.accentBlue,
+                            ),
                           ],
                         ),
                       ),
                     ),
 
-                    // Help text
+                    // Ayuda
                     Container(
                       padding:
                           EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -826,6 +554,111 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Widget auxiliar que intenta cargar una animación Lottie y
+/// muestra un “fallback” elegante si el asset no existe.
+class _LottieBox extends StatelessWidget {
+  final String asset;
+  final bool repeat;
+  final IconData? hintIcon;
+  final String? hintText;
+
+  const _LottieBox({
+    required this.asset,
+    this.repeat = true,
+    this.hintIcon,
+    this.hintText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Animación Lottie de fondo
+        Lottie.asset(
+          asset,
+          repeat: repeat,
+          fit: BoxFit.contain,
+        ),
+        // Icono por encima
+        if (hintIcon != null)
+          Icon(
+            hintIcon,
+            size: 64,
+            color: AppTheme.accentOrange.withOpacity(0.8),
+          ),
+      ],
+    );
+  }
+}
+
+class _FallbackScan extends StatefulWidget {
+  final IconData hintIcon;
+  final String hintText;
+
+  const _FallbackScan({
+    required this.hintIcon,
+    required this.hintText,
+  });
+
+  @override
+  State<_FallbackScan> createState() => _FallbackScanState();
+}
+
+class _FallbackScanState extends State<_FallbackScan>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    )..repeat(reverse: true);
+    _pulse = Tween(begin: 0.95, end: 1.05)
+        .chain(CurveTween(curve: Curves.easeInOut))
+        .animate(_ctrl);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (context, _) {
+        return Center(
+          child: Transform.scale(
+            scale: _pulse.value,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(widget.hintIcon,
+                    size: 56, color: AppTheme.accentOrange.withOpacity(0.7)),
+                const SizedBox(height: 8),
+                Text(
+                  widget.hintText,
+                  textAlign: TextAlign.center,
+                  style: AppTheme.getBodyMedium(MediaQuery.of(context).size)
+                      .copyWith(
+                    color: AppTheme.getTextSecondaryColor(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

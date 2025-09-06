@@ -29,23 +29,26 @@ class GroupProvider with ChangeNotifier {
     String? nivelEducativo,
     BuildContext? context,
   }) async {
+    bool showDialogHere = false;
     try {
       _isLoading = true;
       _error = null;
+
       if (context != null && context.mounted) {
-        LoadingDialog.show(context, message: 'Cargando grupos...');
+        if (!LoadingDialog.isVisible) {
+          LoadingDialog.show(context, message: 'Cargando grupos...');
+          showDialogHere = true;
+        }
       }
       notifyListeners();
 
       var query = _supabase.from('grupos').select().eq('id_escuela', escuelaId);
 
-      // Filter by educational level if provided
       if (nivelEducativo != null && nivelEducativo.isNotEmpty) {
         query = query.eq('nivel_educativo', nivelEducativo);
       }
 
       final response = await query.order('nivel_educativo').order('grupo');
-
       _grupos = (response as List).map((item) => Grupo.fromJson(item)).toList();
 
       _error = null;
@@ -55,7 +58,7 @@ class GroupProvider with ChangeNotifier {
       debugPrint(_error);
     } finally {
       _isLoading = false;
-      if (context != null && context.mounted) {
+      if (context != null && context.mounted && showDialogHere) {
         LoadingDialog.hide(context);
       }
       notifyListeners();

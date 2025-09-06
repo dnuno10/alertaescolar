@@ -1,23 +1,22 @@
+// lib/components/admin/qr_and_notifications/attendance_control_view.dart
 import 'dart:async';
-
-import 'package:alertaescolar/components/buttons/solid_button.dart';
-import 'package:alertaescolar/managers/user_provider.dart';
-import 'package:alertaescolar/services/scanner_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../app/app_theme.dart';
-import '../../../providers/theme_provider.dart';
-import '../../../providers/attendance_scanner_provider.dart';
 import '../../../components/admin/qr_and_notifications/attendance_control_header.dart';
-import '../../../managers/turno_provider.dart';
-// Navegaciones
-import 'notification_send_view.dart';
-import 'scanner_configuration_view.dart';
-import 'camera_scanner_view.dart';
-import 'physical_scanner_view.dart';
-import '../../../widgets/custom_snack_bar.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../managers/turno_provider.dart';
+import '../../../managers/user_provider.dart';
+import '../../../providers/attendance_scanner_provider.dart';
+import '../../../providers/theme_provider.dart';
+import '../../../services/scanner_service.dart';
+import '../../../widgets/custom_snack_bar.dart';
+
+import 'camera_scanner_view.dart';
+import 'notification_send_view.dart';
+import 'physical_scanner_view.dart';
+import 'scanner_configuration_view.dart';
 
 class AttendanceControlView extends StatefulWidget {
   const AttendanceControlView({super.key});
@@ -27,7 +26,7 @@ class AttendanceControlView extends StatefulWidget {
 }
 
 class _AttendanceControlViewState extends State<AttendanceControlView> {
-  // Config local (se alimenta desde TurnoProvider)
+  // --- Config local (se alimenta desde TurnoProvider) ---
   TimeOfDay _turnoAStart = const TimeOfDay(hour: 7, minute: 0);
   TimeOfDay _turnoAEnd = const TimeOfDay(hour: 12, minute: 0);
   TimeOfDay _turnoBStart = const TimeOfDay(hour: 13, minute: 0);
@@ -42,19 +41,44 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
   bool _isLoading = true;
   String? _errorMessage;
 
-  // Timer para actualizar modo automático
+  // Timer para modo automático
   Timer? _accessTypeTimer;
+
+  // Track de escuela para recargar turnos si cambia
+  String? _observedEscuelaId;
+  VoidCallback? _userListener;
+
+  // Producción: integra ScannerService
+  final ScannerService _scannerService = ScannerService();
+  bool _isProcessingScan = false;
 
   // Helpers
   TimeOfDay _fallbackStartB() => const TimeOfDay(hour: 13, minute: 0);
   TimeOfDay _fallbackEndB() => const TimeOfDay(hour: 18, minute: 0);
+  int _toMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadTurnosAndConfigure();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Suscripción a cambios de UserProvider (escuelaId)
+      final up = Provider.of<UserProvider>(context, listen: false);
+      _observedEscuelaId = up.currentUser?.escuelaId;
+
+      _userListener = () {
+        final newId = up.currentUser?.escuelaId;
+        if (newId != null && newId.isNotEmpty && newId != _observedEscuelaId) {
+          _observedEscuelaId = newId;
+          _loadTurnosAndConfigure();
+        }
+      };
+      up.addListener(_userListener!);
+
+      await _bootstrapUserAndSchool();
+      if (!mounted) return;
+      await _loadTurnosAndConfigure();
     });
+
     _startAccessTypeTimer();
   }
 
@@ -62,11 +86,16 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
   void dispose() {
     _accessTypeTimer?.cancel();
     _accessTypeTimer = null;
+
+    // Quitar listener de UserProvider
+    try {
+      final up = Provider.of<UserProvider>(context, listen: false);
+      if (_userListener != null) up.removeListener(_userListener!);
+    } catch (_) {}
     super.dispose();
   }
 
   // ----------------- Timer auto -----------------
-
   void _startAccessTypeTimer() {
     _accessTypeTimer?.cancel();
     _accessTypeTimer = Timer.periodic(const Duration(minutes: 1), (_) {
@@ -87,8 +116,30 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
     });
   }
 
-  // ----------------- Carga turnos -----------------
+  // ----------------- Bootstrap usuario/escuela -----------------
+  Future<void> _bootstrapUserAndSchool() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
 
+    // Si no hay usuario cargado, intenta cargarlo sin diálogo
+    if (userProvider.currentUser == null) {
+      await userProvider.loadCurrentUser(context, showDialog: false);
+    }
+
+    // Asegurar escuelaId
+    String? escuelaId = userProvider.currentUser?.escuelaId;
+    escuelaId ??= await userProvider.ensureEscuelaIdLoaded();
+
+    // Reintento suave si siguiera nulo
+    if ((escuelaId == null || escuelaId.isEmpty) && mounted) {
+      await userProvider.loadCurrentUser(context, showDialog: false);
+      escuelaId = userProvider.currentUser?.escuelaId ??
+          await userProvider.ensureEscuelaIdLoaded();
+    }
+
+    _observedEscuelaId = escuelaId;
+  }
+
+  // ----------------- Carga turnos -----------------
   Future<void> _loadTurnosAndConfigure() async {
     if (!mounted) return;
     setState(() {
@@ -100,7 +151,9 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       final turnoProvider = Provider.of<TurnoProvider>(context, listen: false);
 
-      final escuelaId = userProvider.currentUser?.escuelaId;
+      String? escuelaId = userProvider.currentUser?.escuelaId;
+      escuelaId ??= await userProvider.ensureEscuelaIdLoaded();
+
       if (escuelaId == null || escuelaId.trim().isEmpty) {
         setState(() {
           _errorMessage = 'No se pudo identificar la escuela del usuario.';
@@ -111,9 +164,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
 
       await turnoProvider.loadTurnos(escuelaId: escuelaId);
 
-      // Con los turnos cargados, seleccionamos 1er y 2do turno por hora de inicio
       final turnos = List.of(turnoProvider.turnos);
-
       if (turnos.isEmpty) {
         setState(() {
           _errorMessage = 'La escuela no tiene turnos configurados.';
@@ -122,8 +173,8 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
         return;
       }
 
-      // Ordenar por hora de inicio
       TimeOfDay? _p(dynamic v) => turnoProvider.parseTimeString(v);
+      // Orden por hora de inicio
       turnos.sort((a, b) {
         final ta = _p(a.horaInicio) ?? const TimeOfDay(hour: 0, minute: 0);
         final tb = _p(b.horaInicio) ?? const TimeOfDay(hour: 0, minute: 0);
@@ -137,22 +188,20 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
       if (tAStart != null) _turnoAStart = tAStart;
       if (tAEnd != null) _turnoAEnd = tAEnd;
 
-      // Tolerancia base (si hay varias diferentes, usamos la del primer turno)
+      // Tolerancia base
       _toleranceMinutes = tA.tolerancia;
 
-      // Turno B (segundo si existe)
+      // Turno B si existe
       if (turnos.length >= 2) {
         final tB = turnos[1];
         final tBStart = _p(tB.horaInicio);
         final tBEnd = _p(tB.horaFin);
         _turnoBStart = tBStart ?? _fallbackStartB();
         _turnoBEnd = tBEnd ?? _fallbackEndB();
-        // si la tolerancia base fuera 0 por alguna razón, toma la del segundo
         if (_toleranceMinutes == 0) {
           _toleranceMinutes = tB.tolerancia;
         }
       } else {
-        // No hay segundo turno → fallbacks (solo para UI de config)
         _turnoBStart = _fallbackStartB();
         _turnoBEnd = _fallbackEndB();
       }
@@ -180,20 +229,15 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
   }
 
   // ----------------- Lógica de modo automático -----------------
-
-  // Convierte TimeOfDay a minutos desde 00:00
-  int _toMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
-
-  // Determina entrada/salida en base a TODA la lista de turnos
   void _determineDefaultAccessTypeFromAllTurnos() {
     final turnoProvider = Provider.of<TurnoProvider>(context, listen: false);
     final now = TimeOfDay.now();
     final nowM = _toMinutes(now);
 
-    // Construimos ventanas para cada turno
-    // Entrada: [start-30, start+tolerancia]
-    // Salida:  [end - tolerancia, end + 30]
-    final windows = <_Window>[]; // lista de ventanas etiquetadas
+    // Ventanas por turno:
+    // Entrada: [inicio - 30, inicio + tolerancia]
+    // Salida : [fin - tolerancia, fin + 30]
+    final windows = <_Window>[];
 
     for (final t in turnoProvider.turnos) {
       final s = turnoProvider.parseTimeString(t.horaInicio);
@@ -210,7 +254,6 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
       ]);
     }
 
-    // Si no hay ventanas (sin turnos válidos), queda entrada por defecto
     if (windows.isEmpty) {
       setState(() => _isDefaultEntryConfig = true);
       return;
@@ -219,32 +262,31 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
     // ¿now cae en alguna ventana?
     for (final w in windows) {
       if (nowM >= w.from && nowM <= w.to) {
-        final entry = w.label == _WLabel.entry;
-        setState(() => _isDefaultEntryConfig = entry);
+        setState(() => _isDefaultEntryConfig = (w.label == _WLabel.entry));
         return;
       }
     }
 
-    // Si no cae en ninguna ventana:
-    // 1) Si estamos antes del primer turno del día → entrada
+    // Antes del primer turno → entrada
     windows.sort((a, b) => a.from.compareTo(b.from));
     final firstStartWindow = windows
         .where((w) => w.label == _WLabel.entry)
         .toList()
       ..sort((a, b) => a.from.compareTo(b.from));
+
     if (firstStartWindow.isNotEmpty &&
         nowM < firstStartWindow.first.from - 30) {
       setState(() => _isDefaultEntryConfig = true);
       return;
     }
 
-    // 2) Si estamos después de todas las ventanas → salida
+    // Después de todas las ventanas → salida
     if (nowM > windows.last.to + 60) {
       setState(() => _isDefaultEntryConfig = false);
       return;
     }
 
-    // 3) En un hueco entre ventanas → preferimos entrada por la siguiente ventana más cercana
+    // Hueco entre ventanas → preferir entrada (siguiente cercana)
     final nextEntry = firstStartWindow.firstWhere(
       (w) => nowM < w.from,
       orElse: () => firstStartWindow.last,
@@ -253,7 +295,6 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
   }
 
   // ----------------- UI -----------------
-
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -300,14 +341,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
                     ),
                   ),
                   SizedBox(height: AppTheme.getLargePadding(screenSize)),
-                  SolidButton(
-                    onPressed: _loadTurnosAndConfigure,
-                    label: 'Reintentar',
-                    icon: Icons.refresh,
-                    backgroundColor: AppTheme.accentBlue,
-                    screenSize: screenSize,
-                    width: screenSize.width * 0.5,
-                  ),
+                  _retryButton(screenSize),
                 ],
               ),
             ),
@@ -326,9 +360,9 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
               // Header
               SliverToBoxAdapter(
                 child: AttendanceControlHeader(
-                  isScanning: false,
+                  isScanning: scannerProvider.isScanning,
                   screenSize: screenSize,
-                  onConfigurationTap: _showConfigurationDialog,
+                  onConfigurationTap: _onConfigurationTapGuarded,
                   onNotificationTap: _showNotificationDialog,
                   selectedAccessType: _selectedAccessType,
                   isDefaultEntryConfig: _isDefaultEntryConfig,
@@ -358,6 +392,19 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
     );
   }
 
+  Widget _retryButton(Size screenSize) {
+    return ElevatedButton.icon(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppTheme.accentBlue,
+        minimumSize: Size(screenSize.width * 0.5, 44),
+      ),
+      onPressed: _loadTurnosAndConfigure,
+      icon: const Icon(Icons.refresh, color: Colors.white),
+      label: const Text('Reintentar',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+    );
+  }
+
   Widget _buildMainScannerSection(BuildContext context, Size screenSize) {
     final l10n = AppLocalizations.of(context);
     return Container(
@@ -383,7 +430,6 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
       padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
       child: Column(
         children: [
-          // Opción: Escáner físico
           _buildEnhancedScannerOption(
             context: context,
             screenSize: screenSize,
@@ -396,7 +442,6 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
             onTap: _navigateToPhysicalScanner,
           ),
           SizedBox(height: AppTheme.getLargePadding(screenSize)),
-          // Opción: Cámara
           _buildEnhancedScannerOption(
             context: context,
             screenSize: screenSize,
@@ -409,8 +454,6 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
             onTap: _navigateToCameraScanner,
           ),
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-          // Info
           Container(
             padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
             decoration: BoxDecoration(
@@ -601,8 +644,8 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
     );
   }
 
-  Widget _buildRecentScansSection(BuildContext context, Size screenSize,
-      AttendanceScannerProvider scannerProvider) {
+  Widget _buildRecentScansSection(
+      BuildContext context, Size screenSize, AttendanceScannerProvider sp) {
     final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
@@ -636,7 +679,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
             ],
           ),
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-          ...scannerProvider.scannedHistory.take(5).map(
+          ...sp.scannedHistory.take(5).map(
                 (code) => Padding(
                   padding: EdgeInsets.symmetric(
                       vertical: AppTheme.getSmallPadding(screenSize) / 2),
@@ -667,7 +710,6 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
   }
 
   // ----------------- Modo/acciones -----------------
-
   void _handleAccessTypeChange(AccessType newType) {
     setState(() {
       _selectedAccessType = newType;
@@ -677,8 +719,20 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
     switch (newType) {
       case AccessType.default_config:
         final currentDefault = _isDefaultEntryConfig ? 'entrada' : 'salida';
-        message = 'Modo automático activado (actualmente: $currentDefault)';
+        message = 'Modo automático inteligente (actualmente: $currentDefault)';
         _determineDefaultAccessTypeFromAllTurnos();
+        break;
+      case AccessType.auto_entry:
+        message = 'Modo automático forzado: Entrada';
+        setState(() {
+          _isDefaultEntryConfig = true;
+        });
+        break;
+      case AccessType.auto_exit:
+        message = 'Modo automático forzado: Salida';
+        setState(() {
+          _isDefaultEntryConfig = false;
+        });
         break;
       case AccessType.entry:
         message = 'Modo fijo: Registro de entrada';
@@ -687,12 +741,10 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
         message = 'Modo fijo: Registro de salida';
         break;
     }
-
     CustomSnackBar.show(message: message, isError: false, context: context);
   }
 
   // ----------------- Navegación -----------------
-
   void _navigateToCameraScanner() {
     Navigator.push(
       context,
@@ -719,11 +771,93 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
     );
   }
 
-  // ----------------- Utilidades varias -----------------
+  // ----------------- Escaneo (producción, sin mocks) -----------------
+// ----------------- Escaneo (producción, sin mocks) -----------------
+  Future<void> _handleScannedCode(String code) async {
+    if (_isProcessingScan) return; // evita doble lectura
+    _isProcessingScan = true;
 
+    try {
+      final userProvider = context.read<UserProvider>();
+      final adminId = userProvider.currentUser?.id;
+
+      if (adminId == null || adminId.isEmpty) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'No hay sesión activa para registrar asistencia.',
+          isError: true,
+        );
+        return;
+      }
+
+      // 1) Resolver escuelaId desde el contexto (UserProvider)
+      String? escuelaId;
+      try {
+        // usa la versión que lanza para asegurar que exista
+        escuelaId = await userProvider.ensureEscuelaIdOrThrow();
+      } catch (_) {
+        // intento suave si aún no estaba cacheado
+        await userProvider.ensureEscuelaIdLoaded();
+        escuelaId = userProvider.currentUser?.escuelaId;
+      }
+
+      if (escuelaId == null || escuelaId.isEmpty) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'No se pudo determinar la escuela del usuario.',
+          isError: true,
+        );
+        return;
+      }
+
+      final accessType =
+          _convertToScannerAccessType(_selectedAccessType); // auto/fijo
+
+      // 2) Llamar al servicio con escuelaIdFromContext (requerido)
+      final result = await _scannerService.processScannedCode(
+        escuelaIdFromContext: escuelaId, // <-- requerido
+        scannedCode: code,
+        adminId: adminId,
+        accessType: accessType,
+        isDefaultEntryConfig: _isDefaultEntryConfig,
+      );
+
+      if (result['success'] == true) {
+        // Si tienes un método de historial, puedes agregarlo aquí
+        // try {
+        //   final sp = context.read<AttendanceScannerProvider>();
+        //   sp.addToHistory(code);
+        // } catch (_) {}
+
+        final accessMsg =
+            (result['access']?['message'] as String?) ?? 'Registro realizado';
+        CustomSnackBar.show(
+          context: context,
+          message: accessMsg,
+          isError: false,
+        );
+      } else {
+        final msg = (result['error'] as String?) ??
+            'No se pudo registrar la asistencia';
+        CustomSnackBar.show(context: context, message: msg, isError: true);
+      }
+    } catch (e) {
+      CustomSnackBar.show(
+        context: context,
+        message: 'Error al procesar el escaneo: $e',
+        isError: true,
+      );
+    } finally {
+      _isProcessingScan = false;
+    }
+  }
+
+  // ----------------- Utilidades -----------------
   ScannerAccessType _convertToScannerAccessType(AccessType accessType) {
     switch (accessType) {
       case AccessType.default_config:
+      case AccessType.auto_entry:
+      case AccessType.auto_exit:
         return ScannerAccessType.automatic;
       case AccessType.entry:
         return ScannerAccessType.entry;
@@ -732,14 +866,21 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
     }
   }
 
-  void _handleScannedCode(String code) {
-    final scannerProvider =
-        Provider.of<AttendanceScannerProvider>(context, listen: false);
-    scannerProvider.handlePhysicalScannerInput(code);
+  // Tap protegido por permisos de admin
+  void _onConfigurationTapGuarded() {
+    final isAdmin = context.read<UserProvider>().isAdmin();
+    if (!isAdmin) {
+      CustomSnackBar.show(
+        context: context,
+        message: 'Solo administradores pueden configurar turnos',
+        isError: true,
+      );
+      return;
+    }
+    _showConfigurationDialog();
   }
 
   void _showConfigurationDialog() {
-    // Compatibilidad hacia atrás: tomamos Turno A (más temprano) y Turno B (segundo si hay)
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -773,7 +914,6 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
 }
 
 // ----------------- Modelos auxiliares para ventanas -----------------
-
 enum _WLabel { entry, exit }
 
 class _Window {

@@ -1,8 +1,9 @@
+// lib/components/admin/notifications/notification_review_view.dart
+import 'package:alertaescolar/models/notification_draft.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../app/app_theme.dart';
-import '../../../models/models.dart';
 import '../../../managers/user_provider.dart';
 import '../../../services/notification_send_service.dart';
 import '../../../widgets/custom_snack_bar.dart';
@@ -13,32 +14,9 @@ import '../../../components/loading_dialog.dart';
 import '../../../l10n/app_localizations.dart';
 
 class NotificationReviewView extends StatefulWidget {
-  final String tipoMensaje; // 'permiso' | 'comunicado'
-  final String tipoDestinatario; // 'individual' | 'grupo' | 'turno' | 'todos'
-  final String titulo;
-  final String mensaje;
+  final NotificationDraft draft;
 
-  /// En tus models, el enum se llama TipoComunicacion
-  final TipoComunicacion? tipoComunicado;
-  final PrioridadComunicado? prioridadComunicado;
-
-  /// Tipamos al modelo real
-  final Alumno? selectedStudent;
-  final List<Grupo> selectedGroups;
-  final Turno? selectedShift;
-
-  const NotificationReviewView({
-    super.key,
-    required this.tipoMensaje,
-    required this.tipoDestinatario,
-    required this.titulo,
-    required this.mensaje,
-    this.tipoComunicado,
-    this.prioridadComunicado,
-    this.selectedStudent,
-    required this.selectedGroups,
-    this.selectedShift,
-  });
+  const NotificationReviewView({super.key, required this.draft});
 
   @override
   State<NotificationReviewView> createState() => _NotificationReviewViewState();
@@ -53,7 +31,9 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-        duration: const Duration(milliseconds: 600), vsync: this);
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
     _fadeAnimation =
         CurvedAnimation(parent: _animationController, curve: Curves.easeOut);
     _animationController.forward();
@@ -65,10 +45,16 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
     super.dispose();
   }
 
+  // =========================
+  // UI
+  // =========================
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final l10n = AppLocalizations.of(context);
+
+    final isPermiso = widget.draft.tipoMensaje == 'permiso';
+    final isComunicado = widget.draft.tipoMensaje == 'comunicado';
 
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
@@ -84,7 +70,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header de confirmación
+                    // Header
                     Container(
                       width: double.infinity,
                       padding:
@@ -101,15 +87,16 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                         borderRadius: BorderRadius.circular(
                             AppTheme.getLargeRadius(screenSize)),
                         border: Border.all(
-                            color: AppTheme.accentPurple.withOpacity(0.3)),
+                          color: AppTheme.accentPurple.withOpacity(0.3),
+                        ),
                       ),
                       child: Column(
                         children: [
                           Icon(
-                            widget.tipoMensaje == 'permiso'
+                            isPermiso
                                 ? Icons.assignment_turned_in_rounded
                                 : Icons.campaign_rounded,
-                            color: widget.tipoMensaje == 'permiso'
+                            color: isPermiso
                                 ? AppTheme.accentBlue
                                 : AppTheme.warningColor,
                             size: screenSize.height * 0.06,
@@ -117,7 +104,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                           SizedBox(
                               height: AppTheme.getMediumPadding(screenSize)),
                           Text(
-                            widget.tipoMensaje == 'permiso'
+                            isPermiso
                                 ? l10n.specialPermission
                                 : l10n.officialCommunication,
                             style: AppTheme.getH2(screenSize).copyWith(
@@ -143,14 +130,16 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
 
                     // Contenido del mensaje
                     _buildMessageContentSection(
-                        context: context, screenSize: screenSize),
+                      context: context,
+                      screenSize: screenSize,
+                    ),
 
                     SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-                    // Información específica de comunicado (solo si aplica y con null-safety)
-                    if (widget.tipoMensaje == 'comunicado' &&
-                        widget.tipoComunicado != null &&
-                        widget.prioridadComunicado != null) ...[
+                    // Detalles de comunicado (si aplica)
+                    if (isComunicado &&
+                        widget.draft.tipoComunicado != null &&
+                        widget.draft.prioridad != null) ...[
                       _buildSection(
                         context: context,
                         screenSize: screenSize,
@@ -162,8 +151,8 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                             context: context,
                             screenSize: screenSize,
                             label: l10n.type,
-                            value:
-                                _getComunicadoTypeText(widget.tipoComunicado!),
+                            value: _displayTipoComunicado(
+                                widget.draft.tipoComunicado!),
                           ),
                           SizedBox(
                               height: AppTheme.getSmallPadding(screenSize)),
@@ -171,10 +160,9 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                             context: context,
                             screenSize: screenSize,
                             label: l10n.priority,
-                            value:
-                                _getPriorityText(widget.prioridadComunicado!),
+                            value: _displayPrioridad(widget.draft.prioridad!),
                             valueColor:
-                                _getPriorityColor(widget.prioridadComunicado!),
+                                _priorityColorFromDb(widget.draft.prioridad!),
                           ),
                         ],
                       ),
@@ -188,7 +176,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                       title: l10n.recipients,
                       icon: Icons.people_rounded,
                       iconColor: AppTheme.accentPurple,
-                      children: [_buildRecipientInfo(context, screenSize)],
+                      children: [_buildRecipientSummary(context, screenSize)],
                     ),
 
                     SizedBox(height: AppTheme.getMediumPadding(screenSize)),
@@ -324,7 +312,8 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
         border: Border.all(
-            color: AppTheme.getBorderColor(context).withOpacity(0.3)),
+          color: AppTheme.getBorderColor(context).withOpacity(0.3),
+        ),
         boxShadow: [
           BoxShadow(
             color: AppTheme.getShadowColor(context),
@@ -394,7 +383,8 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
             borderRadius:
                 BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
             border: Border.all(
-                color: AppTheme.getBorderColor(context).withOpacity(0.3)),
+              color: AppTheme.getBorderColor(context).withOpacity(0.3),
+            ),
           ),
           child: Text(
             value,
@@ -414,398 +404,53 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
     );
   }
 
-  Widget _buildRecipientInfo(BuildContext context, Size screenSize) {
-    final List<Widget> recipientCards = [];
+  /// Resumen compacto de destinatarios a partir del draft (ids/alcance).
+  Widget _buildRecipientSummary(BuildContext context, Size screenSize) {
+    final kind = widget.draft.tipoDestinatario;
 
-    switch (widget.tipoDestinatario) {
+    switch (kind) {
       case 'individual':
-        if (widget.selectedStudent != null) {
-          recipientCards.add(
-              _buildStudentCard(context, screenSize, widget.selectedStudent!));
-        } else {
-          recipientCards.add(_buildEmptyRecipientCard(
-              context, screenSize, 'No se ha seleccionado ningún estudiante'));
-        }
-        break;
+        return _buildInfoRow(
+          context: context,
+          screenSize: screenSize,
+          label: 'Destinatario',
+          value: widget.draft.alumnoId ?? 'N/D',
+        );
 
       case 'grupo':
-        if (widget.selectedGroups.isNotEmpty) {
-          recipientCards.addAll(
-            widget.selectedGroups
-                .map((grupo) => _buildGroupCard(context, screenSize, grupo))
-                .toList(),
-          );
-        } else {
-          recipientCards.add(
-            _buildEmptyRecipientCard(
-                context, screenSize, 'No se han seleccionado grupos'),
-          );
-        }
-        break;
+        return _buildInfoRow(
+          context: context,
+          screenSize: screenSize,
+          label: 'Grupos',
+          value: (widget.draft.grupoIds ?? const []).isEmpty
+              ? 'N/D'
+              : widget.draft.grupoIds!.join(', '),
+        );
 
       case 'turno':
-        if (widget.selectedShift != null) {
-          recipientCards
-              .add(_buildShiftCard(context, screenSize, widget.selectedShift!));
-        } else {
-          recipientCards.add(
-            _buildEmptyRecipientCard(
-                context, screenSize, 'No se ha seleccionado ningún turno'),
-          );
-        }
-        break;
+        return _buildInfoRow(
+          context: context,
+          screenSize: screenSize,
+          label: 'Turno',
+          value: widget.draft.turnoId ?? 'N/D',
+        );
 
       case 'todos':
-        recipientCards.add(_buildAllStudentsCard(context, screenSize));
-        break;
+        return _buildInfoRow(
+          context: context,
+          screenSize: screenSize,
+          label: 'Cobertura',
+          value: 'Toda la institución',
+        );
 
       default:
-        recipientCards.add(
-          _buildEmptyRecipientCard(
-              context, screenSize, 'Tipo de destinatario no reconocido'),
+        return _buildInfoRow(
+          context: context,
+          screenSize: screenSize,
+          label: 'Destinatario',
+          value: 'Tipo no reconocido',
         );
     }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: recipientCards
-          .map((card) => Padding(
-                padding: EdgeInsets.only(
-                    bottom: AppTheme.getSmallPadding(screenSize)),
-                child: card,
-              ))
-          .toList(),
-    );
-  }
-
-  Widget _buildStudentCard(
-      BuildContext context, Size screenSize, Alumno student) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-      decoration: BoxDecoration(
-        color: AppTheme.accentBlue.withOpacity(0.05),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        border: Border.all(color: AppTheme.accentBlue.withOpacity(0.2)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Avatar del estudiante
-          Container(
-            width: screenSize.height * 0.06,
-            height: screenSize.height * 0.06,
-            decoration: BoxDecoration(
-              color: AppTheme.accentBlue.withOpacity(0.15),
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-            ),
-            child: Icon(Icons.person_rounded,
-                color: AppTheme.accentBlue, size: screenSize.height * 0.03),
-          ),
-          SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-
-          // Información del estudiante
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  student.nombre.isNotEmpty
-                      ? student.nombre
-                      : 'Nombre no disponible',
-                  style: AppTheme.getBodyMedium(screenSize).copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.getTextPrimaryColor(context),
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.3),
-
-                // Matrícula
-                Row(
-                  children: [
-                    Text(
-                      'Matrícula: ',
-                      style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                        color: AppTheme.getTextSecondaryColor(context),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Flexible(
-                      child: Text(
-                        student.matricula.isNotEmpty
-                            ? student.matricula
-                            : 'N/A',
-                        style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                          color: AppTheme.getTextPrimaryColor(context),
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.2),
-
-                // Grupo
-                Row(
-                  children: [
-                    Text(
-                      'Grupo: ',
-                      style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                        color: AppTheme.getTextSecondaryColor(context),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Flexible(
-                      child: Text(
-                        student.grupo.isNotEmpty ? student.grupo : 'N/A',
-                        style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                          color: AppTheme.getTextPrimaryColor(context),
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-
-          // Estado vinculación de llave (si aplica)
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppTheme.getSmallPadding(screenSize),
-              vertical: AppTheme.getSmallPadding(screenSize) * 0.5,
-            ),
-            decoration: BoxDecoration(
-              color: (student.vinculado
-                      ? AppTheme.successColor
-                      : AppTheme.errorColor)
-                  .withOpacity(0.1),
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-            ),
-            child: Text(
-              student.vinculado ? 'Vinculado' : 'No vinculado',
-              style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                color: student.vinculado
-                    ? AppTheme.successColor
-                    : AppTheme.errorColor,
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGroupCard(BuildContext context, Size screenSize, Grupo grupo) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-      decoration: BoxDecoration(
-        color: AppTheme.accentOrange.withOpacity(0.05),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        border: Border.all(color: AppTheme.accentOrange.withOpacity(0.2)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
-            decoration: BoxDecoration(
-              color: AppTheme.accentOrange.withOpacity(0.15),
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-            ),
-            child: Icon(Icons.class_rounded,
-                color: AppTheme.accentOrange, size: screenSize.height * 0.025),
-          ),
-          SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${grupo.nivelEducativo} - ${grupo.grupo}',
-                  style: AppTheme.getBodyMedium(screenSize).copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.getTextPrimaryColor(context),
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.3),
-                Text(
-                  'Nivel: ${grupo.nivelEducativo}',
-                  style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                    color: AppTheme.getTextSecondaryColor(context),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildShiftCard(BuildContext context, Size screenSize, Turno turno) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-      decoration: BoxDecoration(
-        color: AppTheme.warningColor.withOpacity(0.05),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        border: Border.all(color: AppTheme.warningColor.withOpacity(0.2)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
-            decoration: BoxDecoration(
-              color: AppTheme.warningColor.withOpacity(0.15),
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-            ),
-            child: Icon(Icons.schedule_rounded,
-                color: AppTheme.warningColor, size: screenSize.height * 0.025),
-          ),
-          SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  turno.turno,
-                  style: AppTheme.getBodyMedium(screenSize).copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.getTextPrimaryColor(context),
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.3),
-                Text(
-                  // Usa getters ya provistos por tu modelo
-                  'Horario: ${turno.horarioCompleto}',
-                  style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                    color: AppTheme.getTextSecondaryColor(context),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAllStudentsCard(BuildContext context, Size screenSize) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-      decoration: BoxDecoration(
-        color: AppTheme.accentPurple.withOpacity(0.05),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        border: Border.all(color: AppTheme.accentPurple.withOpacity(0.2)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
-            decoration: BoxDecoration(
-              color: AppTheme.accentPurple.withOpacity(0.15),
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-            ),
-            child: Icon(Icons.school_rounded,
-                color: AppTheme.accentPurple, size: screenSize.height * 0.025),
-          ),
-          SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Toda la Institución Educativa',
-                  style: AppTheme.getBodyMedium(screenSize).copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.getTextPrimaryColor(context),
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.3),
-                Text(
-                  'El mensaje se enviará a todos los estudiantes registrados',
-                  style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                    color: AppTheme.getTextSecondaryColor(context),
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyRecipientCard(
-      BuildContext context, Size screenSize, String message) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-      decoration: BoxDecoration(
-        color: AppTheme.errorColor.withOpacity(0.05),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        border: Border.all(color: AppTheme.errorColor.withOpacity(0.2)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.warning_rounded,
-              color: AppTheme.errorColor, size: screenSize.height * 0.025),
-          SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-          Expanded(
-            child: Text(
-              message,
-              style: AppTheme.getBodyMedium(screenSize).copyWith(
-                color: AppTheme.errorColor,
-                fontWeight: FontWeight.w500,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   // =========================
@@ -813,53 +458,38 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
   // =========================
 
   Future<void> _sendNotification() async {
+    final isPermiso = widget.draft.tipoMensaje == 'permiso';
+
     LoadingDialog.show(
       context,
-      message:
-          'Enviando ${widget.tipoMensaje == 'permiso' ? 'permiso especial' : 'comunicado'}...',
+      message: 'Enviando ${isPermiso ? 'permiso especial' : 'comunicado'}...',
     );
 
     try {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       final currentUser = userProvider.currentUser;
 
-      if (currentUser == null) {
+      if (currentUser == null ||
+          !(currentUser.escuelaId?.isNotEmpty ?? false)) {
         LoadingDialog.hide(context);
-        throw Exception('Usuario no autenticado');
-      }
-      if (!(currentUser.escuelaId?.isNotEmpty ?? false)) {
-        LoadingDialog.hide(context);
-        throw Exception('El usuario no está asociado a una escuela');
+        throw Exception('Usuario no autenticado o sin escuela');
       }
 
-      final adminId = currentUser.id;
-      final escuelaId = currentUser.escuelaId!;
-
-      final notificationSendService = NotificationSendService();
-      final result = await notificationSendService.sendNotification(
-        adminId: adminId,
-        schoolId: escuelaId,
-        messageType: widget.tipoMensaje,
-        recipientType: widget.tipoDestinatario,
-        title: widget.titulo,
-        message: widget.mensaje,
-        // Con tus models actuales:
-        communicationType: widget.tipoComunicado, // TipoComunicacion?
-        priority: widget.prioridadComunicado,
-        selectedStudent: widget.selectedStudent?.toJson(),
-        selectedGroups:
-            widget.selectedGroups.isNotEmpty ? widget.selectedGroups : null,
-        selectedShift: widget.selectedShift,
+      final service = NotificationSendService();
+      final res = await service.sendDraft(
+        draft: widget.draft,
+        adminId: currentUser.id,
+        escuelaId: currentUser.escuelaId!,
       );
 
       LoadingDialog.hide(context);
 
-      if (result['success'] == true) {
-        _showSuccessDialog(context, result);
+      if (res['success'] == true) {
+        _showSuccessDialog(context, res);
       } else {
         CustomSnackBar.show(
           context: context,
-          message: (result['error'] ?? 'Error desconocido').toString(),
+          message: (res['error'] ?? 'Error desconocido').toString(),
           isError: true,
         );
       }
@@ -904,9 +534,11 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                   borderRadius: BorderRadius.circular(
                       AppTheme.getLargeRadius(screenSize)),
                 ),
-                child: Icon(Icons.check_circle_rounded,
-                    color: AppTheme.successColor,
-                    size: screenSize.height * 0.08),
+                child: Icon(
+                  Icons.check_circle_rounded,
+                  color: AppTheme.successColor,
+                  size: screenSize.height * 0.08,
+                ),
               ),
               SizedBox(height: AppTheme.getMediumPadding(screenSize)),
               Text(
@@ -919,7 +551,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
               ),
               SizedBox(height: AppTheme.getSmallPadding(screenSize)),
               Text(
-                'Tu ${widget.tipoMensaje == 'permiso' ? 'permiso especial' : 'comunicado'} ha sido enviado exitosamente a $notificationsSent ${notificationsSent == 1 ? 'estudiante' : 'estudiantes'}.\n\nLas notificaciones push también fueron enviadas a los tutores.',
+                'Tu ${widget.draft.tipoMensaje == 'permiso' ? 'permiso especial' : 'comunicado'} ha sido enviado exitosamente a $notificationsSent ${notificationsSent == 1 ? 'estudiante' : 'estudiantes'}.\n\nLas notificaciones push también fueron enviadas a los tutores.',
                 style: AppTheme.getBodyMedium(screenSize).copyWith(
                   color: AppTheme.getTextSecondaryColor(context),
                 ),
@@ -958,55 +590,60 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
   }
 
   // =========================
-  // Mapeos/enums display
+  // Mapeos y helpers display
   // =========================
-
-  String _getComunicadoTypeText(TipoComunicacion tipo) {
-    switch (tipo) {
-      case TipoComunicacion.emergencia:
+  String _displayTipoComunicado(String db) {
+    switch (db) {
+      case 'emergencia':
         return 'Emergencia';
-      case TipoComunicacion.paseo:
+      case 'paseo':
         return 'Paseo';
-      case TipoComunicacion.evento:
+      case 'evento':
         return 'Evento';
-      case TipoComunicacion.recordatorioPago:
+      case 'recordatorio_pago':
         return 'Recordatorio de Pago';
-      case TipoComunicacion.citatorio:
+      case 'citatorio':
         return 'Citatorio';
-      case TipoComunicacion.informativo:
+      case 'informativo':
         return 'Informativo';
-      case TipoComunicacion.celebracion:
+      case 'celebracion':
         return 'Celebración';
-      case TipoComunicacion.suspencionClases:
+      case 'suspension_clases':
         return 'Suspensión de Clases';
-      case TipoComunicacion.cambioHorario:
+      case 'cambio_horario':
         return 'Cambio de Horario';
+      default:
+        return db;
     }
   }
 
-  String _getPriorityText(PrioridadComunicado prioridad) {
-    switch (prioridad) {
-      case PrioridadComunicado.baja:
+  String _displayPrioridad(String db) {
+    switch (db) {
+      case 'baja':
         return 'Baja';
-      case PrioridadComunicado.media:
+      case 'media':
         return 'Media';
-      case PrioridadComunicado.alta:
+      case 'alta':
         return 'Alta';
-      case PrioridadComunicado.critica:
+      case 'critica':
         return 'Crítica';
+      default:
+        return db;
     }
   }
 
-  Color _getPriorityColor(PrioridadComunicado prioridad) {
-    switch (prioridad) {
-      case PrioridadComunicado.baja:
+  Color _priorityColorFromDb(String db) {
+    switch (db) {
+      case 'baja':
         return AppTheme.successColor;
-      case PrioridadComunicado.media:
+      case 'media':
         return AppTheme.accentOrange;
-      case PrioridadComunicado.alta:
+      case 'alta':
         return AppTheme.warningColor;
-      case PrioridadComunicado.critica:
+      case 'critica':
         return AppTheme.errorColor;
+      default:
+        return AppTheme.getTextPrimaryColor(context);
     }
   }
 
@@ -1044,7 +681,8 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
         borderRadius:
             BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
         border: Border.all(
-            color: AppTheme.getBorderColor(context).withOpacity(0.3)),
+          color: AppTheme.getBorderColor(context).withOpacity(0.3),
+        ),
         boxShadow: [
           BoxShadow(
             color: AppTheme.getShadowColor(context),
@@ -1067,8 +705,10 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                 topRight: Radius.circular(AppTheme.getLargeRadius(screenSize)),
               ),
               border: Border(
-                  bottom:
-                      BorderSide(color: AppTheme.accentBlue.withOpacity(0.2))),
+                bottom: BorderSide(
+                  color: AppTheme.accentBlue.withOpacity(0.2),
+                ),
+              ),
             ),
             child: Row(
               children: [
@@ -1080,9 +720,11 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                     borderRadius: BorderRadius.circular(
                         AppTheme.getSmallRadius(screenSize)),
                   ),
-                  child: Icon(Icons.message_rounded,
-                      color: AppTheme.accentBlue,
-                      size: screenSize.height * 0.025),
+                  child: Icon(
+                    Icons.message_rounded,
+                    color: AppTheme.accentBlue,
+                    size: screenSize.height * 0.025,
+                  ),
                 ),
                 SizedBox(width: AppTheme.getMediumPadding(screenSize)),
                 Text(
@@ -1111,17 +753,20 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                     color: AppTheme.accentBlue.withOpacity(0.03),
                     borderRadius: BorderRadius.circular(
                         AppTheme.getMediumRadius(screenSize)),
-                    border:
-                        Border.all(color: AppTheme.accentBlue.withOpacity(0.1)),
+                    border: Border.all(
+                      color: AppTheme.accentBlue.withOpacity(0.1),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.title_rounded,
-                              color: AppTheme.accentBlue,
-                              size: screenSize.height * 0.02),
+                          Icon(
+                            Icons.title_rounded,
+                            color: AppTheme.accentBlue,
+                            size: screenSize.height * 0.02,
+                          ),
                           SizedBox(width: AppTheme.getSmallPadding(screenSize)),
                           Text(
                             'Título',
@@ -1135,7 +780,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                       ),
                       SizedBox(height: AppTheme.getSmallPadding(screenSize)),
                       Text(
-                        widget.titulo,
+                        widget.draft.titulo,
                         style: AppTheme.getBodyLarge(screenSize).copyWith(
                           fontWeight: FontWeight.w700,
                           color: AppTheme.getTextPrimaryColor(context),
@@ -1158,17 +803,19 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                     borderRadius: BorderRadius.circular(
                         AppTheme.getMediumRadius(screenSize)),
                     border: Border.all(
-                        color:
-                            AppTheme.getBorderColor(context).withOpacity(0.3)),
+                      color: AppTheme.getBorderColor(context).withOpacity(0.3),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.description_rounded,
-                              color: AppTheme.getTextSecondaryColor(context),
-                              size: screenSize.height * 0.02),
+                          Icon(
+                            Icons.description_rounded,
+                            color: AppTheme.getTextSecondaryColor(context),
+                            size: screenSize.height * 0.02,
+                          ),
                           SizedBox(width: AppTheme.getSmallPadding(screenSize)),
                           Text(
                             'Mensaje',
@@ -1182,7 +829,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                       ),
                       SizedBox(height: AppTheme.getSmallPadding(screenSize)),
                       Text(
-                        widget.mensaje,
+                        widget.draft.mensaje,
                         style: AppTheme.getBodyMedium(screenSize).copyWith(
                           color: AppTheme.getTextPrimaryColor(context),
                           height: 1.5,

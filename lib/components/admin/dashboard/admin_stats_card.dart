@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -18,6 +19,8 @@ class AdminStatsCard extends StatefulWidget {
 }
 
 class _AdminStatsCardState extends State<AdminStatsCard> {
+  final _supabase = Supabase.instance.client;
+
   int _totalScanned = 0;
   int _presentStudents = 0;
   int _lateStudents = 0;
@@ -25,28 +28,68 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
   String? _error;
   bool _isInitialized = false;
 
-  @override
-  void initState() {
-    super.initState();
-    // Don't load data here - move to didChangeDependencies
-  }
+  RealtimeChannel? _realtimeChannel;
+  Timer? _debounceReloadTimer;
+  String? _escuelaIdInUse;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_isInitialized) {
       _isInitialized = true;
-      _loadTodayStats();
+      _setupAndLoad();
     }
+  }
+
+  Future<void> _setupAndLoad() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final escuelaId = userProvider.currentUser?.escuelaId;
+
+    if (escuelaId == null) {
+      final l10n = AppLocalizations.of(context);
+      setState(() {
+        _error = l10n.couldNotGetUserSchool;
+        _isLoading = false;
+      });
+      return;
+    }
+
+    _escuelaIdInUse = escuelaId;
+
+    // 1) Carga inicial
+    await _loadTodayStats();
+
+    // 2) Suscripción a Realtime
+    await _subscribeToRealtime();
+  }
+
+  Future<void> _subscribeToRealtime() async {
+    if (_realtimeChannel != null) {
+      try {
+        await _supabase.removeChannel(_realtimeChannel!);
+      } catch (_) {}
+      _realtimeChannel = null;
+    }
+
+    _realtimeChannel = _supabase.channel('notificaciones-stats-card')
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'notificaciones',
+        callback: (payload) {
+          _debounceReloadTimer?.cancel();
+          _debounceReloadTimer = Timer(const Duration(milliseconds: 250), () {
+            if (mounted) _loadTodayStats();
+          });
+        },
+      )
+      ..subscribe();
   }
 
   Future<void> _loadTodayStats() async {
     final l10n = AppLocalizations.of(context);
     try {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      final escuelaId = userProvider.currentUser?.escuelaId;
-
-      if (escuelaId == null) {
+      if (_escuelaIdInUse == null) {
         setState(() {
           _error = l10n.couldNotGetUserSchool;
           _isLoading = false;
@@ -54,13 +97,16 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
         return;
       }
 
-      final supabase = Supabase.instance.client;
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
       final today = DateTime.now();
       final startOfDay = DateTime(today.year, today.month, today.day);
       final endOfDay = startOfDay.add(const Duration(days: 1));
 
-      // Get today's attendance notifications
-      final response = await supabase
+      final response = await _supabase
           .from('notificaciones')
           .select('''
             tipo_notificacion,
@@ -68,22 +114,22 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
               id_escuela
             )
           ''')
-          .eq('alumnos.id_escuela', escuelaId)
+          .eq('alumnos.id_escuela', _escuelaIdInUse!)
           .inFilter('tipo_notificacion', ['entrada', 'salida', 'retraso'])
           .gte('fecha_registro', startOfDay.toIso8601String())
           .lt('fecha_registro', endOfDay.toIso8601String());
 
       final notifications = List<Map<String, dynamic>>.from(response);
 
-      // Count different types of notifications
-      int totalScanned = notifications.length;
-      int presentStudents = notifications
+      final totalScanned = notifications.length;
+      final presentStudents = notifications
           .where((n) => n['tipo_notificacion'] == 'entrada')
           .length;
-      int lateStudents = notifications
+      final lateStudents = notifications
           .where((n) => n['tipo_notificacion'] == 'retraso')
           .length;
 
+      if (!mounted) return;
       setState(() {
         _totalScanned = totalScanned;
         _presentStudents = presentStudents;
@@ -92,11 +138,23 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
       });
     } catch (e) {
       debugPrint('Error loading today stats: $e');
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _debounceReloadTimer?.cancel();
+    if (_realtimeChannel != null) {
+      try {
+        _supabase.removeChannel(_realtimeChannel!);
+      } catch (_) {}
+    }
+    super.dispose();
   }
 
   @override
@@ -121,7 +179,7 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with modern design
+          // Header
           Row(
             children: [
               Container(
@@ -154,7 +212,6 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
 
           SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
 
-          // Stats items with improved layout
           if (_isLoading)
             const Center(
               child: Padding(
@@ -260,7 +317,7 @@ class _ModernStatItem extends StatelessWidget {
 
         SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-        // Value with larger, bold typography
+        // Value
         Text(
           value,
           style: AppTheme.getH1(screenSize).copyWith(
@@ -272,7 +329,7 @@ class _ModernStatItem extends StatelessWidget {
 
         SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.5),
 
-        // Label with proper spacing
+        // Label
         Text(
           label,
           style: AppTheme.getCaptionSmall(screenSize).copyWith(

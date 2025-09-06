@@ -24,7 +24,6 @@ import 'package:alertaescolar/views/user/profile/family_information_view.dart';
 import 'package:alertaescolar/views/admin/home/admin_dashboard_view.dart';
 import 'package:alertaescolar/views/admin/profile/admin_profile_view.dart';
 import 'package:alertaescolar/views/admin/qr_and_notifications/attendance_control_view.dart';
-import 'package:alertaescolar/views/admin/qr_and_notifications/announcements_view.dart';
 import 'package:alertaescolar/views/admin/students/students_directory_view.dart';
 import 'package:alertaescolar/views/admin/students/student_profile_admin_view.dart';
 import 'package:alertaescolar/views/admin/schedule/schedule_management_view.dart';
@@ -237,11 +236,7 @@ class AppRoutes {
           builder: (context) => const AttendanceControlView(),
           settings: const RouteSettings(name: adminAttendanceControl),
         );
-      case adminAnnouncements:
-        return MaterialPageRoute(
-          builder: (context) => const AnnouncementsView(),
-          settings: const RouteSettings(name: adminAnnouncements),
-        );
+
       case adminStudentsDirectory:
         return MaterialPageRoute(
           builder: (context) => const StudentsDirectoryView(),

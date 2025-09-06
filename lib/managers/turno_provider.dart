@@ -82,23 +82,37 @@ class TurnoProvider extends ChangeNotifier {
     Future.microtask(notifyListeners);
   }
 
-  /// Parsea 'HH:mm' / 'HH:mm:ss' / ISO -> TimeOfDay.
+  /// Parsea time dinámico a TimeOfDay. Acepta:
+  /// - HH:mm
+  /// - HH:mm:ss
+  /// - HH:mm:ss+ZZ / HH:mm:ss.ffffff / HH:mm:ss.ffffff+ZZ
+  /// - ISO con fecha (YYYY-MM-DDTHH:mm[:ss][.ffffffff][Z|+ZZ])
   TimeOfDay? parseTimeString(dynamic value) {
     if (value == null) return null;
-    final s = value.toString();
+    String s = value.toString().trim();
+    if (s.isEmpty) return null;
+
     try {
-      if (RegExp(r'^\d{2}:\d{2}$').hasMatch(s)) {
-        final parts = s.split(':');
-        return TimeOfDay(
-            hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+      // Si viene ISO con fecha, quedarnos con la parte de la hora.
+      if (s.contains('T')) {
+        final timePart = s.split('T').last;
+        s = timePart;
       }
-      if (RegExp(r'^\d{2}:\d{2}:\d{2}$').hasMatch(s)) {
-        final parts = s.split(':');
-        return TimeOfDay(
-            hour: int.parse(parts[0]), minute: int.parse(parts[1]));
-      }
-      final dt = DateTime.parse(s);
-      return TimeOfDay(hour: dt.hour, minute: dt.minute);
+
+      // Quitar zona horaria (+00, Z) y fracciones (.ffffff)
+      // Orden: quita zona -> quita 'Z' -> quita fracciones
+      if (s.contains('+')) s = s.split('+').first;
+      if (s.endsWith('Z')) s = s.substring(0, s.length - 1);
+      if (s.contains('.')) s = s.split('.').first;
+
+      // Ahora s debería ser HH:mm o HH:mm:ss
+      final parts = s.split(':');
+      if (parts.length < 2) return null;
+
+      final h = int.parse(parts[0]);
+      final m = int.parse(parts[1]);
+
+      return TimeOfDay(hour: h, minute: m);
     } catch (_) {
       return null;
     }
@@ -111,7 +125,7 @@ class TurnoProvider extends ChangeNotifier {
     return '$h:$m';
   }
 
-  /// Carga todos los turnos de una escuela.
+  /// Carga todos los turnos de una escuela ordenados por hora de inicio.
   Future<void> loadTurnos({
     required String escuelaId,
     BuildContext? context,
@@ -129,7 +143,8 @@ class TurnoProvider extends ChangeNotifier {
           .from('turnos')
           .select('id, turno, hora_inicio, hora_fin, tolerancia, id_escuela')
           .eq('id_escuela', escuelaId)
-          .order('turno');
+          // ⚠️ clave: ordenar por hora_inicio para que la vista no tenga que reordenar
+          .order('hora_inicio', ascending: true);
 
       _turnos
         ..clear()

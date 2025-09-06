@@ -14,8 +14,11 @@ class UserProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isLoggedIn => _currentUser != null;
+// Alias para compatibilidad con vistas que esperan isLoadingUser
+  bool get isLoadingUser => _isLoading;
 
   final SupabaseClient _supabase = Supabase.instance.client;
+
   Future<String?> _resolveEscuelaIdForUser({
     required String userId,
     required String emailNorm,
@@ -100,17 +103,19 @@ class UserProvider extends ChangeNotifier {
       var u = Usuario.fromJson(Map<String, dynamic>.from(row));
 
       // 2) Si es admin y no tiene escuelaId en memoria, resolverla por email en admin_access_list
-      if (u.esAdministrador && (_nn(u.escuelaId) == null)) {
+      if (u.esAdministrador && (u.escuelaId == null || u.escuelaId!.isEmpty)) {
         final emailNorm = u.email.trim().toLowerCase();
         final adminRow = await _supabase
             .from('admin_access_list')
-            .select('id_escuela, activo')
-            .eq('email', emailNorm) // usa eq (email normalizado)
-            .eq('activo', true) // opcional pero recomendable
+            .select('id_escuela, activo, created_at')
+            .eq('email', emailNorm)
+            .eq('activo', true)
+            .order('created_at', ascending: false)
+            .limit(1)
             .maybeSingle();
 
-        final escuelaUuid = _nn(adminRow?['id_escuela']?.toString());
-        if (escuelaUuid != null) {
+        final escuelaUuid = (adminRow?['id_escuela']?.toString() ?? '').trim();
+        if (escuelaUuid.isNotEmpty) {
           u = u.copyWith(escuelaId: escuelaUuid);
         }
       }
@@ -309,5 +314,30 @@ class UserProvider extends ChangeNotifier {
   // Verifica si el usuario es administrador
   bool isAdmin() {
     return _currentUser?.tipo == TipoUsuario.administrador;
+  }
+
+  /// Devuelve escuelaId si está en memoria o intenta resolverlo; lanza si no puede.
+  Future<String> ensureEscuelaIdOrThrow() async {
+    final u = _currentUser;
+    if (u == null) {
+      throw StateError('No hay sesión activa.');
+    }
+    if (u.escuelaId != null && u.escuelaId!.isNotEmpty) {
+      return u.escuelaId!;
+    }
+    final resolved = await ensureEscuelaIdLoaded();
+    if (resolved == null || resolved.isEmpty) {
+      throw StateError('No se pudo determinar la escuela del usuario.');
+    }
+    return resolved;
+  }
+
+  /// Versión sincrónica que lanza si no hay escuela cargada.
+  String requireEscuelaId() {
+    final id = _currentUser?.escuelaId;
+    if (id == null || id.isEmpty) {
+      throw StateError('Escuela no definida en memoria.');
+    }
+    return id;
   }
 }

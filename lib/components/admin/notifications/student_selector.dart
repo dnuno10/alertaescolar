@@ -5,6 +5,8 @@ import '../../../l10n/app_localizations.dart';
 
 class StudentSelector extends StatelessWidget {
   final Map<String, dynamic>? selectedStudent;
+  final VoidCallback? onClearSelected; // <- NUEVO
+
   final Size screenSize;
   final VoidCallback onSelectStudent;
 
@@ -13,6 +15,7 @@ class StudentSelector extends StatelessWidget {
     required this.selectedStudent,
     required this.screenSize,
     required this.onSelectStudent,
+    this.onClearSelected,
   });
 
   @override

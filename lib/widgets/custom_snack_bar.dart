@@ -15,28 +15,18 @@ class CustomSnackBar {
     if (!context.mounted) return null;
 
     try {
-      final theme = Theme.of(context);
-      final snackTheme = theme.snackBarTheme;
+      // Colores hardcodeados (no usan tema)
+      // Puedes ajustar a tonos específicos si prefieres:
+      // final Color successColor = const Color(0xFF22C55E); // verde 600
+      // final Color errorColor   = const Color(0xFFEF4444); // rojo 500
+      final Color successColor = Colors.green;
+      final Color errorColor = Colors.red;
 
-      // Colores por tema con override mínimo para error/éxito
-      final bgColor = isError
-          ? (snackTheme.backgroundColor ?? theme.colorScheme.error)
-          : (snackTheme.backgroundColor ?? theme.colorScheme.primary);
-
-      final icon = isError ? Icons.error : Icons.check_circle;
-
-      // Haptics opcional
-      // (no lanzará excepción en web)
-      try {
-        if (isError) {
-          HapticFeedback.heavyImpact();
-        } else {
-          HapticFeedback.lightImpact();
-        }
-      } catch (_) {}
+      final Color bgColor = isError ? errorColor : successColor;
+      final IconData icon =
+          isError ? Icons.error_rounded : Icons.check_circle_rounded;
 
       final messenger = ScaffoldMessenger.of(context);
-
       if (replace) {
         messenger.hideCurrentSnackBar();
       }
@@ -55,7 +45,7 @@ class CustomSnackBar {
                 style: GoogleFonts.poppins(
                   color: Colors.white,
                   fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -64,9 +54,8 @@ class CustomSnackBar {
         backgroundColor: bgColor,
         duration: duration,
         behavior: SnackBarBehavior.floating,
-        elevation: snackTheme.elevation ?? 6,
-        shape: snackTheme.shape ??
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        elevation: 6,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
         action: (actionLabel != null && onAction != null)
             ? SnackBarAction(

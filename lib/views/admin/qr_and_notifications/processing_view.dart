@@ -1,22 +1,51 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../../app/app_theme.dart';
 import '../../../services/scanner_service.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../managers/turno_provider.dart';
+
+enum ProcessingDisplayMode { full, headless }
+
+class ProcessingOutcome {
+  final bool success;
+  final String? message;
+  final Map<String, dynamic>? student;
+  final Map<String, dynamic>? access;
+
+  const ProcessingOutcome({
+    required this.success,
+    this.message,
+    this.student,
+    this.access,
+  });
+}
 
 class ProcessingView extends StatefulWidget {
   final String scannedCode;
   final String adminId;
+  final String escuelaId;
   final ScannerAccessType accessType;
   final bool isDefaultEntryConfig;
+
+  /// Nuevo: modo de visualización. En headless no se muestran pantallas de resultado.
+  final ProcessingDisplayMode displayMode;
+
+  /// Nuevo: si true, hace Navigator.pop con ProcessingOutcome (detallado); si false, pop(bool).
+  final bool returnDetailedResult;
 
   const ProcessingView({
     super.key,
     required this.scannedCode,
     required this.adminId,
+    required this.escuelaId,
     required this.accessType,
     required this.isDefaultEntryConfig,
+    this.displayMode = ProcessingDisplayMode.full,
+    this.returnDetailedResult = false,
   });
 
   @override
@@ -33,18 +62,26 @@ class _ProcessingViewState extends State<ProcessingView>
   Map<String, dynamic>? _studentData;
   Map<String, dynamic>? _accessData;
   String? _errorMessage;
-  bool _hasStartedProcessing = false;
 
-  // Animation controllers
+  bool _processingStarted = false;
+
+  // Anti double-pop & timers cancelables
+  bool _hasPopped = false;
+  bool _disposed = false; // ⚡ OPTIMIZACIÓN: Prevenir múltiples dispose
+  Timer? _autoPopTimer;
+
+  void _startProcessingOnce() {
+    if (_processingStarted) return;
+    _processingStarted = true;
+    _startProcessing();
+  }
+
+  // Animations
   late AnimationController _processingAnimationController;
   late AnimationController _resultAnimationController;
   late AnimationController _slideInAnimationController;
-
-  // Processing animations
   late Animation<double> _processingFadeAnimation;
   late Animation<double> _processingRotationAnimation;
-
-  // Result animations
   late Animation<double> _resultScaleAnimation;
   late Animation<Offset> _slideInAnimation;
   late Animation<double> _overlayOpacityAnimation;
@@ -53,15 +90,7 @@ class _ProcessingViewState extends State<ProcessingView>
   void initState() {
     super.initState();
     _initAnimations();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_hasStartedProcessing) {
-      _hasStartedProcessing = true;
-      _startProcessing();
-    }
+    Future.microtask(_startProcessingOnce);
   }
 
   void _initAnimations() {
@@ -80,158 +109,345 @@ class _ProcessingViewState extends State<ProcessingView>
       vsync: this,
     );
 
-    // Processing animations
-    _processingFadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _processingAnimationController,
-      curve: const Interval(0.0, 0.4, curve: Curves.easeInOut),
-    ));
+    _processingFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _processingAnimationController,
+        curve: const Interval(0.0, 0.4, curve: Curves.easeInOut),
+      ),
+    );
 
-    _processingRotationAnimation = Tween<double>(
-      begin: 0.0,
-      end: 2.0,
-    ).animate(CurvedAnimation(
+    _processingRotationAnimation =
+        Tween<double>(begin: 0.0, end: 2.0).animate(CurvedAnimation(
       parent: _processingAnimationController,
       curve: Curves.linear,
     ));
 
-    // Result animations
-    _resultScaleAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
+    _resultScaleAnimation =
+        Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
       parent: _resultAnimationController,
       curve: Curves.easeOutBack,
     ));
 
-    _slideInAnimation = Tween<Offset>(
-      begin: const Offset(0.0, 0.1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _slideInAnimationController,
-      curve: Curves.easeOutQuart,
-    ));
+    _slideInAnimation =
+        Tween<Offset>(begin: const Offset(0.0, 0.1), end: Offset.zero).animate(
+      CurvedAnimation(
+          parent: _slideInAnimationController, curve: Curves.easeOutQuart),
+    );
 
-    _overlayOpacityAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
+    _overlayOpacityAnimation =
+        Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
       parent: _slideInAnimationController,
       curve: Curves.easeOut,
     ));
 
-    // Start processing animation immediately
     _processingAnimationController.repeat();
+  }
+
+  /// Busca recursivamente un mensaje de error en cualquier estructura (Map/List/String)
+  String? _digForError(dynamic data) {
+    if (data == null) return null;
+    if (data is String) {
+      final s = data.trim();
+      if (s.isNotEmpty) return s;
+      return null;
+    }
+    if (data is Map) {
+      const candidates = [
+        'error',
+        'message',
+        'mensaje',
+        'detail',
+        'descripcion',
+        'razon',
+        'reason'
+      ];
+      for (final key in candidates) {
+        if (data.containsKey(key)) {
+          final val = _digForError(data[key]);
+          if (val != null && val.isNotEmpty) return val;
+        }
+      }
+      for (final v in data.values) {
+        final val = _digForError(v);
+        if (val != null && val.isNotEmpty) return val;
+      }
+      return null;
+    }
+    if (data is List) {
+      for (final v in data) {
+        final val = _digForError(v);
+        if (val != null && val.isNotEmpty) return val;
+      }
+    }
+    return null;
   }
 
   Future<void> _startProcessing() async {
     if (!mounted) return;
 
     final l10n = AppLocalizations.of(context);
-    debugPrint(
-        'ProcessingView: Starting to process scanned code: ${widget.scannedCode}');
-    debugPrint('ProcessingView: Admin ID: ${widget.adminId}');
-    debugPrint('ProcessingView: Access Type: ${widget.accessType}');
-    debugPrint(
-        'ProcessingView: Is Default Entry Config: ${widget.isDefaultEntryConfig}');
 
     try {
-      // Process the scanned code
-      debugPrint('ProcessingView: Calling ScannerService.processScannedCode');
+      final turnoProvider = Provider.of<TurnoProvider>(context, listen: false);
+
+      if (turnoProvider.currentEscuelaId != widget.escuelaId) {
+        await turnoProvider.loadTurnos(escuelaId: widget.escuelaId);
+      }
+
       final result = await _scannerService.processScannedCode(
         scannedCode: widget.scannedCode,
         adminId: widget.adminId,
+        escuelaIdFromContext: widget.escuelaId,
         accessType: widget.accessType,
         isDefaultEntryConfig: widget.isDefaultEntryConfig,
+        turnoProvider: turnoProvider,
       );
 
       if (!mounted) return;
-
-      debugPrint('ProcessingView: ScannerService returned result: $result');
-
-      // Stop processing animation
       _processingAnimationController.stop();
 
+      // Construimos outcome detallado desde el resultado
+      bool success = result['success'] == true;
+      String? message;
+
+      if (success) {
+        _studentData = result['student'] as Map<String, dynamic>?;
+        _accessData = result['access'] as Map<String, dynamic>?;
+        message = result['access']?['message']?.toString();
+        try {
+          HapticFeedback.mediumImpact();
+        } catch (_) {}
+      } else {
+        String? specificError = _digForError(result);
+        if ((result['noop'] == true || result['success'] == true) &&
+            result['reason'] != null) {
+          switch (result['reason']) {
+            case 'recentDuplicate':
+              specificError ??=
+                  'Este alumno ya fue escaneado hace menos de 1 minuto. Espera antes de volver a escanearlo.';
+              break;
+            case 'hardwareRebound':
+              specificError ??=
+                  'Se detectó un rebote del lector. Intenta nuevamente.';
+              break;
+          }
+        }
+        if (specificError == null || specificError.isEmpty) {
+          final err = (result['error']?.toString() ?? '').trim();
+          if (err.isNotEmpty) specificError = err;
+        }
+        message = (specificError != null && specificError.isNotEmpty)
+            ? specificError
+            : 'No fue posible determinar la causa. Revisa el log para más detalles.';
+        try {
+          HapticFeedback.heavyImpact();
+        } catch (_) {}
+      }
+
+      final outcome = ProcessingOutcome(
+        success: success,
+        message: message,
+        student: _studentData,
+        access: _accessData,
+      );
+
+      if (widget.displayMode == ProcessingDisplayMode.headless) {
+        // HEADLESS: no UI de resultado; regresar inmediato.
+        _return(outcome);
+        return;
+      }
+
+      // FULL UI:
+      if (!mounted) return;
       setState(() {
         _isProcessing = false;
         _showResult = true;
-        _isSuccess = result['success'];
-
-        if (_isSuccess) {
-          _studentData = result['student'];
-          _accessData = result['access'];
-          HapticFeedback.mediumImpact();
-        } else {
-          _errorMessage = result['error'] ?? l10n.unknownError;
-          HapticFeedback.heavyImpact();
-        }
+        _isSuccess = success;
+        if (!success) _errorMessage = message;
       });
 
-      // Start result animations
       _resultAnimationController.forward();
       _slideInAnimationController.forward();
 
-      // Auto-return after showing result
-      Future.delayed(Duration(seconds: _isSuccess ? 2 : 3), () {
-        if (mounted) {
-          _returnToScanner();
-        }
+      // ⚡ OPTIMIZACIÓN: Auto-pop más rápido para mejorar la experiencia
+      _autoPopTimer?.cancel();
+      _autoPopTimer = Timer(Duration(milliseconds: success ? 800 : 1200), () {
+        if (mounted) _return(outcome);
       });
     } catch (e) {
-      debugPrint('ProcessingView: Error processing code: $e');
       if (!mounted) return;
 
-      // Stop processing animation on error
       _processingAnimationController.stop();
 
+      final errorString = e.toString();
+      String? clean = _digForError(errorString);
+
+      if (clean == null || clean.isEmpty) {
+        if (errorString.contains('scanner_service') ||
+            errorString.contains('ScannerService')) {
+          clean =
+              'Error en el servicio de escáner: ${errorString.replaceAll(RegExp(r'^(Exception:|Error:)\s*'), '')}';
+        } else if (errorString.contains('supabase') ||
+            errorString.contains('database') ||
+            errorString.contains('PostgrestException')) {
+          clean =
+              'Error de conexión con la base de datos: ${errorString.replaceAll(RegExp(r'^(Exception:|Error:)\s*'), '')}';
+        } else if (errorString.contains('network') ||
+            errorString.contains('connection') ||
+            errorString.contains('timeout')) {
+          clean =
+              'Error de conexión de red: ${errorString.replaceAll(RegExp(r'^(Exception:|Error:)\s*'), '')}';
+        } else {
+          clean = errorString
+              .replaceAll(
+                  RegExp(
+                      r'^(Exception:|Error:|FormatException:|StateError:)\s*'),
+                  '')
+              .trim();
+        }
+      }
+
+      final outcome = ProcessingOutcome(
+        success: false,
+        message: clean ?? AppLocalizations.of(context).errorProcessingCode,
+      );
+
+      if (widget.displayMode == ProcessingDisplayMode.headless) {
+        _return(outcome);
+        return;
+      }
+
+      if (!mounted) return;
       setState(() {
         _isProcessing = false;
         _showResult = true;
         _isSuccess = false;
-        _errorMessage = l10n.internalError(e.toString());
+        _errorMessage = outcome.message;
       });
 
-      HapticFeedback.heavyImpact();
-
-      // Start error result animations
+      try {
+        HapticFeedback.heavyImpact();
+      } catch (_) {}
       _resultAnimationController.forward();
       _slideInAnimationController.forward();
 
-      // Auto-return after showing error
-      Future.delayed(const Duration(seconds: 3), () {
-        if (mounted) {
-          _returnToScanner();
-        }
+      _autoPopTimer?.cancel();
+      _autoPopTimer = Timer(const Duration(milliseconds: 1800), () {
+        if (mounted) _return(outcome);
       });
     }
   }
 
-  void _returnToScanner() {
-    Navigator.of(context).pop(_isSuccess);
+  void _return(ProcessingOutcome outcome) {
+    if (!mounted || _hasPopped) return;
+    _hasPopped = true;
+
+    final Object navResult =
+        widget.returnDetailedResult ? outcome : outcome.success;
+
+    // ⚡ OPTIMIZACIÓN: Detener animaciones de forma más suave para evitar conflictos con UiKitView
+    _autoPopTimer?.cancel();
+
+    try {
+      if (_processingAnimationController.isAnimating) {
+        _processingAnimationController.stop();
+      }
+      if (_resultAnimationController.isAnimating) {
+        _resultAnimationController.stop();
+      }
+      if (_slideInAnimationController.isAnimating) {
+        _slideInAnimationController.stop();
+      }
+    } catch (e) {
+      debugPrint('ProcessingView: Animation stop error (ignored): $e');
+    }
+
+    // ⚡ OPTIMIZACIÓN: Delay mínimo para permitir que iOS libere recursos nativos
+    Future.delayed(const Duration(milliseconds: 50), () {
+      if (!mounted) return;
+
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop(navResult);
+      } else {
+        debugPrint('ProcessingView: No route to pop, returning silently.');
+      }
+    });
   }
 
   @override
   void dispose() {
-    _processingAnimationController.dispose();
-    _resultAnimationController.dispose();
-    _slideInAnimationController.dispose();
+    if (_disposed) return; // ⚡ OPTIMIZACIÓN: Prevenir múltiples dispose
+    _disposed = true;
+
+    // ⚡ OPTIMIZACIÓN: Cancelar timers y detener animaciones de forma más robusta
+    _autoPopTimer?.cancel();
+    _autoPopTimer = null;
+
+    // Detener animaciones de forma segura
+    try {
+      if (_processingAnimationController.isAnimating) {
+        _processingAnimationController.stop();
+      }
+    } catch (e) {
+      debugPrint('ProcessingView: Error stopping processing animation: $e');
+    }
+
+    try {
+      if (_resultAnimationController.isAnimating) {
+        _resultAnimationController.stop();
+      }
+    } catch (e) {
+      debugPrint('ProcessingView: Error stopping result animation: $e');
+    }
+
+    try {
+      if (_slideInAnimationController.isAnimating) {
+        _slideInAnimationController.stop();
+      }
+    } catch (e) {
+      debugPrint('ProcessingView: Error stopping slide animation: $e');
+    }
+
+    // Dispose controllers de forma segura
+    try {
+      _processingAnimationController.dispose();
+    } catch (e) {
+      debugPrint('ProcessingView: Error disposing processing controller: $e');
+    }
+
+    try {
+      _resultAnimationController.dispose();
+    } catch (e) {
+      debugPrint('ProcessingView: Error disposing result controller: $e');
+    }
+
+    try {
+      _slideInAnimationController.dispose();
+    } catch (e) {
+      debugPrint('ProcessingView: Error disposing slide controller: $e');
+    }
+
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
+    if (widget.displayMode == ProcessingDisplayMode.headless) {
+      // ➜ Usamos la misma vista de "Procesando" que ya incluye el
+      //    recuadro "Código Escaneado", para que SIEMPRE se vea el código.
+      final screenSize = MediaQuery.of(context).size;
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: _buildProcessingView(screenSize),
+      );
+    }
 
+    final screenSize = MediaQuery.of(context).size;
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // Processing View
           if (_isProcessing) _buildProcessingView(screenSize),
-
-          // Result View (Success or Error)
           if (_showResult) _buildResultView(screenSize),
         ],
       ),
@@ -252,7 +468,6 @@ class _ProcessingViewState extends State<ProcessingView>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Clean animated loading circle
                 SizedBox(
                   width: 80,
                   height: 80,
@@ -280,10 +495,7 @@ class _ProcessingViewState extends State<ProcessingView>
                     },
                   ),
                 ),
-
                 SizedBox(height: AppTheme.getLargePadding(screenSize) * 2),
-
-                // Simple title
                 Text(
                   'Procesando',
                   style: AppTheme.getH1(screenSize).copyWith(
@@ -292,10 +504,7 @@ class _ProcessingViewState extends State<ProcessingView>
                     letterSpacing: 2.0,
                   ),
                 ),
-
                 SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-                // Scanned code in minimal design
                 Container(
                   padding: EdgeInsets.symmetric(
                     horizontal: AppTheme.getLargePadding(screenSize),
@@ -375,7 +584,6 @@ class _ProcessingViewState extends State<ProcessingView>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Success icon with enhanced animation
                   SlideTransition(
                     position: _slideInAnimation,
                     child: AnimatedBuilder(
@@ -401,7 +609,7 @@ class _ProcessingViewState extends State<ProcessingView>
                                 ),
                               ],
                             ),
-                            child: Icon(
+                            child: const Icon(
                               Icons.check_rounded,
                               color: Colors.white,
                               size: 50,
@@ -411,10 +619,7 @@ class _ProcessingViewState extends State<ProcessingView>
                       },
                     ),
                   ),
-
                   SizedBox(height: AppTheme.getLargePadding(screenSize)),
-
-                  // Success message
                   SlideTransition(
                     position: _slideInAnimation,
                     child: Text(
@@ -428,10 +633,7 @@ class _ProcessingViewState extends State<ProcessingView>
                       textAlign: TextAlign.center,
                     ),
                   ),
-
                   SizedBox(height: AppTheme.getLargePadding(screenSize)),
-
-                  // Student name with enhanced styling
                   SlideTransition(
                     position: _slideInAnimation,
                     child: Container(
@@ -476,9 +678,7 @@ class _ProcessingViewState extends State<ProcessingView>
                       ),
                     ),
                   ),
-
                   SizedBox(height: AppTheme.getLargePadding(screenSize)),
-
                   SlideTransition(
                     position: _slideInAnimation,
                     child: Container(
@@ -495,20 +695,19 @@ class _ProcessingViewState extends State<ProcessingView>
                             color: Colors.black.withOpacity(0.1),
                             blurRadius: 20,
                             spreadRadius: 2,
-                            offset: Offset(0, 4),
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
                       child: Column(
                         children: [
-                          // Header with Matrícula destacada
                           Container(
                             width: double.infinity,
                             padding: EdgeInsets.all(
                                 AppTheme.getMediumPadding(screenSize)),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.1),
-                              borderRadius: BorderRadius.vertical(
+                              borderRadius: const BorderRadius.vertical(
                                   top: Radius.circular(24)),
                               border: Border(
                                 bottom: BorderSide(
@@ -548,14 +747,11 @@ class _ProcessingViewState extends State<ProcessingView>
                               ],
                             ),
                           ),
-
-                          // Grid de información académica
                           Padding(
                             padding: EdgeInsets.all(
                                 AppTheme.getMediumPadding(screenSize)),
                             child: Column(
                               children: [
-                                // Primera fila: Grado y Nivel
                                 Row(
                                   children: [
                                     Expanded(
@@ -579,12 +775,9 @@ class _ProcessingViewState extends State<ProcessingView>
                                     ),
                                   ],
                                 ),
-
                                 SizedBox(
                                     height:
                                         AppTheme.getSmallPadding(screenSize)),
-
-                                // Segunda fila: Turno
                                 _buildModernInfoCard(
                                   'Turno',
                                   _studentData!['turno'] ?? 'N/A',
@@ -592,19 +785,15 @@ class _ProcessingViewState extends State<ProcessingView>
                                   screenSize,
                                   isFullWidth: true,
                                 ),
-
                                 SizedBox(
                                     height:
                                         AppTheme.getSmallPadding(screenSize)),
-
-                                // Tercera fila: Hora de registro
                                 _buildModernInfoCard(
                                   'Hora de Registro',
                                   _accessData != null
-                                      ? DateTime.parse(_accessData!['time'])
-                                          .toLocal()
-                                          .toString()
-                                          .substring(11, 16)
+                                      ? _formatTime12h(
+                                          DateTime.parse(_accessData!['time'])
+                                              .toLocal())
                                       : 'N/A',
                                   Icons.access_time_filled,
                                   screenSize,
@@ -625,6 +814,19 @@ class _ProcessingViewState extends State<ProcessingView>
         );
       },
     );
+  }
+
+  String _formatTime12h(DateTime dt) {
+    final local = dt.toLocal();
+    int hour = local.hour;
+    final minute = local.minute.toString().padLeft(2, '0');
+    final period = hour >= 12 ? 'PM' : 'AM';
+    if (hour == 0) {
+      hour = 12;
+    } else if (hour > 12) {
+      hour -= 12;
+    }
+    return '$hour:$minute $period';
   }
 
   Widget _buildErrorView(Size screenSize) {
@@ -653,7 +855,6 @@ class _ProcessingViewState extends State<ProcessingView>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Error icon with enhanced animation
                   SlideTransition(
                     position: _slideInAnimation,
                     child: AnimatedBuilder(
@@ -671,15 +872,8 @@ class _ProcessingViewState extends State<ProcessingView>
                                 color: Colors.white.withOpacity(0.4),
                                 width: 3,
                               ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 20,
-                                  spreadRadius: 2,
-                                ),
-                              ],
                             ),
-                            child: Icon(
+                            child: const Icon(
                               Icons.error_outline_rounded,
                               color: Colors.white,
                               size: 50,
@@ -689,10 +883,7 @@ class _ProcessingViewState extends State<ProcessingView>
                       },
                     ),
                   ),
-
                   SizedBox(height: AppTheme.getLargePadding(screenSize)),
-
-                  // Error message
                   SlideTransition(
                     position: _slideInAnimation,
                     child: Text(
@@ -706,10 +897,7 @@ class _ProcessingViewState extends State<ProcessingView>
                       textAlign: TextAlign.center,
                     ),
                   ),
-
                   SizedBox(height: AppTheme.getLargePadding(screenSize)),
-
-                  // Error details with enhanced styling
                   SlideTransition(
                     position: _slideInAnimation,
                     child: Container(
@@ -749,10 +937,7 @@ class _ProcessingViewState extends State<ProcessingView>
                       ),
                     ),
                   ),
-
                   SizedBox(height: AppTheme.getLargePadding(screenSize)),
-
-                  // Scanned code display
                   SlideTransition(
                     position: _slideInAnimation,
                     child: Container(
@@ -832,15 +1017,10 @@ class _ProcessingViewState extends State<ProcessingView>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Icono y label
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                color: Colors.white.withOpacity(0.8),
-                size: 16,
-              ),
+              Icon(icon, color: Colors.white.withOpacity(0.8), size: 16),
               SizedBox(width: AppTheme.getSmallPadding(screenSize) / 2),
               Flexible(
                 child: Text(
@@ -857,10 +1037,7 @@ class _ProcessingViewState extends State<ProcessingView>
               ),
             ],
           ),
-
           SizedBox(height: AppTheme.getSmallPadding(screenSize) / 2),
-
-          // Valor
           Text(
             value,
             style: AppTheme.getH2(screenSize).copyWith(
@@ -880,7 +1057,6 @@ class _ProcessingViewState extends State<ProcessingView>
   }
 }
 
-// Custom painter for arc progress
 class _ArcPainter extends CustomPainter {
   final Color color;
   final double strokeWidth;
@@ -902,11 +1078,10 @@ class _ArcPainter extends CustomPainter {
       size.height - strokeWidth,
     );
 
-    // Draw arc (3/4 circle for modern look)
     canvas.drawArc(
       rect,
-      -1.57, // Start from top (-90 degrees in radians)
-      4.71, // Draw 3/4 circle (270 degrees in radians)
+      -1.57,
+      4.71,
       false,
       paint,
     );

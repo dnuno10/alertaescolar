@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -68,11 +69,11 @@ class FCMService {
           .maybeSingle();
 
       if (existing == null) {
-        // Insert new token
+        // Insert new token (no encadenar .eq() después de insert)
         await _supabase.from('mobile_tokens').insert({
           'id_usuario': user.id,
           'token': token,
-        }).eq('id_usuario', user.id);
+        });
 
         debugPrint('FCM: Token registered successfully');
       } else {
@@ -109,8 +110,65 @@ class FCMService {
     debugPrint('FCM: ⏰ Time: ${DateTime.now()}');
     debugPrint('FCM: ==========================================');
 
-    // In a real app, you would show a local notification or update the UI here
-    // For now, this console output confirms the notification system is working
+    // Aquí podrías mostrar una notificación local o actualizar UI
+  }
+
+  // =========================================================
+  //                 NUEVO: envío directo a tokens
+  // =========================================================
+
+  /// Envía push a una lista de tokens. Se encarga de:
+  /// - dividir en lotes,
+  /// - llamar a la Edge Function,
+  /// - eliminar tokens inválidos.
+  /// Devuelve el número de tokens con envío exitoso reportado por la función.
+// Envío en paralelo con límite de concurrencia para mayor velocidad.
+// Retorna el total de envíos "ok" reportados por la Edge Function.
+  Future<int> sendToTokens({
+    required List<String> tokens,
+    required String title,
+    required String body,
+    Map<String, dynamic> data = const {},
+    int batchSize = 500,
+    int maxConcurrentBatches = 4, // <- controla la concurrencia total
+  }) async {
+    if (tokens.isEmpty) return 0;
+
+    final dedup = tokens.toSet().toList();
+    final batches = <List<String>>[];
+    for (int i = 0; i < dedup.length; i += batchSize) {
+      batches.add(dedup.sublist(
+          i, i + batchSize > dedup.length ? dedup.length : i + batchSize));
+    }
+
+    int success = 0;
+    int idx = 0;
+
+    // Ejecutamos en tandas para no saturar el server ni la red
+    while (idx < batches.length) {
+      final slice = batches.sublist(
+        idx,
+        (idx + maxConcurrentBatches > batches.length)
+            ? batches.length
+            : idx + maxConcurrentBatches,
+      );
+
+      final results = await Future.wait(slice.map((lot) {
+        return _sendPushNotificationsToTokens(
+          tokens: lot,
+          title: title,
+          body: body,
+          data: data,
+        );
+      }));
+
+      for (final r in results) {
+        success += r;
+      }
+      idx += slice.length;
+    }
+
+    return success;
   }
 
   /// Send notification to student's tutors (for attendance)
@@ -119,7 +177,7 @@ class FCMService {
     required String title,
     required String body,
     required String notificationId,
-    Map<String, String>? additionalData,
+    Map<String, dynamic>? additionalData,
   }) async {
     try {
       debugPrint(
@@ -131,14 +189,14 @@ class FCMService {
         return;
       }
 
-      final data = {
+      final data = <String, dynamic>{
         'notificationId': notificationId,
         'studentId': studentId,
         'type': 'attendance',
-        ...?additionalData,
+        ...?(additionalData ?? {}),
       };
 
-      await _sendPushNotificationsToTokens(
+      await sendToTokens(
         tokens: tokens,
         title: title,
         body: body,
@@ -206,17 +264,17 @@ class FCMService {
         return;
       }
 
-      final data = {
+      final data = <String, dynamic>{
         'recipientType': recipientType,
         'type': 'communication',
         'messageType': messageType,
         'comunicadoType': comunicadoType ?? '',
         'priority': priority ?? '',
         'destinatarios': destinatarios ?? '',
-        'totalStudents': totalStudents?.toString() ?? '0',
+        'totalStudents': (totalStudents ?? 0).toString(),
       };
 
-      await _sendPushNotificationsToTokens(
+      await sendToTokens(
         tokens: tokens,
         title: title,
         body: body,
@@ -229,10 +287,13 @@ class FCMService {
     }
   }
 
+  // =========================================================
+  //               Resolución de tokens por alcance
+  // =========================================================
+
   /// Get tutor tokens for a specific student
   Future<List<String>> _getTutorTokensForStudent(String studentId) async {
     try {
-      // First, get all tutors for this student
       final tutorResponse = await _supabase
           .from('alumno_tutores')
           .select('id_tutor')
@@ -243,32 +304,23 @@ class FCMService {
         return [];
       }
 
-      // Extract tutor IDs (which are user IDs)
       final tutorIds = tutorResponse
-          .map<String>((record) => record['id_tutor'] as String)
+          .map<String>((record) => record['id_tutor'].toString())
           .toList();
 
       debugPrint(
           'FCM: Found ${tutorIds.length} tutors for student: $studentId');
 
-      // Get the most recent token for each tutor
-      List<String> tokens = [];
-      for (String tutorId in tutorIds) {
-        final tokenResponse = await _supabase
-            .from('mobile_tokens')
-            .select('token')
-            .eq('id_usuario', tutorId)
-            .order('created_at', ascending: false)
-            .limit(1)
-            .maybeSingle();
+      final tokenResponse = await _supabase
+          .from('mobile_tokens')
+          .select('token')
+          .inFilter('id_usuario', tutorIds);
 
-        if (tokenResponse != null && tokenResponse['token'] != null) {
-          final token = tokenResponse['token'] as String;
-          if (token.isNotEmpty) {
-            tokens.add(token);
-          }
-        }
-      }
+      final tokens = tokenResponse
+          .map<String>((record) => (record['token'] ?? '').toString())
+          .where((token) => token.isNotEmpty)
+          .toSet()
+          .toList();
 
       debugPrint('FCM: Found ${tokens.length} tokens for student tutors');
       return tokens;
@@ -281,7 +333,6 @@ class FCMService {
   /// Get tutor tokens for multiple groups
   Future<List<String>> _getTutorTokensForGroups(List<String> groupIds) async {
     try {
-      // First, get all students in these groups
       final studentsResponse = await _supabase
           .from('alumnos')
           .select('id')
@@ -292,13 +343,11 @@ class FCMService {
         return [];
       }
 
-      final studentIds = studentsResponse
-          .map<String>((record) => record['id'] as String)
-          .toList();
+      final studentIds =
+          studentsResponse.map<String>((r) => r['id'].toString()).toList();
 
       debugPrint('FCM: Found ${studentIds.length} students in groups');
 
-      // Get all tutors for these students
       final tutorResponse = await _supabase
           .from('alumno_tutores')
           .select('id_tutor')
@@ -309,23 +358,22 @@ class FCMService {
         return [];
       }
 
-      // Extract unique tutor IDs
       final tutorIds = tutorResponse
-          .map<String>((record) => record['id_tutor'] as String)
-          .toSet() // Remove duplicates
+          .map<String>((r) => r['id_tutor'].toString())
+          .toSet()
           .toList();
 
       debugPrint('FCM: Found ${tutorIds.length} unique tutors for groups');
 
-      // Get tokens for these tutors
       final tokenResponse = await _supabase
           .from('mobile_tokens')
           .select('token')
           .inFilter('id_usuario', tutorIds);
 
       final tokens = tokenResponse
-          .map<String>((record) => record['token'] as String)
+          .map<String>((record) => (record['token'] ?? '').toString())
           .where((token) => token.isNotEmpty)
+          .toSet()
           .toList();
 
       debugPrint('FCM: Found ${tokens.length} tokens for group tutors');
@@ -339,7 +387,6 @@ class FCMService {
   /// Get tutor tokens for a shift
   Future<List<String>> _getTutorTokensForShift(String shiftId) async {
     try {
-      // First, get all students in this shift
       final studentsResponse =
           await _supabase.from('alumnos').select('id').eq('id_turno', shiftId);
 
@@ -348,13 +395,11 @@ class FCMService {
         return [];
       }
 
-      final studentIds = studentsResponse
-          .map<String>((record) => record['id'] as String)
-          .toList();
+      final studentIds =
+          studentsResponse.map<String>((r) => r['id'].toString()).toList();
 
       debugPrint('FCM: Found ${studentIds.length} students in shift');
 
-      // Get all tutors for these students
       final tutorResponse = await _supabase
           .from('alumno_tutores')
           .select('id_tutor')
@@ -365,23 +410,22 @@ class FCMService {
         return [];
       }
 
-      // Extract unique tutor IDs
       final tutorIds = tutorResponse
-          .map<String>((record) => record['id_tutor'] as String)
-          .toSet() // Remove duplicates
+          .map<String>((r) => r['id_tutor'].toString())
+          .toSet()
           .toList();
 
       debugPrint('FCM: Found ${tutorIds.length} unique tutors for shift');
 
-      // Get tokens for these tutors
       final tokenResponse = await _supabase
           .from('mobile_tokens')
           .select('token')
           .inFilter('id_usuario', tutorIds);
 
       final tokens = tokenResponse
-          .map<String>((record) => record['token'] as String)
+          .map<String>((record) => (record['token'] ?? '').toString())
           .where((token) => token.isNotEmpty)
+          .toSet()
           .toList();
 
       debugPrint('FCM: Found ${tokens.length} tokens for shift tutors');
@@ -395,7 +439,6 @@ class FCMService {
   /// Get tutor tokens for all students in a school
   Future<List<String>> _getTutorTokensForAllStudents(String schoolId) async {
     try {
-      // First, get all students in this school
       final studentsResponse = await _supabase
           .from('alumnos')
           .select('id')
@@ -406,13 +449,11 @@ class FCMService {
         return [];
       }
 
-      final studentIds = studentsResponse
-          .map<String>((record) => record['id'] as String)
-          .toList();
+      final studentIds =
+          studentsResponse.map<String>((r) => r['id'].toString()).toList();
 
       debugPrint('FCM: Found ${studentIds.length} students in school');
 
-      // Get all tutors for these students
       final tutorResponse = await _supabase
           .from('alumno_tutores')
           .select('id_tutor')
@@ -423,23 +464,22 @@ class FCMService {
         return [];
       }
 
-      // Extract unique tutor IDs
       final tutorIds = tutorResponse
-          .map<String>((record) => record['id_tutor'] as String)
-          .toSet() // Remove duplicates
+          .map<String>((r) => r['id_tutor'].toString())
+          .toSet()
           .toList();
 
       debugPrint('FCM: Found ${tutorIds.length} unique tutors for school');
 
-      // Get tokens for these tutors
       final tokenResponse = await _supabase
           .from('mobile_tokens')
           .select('token')
           .inFilter('id_usuario', tutorIds);
 
       final tokens = tokenResponse
-          .map<String>((record) => record['token'] as String)
+          .map<String>((record) => (record['token'] ?? '').toString())
           .where((token) => token.isNotEmpty)
+          .toSet()
           .toList();
 
       debugPrint('FCM: Found ${tokens.length} tokens for school tutors');
@@ -450,32 +490,34 @@ class FCMService {
     }
   }
 
-  /// Send push notifications to multiple tokens using Supabase Edge Function
-  Future<void> _sendPushNotificationsToTokens({
+  // =========================================================
+  //                 Llamada a Edge Function
+  // =========================================================
+
+  /// Llama la Edge Function `send-fcm-notification` con un lote de tokens.
+  /// Devuelve cuántos tokens resultaron en envío exitoso.
+  Future<int> _sendPushNotificationsToTokens({
     required List<String> tokens,
     required String title,
     required String body,
-    required Map<String, String> data,
+    required Map<String, dynamic> data,
   }) async {
     if (tokens.isEmpty) {
       debugPrint('FCM: No tokens to send notifications to');
-      return;
+      return 0;
     }
 
     debugPrint('FCM: ==========================================');
-    debugPrint('FCM: 🚀 INTENTANDO ENVIAR NOTIFICACIONES REALES');
+    debugPrint('FCM: 🚀 SENDING REAL NOTIFICATIONS (Edge Function)');
     debugPrint('FCM: ==========================================');
     debugPrint('FCM: Tokens: ${tokens.length}');
     debugPrint('FCM: Title: $title');
-    debugPrint('FCM: Body: $body');
-    debugPrint('FCM: Data: $data');
+    debugPrint('FCM: Body:  $body');
+    debugPrint('FCM: Data:  $data');
     debugPrint(
-        'FCM: Tokens (primeros 20 chars): ${tokens.map((t) => '${t.substring(0, 20)}...').join(', ')}');
+        'FCM: Tokens (first 20 chars): ${tokens.map((t) => t.substring(0, min(20, t.length)) + '...').join(', ')}');
 
     try {
-      debugPrint('FCM: 📡 Llamando Edge Function: send-fcm-notification');
-
-      // Call Supabase Edge Function to send real FCM notifications
       final response = await _supabase.functions.invoke(
         'send-fcm-notification',
         body: {
@@ -486,110 +528,89 @@ class FCMService {
         },
       );
 
-      debugPrint('FCM: 📥 Respuesta recibida de Edge Function');
-      debugPrint('FCM: Status: ${response.status}');
+      debugPrint('FCM: 📥 Edge Function status: ${response.status}');
 
-      if (response.data != null) {
+      int successCount = 0;
+
+      if (response.data is Map) {
         final result = response.data as Map<String, dynamic>;
-        final successCount = result['successCount'] ?? 0;
-        final failureCount = result['failureCount'] ?? 0;
-        final totalTokens = result['totalTokens'] ?? 0;
+        successCount = (result['successCount'] ?? 0) as int;
+        final failureCount = (result['failureCount'] ?? 0) as int;
+        final invalid =
+            (result['invalidTokens'] as List?)?.cast<String>() ?? const [];
 
-        debugPrint('FCM: ==========================================');
-        debugPrint('FCM: 🚀 REAL PUSH NOTIFICATIONS SENT! 🚀');
-        debugPrint('FCM: ==========================================');
-        debugPrint('FCM: Total tokens: $totalTokens');
+        debugPrint('FCM: Total tokens: ${tokens.length}');
         debugPrint('FCM: Successful: $successCount');
         debugPrint('FCM: Failed: $failureCount');
-        debugPrint('FCM: ⏰ Time: ${DateTime.now()}');
-        debugPrint('FCM: ==========================================');
 
-        // Log individual results if available
-        if (result['results'] != null) {
-          final results = result['results'] as List;
-          for (var tokenResult in results) {
-            if (tokenResult['success'] == true) {
-              debugPrint('FCM: ✅ ${tokenResult['token']}: SUCCESS');
-            } else {
-              debugPrint(
-                  'FCM: ❌ ${tokenResult['token']}: ${tokenResult['error']}');
-            }
+        // Si la función devuelve tokens inválidos, borrarlos
+        if (invalid.isNotEmpty) {
+          await _handleInvalidTokens(invalid);
+        }
+
+        // Log de resultados individuales (opcional)
+        if (result['results'] is List) {
+          for (final item in (result['results'] as List)) {
+            final ok = item['success'] == true;
+            final tk = (item['token'] ?? '').toString();
+            final err = (item['error'] ?? '').toString();
+            debugPrint(
+                'FCM: ${ok ? '✅' : '❌'} ${tk.isEmpty ? '(unknown)' : tk.substring(0, min(20, tk.length)) + '...'} ${ok ? '' : err}');
           }
         }
 
-        if (successCount > 0) {
-          debugPrint('FCM: 🎉 Real push notifications delivered successfully!');
-        }
+        return successCount;
       } else {
-        debugPrint('FCM: Error: No response data from Edge Function');
-        debugPrint('FCM: Response status: ${response.status}');
-
-        // Fallback to simulation
-        await _simulateNotificationDelivery(tokens, title, body, data);
+        debugPrint('FCM: Edge Function returned no data; simulating locally');
+        return await _simulateNotificationDelivery(tokens, title, body, data);
       }
     } catch (e) {
       debugPrint('FCM: Error calling Edge Function: $e');
       debugPrint('FCM: Falling back to local simulation...');
-
-      // Fallback to simulation if Edge Function fails
-      await _simulateNotificationDelivery(tokens, title, body, data);
+      return await _simulateNotificationDelivery(tokens, title, body, data);
     }
   }
 
   /// Fallback method to simulate notification delivery when Edge Function fails
-  Future<void> _simulateNotificationDelivery(
+  Future<int> _simulateNotificationDelivery(
     List<String> tokens,
     String title,
     String body,
-    Map<String, String> data,
+    Map<String, dynamic> data,
   ) async {
     int successCount = 0;
-    int failureCount = 0;
 
     for (final token in tokens) {
       try {
-        debugPrint('FCM: Processing token: ${token.substring(0, 20)}...');
-
-        // Trigger local notification handling to simulate received push notification
-        await _triggerLocalNotification(title, body, data);
-
-        successCount++;
         debugPrint(
-            'FCM: Successfully processed token: ${token.substring(0, 20)}...');
-
-        // Small delay between notifications
-        await Future.delayed(const Duration(milliseconds: 200));
+            'FCM: Simulating token: ${token.substring(0, min(20, token.length))}...');
+        await _triggerLocalNotification(title, body, data);
+        successCount++;
+        await Future.delayed(const Duration(milliseconds: 100));
       } catch (e) {
-        debugPrint('FCM: Error processing token $token: $e');
-        failureCount++;
+        debugPrint('FCM: Error simulating token $token: $e');
       }
     }
 
-    debugPrint(
-        'FCM: Successfully processed $successCount devices (simulation)');
-    if (failureCount > 0) {
-      debugPrint('FCM: Failed to send to $failureCount devices (simulation)');
-    }
+    debugPrint('FCM: Simulation finished, success on $successCount tokens');
+    return successCount;
   }
 
   /// Trigger local notification to simulate push notification reception
   Future<void> _triggerLocalNotification(
-      String title, String body, Map<String, String> data) async {
+      String title, String body, Map<String, dynamic> data) async {
     try {
-      // Create a simulated RemoteMessage
       final message = RemoteMessage(
         messageId: DateTime.now().millisecondsSinceEpoch.toString(),
         notification: RemoteNotification(
           title: title,
           body: body,
         ),
-        data: data,
+        data: data.map((k, v) => MapEntry(k, v?.toString() ?? '')),
         sentTime: DateTime.now(),
       );
 
-      // Trigger the foreground message handler
       _handleForegroundMessage(message);
-
       debugPrint('FCM: Local notification triggered successfully');
     } catch (e) {
       debugPrint('FCM: Error triggering local notification: $e');

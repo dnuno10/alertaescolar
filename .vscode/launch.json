@@ -1,10 +1,6 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        
         {
             "name": "alertaescolar",
             "request": "launch",
@@ -21,6 +17,13 @@
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"
+        },
+        {
+            "name": "alertaescolar (Flutter Axel Daniel’s iPhone)",
+            "program": "lib/main.dart",
+            "deviceId": "00008120-001224E102D1A01E",
+            "request": "launch",
+            "type": "dart"
         }
     ]
 }

@@ -155,6 +155,8 @@ abstract class AppLocalizations {
 // Filters and Headers
   String get filters;
   String get attendanceDate;
+  String get selected;
+
 // Contact information
   String get noFamilyContactsRegistered;
   String get noName;
@@ -176,6 +178,7 @@ abstract class AppLocalizations {
   String get userNotFound;
   String get studentRegisteredSuccessfully;
   String get errorRegisteringStudent;
+  String get errorProcessingCode;
 
   // Student confirmation dialog strings
   String get confirmStudentRegistration;
@@ -1495,7 +1498,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get lessThanOneMinuteRemaining => 'Less than one minute remaining';
 
-// School Subjects
   @override
   String get break_ => 'Break';
   @override
@@ -1509,7 +1511,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get art => 'Art';
 
-// Scanner Configuration
   @override
   String get automaticEntry => 'Automatic Entry';
   @override
@@ -1550,6 +1551,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get filters => 'Filters';
   @override
   String get attendanceDate => 'Attendance Date';
+  @override
+  String get selected => 'Selected';
 
   @override
   String get editContact => 'Edit Contact';
@@ -1589,6 +1592,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorRegisteringStudent => 'Error registering student';
+
+  @override
+  String get errorProcessingCode => 'Error processing code';
 
   // Student confirmation dialog strings - English
   @override
@@ -4646,6 +4652,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get filters => 'Filtros';
   @override
   String get attendanceDate => 'Fecha de Asistencia';
+  @override
+  String get selected => 'Seleccionado';
 
   @override
   String get shareReportDesc => 'Compartir informe directamente';
@@ -4696,7 +4704,9 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get errorRegisteringStudent => 'Error al registrar estudiante';
 
-  // Student confirmation dialog strings - Spanish
+  @override
+  String get errorProcessingCode => 'Error al procesar el código';
+
   @override
   String get confirmStudentRegistration => 'Confirmar Registro de Estudiante';
 

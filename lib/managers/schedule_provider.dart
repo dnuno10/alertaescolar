@@ -1,11 +1,9 @@
 // lib/managers/schedule_provider.dart
 import 'package:alertaescolar/main.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../components/loading_dialog.dart'; // opcional si pasas context
 import '../models/models.dart';
-import '../utils/time_format.dart'; // si lo usas en otros métodos, lo mantenemos
 
 class ScheduleProvider with ChangeNotifier {
   List<Materia> _materias = [];
@@ -165,13 +163,20 @@ class ScheduleProvider with ChangeNotifier {
   // ===== Horarios =====
   Future<void> loadHorarios({
     required String escuelaId,
-    String? grupoId, // si lo pasas, filtra por un grupo específico
+    String? grupoId,
     BuildContext? context,
   }) async {
+    bool showDialogHere = false;
     try {
       _isLoading = true;
+      _error = null;
+
       if (context != null && context.mounted) {
-        LoadingDialog.show(context, message: 'Cargando horarios...');
+        // Evita abrir múltiples diálogos si ya hay uno activo
+        if (!LoadingDialog.isVisible) {
+          LoadingDialog.show(context, message: 'Cargando horarios...');
+          showDialogHere = true;
+        }
       }
       _safeNotifyListeners();
 
@@ -186,7 +191,6 @@ class ScheduleProvider with ChangeNotifier {
       final list =
           (response as List).map((r) => ClaseHorario.fromJson(r)).toList();
 
-      // Si pasaron grupoId, solo poblamos ese; si no, limpiamos/repoblamos todo
       if (grupoId == null || grupoId.isEmpty) {
         _horariosPorGrupoId.clear();
       } else {
@@ -203,7 +207,7 @@ class ScheduleProvider with ChangeNotifier {
       debugPrint(_error);
     } finally {
       _isLoading = false;
-      if (context != null && context.mounted) {
+      if (context != null && context.mounted && showDialogHere) {
         LoadingDialog.hide(context);
       }
       _safeNotifyListeners();
@@ -281,14 +285,35 @@ class ScheduleProvider with ChangeNotifier {
 
   // ===== Inicialización de todo (opcional) =====
   Future<void> initialize(String escuelaId, {BuildContext? context}) async {
-    await loadNivelesEducativos(escuelaId: escuelaId, context: context);
-    await loadMaterias(escuelaId: escuelaId, context: context);
-    await loadGrupos(
-      escuelaId: escuelaId,
-      loadAll: true,
-      context: context,
-    );
-    await loadHorarios(escuelaId: escuelaId, context: context);
+    bool showDialogHere = false;
+    try {
+      _isLoading = true;
+      _error = null;
+
+      if (context != null && context.mounted) {
+        if (!LoadingDialog.isVisible) {
+          LoadingDialog.show(context, message: 'Inicializando horarios...');
+          showDialogHere = true;
+        }
+      }
+      _safeNotifyListeners();
+
+      await loadNivelesEducativos(escuelaId: escuelaId);
+      await loadMaterias(escuelaId: escuelaId);
+      await loadGrupos(escuelaId: escuelaId, loadAll: true);
+      await loadHorarios(escuelaId: escuelaId);
+
+      _error = null;
+    } catch (e) {
+      _error = 'Error al inicializar: $e';
+      debugPrint(_error);
+    } finally {
+      _isLoading = false;
+      if (context != null && context.mounted && showDialogHere) {
+        LoadingDialog.hide(context);
+      }
+      _safeNotifyListeners();
+    }
   }
 
   // ===== Limpieza =====

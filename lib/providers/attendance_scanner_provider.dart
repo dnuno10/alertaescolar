@@ -1,21 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
-import '../models/alumno.dart';
-import '../models/notificacion.dart';
+enum ScannerType { camera, physical }
 
-enum ScannerType {
-  camera,
-  physical,
-}
-
-enum ScannerState {
-  idle,
-  scanning,
-  processing,
-  success,
-  error,
-}
+enum ScannerState { idle, scanning, processing, success, error }
 
 class AttendanceScannerProvider with ChangeNotifier {
   ScannerState _state = ScannerState.idle;
@@ -23,12 +11,15 @@ class AttendanceScannerProvider with ChangeNotifier {
   String? _lastScannedCode;
   String? _errorMessage;
   String? _successMessage;
+
   bool _isListeningToPhysicalScanner = false;
   QRViewController? _cameraController;
+
+  // Historial de códigos leídos (solo para UI)
   List<String> _scannedHistory = [];
 
-  // Mock admin ID - en una app real, vendría del sistema de auth
-  final String _currentAdminId = 'current-admin-id';
+  // Callback que el View inyecta para procesar el QR real (ScannerService vive en el View)
+  Future<void> Function(String code)? _onScanCallback;
 
   // Getters
   ScannerState get state => _state;
@@ -40,6 +31,12 @@ class AttendanceScannerProvider with ChangeNotifier {
   bool get isScanning => _state == ScannerState.scanning;
   List<String> get scannedHistory => List.unmodifiable(_scannedHistory);
 
+  // Inyección del callback desde el View
+  void setOnScanCallback(Future<void> Function(String code) callback) {
+    _onScanCallback = callback;
+  }
+
+  // Estado base
   void _setState(ScannerState newState) {
     _state = newState;
     notifyListeners();
@@ -81,17 +78,17 @@ class AttendanceScannerProvider with ChangeNotifier {
   }
 
   void stopCameraScanning() {
-    if (_cameraController != null) {
-      _cameraController!.pauseCamera();
-    }
+    _cameraController?.pauseCamera();
     _setState(ScannerState.idle);
   }
 
+  /// Importante: el View debe haber llamado antes a `setOnScanCallback(...)`
+  /// para que el procesamiento real (sin mocks) ocurra fuera del provider.
   void onCameraQRViewCreated(QRViewController controller) {
     setCameraController(controller);
-    controller.scannedDataStream.listen((scanData) {
-      if (_state == ScannerState.scanning && scanData.code != null) {
-        _processScanResult(scanData.code!);
+    controller.scannedDataStream.listen((scanData) async {
+      if (_state == ScannerState.scanning && (scanData.code ?? '').isNotEmpty) {
+        await _forwardScan(scanData.code!.trim());
       }
     });
   }
@@ -109,117 +106,50 @@ class AttendanceScannerProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void handlePhysicalScannerInput(String input) {
-    if (_isListeningToPhysicalScanner && input.isNotEmpty) {
-      _processScanResult(input.trim());
+  /// Recibe el texto de un lector físico (teclado/USB/Bluetooth) y lo reenvía.
+  Future<void> handlePhysicalScannerInput(String input) async {
+    final code = input.trim();
+    if (code.isEmpty) return;
+
+    // Solo condicionamos por estado para evitar ruido cuando no está activo
+    if (!_isListeningToPhysicalScanner &&
+        _selectedScannerType == ScannerType.physical) {
+      // Si explícitamente estamos en físico pero no escuchando, ignoramos
+      return;
     }
+    await _forwardScan(code);
   }
 
-  // ===== Procesamiento =====
-  Future<void> _processScanResult(String scannedCode) async {
+  // ===== Reenvío del QR al callback real (View/Service) =====
+  bool _isForwarding = false;
+
+  Future<void> _forwardScan(String code) async {
+    if (_isForwarding) return; // anti doble-disparo por stream
+    _isForwarding = true;
+    _lastScannedCode = code;
     _setState(ScannerState.processing);
-    _lastScannedCode = scannedCode;
 
     try {
-      final student = await _findStudentByMatricula(scannedCode);
-
-      if (student == null) {
-        _setError('Estudiante no encontrado con matrícula: $scannedCode');
+      if (_onScanCallback == null) {
+        _setError('No hay handler de escaneo configurado');
         return;
       }
-
-      await _createAttendanceNotification(student);
-
-      // Historial
-      _scannedHistory.insert(0, scannedCode);
-      if (_scannedHistory.length > 50) {
-        _scannedHistory = _scannedHistory.take(50).toList();
-      }
-
-      _setSuccess('Asistencia registrada para ${student.nombre}');
+      await _onScanCallback!(code);
+      _setSuccess('Escaneo procesado');
     } catch (e) {
-      _setError('Error al procesar el escaneo: $e');
+      _setError('Error al reenviar el escaneo: $e');
+    } finally {
+      _isForwarding = false;
     }
   }
 
-  // Mock: buscar alumno por matrícula (usa tu modelo Alumno correcto)
-  Future<Alumno?> _findStudentByMatricula(String matricula) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    final now = DateTime.now();
-    final mockStudents = <Alumno>[
-      Alumno(
-        id: 'student-1-id',
-        nombre: 'Juan Pérez',
-        idGrupo: 'group-1-id',
-        grupo: 'Grupo A',
-        idEscuela: 'school-1-id',
-        idLlave: 'key-1',
-        matricula: '2024001',
-        fechaRegistro: now,
-        idTurno: '', // si no aplica en mock
-      ),
-      Alumno(
-        id: 'student-2-id',
-        nombre: 'María García',
-        idGrupo: 'group-1-id',
-        grupo: 'Grupo A',
-        idEscuela: 'school-1-id',
-        idLlave: 'key-2',
-        matricula: '2024002',
-        fechaRegistro: now,
-        idTurno: '',
-      ),
-      Alumno(
-        id: 'student-3-id',
-        nombre: 'Carlos López',
-        idGrupo: 'group-2-id',
-        grupo: 'Grupo B',
-        idEscuela: 'school-1-id',
-        idLlave: 'key-3',
-        matricula: '2024003',
-        fechaRegistro: now,
-        idTurno: '',
-      ),
-    ];
-
-    for (final s in mockStudents) {
-      if (s.matricula == matricula) return s;
+  // ===== Historial (solo UI) =====
+  void addToHistory(String code) {
+    _scannedHistory.insert(0, code);
+    if (_scannedHistory.length > 50) {
+      _scannedHistory = _scannedHistory.take(50).toList();
     }
-    return null;
-  }
-
-  // Crear notificación de asistencia (mock)
-  Future<void> _createAttendanceNotification(Alumno student) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    final now = DateTime.now();
-    final hour = now.hour;
-
-    TipoNotificacion tipoNotificacion;
-    if (hour >= 7 && hour < 12) {
-      tipoNotificacion = TipoNotificacion.entrada;
-    } else if (hour >= 12 && hour < 18) {
-      tipoNotificacion = TipoNotificacion.salida;
-    } else {
-      tipoNotificacion = TipoNotificacion.entrada;
-    }
-
-    final notification = Notificacion(
-      id: 'notification-${DateTime.now().millisecondsSinceEpoch}',
-      alumnoId: student.id,
-      adminId: _currentAdminId,
-      titulo: 'Notificación',
-      mensaje: 'Notificación',
-      tipo: tipoNotificacion,
-      estado: EstadoNotificacion.nueva,
-      fechaHora: now,
-    );
-
-    // Evitar print en producción
-    debugPrint('Creating attendance notification: ${notification.toJson()}');
-
-    // Aquí iría tu inserción real a BD / API.
+    notifyListeners();
   }
 
   // ===== Utilidades =====

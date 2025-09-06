@@ -109,6 +109,8 @@ flutter:
     - .env
     - images/alertaescolar_logo.png
     - images/google_logo.png
+    - assets/anim/qr_code_scanner.json
+    - assets/anim/processing_spinner.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
