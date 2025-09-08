@@ -1,10 +1,12 @@
+// lib/components/admin/schedule/day_filter.dart
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import 'day_chip.dart';
 
 class DayFilter extends StatelessWidget {
-  final String? selectedDayKey; // ej. "lunes", "martes" o null para todos
+  /// Clave del día seleccionado: "lunes", "martes"... o null para "Todos"
+  final String? selectedDayKey;
   final Function(String?) onDaySelected;
   final Size screenSize;
 
@@ -18,6 +20,9 @@ class DayFilter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+
+    // Normalizamos a 'all' para que el chip de "Todos" se marque cuando selectedDayKey == null
+    final normalizedSelectedKey = selectedDayKey ?? 'all';
 
     final days = <String, String>{
       'lunes': l10n.monday,
@@ -48,7 +53,7 @@ class DayFilter extends StatelessWidget {
               DayChip(
                 label: l10n.all,
                 dayKey: 'all',
-                selectedDayKey: selectedDayKey,
+                selectedDayKey: normalizedSelectedKey,
                 onSelected: (d) => onDaySelected(null),
                 screenSize: screenSize,
               ),
@@ -62,7 +67,7 @@ class DayFilter extends StatelessWidget {
                   child: DayChip(
                     label: entry.value,
                     dayKey: entry.key,
-                    selectedDayKey: selectedDayKey,
+                    selectedDayKey: normalizedSelectedKey,
                     onSelected: onDaySelected,
                     screenSize: screenSize,
                   ),

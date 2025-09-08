@@ -1,3 +1,4 @@
+// lib/views/home/home_view.dart
 import 'package:alertaescolar/components/headers/home_header.dart';
 import 'package:alertaescolar/components/navigation/custom_bottom_navigation_bar.dart';
 import 'package:flutter/services.dart';
@@ -14,8 +15,9 @@ import 'package:provider/provider.dart';
 import '../../../app/app_theme.dart';
 import '../../../managers/user_provider.dart';
 import '../../../managers/notification_provider.dart';
-import '../notifications/notifications_view.dart';
-import '../profile/profile_view.dart';
+import '../../user/notifications/notifications_view.dart';
+import '../../user/profile/profile_view.dart';
+import '../../../managers/schedule_provider.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -27,33 +29,112 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   int _selectedIndex = 0;
 
+  // ▶ Nuevos: control fino de recargas
+  String? _lastUserId;
+  TipoUsuario? _lastUserTipo;
+  bool _isInitLoading = false;
+  UserProvider? _userProv; // para administrar el listener
+
+  late final VoidCallback _userListener = () {
+    final u = _userProv?.currentUser;
+    final newId = u?.id;
+    final newTipo = u?.tipo;
+
+    final changedUser = newId != _lastUserId;
+    final changedRole = newTipo != _lastUserTipo;
+
+    if (changedUser || changedRole) {
+      _lastUserId = newId;
+      _lastUserTipo = newTipo;
+      // re-carga sólo si hay usuario y no es admin
+      if (u != null && u.tipo != TipoUsuario.administrador) {
+        _loadInitialData(); // protegido por _isInitLoading
+      }
+    }
+  };
+
   @override
   void initState() {
     super.initState();
+    // Primera carga diferida
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadInitialData();
+      _primeAndLoad();
     });
   }
 
-  Future<void> _loadInitialData() async {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Conectar/desconectar listener de UserProvider cuando cambia el árbol
+    final prov = Provider.of<UserProvider>(context);
+    if (!identical(_userProv, prov)) {
+      _userProv?.removeListener(_userListener);
+      _userProv = prov;
+      _userProv?.addListener(_userListener);
+      // Actualiza memoria local de identidad/rol
+      _lastUserId = prov.currentUser?.id;
+      _lastUserTipo = prov.currentUser?.tipo;
+    }
+  }
+
+  @override
+  void dispose() {
+    _userProv?.removeListener(_userListener);
+    super.dispose();
+  }
+
+  Future<void> _primeAndLoad() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final studentProvider =
-        Provider.of<StudentProvider>(context, listen: false);
-    final notificationProvider =
-        Provider.of<NotificationProvider>(context, listen: false);
+    // Guarda la identidad/rol actual para decisiones posteriores
+    _lastUserId = userProvider.currentUser?.id;
+    _lastUserTipo = userProvider.currentUser?.tipo;
+    await _loadInitialData();
+  }
 
-    // Don't call loadCurrentUser here as it might trigger navigation
-    // The user should already be loaded from main.dart initialization
-    final currentUser = userProvider.currentUser;
+  Future<void> _loadInitialData() async {
+    if (_isInitLoading || !mounted) return;
+    _isInitLoading = true;
 
-    // Only proceed if we have a user and they're not an admin
-    if (currentUser != null && currentUser.tipo != TipoUsuario.administrador) {
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final studentProvider =
+          Provider.of<StudentProvider>(context, listen: false);
+      final notificationProvider =
+          Provider.of<NotificationProvider>(context, listen: false);
+      final scheduleProvider =
+          Provider.of<ScheduleProvider>(context, listen: false);
+
+      final currentUser = userProvider.currentUser;
+
+      // Si no hay usuario, o es admin, no cargamos módulos de tutor
+      if (currentUser == null ||
+          currentUser.tipo == TipoUsuario.administrador) {
+        return;
+      }
+
+      // Cargas iniciales
       await Future.wait([
         notificationProvider.loadNotifications(),
         studentProvider.loadStudentsForUser(userId: currentUser.id),
       ]);
+
+      // Realtime: notificaciones
+      await notificationProvider.startRealtimeForCurrentUser();
+
+      // Realtime: estudiantes (API explícita existente en tu StudentProvider)
+      await studentProvider.startRealtimeForTutor(currentUser.id);
+
+      // Realtime: horario (si existe el método en ScheduleProvider)
+      try {
+        final sch = scheduleProvider as dynamic;
+        await (sch.startRealtimeForTutor?.call(currentUser.id) ??
+            Future.value());
+      } catch (_) {
+        // noop
+      }
+    } finally {
+      _isInitLoading = false;
     }
-    // If user is admin or not loaded, don't load anything as they shouldn't be here
   }
 
   @override
@@ -94,49 +175,43 @@ class _HomeViewState extends State<HomeView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Consumer<NotificationProvider>(
-            builder: (context, provider, child) {
-              return RecentNotificationsSection(
-                screenSize: screenSize,
-                onTapSeeAll: () {
-                  HapticFeedback.mediumImpact();
-                  setState(() => _selectedIndex = 2);
-                },
-                notifications: provider.notifications,
-                onNotificationTap: (String notificationId) {
-                  // First mark all notifications as read and navigate to notifications view
-                  if (provider.unreadCount > 0) {
-                    provider.markAllAsRead();
-                  }
-                  setState(() => _selectedIndex = 2);
+          // RecentNotificationsSection ya se alimenta del Provider internamente.
+          RecentNotificationsSection(
+            screenSize: screenSize,
+            onTapSeeAll: () {
+              HapticFeedback.mediumImpact();
+              setState(() => _selectedIndex = 2);
+            },
+            onNotificationTap: (String notificationId) async {
+              final np = context.read<NotificationProvider>();
+              await np.markAsRead(notificationId);
 
-                  // After navigation, show the notification detail modal
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    final notification =
-                        provider.getNotificationById(notificationId);
-                    if (notification != null) {
-                      // Show detail modal
-                      showModalBottomSheet(
-                        context: context,
-                        backgroundColor: Colors.transparent,
-                        isScrollControlled: true,
-                        builder: (context) => Padding(
-                          padding: EdgeInsets.only(
-                            bottom: MediaQuery.of(context).viewInsets.bottom,
-                          ),
-                          child: FractionallySizedBox(
-                            heightFactor: 0.85,
-                            child: NotificationDetailModal(
-                              notification: notification,
-                              screenSize: screenSize,
-                            ),
-                          ),
+              // Cambia a la pestaña de notificaciones
+              setState(() => _selectedIndex = 2);
+
+              // Abre modal con el detalle (si sigue presente en memoria)
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                final notification = np.getNotificationById(notificationId);
+                if (notification != null) {
+                  showModalBottomSheet(
+                    context: context,
+                    backgroundColor: Colors.transparent,
+                    isScrollControlled: true,
+                    builder: (context) => Padding(
+                      padding: EdgeInsets.only(
+                        bottom: MediaQuery.of(context).viewInsets.bottom,
+                      ),
+                      child: FractionallySizedBox(
+                        heightFactor: 0.85,
+                        child: NotificationDetailModal(
+                          notification: notification,
+                          screenSize: screenSize,
                         ),
-                      );
-                    }
-                  });
-                },
-              );
+                      ),
+                    ),
+                  );
+                }
+              });
             },
           ),
           SizedBox(height: AppTheme.getLargePadding(screenSize) * 1.5),
@@ -147,11 +222,8 @@ class _HomeViewState extends State<HomeView> {
               setState(() => _selectedIndex = 1);
             },
           ),
-
           SizedBox(height: AppTheme.getLargePadding(screenSize) * 1.5),
-          TodayScheduleSection(
-            screenSize: screenSize,
-          ),
+          TodayScheduleSection(screenSize: screenSize),
           SizedBox(height: AppTheme.getLargePadding(screenSize) * 1.5),
           QuickActionsSection(
             screenSize: screenSize,
@@ -160,9 +232,7 @@ class _HomeViewState extends State<HomeView> {
               setState(() => _selectedIndex = index);
             },
           ),
-          SizedBox(
-              height:
-                  screenSize.height * 0.12), // Bottom padding for navigation
+          SizedBox(height: screenSize.height * 0.12),
         ],
       ),
     );

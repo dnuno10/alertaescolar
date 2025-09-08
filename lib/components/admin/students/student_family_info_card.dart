@@ -25,68 +25,81 @@ class _StudentFamilyInfoCardState extends State<StudentFamilyInfoCard> {
   bool _hasLoadedData = false;
 
   @override
-  void initState() {
-    super.initState();
-    // Don't load data here - wait for didChangeDependencies
-  }
-
-  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasLoadedData) {
       _hasLoadedData = true;
+      _primeFromStudentOrLoad();
+    }
+  }
+
+  void _primeFromStudentOrLoad() {
+    // Si ya viene precargado desde el Provider, úsalo y evita una ida a red
+    if (widget.student.familyContacts.isNotEmpty) {
+      _familyContacts =
+          List<Map<String, dynamic>>.from(widget.student.familyContacts);
+      _sortContactsInPlace(_familyContacts);
+      setState(() => _isLoading = false);
+    } else {
       _loadFamilyContacts();
     }
   }
 
   Future<void> _loadFamilyContacts() async {
     if (!mounted) return;
-
     try {
       setState(() => _isLoading = true);
 
-      // Step 1: Get tutor IDs from alumno_tutores table using student ID
-      final tutorResponse = await _supabase
-          .from('alumno_tutores')
-          .select('id_tutor')
-          .eq('id_alumno', widget.student.id);
+      // Única consulta: alumno_tutores -> usuarios.contactos_familiares
+      final resp = await _supabase.from('alumno_tutores').select('''
+        usuarios!inner(
+          contactos_familiares(
+            id,
+            id_usuario,
+            nombre,
+            parentesco,
+            telefono,
+            email,
+            fecha_registro
+          )
+        )
+      ''').eq('id_alumno', widget.student.id);
 
-      if (tutorResponse.isEmpty) {
-        if (mounted) {
-          setState(() {
-            _familyContacts = [];
-            _isLoading = false;
-          });
+      final List<Map<String, dynamic>> flattened = [];
+      for (final row in (resp as List)) {
+        final usr = row['usuarios'];
+        final contacts = (usr?['contactos_familiares'] as List?) ?? const [];
+        for (final c in contacts) {
+          flattened.add(Map<String, dynamic>.from(c as Map));
         }
-        return;
       }
 
-      // Step 2: Extract tutor IDs
-      final tutorIds =
-          tutorResponse.map((record) => record['id_tutor']).toList();
+      _sortContactsInPlace(flattened);
 
-      // Step 3: Get family contacts using id_usuario (not id_tutor)
-      final contactsResponse = await _supabase
-          .from('contactos_familiares')
-          .select('*')
-          .inFilter('id_usuario', tutorIds)
-          .order('fecha_registro');
-
-      if (mounted) {
-        setState(() {
-          _familyContacts = List<Map<String, dynamic>>.from(contactsResponse);
-          _isLoading = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _familyContacts = flattened;
+        _isLoading = false;
+      });
     } catch (e) {
       debugPrint('Error loading family contacts: $e');
-      if (mounted) {
-        setState(() {
-          _familyContacts = [];
-          _isLoading = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _familyContacts = [];
+        _isLoading = false;
+      });
     }
+  }
+
+  void _sortContactsInPlace(List<Map<String, dynamic>> list) {
+    list.sort((a, b) {
+      final sa = (a['fecha_registro'] ?? '')?.toString();
+      final sb = (b['fecha_registro'] ?? '')?.toString();
+      if (sa!.isEmpty && sb!.isEmpty) return 0;
+      if (sa!.isEmpty) return 1; // nulls last
+      if (sb!.isEmpty) return -1;
+      return sa.compareTo(sb);
+    });
   }
 
   @override
@@ -173,6 +186,7 @@ class _StudentFamilyInfoCardState extends State<StudentFamilyInfoCard> {
                   ),
                 ),
               ),
+              // Contador + refresh
               Container(
                 padding: EdgeInsets.symmetric(
                   horizontal:
@@ -184,12 +198,35 @@ class _StudentFamilyInfoCardState extends State<StudentFamilyInfoCard> {
                   borderRadius: BorderRadius.circular(
                       AppTheme.getSmallRadius(widget.screenSize) * 0.5),
                 ),
-                child: Text(
-                  '${_familyContacts.length} ${l10n.contacts}',
-                  style: AppTheme.getCaptionSmall(widget.screenSize).copyWith(
-                    color: AppTheme.accentPurple,
-                    fontWeight: FontWeight.w600,
-                  ),
+                child: Row(
+                  children: [
+                    Text(
+                      '${_familyContacts.length} ${l10n.contacts}',
+                      style:
+                          AppTheme.getCaptionSmall(widget.screenSize).copyWith(
+                        color: AppTheme.accentPurple,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(
+                        width: AppTheme.getSmallPadding(widget.screenSize)),
+                    InkWell(
+                      onTap: _loadFamilyContacts,
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.getSmallRadius(widget.screenSize),
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.all(
+                          AppTheme.getSmallPadding(widget.screenSize) * 0.25,
+                        ),
+                        child: Icon(
+                          Icons.refresh_rounded,
+                          size: widget.screenSize.height * 0.022,
+                          color: AppTheme.accentPurple,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -245,6 +282,11 @@ class _FamilyMemberItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nombre = (member['nombre'] ?? '').toString().trim();
+    final parentesco = (member['parentesco'] ?? '').toString().trim();
+    final telefono = (member['telefono'] ?? '').toString().trim();
+    final email = (member['email'] ?? '').toString().trim();
+
     return Container(
       margin: EdgeInsets.only(
         bottom: isLast ? 0 : AppTheme.getMediumPadding(screenSize),
@@ -258,12 +300,12 @@ class _FamilyMemberItem extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Name and relationship
+          // Name
           Row(
             children: [
               Expanded(
                 child: Text(
-                  member['nombre']?.toString() ?? l10n.noName,
+                  nombre.isEmpty ? l10n.noName : nombre,
                   style: AppTheme.getSubtitle1(screenSize).copyWith(
                     color: AppTheme.getTextPrimaryColor(context),
                     fontWeight: FontWeight.w600,
@@ -287,7 +329,7 @@ class _FamilyMemberItem extends StatelessWidget {
                   AppTheme.getSmallRadius(screenSize) * 0.5),
             ),
             child: Text(
-              member['parentesco']?.toString() ?? l10n.noRelationship,
+              parentesco.isEmpty ? l10n.noRelationship : parentesco,
               style: AppTheme.getCaptionSmall(screenSize).copyWith(
                 color: AppTheme.accentBlue,
                 fontWeight: FontWeight.w600,
@@ -298,23 +340,23 @@ class _FamilyMemberItem extends StatelessWidget {
           SizedBox(height: AppTheme.getSmallPadding(screenSize)),
 
           // Contact Information
-          if (member['telefono'] != null)
+          if (telefono.isNotEmpty)
             _ContactRow(
               icon: Icons.phone_rounded,
               label: l10n.phone,
-              value: member['telefono'].toString(),
+              value: telefono,
               screenSize: screenSize,
               color: AppTheme.successColor,
             ),
 
-          if (member['telefono'] != null && member['email'] != null)
+          if (telefono.isNotEmpty && email.isNotEmpty)
             SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.5),
 
-          if (member['email'] != null)
+          if (email.isNotEmpty)
             _ContactRow(
               icon: Icons.email_rounded,
               label: 'Email',
-              value: member['email'].toString(),
+              value: email,
               screenSize: screenSize,
               color: AppTheme.accentBlue,
             ),

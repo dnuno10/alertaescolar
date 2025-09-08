@@ -7,8 +7,13 @@ import '../../app/app_theme.dart';
 
 class FamilyContactsList extends StatelessWidget {
   final List<ContactoFamiliar> familyContacts;
-  final Function(ContactoFamiliar, AppLocalizations) onEditContact;
-  final Function(ContactoFamiliar, AppLocalizations, Size) onDeleteContact;
+
+  // 🔧 Firma simplificada: sólo el contacto
+  final void Function(ContactoFamiliar) onEditContact;
+
+  // Mantiene l10n/size en delete porque muestras textos contextuales
+  final void Function(ContactoFamiliar, AppLocalizations, Size) onDeleteContact;
+
   final Size screenSize;
 
   const FamilyContactsList({
@@ -45,7 +50,8 @@ class FamilyContactsList extends StatelessWidget {
                 return FamilyContactTile(
                   contact: contact,
                   isLast: index == familyContacts.length - 1,
-                  onEdit: () => onEditContact(contact, l10n),
+                  // 🔧 Ahora sólo pasamos el contacto
+                  onEdit: () => onEditContact(contact),
                   onDelete: () => onDeleteContact(contact, l10n, screenSize),
                   screenSize: screenSize,
                 );

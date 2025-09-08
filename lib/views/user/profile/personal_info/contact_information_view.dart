@@ -30,30 +30,79 @@ class _ContactInformationViewState extends State<ContactInformationView> {
   @override
   void initState() {
     super.initState();
+    // Resolver datos tras el primer frame para evitar context issues
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadSchoolInfo();
     });
   }
 
-  Future<void> _loadSchoolInfo() async {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final schoolProvider = Provider.of<SchoolProvider>(context, listen: false);
+  Future<void> _loadSchoolInfo({bool forceRefresh = false}) async {
+    final userProvider = context.read<UserProvider>();
+    final schoolProvider = context.read<SchoolProvider>();
 
-    if (userProvider.currentUser?.escuelaId != null) {
-      setState(() {
-        _isLoadingSchool = true;
-      });
-
-      final school = await schoolProvider
-          .getSchoolById(userProvider.currentUser!.escuelaId!);
-
-      if (mounted) {
-        setState(() {
-          _schoolName = school?.nombre;
-          _isLoadingSchool = false;
-        });
-      }
+    // Asegurar usuario cargado si hiciera falta
+    if (userProvider.currentUser == null && mounted) {
+      await userProvider.loadCurrentUser(context, showDialog: false);
     }
+
+    // Intentar obtener/asegurar escuelaId
+    String? escuelaId = userProvider.currentUser?.escuelaId;
+    escuelaId ??= await userProvider.ensureEscuelaIdLoaded();
+
+    if (!mounted) return;
+
+    // Si no hay escuela asociada, limpiar estado y salir
+    if (escuelaId == null || escuelaId.isEmpty) {
+      setState(() {
+        _schoolName = null;
+        _isLoadingSchool = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoadingSchool = true;
+    });
+
+    try {
+      // Consulta ligera del nombre (con caché). Si tu SchoolProvider no tiene este helper,
+      // conserva getSchoolById(useCache: !forceRefresh) directamente.
+      final nombre = await schoolProvider.getSchoolNameById(
+        escuelaId,
+        forceRefresh: forceRefresh,
+      );
+
+      // Fallback: traer la escuela completa si fuera necesario
+      String? finalName = nombre;
+      if (finalName == null) {
+        final escuela = await schoolProvider.getSchoolById(
+          escuelaId,
+          useCache: !forceRefresh,
+        );
+        finalName = escuela?.nombre;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _schoolName = finalName;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _schoolName = null;
+      });
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingSchool = false;
+      });
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    // Recarga silenciosa del usuario y fuerza refresco del nombre de escuela
+    await context.read<UserProvider>().reloadSilently(context);
+    await _loadSchoolInfo(forceRefresh: true);
   }
 
   @override
@@ -66,148 +115,156 @@ class _ContactInformationViewState extends State<ContactInformationView> {
         return Scaffold(
           backgroundColor: AppTheme.getBackgroundColor(context),
           resizeToAvoidBottomInset: true,
-          body: CustomScrollView(
-            slivers: [
-              NavHeader(title: l10n.viewContactData),
+          body: RefreshIndicator(
+            onRefresh: _onRefresh,
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              slivers: [
+                NavHeader(title: l10n.viewContactData),
 
-              // Content
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding:
-                      EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Contact Details Section
-                      ContactSectionTitle(
-                        title: l10n.contactData,
-                        screenSize: screenSize,
-                      ),
-                      SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+                // Content
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding:
+                        EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Contact Details Section
+                        ContactSectionTitle(
+                          title: l10n.contactData,
+                          screenSize: screenSize,
+                        ),
+                        SizedBox(height: AppTheme.getSmallPadding(screenSize)),
 
-                      Consumer<UserProvider>(
-                        builder: (context, userProvider, child) {
-                          final user = userProvider.currentUser;
-                          return ContactInfoCard(
-                            screenSize: screenSize,
-                            children: [
-                              ContactTile(
-                                icon: Icons.email_outlined,
-                                title: l10n.email,
-                                subtitle: l10n.primaryEmailAddress,
-                                value: user?.email ?? l10n.notRegistered,
-                                isVerified: true,
-                                screenSize: screenSize,
-                              ),
-                              if (user?.telefono != null &&
-                                  user!.telefono!.isNotEmpty) ...[
-                                ContactDivider(screenSize: screenSize),
+                        Consumer<UserProvider>(
+                          builder: (context, userProvider, child) {
+                            final user = userProvider.currentUser;
+                            return ContactInfoCard(
+                              screenSize: screenSize,
+                              children: [
                                 ContactTile(
-                                  icon: Icons.phone_outlined,
-                                  title: l10n.phoneNumber,
-                                  subtitle: l10n.primaryContact,
-                                  value: user.telefono!,
-                                  isVerified: false,
+                                  icon: Icons.email_outlined,
+                                  title: l10n.email,
+                                  subtitle: l10n.primaryEmailAddress,
+                                  value: user?.email ?? l10n.notRegistered,
+                                  // ← ahora real, no hardcodeado
+                                  isVerified: userProvider.isEmailVerified,
                                   screenSize: screenSize,
                                 ),
+                                if (user?.telefono != null &&
+                                    user!.telefono!.isNotEmpty) ...[
+                                  ContactDivider(screenSize: screenSize),
+                                  ContactTile(
+                                    icon: Icons.phone_outlined,
+                                    title: l10n.phoneNumber,
+                                    subtitle: l10n.primaryContact,
+                                    value: user.telefono!,
+                                    isVerified: false,
+                                    screenSize: screenSize,
+                                  ),
+                                ],
+                                // Mostrar escuela si el usuario es admin
+                                if (userProvider.isAdmin() &&
+                                    (user?.escuelaId != null ||
+                                        _schoolName != null ||
+                                        _isLoadingSchool)) ...[
+                                  ContactDivider(screenSize: screenSize),
+                                  ContactTile(
+                                    icon: Icons.school_outlined,
+                                    title: l10n.school,
+                                    subtitle: l10n.associatedSchool,
+                                    value: _isLoadingSchool
+                                        ? '${l10n.loading}...'
+                                        : (_schoolName ??
+                                            user?.escuelaId ??
+                                            l10n.notRegistered),
+                                    isVerified: true,
+                                    screenSize: screenSize,
+                                  ),
+                                ],
+                                // Para padres/tutores mostrar tipo de cuenta
+                                if (!userProvider.isAdmin()) ...[
+                                  ContactDivider(screenSize: screenSize),
+                                  ContactTile(
+                                    icon: Icons.person_outline,
+                                    title: l10n.userType,
+                                    subtitle: l10n.accountType,
+                                    value: _getUserRoleText(user?.tipo, l10n),
+                                    isVerified: false,
+                                    screenSize: screenSize,
+                                  ),
+                                ],
                               ],
-                              // Mostrar campo específico según el tipo de usuario
-                              if (user?.tipo == TipoUsuario.administrador &&
-                                  user?.escuelaId != null) ...[
-                                ContactDivider(screenSize: screenSize),
-                                ContactTile(
-                                  icon: Icons.school_outlined,
-                                  title: l10n.school,
-                                  subtitle: l10n.associatedSchool,
-                                  value: _isLoadingSchool
-                                      ? '${l10n.loading}...'
-                                      : _schoolName ??
-                                          user?.escuelaId ??
-                                          l10n.notRegistered,
-                                  isVerified: true,
-                                  screenSize: screenSize,
-                                ),
-                              ],
-                              // Para padres/tutores, podríamos mostrar los estudiantes asociados
-                              if (user?.tipo != TipoUsuario.administrador) ...[
-                                ContactDivider(screenSize: screenSize),
-                                ContactTile(
-                                  icon: Icons.person_outline,
-                                  title: l10n.userType,
-                                  subtitle: l10n.accountType,
-                                  value: _getUserRoleText(user?.tipo, l10n),
-                                  isVerified: false,
-                                  screenSize: screenSize,
-                                ),
-                              ],
-                            ],
-                          );
-                        },
-                      ),
+                            );
+                          },
+                        ),
 
-                      SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+                        SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-                      // Security Info Section
-                      ContactSectionTitle(
-                        title: l10n.securityInformation,
-                        screenSize: screenSize,
-                      ),
-                      SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+                        // Security Info Section
+                        ContactSectionTitle(
+                          title: l10n.securityInformation,
+                          screenSize: screenSize,
+                        ),
+                        SizedBox(height: AppTheme.getSmallPadding(screenSize)),
 
-                      Consumer<UserProvider>(
-                        builder: (context, userProvider, child) {
-                          final user = userProvider.currentUser;
-                          return SecurityInfoCard(
-                            screenSize: screenSize,
-                            children: [
-                              SecurityTile(
-                                icon: Icons.verified_user_outlined,
-                                title: l10n.accountStatus,
-                                value: l10n.verified,
-                                color: AppTheme.successColor,
-                                screenSize: screenSize,
-                              ),
-                              ContactDivider(screenSize: screenSize),
-                              if (userProvider.isAdmin()) ...[
-                                ContactDivider(screenSize: screenSize),
+                        Consumer<UserProvider>(
+                          builder: (context, userProvider, child) {
+                            final user = userProvider.currentUser;
+                            return SecurityInfoCard(
+                              screenSize: screenSize,
+                              children: [
                                 SecurityTile(
-                                  icon: Icons.admin_panel_settings_outlined,
-                                  title: l10n.administrativeRole,
-                                  value: _getAdminRoleText(
-                                      user?.tipoAdministrador, l10n),
-                                  color: AppTheme.accentPurple,
+                                  icon: Icons.verified_user_outlined,
+                                  title: l10n.accountStatus,
+                                  value: l10n.verified,
+                                  color: AppTheme.successColor,
                                   screenSize: screenSize,
                                 ),
+                                if (userProvider.isAdmin()) ...[
+                                  ContactDivider(screenSize: screenSize),
+                                  SecurityTile(
+                                    icon: Icons.admin_panel_settings_outlined,
+                                    title: l10n.administrativeRole,
+                                    value: _getAdminRoleText(
+                                        user?.tipoAdministrador, l10n),
+                                    color: AppTheme.accentPurple,
+                                    screenSize: screenSize,
+                                  ),
+                                ],
                               ],
-                            ],
-                          );
-                        },
-                      ),
-
-                      SizedBox(height: AppTheme.getLargePadding(screenSize)),
-
-                      // Info Notice
-                      Consumer<UserProvider>(
-                        builder: (context, userProvider, child) {
-                          if (userProvider.isAdmin()) {
-                            return AdminInfoNoticeCard(
-                              l10n: l10n,
-                              screenSize: screenSize,
                             );
-                          } else {
-                            return InfoNoticeCardAction(
-                              l10n: l10n,
-                              screenSize: screenSize,
-                            );
-                          }
-                        },
-                      ),
-                      SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                    ],
+                          },
+                        ),
+
+                        SizedBox(height: AppTheme.getLargePadding(screenSize)),
+
+                        // Notice / CTA según rol
+                        Consumer<UserProvider>(
+                          builder: (context, userProvider, child) {
+                            if (userProvider.isAdmin()) {
+                              return AdminInfoNoticeCard(
+                                l10n: l10n,
+                                screenSize: screenSize,
+                              );
+                            } else {
+                              return InfoNoticeCardAction(
+                                l10n: l10n,
+                                screenSize: screenSize,
+                              );
+                            }
+                          },
+                        ),
+                        SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -250,6 +307,7 @@ class _ContactInformationViewState extends State<ContactInformationView> {
     }
   }
 
+  // (Utility que quedó por si más adelante se muestra "última actividad")
   String _formatDateTime(DateTime dateTime, BuildContext context) {
     final now = DateTime.now();
     final yesterday = DateTime(now.year, now.month, now.day - 1);
@@ -257,21 +315,18 @@ class _ContactInformationViewState extends State<ContactInformationView> {
     if (dateTime.year == now.year &&
         dateTime.month == now.month &&
         dateTime.day == now.day) {
-      // Today
       return '${AppLocalizations.of(context).todayAt} ${DateFormat.Hm().format(dateTime)}';
     } else if (dateTime.year == yesterday.year &&
         dateTime.month == yesterday.month &&
         dateTime.day == yesterday.day) {
-      // Yesterday
       return '${AppLocalizations.of(context).yesterdayAt} ${DateFormat.Hm().format(dateTime)}';
     } else {
-      // Other days
       return DateFormat('dd/MM/yyyy HH:mm').format(dateTime);
     }
   }
 }
 
-// Añade esta clase para admins
+// Notice especial para admins
 class AdminInfoNoticeCard extends StatelessWidget {
   final AppLocalizations l10n;
   final Size screenSize;

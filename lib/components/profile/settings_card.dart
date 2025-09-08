@@ -13,11 +13,10 @@ class SettingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(AppTheme.getMediumRadius(screenSize));
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.getSurfaceColor(context),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+        borderRadius: radius,
         boxShadow: [
           BoxShadow(
             color: AppTheme.getShadowColor(context),
@@ -26,7 +25,12 @@ class SettingsCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(children: children),
+      child: Material(
+        color: AppTheme.getSurfaceColor(context),
+        borderRadius: radius,
+        clipBehavior: Clip.antiAlias, // ← el splash no se sale de la card
+        child: Column(children: children),
+      ),
     );
   }
 }

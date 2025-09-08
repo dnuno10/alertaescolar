@@ -25,7 +25,7 @@ class StudentKeyInfoCard extends StatelessWidget {
         : l10n.notAssigned;
 
     final String statusText = _buildStatusText(l10n);
-    final String remainingText = _calculateRemainingTime(context);
+    final String remainingTimeText = _calculateRemainingTime(context);
 
     // Color del ícono de “tiempo restante”:
     // - Si ya expiró → error
@@ -37,6 +37,9 @@ class StudentKeyInfoCard extends StatelessWidget {
       _RemainingState.urgent => AppTheme.warningColor,
       _ => AppTheme.accentBlue,
     };
+
+    // Fila opcional para cupo de vinculaciones (limite_vinculacion como contador)
+    final bool showLinkQuota = student.limiteVinculacion != null;
 
     return Container(
       constraints: const BoxConstraints(maxWidth: 720),
@@ -93,15 +96,30 @@ class StudentKeyInfoCard extends StatelessWidget {
             ),
             SizedBox(height: AppTheme.getSmallPadding(screenSize)),
 
-            // Tiempo restante
+            // Tiempo restante (según fecha_desactivacion)
             StudentDetailRow(
               icon: Icons.schedule_rounded,
               label: l10n.remainingTime,
-              value: remainingText,
+              value: remainingTimeText,
               iconColor: remainingIconColor,
               screenSize: screenSize,
-              semanticsValue: '${l10n.remainingTime}: $remainingText',
+              semanticsValue: '${l10n.remainingTime}: $remainingTimeText',
             ),
+
+            // Vinculaciones restantes (cupo) — solo si hay dato
+            if (showLinkQuota) ...[
+              SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+              StudentDetailRow(
+                icon: Icons.link_rounded,
+                // Etiqueta neutral para no tocar l10n:
+                label: 'Vinculaciones restantes',
+                value: '${student.limiteVinculacion}',
+                iconColor: AppTheme.accentPurple,
+                screenSize: screenSize,
+                semanticsValue:
+                    'Vinculaciones restantes: ${student.limiteVinculacion}',
+              ),
+            ],
           ],
         ),
       ),
@@ -138,8 +156,8 @@ class StudentKeyInfoCard extends StatelessWidget {
       return l10n.noTimeLimit;
     }
 
-    // ¿Ya expiró?
-    if (expirationDate.isBefore(now)) {
+    // ¿Ya expiró? (trata <= now como expirado para coincidir con el provider)
+    if (!expirationDate.isAfter(now)) {
       return l10n.expired;
     }
 
@@ -176,7 +194,8 @@ class StudentKeyInfoCard extends StatelessWidget {
     final DateTime? expirationDate = student.fechaDesactivacionLlave;
     if (expirationDate == null) return _RemainingState.normal;
 
-    if (expirationDate.isBefore(now)) return _RemainingState.expired;
+    // Expirada si expirationDate <= now
+    if (!expirationDate.isAfter(now)) return _RemainingState.expired;
 
     final Duration diff = expirationDate.difference(now);
     // Umbral "urgente": 7 días o menos

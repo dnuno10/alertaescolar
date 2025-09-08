@@ -43,9 +43,9 @@ class _SelectableStudentsDirectoryViewState
   // Debounce para tecleo
   Timer? _debounce;
 
-  // Filtros (renombrados para reflejar columnas reales)
+  // Filtros (alineados a columnas reales)
   String _selectedNivelEducativo =
-      'all'; // grupos.nivel_educativo (o nombre de niveles_educativos)
+      'all'; // grupos.nivel_educativo (o niveles_educativos.nombre)
   String _selectedGrupoNombre = 'all'; // grupos.grupo
   String _selectedEstado =
       'all'; // 'all' | 'active' | 'inactive' (active = alumno_tutores + llave.activo)
@@ -147,6 +147,7 @@ class _SelectableStudentsDirectoryViewState
     );
   }
 
+  // Sugerencias por nombre (mismo orden que en Directory: startsWith -> contains)
   List<StudentDetails> _buildNameSuggestions({
     required StudentProvider studentProvider,
     required String query,
@@ -163,7 +164,6 @@ class _SelectableStudentsDirectoryViewState
       turno: _selectedTurnoNombre,
     );
 
-    // Orden: startsWith -> contains
     final starts = <StudentDetails>[];
     final contains = <StudentDetails>[];
     for (final s in base) {
@@ -475,6 +475,8 @@ class _SelectableStudentsDirectoryViewState
                                           AppTheme.getTextPrimaryColor(context),
                                       fontWeight: FontWeight.w700,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 TextButton(
@@ -525,10 +527,10 @@ class _SelectableStudentsDirectoryViewState
                             SizedBox(
                                 height: AppTheme.getMediumPadding(screenSize)),
 
-                            // Filtros dinámicos desde BD
+                            // Filtros dinámicos desde BD (ModernDropdown ya es exclusivo globalmente)
                             Row(
                               children: [
-                                // Nivel educativo (tabla niveles_educativos.nombre)
+                                // Nivel educativo
                                 Expanded(
                                   child: ModernDropdown<String>(
                                     label: 'Nivel Educativo',
@@ -548,14 +550,12 @@ class _SelectableStudentsDirectoryViewState
                                     getLabel: (String value) =>
                                         value == 'all' ? l10n.all : value,
                                     screenSize: screenSize,
-                                    backgroundColor:
-                                        AppTheme.accentBlue.withOpacity(0.05),
                                   ),
                                 ),
                                 SizedBox(
                                     width:
                                         AppTheme.getMediumPadding(screenSize)),
-                                // Grupo (tabla grupos.grupo)
+                                // Grupo
                                 Expanded(
                                   child: ModernDropdown<String>(
                                     label: l10n.group,
@@ -572,8 +572,6 @@ class _SelectableStudentsDirectoryViewState
                                     getLabel: (String value) =>
                                         value == 'all' ? l10n.all : value,
                                     screenSize: screenSize,
-                                    backgroundColor:
-                                        AppTheme.accentPurple.withOpacity(0.05),
                                   ),
                                 ),
                               ],
@@ -582,7 +580,7 @@ class _SelectableStudentsDirectoryViewState
                                 height: AppTheme.getSmallPadding(screenSize)),
                             Row(
                               children: [
-                                // Estado (activo/inactivo según regla: alumno_tutores + llave.activo)
+                                // Estado
                                 Expanded(
                                   child: ModernDropdown<String>(
                                     label: l10n.status,
@@ -614,7 +612,7 @@ class _SelectableStudentsDirectoryViewState
                                 SizedBox(
                                     width:
                                         AppTheme.getMediumPadding(screenSize)),
-                                // Turno (tabla turnos.turno)
+                                // Turno
                                 Expanded(
                                   child: ModernDropdown<String>(
                                     label: 'Turno',
@@ -667,6 +665,8 @@ class _SelectableStudentsDirectoryViewState
                                           color: AppTheme.accentBlue,
                                           fontWeight: FontWeight.w600,
                                         ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                   ],
@@ -684,13 +684,29 @@ class _SelectableStudentsDirectoryViewState
                                   color: AppTheme.getTextPrimaryColor(context),
                                   fontWeight: FontWeight.w600,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                               SizedBox(
                                   height:
                                       AppTheme.getMediumPadding(screenSize)),
                               ...filteredStudents.map((student) {
+                                // === ACTIVO correcto: vínculo + ventana de vigencia ===
+                                final now = DateTime.now();
+                                final start = student.fechaRegistroLlave ??
+                                    student.fechaRegistro;
+                                final end = student.fechaDesactivacionLlave;
+                                final dentroVentana = !now.isBefore(start) &&
+                                    (end == null || !now.isAfter(end));
                                 final consideredActive =
-                                    (student.hasTutores && student.llaveActiva);
+                                    (student.hasTutores && dentroVentana);
+
+                                final statusColor = consideredActive
+                                    ? AppTheme.successColor
+                                    : AppTheme.errorColor;
+                                final statusIcon = consideredActive
+                                    ? Icons.verified_rounded
+                                    : Icons.block_rounded;
 
                                 return Container(
                                   margin: EdgeInsets.only(
@@ -706,44 +722,32 @@ class _SelectableStudentsDirectoryViewState
                                         _selectStudent(student);
                                       },
                                       child: Container(
-                                        padding: EdgeInsets.all(
-                                            AppTheme.getMediumPadding(
-                                                screenSize)),
+                                        // Más compacto: padding vertical reducido y sin avatar
+                                        padding: EdgeInsets.symmetric(
+                                          vertical: AppTheme.getSmallPadding(
+                                                  screenSize) *
+                                              0.8,
+                                          horizontal: AppTheme.getMediumPadding(
+                                              screenSize),
+                                        ),
                                         decoration: BoxDecoration(
                                           border: Border.all(
                                             color:
                                                 AppTheme.getBorderColor(context)
                                                     .withOpacity(0.3),
+                                            width: 1,
                                           ),
+                                          color: AppTheme.getBackgroundColor(
+                                              context),
                                           borderRadius: BorderRadius.circular(
                                               AppTheme.getMediumRadius(
                                                   screenSize)),
                                         ),
                                         child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
                                           children: [
-                                            // Avatar
-                                            Container(
-                                              width: screenSize.width * 0.12,
-                                              height: screenSize.width * 0.12,
-                                              decoration: BoxDecoration(
-                                                color: AppTheme.accentBlue
-                                                    .withOpacity(0.1),
-                                                borderRadius:
-                                                    BorderRadius.circular(
-                                                        AppTheme.getSmallRadius(
-                                                            screenSize)),
-                                              ),
-                                              child: Icon(
-                                                Icons.person_rounded,
-                                                color: AppTheme.accentBlue,
-                                                size: screenSize.width * 0.06,
-                                              ),
-                                            ),
-                                            SizedBox(
-                                                width:
-                                                    AppTheme.getMediumPadding(
-                                                        screenSize)),
-                                            // Info
+                                            // Info (compacta con elipsis) + MATRÍCULA (nuevo)
                                             Expanded(
                                               child: Column(
                                                 crossAxisAlignment:
@@ -761,80 +765,130 @@ class _SelectableStudentsDirectoryViewState
                                                           .getTextPrimaryColor(
                                                               context),
                                                     ),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
                                                   SizedBox(
                                                       height: AppTheme
                                                               .getSmallPadding(
                                                                   screenSize) *
-                                                          0.3),
+                                                          0.25),
                                                   Text(
                                                     '${student.nivelEducativo} - ${student.grupo}',
-                                                    style: AppTheme.getCaption(
-                                                            screenSize)
+                                                    style: AppTheme
+                                                            .getCaptionSmall(
+                                                                screenSize)
                                                         .copyWith(
                                                       color: AppTheme
                                                           .getTextSecondaryColor(
                                                               context),
                                                     ),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
+                                                  if (student.matricula
+                                                      .isNotEmpty) ...[
+                                                    SizedBox(
+                                                        height: AppTheme
+                                                                .getSmallPadding(
+                                                                    screenSize) *
+                                                            0.2),
+                                                    Text(
+                                                      'Matrícula: ${student.matricula}',
+                                                      style: AppTheme
+                                                              .getCaptionSmall(
+                                                                  screenSize)
+                                                          .copyWith(
+                                                        color: AppTheme
+                                                            .getTextSecondaryColor(
+                                                                context),
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ],
                                                 ],
                                               ),
                                             ),
-                                            // Estado + flecha
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.end,
+
+                                            SizedBox(
+                                                width: AppTheme.getSmallPadding(
+                                                    screenSize)),
+
+                                            // Estado (chip con ícono dentro) + chevron pequeño
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 Container(
                                                   padding: EdgeInsets.symmetric(
                                                     horizontal: AppTheme
-                                                        .getSmallPadding(
-                                                            screenSize),
+                                                            .getSmallPadding(
+                                                                screenSize) *
+                                                        0.8,
                                                     vertical: AppTheme
                                                             .getSmallPadding(
                                                                 screenSize) *
-                                                        0.5,
+                                                        0.4,
                                                   ),
                                                   decoration: BoxDecoration(
-                                                    color: consideredActive
-                                                        ? AppTheme.successColor
-                                                            .withOpacity(0.1)
-                                                        : AppTheme.errorColor
-                                                            .withOpacity(0.1),
+                                                    color: statusColor
+                                                        .withOpacity(0.1),
                                                     borderRadius: BorderRadius
                                                         .circular(AppTheme
                                                             .getSmallRadius(
                                                                 screenSize)),
-                                                  ),
-                                                  child: Text(
-                                                    consideredActive
-                                                        ? l10n.active
-                                                        : l10n.inactive,
-                                                    style: AppTheme
-                                                            .getCaptionSmall(
-                                                                screenSize)
-                                                        .copyWith(
-                                                      color: consideredActive
-                                                          ? AppTheme
-                                                              .successColor
-                                                          : AppTheme.errorColor,
-                                                      fontWeight:
-                                                          FontWeight.w600,
+                                                    border: Border.all(
+                                                      color: statusColor
+                                                          .withOpacity(0.25),
+                                                      width: 1,
                                                     ),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        statusIcon,
+                                                        color: statusColor,
+                                                        size:
+                                                            screenSize.height *
+                                                                0.018,
+                                                      ),
+                                                      const SizedBox(width: 6),
+                                                      Text(
+                                                        consideredActive
+                                                            ? l10n.active
+                                                            : l10n.inactive,
+                                                        style: AppTheme
+                                                                .getCaptionSmall(
+                                                                    screenSize)
+                                                            .copyWith(
+                                                          color: statusColor,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
                                                 SizedBox(
-                                                    height: AppTheme
+                                                    width: AppTheme
                                                             .getSmallPadding(
                                                                 screenSize) *
-                                                        0.3),
+                                                        0.5),
                                                 Icon(
                                                   Icons.chevron_right_rounded,
                                                   color: AppTheme
                                                       .getTextSecondaryColor(
                                                           context),
                                                   size:
-                                                      screenSize.height * 0.025,
+                                                      screenSize.height * 0.022,
                                                 ),
                                               ],
                                             ),
@@ -867,6 +921,9 @@ class _SelectableStudentsDirectoryViewState
                                         color: AppTheme.getTextSecondaryColor(
                                             context),
                                       ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
                                     ),
                                   ],
                                 ),

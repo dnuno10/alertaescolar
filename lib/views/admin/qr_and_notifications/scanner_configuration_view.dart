@@ -242,34 +242,43 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
                       if (_currentStep > 0)
                         SizedBox(width: AppTheme.getMediumPadding(size)),
                       Expanded(
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Expanded(
-                              child: SolidButton(
-                                onPressed: _isSaving
-                                    ? null
-                                    : (_currentStep == 0 ? _nextStep : _save),
-                                label: _isSaving
-                                    ? l10n.saving
-                                    : (_currentStep == 0
-                                        ? l10n.next
-                                        : l10n.saveConfiguration),
+                        child: _isSaving
+                            ? Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  SolidButton(
+                                    onPressed: null,
+                                    label: l10n.saving,
+                                    icon: _currentStep == 0
+                                        ? Icons.arrow_forward_rounded
+                                        : Icons.save_rounded,
+                                    backgroundColor: AppTheme.accentBlue,
+                                    screenSize: size,
+                                    isLoading: _isSaving,
+                                    showLoaderInIconSlot: true,
+                                    loadingIndicatorSize: 20,
+                                    enableHaptics: true,
+                                    semanticsLabel: l10n.saveConfiguration,
+                                  ),
+                                ],
+                              )
+                            : SolidButton(
+                                onPressed:
+                                    _currentStep == 0 ? _nextStep : _save,
+                                label: _currentStep == 0
+                                    ? l10n.next
+                                    : l10n.saveConfiguration,
                                 icon: _currentStep == 0
                                     ? Icons.arrow_forward_rounded
                                     : Icons.save_rounded,
                                 backgroundColor: AppTheme.accentBlue,
                                 screenSize: size,
-                                isLoading: _isSaving,
-                                showLoaderInIconSlot:
-                                    true, // usa el loader del botón
+                                isLoading: false,
+                                showLoaderInIconSlot: true,
                                 loadingIndicatorSize: 20,
                                 enableHaptics: true,
                                 semanticsLabel: l10n.saveConfiguration,
                               ),
-                            ),
-                          ],
-                        ),
                       ),
                     ],
                   ),
@@ -804,7 +813,6 @@ class _TimeBox extends StatelessWidget {
   final String value;
   final VoidCallback onTap;
   const _TimeBox({
-    super.key,
     required this.label,
     required this.value,
     required this.onTap,

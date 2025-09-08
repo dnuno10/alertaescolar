@@ -47,6 +47,8 @@ class ScannerService {
     required ScannerAccessType accessType,
     bool isDefaultEntryConfig = true,
     TurnoProvider? turnoProvider,
+    bool isExtracurricular = false, // Para indicar si es extracurricular
+    bool isFixedAccess = false, // Para distinguir entre fijo y automático
   }) async {
     try {
       if (scannedCode.trim().isEmpty) {
@@ -150,6 +152,7 @@ class ScannerService {
         isDefaultEntryConfig: isDefaultEntryConfig,
         turnoProvider: turnoProvider,
         escuelaIdFromContext: escuelaIdFromContext,
+        isFixedAccess: isFixedAccess, // Nuevo parámetro
       );
 
       // ⚡ OPTIMIZACIÓN 4: Crear notificación con FCM asíncrono
@@ -161,6 +164,7 @@ class ScannerService {
         escuelaIdContext: escuelaIdFromContext,
         accessInfo: timeValidation,
         timestamp: currentTime,
+        isExtracurricular: isExtracurricular, // Pasamos el indicador
       );
 
       if (notificationResult['success'] != true) {
@@ -322,6 +326,7 @@ class ScannerService {
     required bool isDefaultEntryConfig,
     TurnoProvider? turnoProvider,
     String? escuelaIdFromContext,
+    bool isFixedAccess = false, // Nuevo parámetro
   }) {
     // Debug: Log all input parameters
     debugPrint('=== _validateAccessTime DEBUG ===');
@@ -350,19 +355,23 @@ class ScannerService {
     debugPrint('turnoInicioStr: $turnoInicioStr');
     debugPrint('tolerancia: $tolerancia');
 
-    // IMPORTANTE: Solo aplicamos validación de tardanza para ENTRADA
-    // Si es SALIDA, nunca se considera tardanza
+    // IMPORTANTE: Solo aplicamos validación de tardanza para ENTRADA AUTOMÁTICA
+    // Si es SALIDA o ENTRADA FIJA (incluye extracurricular), nunca se considera tardanza
     bool isLate = false;
     String message;
 
     debugPrint('🕐 LATENESS CHECK: actualAccess=$actualAccess');
+    debugPrint('🕐 LATENESS CHECK: accessType=$accessType');
     debugPrint('🕐 LATENESS CHECK: turnoInicioStr=$turnoInicioStr');
 
+    // Solo validamos tardanza para ENTRADA AUTOMÁTICA
+    // Las entradas fijas (normal y extracurricular) NUNCA son tarde
     if (actualAccess == ScannerAccessType.entry &&
+        !isFixedAccess && // Solo para automático
         turnoInicioStr != null &&
         turnoInicioStr.isNotEmpty) {
-      debugPrint('🕐 ENTRY MODE: Checking for lateness...');
-      // Solo para ENTRADA validamos tardanza
+      debugPrint('🕐 AUTOMATIC ENTRY MODE: Checking for lateness...');
+      // Solo para ENTRADA AUTOMÁTICA validamos tardanza
       try {
         final parts = turnoInicioStr.split(':');
         if (parts.length >= 2) {
@@ -403,13 +412,15 @@ class ScannerService {
         message = 'Llegada registrada';
       }
     } else {
-      // Para SALIDA o cuando no hay hora de inicio válida
+      // Para SALIDA, ENTRADA FIJA, o ENTRADA EXTRACURRICULAR
       if (actualAccess == ScannerAccessType.exit) {
         message = 'Salida registrada';
         debugPrint('🕐 EXIT MODE: No lateness check applied');
       } else {
-        message = 'Acceso registrado';
-        debugPrint('🕐 ENTRY without valid turno time: No lateness check');
+        // Entrada fija o extracurricular - NUNCA tarde
+        message = 'Llegada registrada';
+        debugPrint(
+            '🕐 FIXED ENTRY MODE: No lateness check applied (always on time)');
       }
     }
 
@@ -463,6 +474,8 @@ class ScannerService {
     required String escuelaIdContext,
     required Map<String, dynamic> accessInfo,
     required DateTime timestamp,
+    bool isExtracurricular =
+        false, // Nuevo parámetro para detectar extracurricular
   }) async {
     try {
       debugPrint('_createNotification: Starting notification creation');
@@ -563,6 +576,10 @@ class ScannerService {
           accessInfo['accessType'] as ScannerAccessType;
       final bool isLate = (accessInfo['isLate'] ?? false) as bool;
 
+      // Construir sufijo para el motivo
+      final String motivoSufijo =
+          isExtracurricular ? ' (motivo: extracurricular)' : '';
+
       // Título y cuerpo según el tipo de acceso resuelto:
       // - Salida: "ha salido"
       // - Entrada: si tarde -> "llegó tarde", si no -> "ha llegado"
@@ -571,15 +588,25 @@ class ScannerService {
           : (isLate ? NotificationType.retraso : NotificationType.entrada);
 
       final String hora = _formatTime12h(timestamp); // 12h para FCM
+
+      // Construir título con "extracurricular" cuando corresponda
       final String titulo = (acType == ScannerAccessType.exit)
-          ? '$studentName ha salido'
-          : (isLate ? '$studentName llegó tarde' : '$studentName ha llegado');
+          ? isExtracurricular
+              ? '$studentName ha salido (extracurricular)'
+              : '$studentName ha salido'
+          : (isLate
+              ? isExtracurricular
+                  ? '$studentName llegó tarde (extracurricular)'
+                  : '$studentName llegó tarde'
+              : isExtracurricular
+                  ? '$studentName ha llegado (extracurricular)'
+                  : '$studentName ha llegado');
 
       final String mensaje = (acType == ScannerAccessType.exit)
-          ? '$studentName salió de la escuela a las $hora'
+          ? '$studentName salió de la escuela a las $hora$motivoSufijo'
           : (isLate
-              ? '$studentName llegó tarde a la escuela a las $hora'
-              : '$studentName llegó a la escuela a las $hora');
+              ? '$studentName llegó tarde a la escuela a las $hora$motivoSufijo'
+              : '$studentName llegó a la escuela a las $hora$motivoSufijo');
 
 // Dedupe por fecha_registro (60s). Si existe, return a specific error message.
       final recent = await _checkRecentNotification(studentId, timestamp,

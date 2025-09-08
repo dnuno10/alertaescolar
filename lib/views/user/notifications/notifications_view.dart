@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../../managers/notification_provider.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../models/models.dart';
 
 class NotificationsView extends StatefulWidget {
   const NotificationsView({super.key});
@@ -27,9 +28,9 @@ class _NotificationsViewViewState extends State<NotificationsView>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final provider = context.read<NotificationProvider>();
-      provider.loadNotifications();
+      await provider.reloadAndRefreshRealtime();
     });
   }
 
@@ -89,7 +90,8 @@ class _NotificationsViewViewState extends State<NotificationsView>
             groupNotifications: _groupNotificationsByDate,
             formatDateHeader: _formatDateHeader,
             formatDateTime: _formatDateTime,
-            getNotificationType: _getNotificationType,
+            // ahora pasamos la notificación completa
+            getNotificationType: (n) => _getNotificationType(n),
             onNotificationTap: _handleNotificationTap,
           )
         ],
@@ -117,22 +119,43 @@ class _NotificationsViewViewState extends State<NotificationsView>
       case 'access_alerts':
         filtered = notifications.where((n) {
           final type = n.tipo.toString().toLowerCase();
-          return type.contains('entrada') ||
+          final isAccess = type.contains('entrada') ||
               type.contains('salida') ||
               type.contains('acceso') ||
               type.contains('retraso') ||
-              type.contains('ausencia') ||
-              type.contains('emergency');
+              type.contains('ausencia');
+
+          // Emergencias enviadas como "comunicado"
+          final isComunicadoEmergencia = type.contains('comunicado') &&
+              (n.datosAdicionales?['tipo_comunicado']
+                      ?.toString()
+                      .toLowerCase() ==
+                  'emergencia');
+
+          // También soporta "emergency" si viniera directo del tipo
+          final isEmergencyRaw = type.contains('emergency');
+
+          return isAccess || isComunicadoEmergencia || isEmergencyRaw;
         }).toList();
         break;
+
       case 'communications':
         filtered = notifications.where((n) {
           final type = n.tipo.toString().toLowerCase();
-          return type.contains('comunicado') ||
-              type.contains('evento') ||
-              type.contains('permisoespecial');
+          final isComunicado = type.contains('comunicado');
+          final isEvento = type.contains('evento');
+          final isPermiso = type.contains('permisoespecial');
+
+          // Excluye comunicados de emergencia (ya los contamos como alertas)
+          final isEmergencia = (n.datosAdicionales?['tipo_comunicado']
+                  ?.toString()
+                  .toLowerCase() ==
+              'emergencia');
+
+          return (isComunicado || isEvento || isPermiso) && !isEmergencia;
         }).toList();
         break;
+
       default:
         // all - no filter
         break;
@@ -167,26 +190,21 @@ class _NotificationsViewViewState extends State<NotificationsView>
 
     for (final notification in notifications) {
       final dateKey = _getDateKey(notification.fechaHora);
-      if (!grouped.containsKey(dateKey)) {
-        grouped[dateKey] = [];
-      }
+      grouped.putIfAbsent(dateKey, () => []);
       grouped[dateKey]!.add(notification);
     }
 
     // Sort by date (newest first)
     final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
-
     final sortedGrouped = <String, List<dynamic>>{};
     for (final key in sortedKeys) {
       sortedGrouped[key] = grouped[key]!;
     }
-
     return sortedGrouped;
   }
 
-  String _getDateKey(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
+  String _getDateKey(DateTime date) =>
+      '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
   String _formatDateHeader(String dateKey) {
     final parts = dateKey.split('-');
@@ -200,7 +218,7 @@ class _NotificationsViewViewState extends State<NotificationsView>
     } else if (difference == 1) {
       return 'Ayer';
     } else if (difference < 7) {
-      final weekdays = [
+      const weekdays = [
         'Lunes',
         'Martes',
         'Miércoles',
@@ -240,12 +258,15 @@ class _NotificationsViewViewState extends State<NotificationsView>
         date.day == now.day;
   }
 
-  void _handleNotificationTap(String notificationId) {
+  void _handleNotificationTap(String notificationId) async {
     final provider = Provider.of<NotificationProvider>(context, listen: false);
     final notification = provider.getNotificationById(notificationId);
 
     if (notification != null) {
-      // Show detail modal
+      // Marcar como leída inmediatamente (optimista)
+      await provider.markAsRead(notificationId);
+
+      // Mostrar modal de detalle
       showModalBottomSheet(
         context: context,
         backgroundColor: Colors.transparent,
@@ -266,59 +287,55 @@ class _NotificationsViewViewState extends State<NotificationsView>
     }
   }
 
-  Map<String, dynamic> _getNotificationType(String type) {
-    final cleanType = type.toLowerCase().replaceAll('tiponotificacion.', '');
+  // Mapea tipo → icono/color (entrada VERDE, salida ROJA)
+  Map<String, dynamic> _getNotificationType(Notificacion n) {
+    final cleanType =
+        n.tipo.toString().toLowerCase().replaceAll('tiponotificacion.', '');
+
+    // Emergencia enviada como comunicado
+    final isComunicadoEmergencia = cleanType == 'comunicado' &&
+        (n.datosAdicionales?['tipo_comunicado']?.toString().toLowerCase() ==
+            'emergencia');
+
+    if (isComunicadoEmergencia) {
+      return {'icon': Icons.warning_outlined, 'color': AppTheme.errorColor};
+    }
+
     switch (cleanType) {
       case 'entrada':
-        return {
-          'icon': Icons.login_outlined,
-          'color': AppTheme.accentBlue,
-        };
+        // ✅ verde
+        return {'icon': Icons.login_outlined, 'color': AppTheme.successColor};
       case 'salida':
-        return {
-          'icon': Icons.logout_outlined,
-          'color': AppTheme.accentBlue,
-        };
+        // ✅ rojo
+        return {'icon': Icons.logout_outlined, 'color': AppTheme.errorColor};
       case 'retraso':
         return {
           'icon': Icons.access_time_outlined,
-          'color': AppTheme.warningColor,
+          'color': AppTheme.warningColor
         };
       case 'ausencia':
         return {
           'icon': Icons.person_off_outlined,
-          'color': AppTheme.warningColor,
+          'color': AppTheme.warningColor
         };
       case 'emergency':
-        return {
-          'icon': Icons.warning_outlined,
-          'color': AppTheme.errorColor,
-        };
+        return {'icon': Icons.warning_outlined, 'color': AppTheme.errorColor};
       case 'comunicado':
         return {
           'icon': Icons.campaign_outlined,
-          'color': AppTheme.accentPurple,
+          'color': AppTheme.accentPurple
         };
       case 'evento':
-        return {
-          'icon': Icons.event_outlined,
-          'color': AppTheme.accentPurple,
-        };
+        return {'icon': Icons.event_outlined, 'color': AppTheme.accentPurple};
       case 'permisoespecial':
         return {
           'icon': Icons.event_available_outlined,
-          'color': AppTheme.accentPurple,
+          'color': AppTheme.accentPurple
         };
       case 'acceso':
-        return {
-          'icon': Icons.key_outlined,
-          'color': AppTheme.accentBlue,
-        };
+        return {'icon': Icons.key_outlined, 'color': AppTheme.accentBlue};
       default:
-        return {
-          'icon': Icons.info_outline,
-          'color': AppTheme.accentBlue,
-        };
+        return {'icon': Icons.info_outline, 'color': AppTheme.accentBlue};
     }
   }
 }

@@ -1,7 +1,8 @@
+// lib/views/school/school_settings_view.dart
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
@@ -25,25 +26,22 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
   late TabController _tabController;
   bool _isKeyboardVisible = false;
 
-  // Keys por pestaña (validación independiente)
   final _informationFormKey = GlobalKey<FormState>();
   final _contactFormKey = GlobalKey<FormState>();
 
-  // Controllers
+  // Controllers (solo columnas de `escuelas`)
   final _nombreController = TextEditingController();
   final _codigoController = TextEditingController();
+  final _descripcionController = TextEditingController();
   final _direccionController = TextEditingController();
   final _telefonoController = TextEditingController();
   final _emailController = TextEditingController();
   final _sitioWebController = TextEditingController();
-  final _descripcionController = TextEditingController();
-  final _yearFoundedController = TextEditingController();
 
-  // Focus nodes
+  // Focus
   final _nombreFocusNode = FocusNode();
   final _codigoFocusNode = FocusNode();
   final _descripcionFocusNode = FocusNode();
-  final _yearFoundedFocusNode = FocusNode();
   final _direccionFocusNode = FocusNode();
   final _telefonoFocusNode = FocusNode();
   final _emailFocusNode = FocusNode();
@@ -51,22 +49,85 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
 
   // Estado
   TipoEscuela _selectedTipo = TipoEscuela.publica;
-
-  // Niveles (banderas para UI) + lista para modelo
-  bool _hasPreescolar = false;
-  bool _hasPrimaria = false;
-  bool _hasSecundaria = false;
-  bool _hasBachillerato = false;
-  List<NivelEducativo> _selectedNiveles = [NivelEducativo.primaria];
-
   bool _isLoading = false;
+  bool _formDirty = false; // evita clobber de UI durante edición
+
+  // Listeners y referencias seguras a providers
+  VoidCallback? _providerListener;
+  VoidCallback? _userListener;
+  SchoolProvider? _sp;
+  UserProvider? _up;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadSchoolData());
+
+    // Cualquier cambio en los campos marca el form como "sucio"
+    for (final c in [
+      _nombreController,
+      _codigoController,
+      _descripcionController,
+      _direccionController,
+      _telefonoController,
+      _emailController,
+      _sitioWebController,
+    ]) {
+      c.addListener(() {
+        _formDirty = true;
+      });
+    }
+
+    // Carga inicial tras el primer frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSchoolData();
+    });
+  }
+
+  /// Obtiene referencias a los providers de manera segura y (re)adjunta listeners
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final newSp = context.read<SchoolProvider>();
+    final newUp = context.read<UserProvider>();
+
+    // Si cambió alguna instancia del provider, limpia listeners previos y re-anexa
+    final spChanged = !identical(_sp, newSp);
+    final upChanged = !identical(_up, newUp);
+
+    if (spChanged && _sp != null && _providerListener != null) {
+      _sp!.removeListener(_providerListener!);
+    }
+    if (upChanged && _up != null && _userListener != null) {
+      _up!.removeListener(_userListener!);
+    }
+
+    _sp = newSp;
+    _up = newUp;
+
+    // Crear listeners si no existen (o recrearlos si cambiaron instancias)
+    _providerListener ??= () {
+      final s = _sp?.currentSchool;
+      if (s == null || !mounted) return;
+      if (_formDirty) return; // no sobreescribir mientras el usuario edita
+      _populateControllers(s);
+      if (mounted) setState(() {}); // refresca dropdown, etc.
+    };
+
+    _userListener ??= () async {
+      if (!mounted) return;
+      final id = _up?.currentUser?.escuelaId;
+      if (id == null || id.isEmpty) return;
+      if (_sp?.currentSchool?.id == id) return;
+      if (_formDirty) return; // no recargar en medio de edición
+      await _loadSchoolData();
+    };
+
+    // Adjuntar listeners a las instancias actuales
+    _sp!.addListener(_providerListener!);
+    _up!.addListener(_userListener!);
   }
 
   @override
@@ -74,21 +135,25 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
     WidgetsBinding.instance.removeObserver(this);
     _tabController.dispose();
 
-    // Dispose controllers
+    // ⚠️ No usar `context.read` aquí: el Element ya puede estar desactivado.
+    if (_providerListener != null && _sp != null) {
+      _sp!.removeListener(_providerListener!);
+    }
+    if (_userListener != null && _up != null) {
+      _up!.removeListener(_userListener!);
+    }
+
     _nombreController.dispose();
     _codigoController.dispose();
+    _descripcionController.dispose();
     _direccionController.dispose();
     _telefonoController.dispose();
     _emailController.dispose();
     _sitioWebController.dispose();
-    _descripcionController.dispose();
-    _yearFoundedController.dispose();
 
-    // Dispose focus nodes
     _nombreFocusNode.dispose();
     _codigoFocusNode.dispose();
     _descripcionFocusNode.dispose();
-    _yearFoundedFocusNode.dispose();
     _direccionFocusNode.dispose();
     _telefonoFocusNode.dispose();
     _emailFocusNode.dispose();
@@ -108,91 +173,72 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
     }
   }
 
-  /// Espera breve y defensiva a que el UserProvider resuelva escuelaId
-  /// Espera más generosa a que el UserProvider resuelva escuelaId (primer arranque)
-  Future<String?> _waitForEscuelaId(UserProvider up,
-      {Duration timeout = const Duration(seconds: 8)}) async {
-    final start = DateTime.now();
-    String? id = up.currentUser?.escuelaId;
-
-    while ((id == null || id.isEmpty) &&
-        DateTime.now().difference(start) < timeout) {
-      await Future.delayed(const Duration(milliseconds: 150));
-      id = await up.ensureEscuelaIdLoaded();
-      id ??= up.currentUser?.escuelaId;
+  void _populateControllers(Escuela school) {
+    if (!_nombreFocusNode.hasFocus) _nombreController.text = school.nombre;
+    if (!_codigoFocusNode.hasFocus)
+      _codigoController.text = school.codigo ?? '';
+    if (!_descripcionFocusNode.hasFocus) {
+      _descripcionController.text = school.descripcion ?? '';
     }
-    return id;
-  }
+    if (!_direccionFocusNode.hasFocus)
+      _direccionController.text = school.direccion;
+    if (!_telefonoFocusNode.hasFocus)
+      _telefonoController.text = school.telefono;
+    if (!_emailFocusNode.hasFocus) _emailController.text = school.email;
+    if (!_sitioWebFocusNode.hasFocus)
+      _sitioWebController.text = school.sitioWeb ?? '';
 
-  /// Intenta cargar la escuela con reintentos y backoff
-  Future<Escuela?> _loadSchoolWithRetry(SchoolProvider sp, String escuelaId,
-      {int maxAttempts = 3}) async {
-    int attempt = 0;
-    Duration wait = const Duration(milliseconds: 350);
-
-    while (attempt < maxAttempts) {
-      final school = await sp.loadSchool(escuelaId);
-      if (school != null) return school;
-
-      // Si hubo error de red/latencia, espera y reintenta
-      await Future.delayed(wait);
-      wait *= 2;
-      attempt++;
-    }
-    return null;
+    // Solo cambia el dropdown si no hay edición en curso
+    if (!_formDirty) _selectedTipo = school.tipo;
   }
 
   Future<void> _loadSchoolData() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      final schoolProvider =
-          Provider.of<SchoolProvider>(context, listen: false);
+      final userProvider = _up ?? context.read<UserProvider>();
+      final schoolProvider = _sp ?? context.read<SchoolProvider>();
       final l10n = AppLocalizations.of(context);
 
-      // 1) Espera (más larga) por escuelaId
-      final escuelaId = await _waitForEscuelaId(userProvider);
-      if (escuelaId == null || escuelaId.isEmpty) {
+      // 🚫 sin polling: usa el contrato del UserProvider
+      String escuelaId;
+      try {
+        escuelaId = await userProvider.ensureEscuelaIdOrThrow();
+      } catch (_) {
         _showErrorDialog(l10n.error, l10n.noAssociatedSchool);
         return;
       }
 
-      // 2) Carga con reintentos (absorbe el lag del primer login)
-      Escuela? school = await _loadSchoolWithRetry(schoolProvider, escuelaId);
+      // Carga inicial (sin watcher/polling)
+      final school =
+          await schoolProvider.loadSchool(escuelaId, forceRefresh: true);
 
-      // 3) Si sigue null y es admin → no mostrar diálogo; abrir formulario vacío con defaults
-      final isAdmin = userProvider.isAdmin();
-      if (school == null && isAdmin) {
+      if (school != null && mounted) {
+        // Este repoblamiento es inicial, no está "sucio"
+        _formDirty = false;
+        _populateControllers(school);
+        setState(() {}); // refresca UI
+      } else if (school == null && userProvider.isAdmin()) {
         if (!mounted) return;
-        // Estado “suave”: formulario en blanco, sin modal de error
-        setState(() {
-          _nombreController.text = '';
-          _codigoController.text = '';
-          _direccionController.text = '';
-          _telefonoController.text = '';
-          _emailController.text = userProvider.currentUser?.email ?? '';
-          _sitioWebController.text = '';
-          _descripcionController.text = '';
-          _selectedTipo = TipoEscuela.publica;
+        _nombreController.text = '';
+        _codigoController.text = '';
+        _descripcionController.text = '';
+        _direccionController.text = '';
+        _telefonoController.text = '';
+        _emailController.text = userProvider.currentUser?.email ?? '';
+        _sitioWebController.text = '';
+        _selectedTipo = TipoEscuela.publica;
 
-          _hasPreescolar = false;
-          _hasPrimaria = true; // default para no dejar vacío
-          _hasSecundaria = false;
-          _hasBachillerato = false;
-          _updateSelectedNivelesFromBooleans();
-
-          _yearFoundedController.text =
-              DateTime.now().year.toString(); // placeholder
-        });
-
-        // Mensaje no intrusivo (SnackBar) en lugar de diálogo
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                l10n.couldNotGetSchoolInfo, // Mantén tu string
-                style: AppTheme.getCaption(MediaQuery.of(context).size)
-                    .copyWith(color: Colors.white, fontWeight: FontWeight.w600),
+                l10n.couldNotGetSchoolInfo,
+                style:
+                    AppTheme.getCaption(MediaQuery.of(context).size).copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               backgroundColor: AppTheme.warningColor,
               behavior: SnackBarBehavior.floating,
@@ -204,42 +250,12 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
             ),
           );
         }
-        return; // ✅ No abrimos diálogo
-      }
-
-      // 4) Caso normal: school cargada
-      if (school == null) {
-        // Usuario no admin (padre/tutor) o error real persistente
+      } else if (school == null) {
         final msg = (schoolProvider.error?.isNotEmpty ?? false)
             ? '${l10n.errorLoadingSchoolInfo}: ${schoolProvider.error}'
             : l10n.couldNotGetSchoolInfo;
         _showErrorDialog(l10n.error, msg);
-        return;
       }
-
-      if (!mounted) return;
-      setState(() {
-        _nombreController.text = school.nombre;
-        _codigoController.text = school.codigo ?? '';
-        _direccionController.text = school.direccion;
-        _telefonoController.text = school.telefono;
-        _emailController.text = school.email;
-        _sitioWebController.text = school.sitioWeb ?? '';
-        _descripcionController.text = school.descripcion ?? '';
-        _selectedTipo = school.tipo;
-
-        _hasPreescolar =
-            school.nivelesEducativos.contains(NivelEducativo.preescolar);
-        _hasPrimaria =
-            school.nivelesEducativos.contains(NivelEducativo.primaria);
-        _hasSecundaria =
-            school.nivelesEducativos.contains(NivelEducativo.secundaria);
-        _hasBachillerato =
-            school.nivelesEducativos.contains(NivelEducativo.bachillerato);
-        _updateSelectedNivelesFromBooleans();
-
-        _yearFoundedController.text = school.fechaRegistro.year.toString();
-      });
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context);
@@ -257,16 +273,14 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
     final l10n = AppLocalizations.of(context);
     final screenSize = MediaQuery.of(context).size;
 
-    // Altura estimada del header + tabs (mantén esto simple y estable)
     final headerHeight = MediaQuery.of(context).padding.top +
         AppTheme.getSmallPadding(screenSize) +
         AppTheme.getMediumPadding(screenSize) +
         AppTheme.getH1(screenSize).fontSize! +
         AppTheme.getBodyMedium(screenSize).fontSize! +
         AppTheme.getMediumPadding(screenSize) * 2 +
-        64; // alto aproximado del TabBar
+        64;
 
-    // Render defensivo: mientras el UserProvider se hidrata, muestra loader y evita diálogos prematuros.
     return Consumer3<ThemeProvider, UserProvider, SchoolProvider>(
       builder: (context, themeProvider, userProvider, schoolProvider, child) {
         final userLoading = userProvider.isLoadingUser == true;
@@ -284,7 +298,7 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
             onTap: _hideKeyboard,
             child: Stack(
               children: [
-                // Header + TabBar
+                // Header + Tabs
                 Container(
                   padding: EdgeInsets.only(
                     top: MediaQuery.of(context).padding.top +
@@ -369,49 +383,15 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
                           nombreController: _nombreController,
                           codigoController: _codigoController,
                           descripcionController: _descripcionController,
-                          yearFoundedController: _yearFoundedController,
                           selectedTipo: _selectedTipo,
-                          selectedNiveles: _selectedNiveles,
                           onTipoChanged: (tipo) =>
                               setState(() => _selectedTipo = tipo),
-                          onNivelesChanged: (niveles) =>
-                              setState(() => _selectedNiveles = niveles),
-                          hasPreescolar: _hasPreescolar,
-                          hasPrimaria: _hasPrimaria,
-                          hasSecundaria: _hasSecundaria,
-                          hasBachillerato: _hasBachillerato,
-                          onPreescolarChanged: (v) {
-                            setState(() {
-                              _hasPreescolar = v;
-                              _updateSelectedNivelesFromBooleans();
-                            });
-                          },
-                          onPrimariaChanged: (v) {
-                            setState(() {
-                              _hasPrimaria = v;
-                              _updateSelectedNivelesFromBooleans();
-                            });
-                          },
-                          onSecundariaChanged: (v) {
-                            setState(() {
-                              _hasSecundaria = v;
-                              _updateSelectedNivelesFromBooleans();
-                            });
-                          },
-                          onBachilleratoChanged: (v) {
-                            setState(() {
-                              _hasBachillerato = v;
-                              _updateSelectedNivelesFromBooleans();
-                            });
-                          },
                           isLoading: _isLoading,
                           onSave: _saveSettings,
                           getTipoLabel: _getTipoLabel,
-                          getNivelLabel: _getNivelLabel,
                           nombreFocusNode: _nombreFocusNode,
                           codigoFocusNode: _codigoFocusNode,
                           descripcionFocusNode: _descripcionFocusNode,
-                          yearFoundedFocusNode: _yearFoundedFocusNode,
                         ),
                         ContactTab(
                           formKey: _contactFormKey,
@@ -431,7 +411,7 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
                   ),
                 ),
 
-                // Botón Guardar (oculto si el teclado está visible)
+                // Botón Guardar
                 AnimatedPositioned(
                   duration: const Duration(milliseconds: 200),
                   curve: Curves.fastOutSlowIn,
@@ -473,22 +453,7 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
     }
   }
 
-  String _getNivelLabel(NivelEducativo nivel) {
-    final l10n = AppLocalizations.of(context);
-    switch (nivel) {
-      case NivelEducativo.preescolar:
-        return l10n.preschool;
-      case NivelEducativo.primaria:
-        return l10n.primary;
-      case NivelEducativo.secundaria:
-        return l10n.secondary;
-      case NivelEducativo.bachillerato:
-        return l10n.highSchool;
-    }
-  }
-
   Future<void> _saveSettings() async {
-    // Valida solo la pestaña activa
     final isInformationTab = _tabController.index == 0;
     final formKey = isInformationTab ? _informationFormKey : _contactFormKey;
     final formState = formKey.currentState;
@@ -496,15 +461,19 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
 
     final l10n = AppLocalizations.of(context);
 
-    // Campos requeridos (por diseño)
+    // Guard temprano de sesión (evita UPDATE anónimo/RLS)
+    final authUser = Supabase.instance.client.auth.currentUser;
+    if (authUser == null) {
+      _showErrorDialog(l10n.error,
+          'Tu sesión ha expirado. Inicia sesión e intenta de nuevo.');
+      return;
+    }
+
     final missing = <String>[];
     if (_nombreController.text.trim().isEmpty) missing.add(l10n.schoolName);
     if (_direccionController.text.trim().isEmpty) missing.add(l10n.address);
     if (_telefonoController.text.trim().isEmpty) missing.add(l10n.phone);
     if (_emailController.text.trim().isEmpty) missing.add(l10n.email);
-    if (_yearFoundedController.text.trim().isEmpty) {
-      missing.add(l10n.foundedYear);
-    }
 
     if (missing.isNotEmpty) {
       _showErrorDialog(
@@ -516,24 +485,23 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
 
     setState(() => _isLoading = true);
     try {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      final schoolProvider =
-          Provider.of<SchoolProvider>(context, listen: false);
+      final userProvider = _up ?? context.read<UserProvider>();
+      final schoolProvider = _sp ?? context.read<SchoolProvider>();
 
-      // Unificar con el flujo de carga: usa ensureEscuelaIdLoaded
-      final escuelaId = await userProvider.ensureEscuelaIdLoaded();
-      if (escuelaId == null || escuelaId.isEmpty) {
+      // Asegura escuelaId mediante el contrato del provider
+      String escuelaId;
+      try {
+        escuelaId = await userProvider.ensureEscuelaIdOrThrow();
+      } catch (_) {
         _showErrorDialog(l10n.error, l10n.noAssociatedSchool);
         return;
       }
 
       final currentSchool = schoolProvider.currentSchool;
-      if (currentSchool == null) {
+      if (currentSchool == null || currentSchool.id != escuelaId) {
         _showErrorDialog(l10n.error, l10n.couldNotGetSchoolInfo);
         return;
       }
-
-      _updateSelectedNivelesFromBooleans();
 
       final updatedSchool = currentSchool.copyWith(
         nombre: _nombreController.text.trim(),
@@ -541,7 +509,6 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
             ? null
             : _codigoController.text.trim(),
         tipo: _selectedTipo,
-        nivelesEducativos: _selectedNiveles,
         direccion: _direccionController.text.trim(),
         telefono: _telefonoController.text.trim(),
         email: _emailController.text.trim(),
@@ -559,6 +526,9 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
       setState(() => _isLoading = false);
 
       if (ok) {
+        _formDirty = false; // ya no está sucio
+        _populateControllers(updatedSchool); // asegura UI consistente
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -583,7 +553,6 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      final l10n = AppLocalizations.of(context);
       _showErrorDialog(l10n.error, '${l10n.errorSavingChanges}: $e');
     }
   }
@@ -611,24 +580,8 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
       ),
     );
   }
-
-  void _updateSelectedNivelesFromBooleans() {
-    final niveles = <NivelEducativo>[];
-    if (_hasPreescolar) niveles.add(NivelEducativo.preescolar);
-    if (_hasPrimaria) niveles.add(NivelEducativo.primaria);
-    if (_hasSecundaria) niveles.add(NivelEducativo.secundaria);
-    if (_hasBachillerato) niveles.add(NivelEducativo.bachillerato);
-
-    if (niveles.isEmpty) {
-      // por defecto primaria
-      _hasPrimaria = true;
-      niveles.add(NivelEducativo.primaria);
-    }
-    _selectedNiveles = niveles;
-  }
 }
 
 extension on PlatformDispatcher {
-  // para compatibilidad en algunos entornos
   FlutterView? get firstOrNull => views.isNotEmpty ? views.first : null;
 }

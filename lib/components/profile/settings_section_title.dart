@@ -13,12 +13,15 @@ class SettingsSectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: AppTheme.getSubtitle1(screenSize).copyWith(
-        fontWeight: FontWeight.w600,
-        color: AppTheme.getTextPrimaryColor(context),
-        letterSpacing: 0.1,
+    return Semantics(
+      header: true, // ← accesibilidad
+      child: Text(
+        title,
+        style: AppTheme.getSubtitle1(screenSize).copyWith(
+          fontWeight: FontWeight.w600,
+          color: AppTheme.getTextPrimaryColor(context),
+          letterSpacing: 0.1,
+        ),
       ),
     );
   }

@@ -8,6 +8,8 @@ class ModernDropdown<T> extends StatefulWidget {
   final List<T> items;
   final ValueChanged<T?> onChanged;
   final String Function(T) getLabel;
+  static _ModernDropdownState? _openedInstance;
+
   final Size screenSize;
   final Color? backgroundColor;
 
@@ -61,6 +63,13 @@ class _ModernDropdownState<T> extends State<ModernDropdown<T>>
   }
 
   void _showDropdown() {
+    // 👇 antes de abrir, cierra el que esté abierto
+    if (ModernDropdown._openedInstance != null &&
+        ModernDropdown._openedInstance != this) {
+      ModernDropdown._openedInstance!._removeDropdown();
+    }
+    ModernDropdown._openedInstance = this;
+
     _animationController.forward();
     _overlayEntry = _createOverlayEntry();
     Overlay.of(context).insert(_overlayEntry!);
@@ -72,6 +81,9 @@ class _ModernDropdownState<T> extends State<ModernDropdown<T>>
       _animationController.reverse();
       _overlayEntry?.remove();
       _overlayEntry = null;
+      if (ModernDropdown._openedInstance == this) {
+        ModernDropdown._openedInstance = null; // 👈 libera el lock
+      }
       if (mounted) setState(() => _isDropdownOpen = false);
     }
   }

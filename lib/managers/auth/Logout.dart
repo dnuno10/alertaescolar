@@ -1,3 +1,4 @@
+// lib/managers/auth/Logout.dart
 // ignore_for_file: file_names
 
 import 'package:alertaescolar/widgets/custom_snack_bar.dart';

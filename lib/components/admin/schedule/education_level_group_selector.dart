@@ -51,7 +51,7 @@ class EducationLevelGroupSelector extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with date
+          // Header con fecha
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -87,10 +87,10 @@ class EducationLevelGroupSelector extends StatelessWidget {
 
           SizedBox(height: AppTheme.getLargePadding(screenSize)),
 
-          // Modern Dropdowns Row
+          // Fila de dropdowns
           Row(
             children: [
-              // Education Level Dropdown
+              // Dropdown de nivel educativo
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,7 +139,7 @@ class EducationLevelGroupSelector extends StatelessWidget {
 
               SizedBox(width: AppTheme.getMediumPadding(screenSize)),
 
-              // Group Dropdown
+              // Dropdown de grupo (usa lista ya ORDENADA que le pasa la vista)
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,8 +180,7 @@ class EducationLevelGroupSelector extends StatelessWidget {
                                     HapticFeedback.mediumImpact();
                                     onGrupoChanged(value);
                                   }
-                                : (String?
-                                    value) {}, // Empty function when disabled
+                                : (String? value) {},
                             getLabel: (String value) => value,
                             screenSize: screenSize,
                             backgroundColor:

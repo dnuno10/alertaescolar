@@ -9,6 +9,7 @@ import 'package:alertaescolar/widgets/custom_snack_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../utils/modern_dropdown.dart';
+import 'package:flutter/services.dart';
 
 class EditFamilyContactView extends StatefulWidget {
   final ContactoFamiliar contact;
@@ -30,13 +31,17 @@ class _EditFamilyContactViewState extends State<EditFamilyContactView> {
   late TipoParentesco _selectedRelation;
   bool _isLoading = false;
 
+  // Focus encadenado
+  final _nameFocus = FocusNode();
+  final _phoneFocus = FocusNode();
+  final _emailFocus = FocusNode();
+
   @override
   void initState() {
     super.initState();
-    // Initialize controllers with existing contact data
     _contactNameController = TextEditingController(text: widget.contact.nombre);
     _contactPhoneController =
-        TextEditingController(text: widget.contact.telefono);
+        TextEditingController(text: widget.contact.telefono ?? '');
     _contactEmailController =
         TextEditingController(text: widget.contact.email ?? '');
     _selectedRelation = widget.contact.parentesco;
@@ -47,6 +52,9 @@ class _EditFamilyContactViewState extends State<EditFamilyContactView> {
     _contactNameController.dispose();
     _contactPhoneController.dispose();
     _contactEmailController.dispose();
+    _nameFocus.dispose();
+    _phoneFocus.dispose();
+    _emailFocus.dispose();
     super.dispose();
   }
 
@@ -93,12 +101,14 @@ class _EditFamilyContactViewState extends State<EditFamilyContactView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Name Field
             CustomInputField(
               controller: _contactNameController,
               label: l10n.fullName,
               icon: Icons.person_outline,
               screenSize: screenSize,
+              focusNode: _nameFocus,
+              textInputAction: TextInputAction.next,
+              onSubmitted: (_) => _phoneFocus.requestFocus(),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return l10n.nameRequired;
@@ -106,34 +116,32 @@ class _EditFamilyContactViewState extends State<EditFamilyContactView> {
                 return null;
               },
             ),
-
             SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-            // Relation Dropdown
             ModernDropdown<TipoParentesco>(
               label: l10n.relationship,
               value: _selectedRelation,
               items: TipoParentesco.values,
               onChanged: (TipoParentesco? newValue) {
                 if (newValue != null) {
-                  setState(() {
-                    _selectedRelation = newValue;
-                  });
+                  setState(() => _selectedRelation = newValue);
                 }
               },
               getLabel: (tipo) => tipo.getLocalizedName(l10n),
               screenSize: screenSize,
             ),
-
             SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-            // Phone Field
             CustomInputField(
               controller: _contactPhoneController,
               label: l10n.phone,
               icon: Icons.phone_outlined,
               keyboardType: TextInputType.phone,
               screenSize: screenSize,
+              focusNode: _phoneFocus,
+              textInputAction: TextInputAction.next,
+              onSubmitted: (_) => _emailFocus.requestFocus(),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9+\-\s]')),
+              ],
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return l10n.phoneRequired;
@@ -141,34 +149,29 @@ class _EditFamilyContactViewState extends State<EditFamilyContactView> {
                 return null;
               },
             ),
-
             SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-            // Email Field
             CustomInputField(
               controller: _contactEmailController,
               label: l10n.emailOptional,
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
               screenSize: screenSize,
+              focusNode: _emailFocus,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _updateContact(l10n),
               validator: (value) {
                 if (value != null && value.isNotEmpty) {
-                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                      .hasMatch(value)) {
+                  if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+                      .hasMatch(value.trim())) {
                     return l10n.enterValidEmail;
                   }
                 }
                 return null;
               },
             ),
-
             SizedBox(height: AppTheme.getLargePadding(screenSize)),
-
-            // Action buttons
             ActionButtonsRow(
-              onClearPressed: () {
-                Navigator.of(context).pop();
-              },
+              onClearPressed: () => Navigator.of(context).pop(),
               onAddPressed: () => _updateContact(l10n),
               isLoading: _isLoading,
               screenSize: screenSize,
@@ -182,19 +185,26 @@ class _EditFamilyContactViewState extends State<EditFamilyContactView> {
   }
 
   void _updateContact(AppLocalizations l10n) async {
-    if (!_formKey.currentState!.validate()) {
+    if (!_formKey.currentState!.validate()) return;
+
+    // Guard: no cambios → no tocar BD
+    final noChanges = _contactNameController.text.trim() ==
+            widget.contact.nombre &&
+        _selectedRelation == widget.contact.parentesco &&
+        (_contactPhoneController.text.trim() ==
+            (widget.contact.telefono ?? '')) &&
+        (_contactEmailController.text.trim() == (widget.contact.email ?? ''));
+    if (noChanges) {
+      _showMessage(l10n.noChangesDetected, isError: false);
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
       final familyProvider =
           Provider.of<FamilyProvider>(context, listen: false);
 
-      // Create updated contact object
       final updatedContact = ContactoFamiliar(
         id: widget.contact.id,
         usuarioId: widget.contact.usuarioId,
@@ -207,30 +217,25 @@ class _EditFamilyContactViewState extends State<EditFamilyContactView> {
         fechaRegistro: widget.contact.fechaRegistro,
       );
 
-      // Update contact using provider
       final success =
           await familyProvider.updateFamilyContact(context, updatedContact);
 
-      if (mounted) {
-        if (success) {
-          _showMessage(l10n.contactUpdatedSuccessfully, isError: false);
-          Navigator.of(context).pop(true); // Return true to indicate success
-        } else if (familyProvider.error != null) {
-          _showMessage('${l10n.errorUpdatingContact}: ${familyProvider.error}',
-              isError: true);
-          familyProvider.clearError();
-        }
+      if (!mounted) return;
+
+      if (success) {
+        _showMessage(l10n.contactUpdatedSuccessfully, isError: false);
+        Navigator.of(context).pop(true);
+      } else if (familyProvider.error != null) {
+        _showMessage('${l10n.errorUpdatingContact}: ${familyProvider.error}',
+            isError: true);
+        familyProvider.clearError();
       }
     } catch (e) {
       if (mounted) {
         _showMessage('${l10n.errorUpdatingContact}: $e', isError: true);
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

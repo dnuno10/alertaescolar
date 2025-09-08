@@ -1,3 +1,6 @@
+import 'package:alertaescolar/views/user/profile/help/contact_support_view.dart';
+import 'package:alertaescolar/views/user/profile/help/help_center.view.dart';
+import 'package:alertaescolar/views/user/profile/help/legal_center_view.dart';
 import 'package:flutter/material.dart';
 
 import 'package:alertaescolar/models/alumno.dart';
@@ -78,6 +81,9 @@ class AppRoutes {
   static const String familyInformation = '/profile/family-information';
   static const String accountControl = '/profile/account-control';
   static const String appSettings = '/profile/app-settings';
+  static const String helpCenterNavigation = '/help-center';
+  static const String contactSupport = '/help/contact-support';
+  static const String legalCenter = '/legal-center';
 
   // Admin section routes
   static const String adminDashboard = '/admin';
@@ -110,6 +116,21 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (context) => const PrivacyView(),
           settings: const RouteSettings(name: privacy),
+        );
+      case helpCenterNavigation:
+        return MaterialPageRoute(
+          builder: (context) => const HelpCenterView(),
+          settings: const RouteSettings(name: helpCenterNavigation),
+        );
+      case contactSupport:
+        return MaterialPageRoute(
+          builder: (context) => const ContactSupportView(),
+          settings: const RouteSettings(name: contactSupport),
+        );
+      case legalCenter:
+        return MaterialPageRoute(
+          builder: (context) => const LegalCenterView(),
+          settings: const RouteSettings(name: legalCenter),
         );
 
       // Auth

@@ -4,10 +4,12 @@ import '../../../l10n/app_localizations.dart';
 
 class EmptyNotificationsCard extends StatelessWidget {
   final Size screenSize;
+  final VoidCallback? onRefresh;
 
   const EmptyNotificationsCard({
     super.key,
     required this.screenSize,
+    this.onRefresh,
   });
 
   @override
@@ -72,6 +74,18 @@ class EmptyNotificationsCard extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
+          if (onRefresh != null) ...[
+            SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+            TextButton(
+              onPressed: onRefresh,
+              child: Text(
+                l10n.refresh, // asegúrate de tener esta key en l10n; si no, reemplazar por 'Actualizar'
+                style: AppTheme.getCaption(screenSize).copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

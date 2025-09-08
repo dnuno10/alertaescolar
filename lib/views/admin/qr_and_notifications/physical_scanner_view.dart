@@ -24,12 +24,14 @@ class PhysicalScannerView extends StatefulWidget {
   final Function(String) onCodeScanned;
   final ScannerAccessType? accessType;
   final bool? isDefaultEntryConfig;
+  final bool isExtracurricular; // Nuevo parámetro
 
   const PhysicalScannerView({
     super.key,
     required this.onCodeScanned,
     this.accessType,
     this.isDefaultEntryConfig,
+    this.isExtracurricular = false, // Por defecto falso
   });
 
   @override
@@ -84,15 +86,16 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
   String _getAccessTypeText() {
     final accessType = widget.accessType ?? ScannerAccessType.automatic;
     final isDefaultEntry = widget.isDefaultEntryConfig ?? true;
+    final isExtracurricular = widget.isExtracurricular;
     final l10n = AppLocalizations.of(context);
 
     switch (accessType) {
       case ScannerAccessType.automatic:
         return isDefaultEntry ? l10n.automaticEntry : l10n.automaticExit;
       case ScannerAccessType.entry:
-        return l10n.entry;
+        return isExtracurricular ? 'Entrada Extracurricular' : 'Entrada Fija';
       case ScannerAccessType.exit:
-        return l10n.exit;
+        return isExtracurricular ? 'Salida Extracurricular' : 'Salida Fija';
     }
   }
 
@@ -102,11 +105,11 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
 
     switch (accessType) {
       case ScannerAccessType.automatic:
-        return isDefaultEntry ? Colors.green : Colors.orange;
+        return isDefaultEntry ? Colors.green : Colors.red;
       case ScannerAccessType.entry:
-        return Colors.blue;
+        return Colors.green; // Verde para todas las entradas
       case ScannerAccessType.exit:
-        return Colors.red;
+        return Colors.red; // Rojo para todas las salidas
     }
   }
 
@@ -272,6 +275,7 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
             escuelaId: escuelaId,
             accessType: widget.accessType ?? ScannerAccessType.automatic,
             isDefaultEntryConfig: widget.isDefaultEntryConfig ?? true,
+            isExtracurricular: widget.isExtracurricular, // Nuevo parámetro
             displayMode: displayMode,
             returnDetailedResult: returnDetailed,
           ),

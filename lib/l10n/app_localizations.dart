@@ -12,20 +12,28 @@ abstract class AppLocalizations {
   final String localeName;
 
   static AppLocalizations of(BuildContext context) {
-    final AppLocalizations? localizations =
+    final instance =
         Localizations.of<AppLocalizations>(context, AppLocalizations);
-
-    if (localizations != null) {
-      return localizations;
+    if (instance != null) {
+      return instance;
     }
 
-    // Fallback to English if localizations are not found
-    // if (kDebugMode) {
-    //   print(
-    //       'Warning: No AppLocalizations found in context. Using English fallback. '
-    //       'Make sure to include AppLocalizations.delegate in your app\'s localizationsDelegates.');
-    // }
-    return AppLocalizationsEn();
+    // Fallback: try to get locale from context
+    final locale = Localizations.localeOf(context);
+    switch (locale.languageCode) {
+      case 'en':
+        return AppLocalizationsEn();
+      case 'es':
+        return AppLocalizationsEs();
+      default:
+        // Final fallback to English if unsupported locale
+        if (kDebugMode) {
+          debugPrint(
+              'Warning: Unsupported locale "${locale.languageCode}". Using English fallback. '
+              'Make sure to include AppLocalizations.delegate in your app\'s localizationsDelegates.');
+        }
+        return AppLocalizationsEn();
+    }
   }
 
   static AppLocalizations? maybeOf(BuildContext context) {
@@ -7656,7 +7664,7 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get scheduleManagement => 'Gestión de Horarios';
   @override
-  String get schoolSettings => 'Configuración de la Escuela';
+  String get schoolSettings => 'Configuración Escuela';
   @override
   String get reports => 'Informes';
   @override

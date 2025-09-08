@@ -8,32 +8,38 @@ class LanguageSettingsTile extends StatelessWidget {
   final VoidCallback onTap;
   final Size screenSize;
 
+  /// Opcionales para radio del primer/último tile y estado
+  final bool isFirst;
+  final bool isLast;
+  final bool enabled;
+
   const LanguageSettingsTile({
     super.key,
     required this.onTap,
     required this.screenSize,
+    this.isFirst = false,
+    this.isLast = false,
+    this.enabled = true,
   });
 
   @override
   Widget build(BuildContext context) {
     return Consumer<LocaleProvider>(
       builder: (context, localeProvider, child) {
-        // Forzar la reconstrucción obteniendo las localizaciones actuales
-        final currentL10n = AppLocalizations.of(context);
+        final l10n = AppLocalizations.of(context);
+        final code = localeProvider.locale.languageCode.toLowerCase();
 
-        String subtitle;
-        if (localeProvider.locale.languageCode == 'es') {
-          subtitle = currentL10n.spanish;
-        } else {
-          subtitle = currentL10n.english;
-        }
+        final subtitle = (code == 'es') ? l10n.spanish : l10n.english;
 
         return SettingsTile(
           icon: Icons.language_outlined,
-          title: currentL10n.language,
+          title: l10n.language,
           subtitle: subtitle,
           onTap: onTap,
           screenSize: screenSize,
+          isFirst: isFirst,
+          isLast: isLast,
+          enabled: enabled,
         );
       },
     );

@@ -143,7 +143,7 @@ class _AppContentState extends State<_AppContent> {
       if (session != null) {
         debugPrint("Found existing session: ${session.user.id}");
         try {
-          await userProvider.loadCurrentUser(context);
+          await userProvider.loadCurrentUser(context, showDialog: false);
 
           // lee datos del usuario
           final userData = await supabase

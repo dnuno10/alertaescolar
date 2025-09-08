@@ -15,28 +15,25 @@ class AdminDashboardContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pad = AppTheme.getMediumPadding(screenSize);
+    final gap = AppTheme.getLargePadding(screenSize);
+
     return CustomScrollView(
       physics: const BouncingScrollPhysics(),
       slivers: [
         HomeHeader(screenSize: screenSize),
         SliverToBoxAdapter(
           child: Padding(
-            padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+            padding: EdgeInsets.symmetric(horizontal: pad, vertical: pad),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Recent Attendance
                 RecentAttendanceCard(screenSize: screenSize),
-
-                SizedBox(height: AppTheme.getLargePadding(screenSize)),
-                // Main Actions
+                SizedBox(height: gap),
                 AdminMainActions(screenSize: screenSize),
-
-                SizedBox(height: AppTheme.getLargePadding(screenSize)),
-                // Today's Statistics
+                SizedBox(height: gap),
                 AdminStatsCard(screenSize: screenSize),
-
-                SizedBox(height: AppTheme.getLargePadding(screenSize)),
+                SizedBox(height: gap * 0.5),
               ],
             ),
           ),

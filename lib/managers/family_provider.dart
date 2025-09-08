@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:postgrest/postgrest.dart';
 import '../models/contacto_familiar.dart';
 import '../components/loading_dialog.dart';
 import '../l10n/app_localizations.dart';
@@ -17,44 +18,39 @@ class FamilyProvider extends ChangeNotifier {
 
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  // Load family contacts for the current user
+  // Carga contactos del usuario autenticado
   Future<void> loadFamilyContacts() async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      // Get the current authenticated user
       final user = _supabase.auth.currentUser;
       if (user == null) {
         _error = 'No authenticated user found';
-        _isLoading = false;
-        notifyListeners();
         return;
       }
 
-      // Load contacts for the current user from Supabase
-      try {
-        final data = await _supabase
-            .from('contactos_familiares')
-            .select('*')
-            .eq('id_usuario', user.id)
-            .order('fecha_registro', ascending: false);
+      final data = await _supabase
+          .from('contactos_familiares')
+          .select('*')
+          .eq('id_usuario', user.id)
+          .order('fecha_registro', ascending: false);
 
+      _familyContacts
+        ..clear()
+        ..addAll((data as List)
+            .whereType<Map<String, dynamic>>()
+            .map(_mapDatabaseToModel));
+    } on PostgrestException catch (e) {
+      // 42P01 = undefined_table
+      if (e.code == '42P01' ||
+          e.message.contains(
+              'relation "public.contactos_familiares" does not exist')) {
+        // Entorno recién provisionado: lista vacía sin error visible
         _familyContacts.clear();
-        for (final item in data) {
-          _familyContacts.add(_mapDatabaseToModel(item));
-        }
-      } catch (e) {
-        // Handle specific PostgreSQL error for table not existing
-        if (e.toString().contains(
-            'relation "public.contactos_familiares" does not exist')) {
-          debugPrint(
-              "Family contacts table doesn't exist yet. This is normal for new installations.");
-          _familyContacts.clear();
-        } else {
-          rethrow;
-        }
+      } else {
+        _error = e.message;
       }
     } catch (e) {
       _error = e.toString();
@@ -65,186 +61,185 @@ class FamilyProvider extends ChangeNotifier {
     }
   }
 
-  // Add a new family contact with loading dialog
-  Future<ContactoFamiliar?> addFamilyContact(BuildContext context, String name,
-      TipoParentesco relationship, String phone, String? email) async {
+  // Inserta un contacto (con diálogo de carga)
+  Future<ContactoFamiliar?> addFamilyContact(
+    BuildContext context,
+    String name,
+    TipoParentesco relationship,
+    String phone,
+    String? email,
+  ) async {
     final l10n = AppLocalizations.of(context);
-
-    // Show loading dialog
-    LoadingDialog.show(
-      context,
-      message: l10n.savingContact,
-    );
+    LoadingDialog.show(context, message: l10n.savingContact);
 
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      // Get the current authenticated user
       final user = _supabase.auth.currentUser;
       if (user == null) {
         _error = 'No authenticated user found';
         return null;
       }
 
-      final now = DateTime.now();
+      final now = DateTime.now().toUtc();
 
-      // Prepare data for insertion using the database column names
-      final data = {
+      final payload = {
         'id_usuario': user.id,
         'nombre': name,
-        'parentesco': relationship.name, // Store as string
+        'parentesco': relationship.name, // enum como texto
         'telefono': phone,
         'email': email,
-        'fecha_registro': now.toIso8601String()
+        'fecha_registro': now.toIso8601String(),
       };
 
-      // Insert into Supabase
-      final response =
-          await _supabase.from('contactos_familiares').insert(data).select();
+      final inserted = await _supabase
+          .from('contactos_familiares')
+          .insert(payload)
+          .select()
+          .single(); // ← un único registro
 
-      if (response.isNotEmpty) {
-        // Create a new contact object and add to the list
-        final newContact = _mapDatabaseToModel(response[0]);
-        _familyContacts.insert(
-            0, newContact); // Add to the beginning of the list
-        return newContact;
-      }
-
+      final newContact =
+          _mapDatabaseToModel(Map<String, dynamic>.from(inserted));
+      _familyContacts.insert(0, newContact);
+      return newContact;
+    } on PostgrestException catch (e) {
+      _error = e.message;
+      debugPrint('Error adding family contact (pg): $_error');
       return null;
     } catch (e) {
       _error = e.toString();
       debugPrint('Error adding family contact: $_error');
       return null;
     } finally {
-      // Hide loading dialog
-      if (context.mounted) {
-        LoadingDialog.hide(context);
-      }
-
+      if (context.mounted) LoadingDialog.hide(context);
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Delete a family contact with loading dialog
+  // Elimina contacto (con diálogo de carga)
   Future<bool> deleteFamilyContact(
       BuildContext context, String contactId) async {
     final l10n = AppLocalizations.of(context);
-
-    // Show loading dialog
-    LoadingDialog.show(
-      context,
-      message: l10n.deletingContact,
-    );
+    LoadingDialog.show(context, message: l10n.deletingContact);
 
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      // Delete from Supabase
-      await _supabase.from('contactos_familiares').delete().eq('id', contactId);
+      final user = _supabase.auth.currentUser;
+      if (user == null) {
+        _error = 'No authenticated user found';
+        return false;
+      }
 
-      // Remove from local list
-      _familyContacts.removeWhere((contact) => contact.id == contactId);
+      await _supabase
+          .from('contactos_familiares')
+          .delete()
+          .eq('id', contactId)
+          .eq('id_usuario', user.id); // ← cinturón y tirantes
+
+      _familyContacts.removeWhere((c) => c.id == contactId);
       return true;
+    } on PostgrestException catch (e) {
+      _error = e.message;
+      debugPrint('Error deleting family contact (pg): $_error');
+      return false;
     } catch (e) {
       _error = e.toString();
       debugPrint('Error deleting family contact: $_error');
       return false;
     } finally {
-      // Hide loading dialog
-      if (context.mounted) {
-        LoadingDialog.hide(context);
-      }
-
+      if (context.mounted) LoadingDialog.hide(context);
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Update a family contact with loading dialog
+  // Actualiza contacto (con diálogo de carga)
   Future<bool> updateFamilyContact(
       BuildContext context, ContactoFamiliar updatedContact) async {
     final l10n = AppLocalizations.of(context);
-
-    // Show loading dialog
-    LoadingDialog.show(
-      context,
-      message: l10n.updatingContact,
-    );
+    LoadingDialog.show(context, message: l10n.updatingContact);
 
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      // Prepare data for update
-      final data = {
+      final user = _supabase.auth.currentUser;
+      if (user == null) {
+        _error = 'No authenticated user found';
+        return false;
+      }
+
+      final payload = {
         'nombre': updatedContact.nombre,
         'parentesco': updatedContact.parentesco.name,
         'telefono': updatedContact.telefono,
         'email': updatedContact.email,
       };
 
-      // Update in Supabase
-      await _supabase
+      final updated = await _supabase
           .from('contactos_familiares')
-          .update(data)
-          .eq('id', updatedContact.id);
+          .update(payload)
+          .eq('id', updatedContact.id)
+          .eq('id_usuario', user.id) // ← más seguro con RLS
+          .select()
+          .single(); // si RLS permite devolver el registro actualizado
 
-      // Update in local list
-      final index =
-          _familyContacts.indexWhere((c) => c.id == updatedContact.id);
-      if (index != -1) {
-        _familyContacts[index] = updatedContact;
-      }
+      final fromDb = _mapDatabaseToModel(Map<String, dynamic>.from(updated));
+      final idx = _familyContacts.indexWhere((c) => c.id == updatedContact.id);
+      if (idx != -1) _familyContacts[idx] = fromDb;
+
       return true;
+    } on PostgrestException catch (e) {
+      _error = e.message;
+      debugPrint('Error updating family contact (pg): $_error');
+      return false;
     } catch (e) {
       _error = e.toString();
       debugPrint('Error updating family contact: $_error');
       return false;
     } finally {
-      // Hide loading dialog
-      if (context.mounted) {
-        LoadingDialog.hide(context);
-      }
-
+      if (context.mounted) LoadingDialog.hide(context);
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Helper method to convert database response to model
+  // ---- Helpers ----
+
   ContactoFamiliar _mapDatabaseToModel(Map<String, dynamic> data) {
+    final fechaStr = data['fecha_registro']?.toString();
+    final parsed = fechaStr != null ? DateTime.tryParse(fechaStr) : null;
+
     return ContactoFamiliar(
-      id: data['id'] ?? '',
-      usuarioId: data['id_usuario'] ?? '',
-      nombre: data['nombre'] ?? '',
-      parentesco: _parseParentesco(data['parentesco']),
-      telefono: data['telefono'] ?? '',
-      email: data['email'],
-      fechaRegistro: DateTime.parse(data['fecha_registro']),
+      id: (data['id'] ?? '').toString(),
+      usuarioId: (data['id_usuario'] ?? '').toString(),
+      nombre: (data['nombre'] ?? '').toString(),
+      parentesco: _parseParentesco(data['parentesco']?.toString()),
+      telefono: data['telefono']?.toString(), // ← respeta null
+      email: data['email']?.toString(),
+      fechaRegistro: parsed ?? DateTime.now().toUtc(),
     );
   }
 
-  // Helper method to parse parentesco from string to enum
-  TipoParentesco _parseParentesco(String? parentescoString) {
-    if (parentescoString == null) return TipoParentesco.otroFamiliar;
-
+  TipoParentesco _parseParentesco(String? v) {
+    if (v == null) return TipoParentesco.otroFamiliar;
     try {
       return TipoParentesco.values.firstWhere(
-        (e) => e.name == parentescoString,
+        (e) => e.name == v,
         orElse: () => TipoParentesco.otroFamiliar,
       );
-    } catch (e) {
+    } catch (_) {
       return TipoParentesco.otroFamiliar;
     }
   }
 
-  // Helper method to clear any error
   void clearError() {
     _error = null;
     notifyListeners();

@@ -31,61 +31,90 @@ class _RecentAttendanceCardState extends State<RecentAttendanceCard> {
   Timer? _debounceReloadTimer;
   String? _escuelaIdInUse;
 
+  UserProvider? _userProvider;
+  VoidCallback? _userProviderListener;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_isInitialized) {
       _isInitialized = true;
+      _userProvider = Provider.of<UserProvider>(context, listen: false);
+
+      _userProviderListener = () async {
+        try {
+          final newEscuelaId = _userProvider?.currentUser?.escuelaId;
+          final isLoggedIn = _userProvider?.isLoggedIn ?? false;
+
+          if (!isLoggedIn) {
+            _escuelaIdInUse = null;
+            _recentNotifications = [];
+            _error = null;
+            _isLoading = false;
+            if (mounted) setState(() {});
+            await _unsubscribeFromRealtime();
+            return;
+          }
+
+          if (newEscuelaId != null &&
+              newEscuelaId.isNotEmpty &&
+              newEscuelaId != _escuelaIdInUse) {
+            _escuelaIdInUse = newEscuelaId;
+            if (mounted) setState(() => _isLoading = true);
+            await _loadRecentNotifications();
+            await _subscribeToRealtime();
+          }
+        } catch (_) {}
+      };
+
+      _userProvider?.addListener(_userProviderListener!);
       _setupAndLoad();
     }
   }
 
   Future<void> _setupAndLoad() async {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final escuelaId = userProvider.currentUser?.escuelaId;
+    final l10n = AppLocalizations.of(context);
+    try {
+      final escuelaId = await Provider.of<UserProvider>(context, listen: false)
+          .ensureEscuelaIdOrThrow();
 
-    if (escuelaId == null) {
-      final l10n = AppLocalizations.of(context);
+      _escuelaIdInUse = escuelaId;
+      await _loadRecentNotifications();
+      await _subscribeToRealtime();
+    } catch (_) {
+      if (!mounted) return;
       setState(() {
         _error = l10n.couldNotGetUserSchool;
         _isLoading = false;
       });
-      return;
     }
-
-    _escuelaIdInUse = escuelaId;
-
-    // 1) Carga inicial
-    await _loadRecentNotifications();
-
-    // 2) Suscripción a Realtime (si ya existía, la limpiamos)
-    await _subscribeToRealtime();
   }
 
-  Future<void> _subscribeToRealtime() async {
-    // Limpia suscripción previa si la hubiera
+  Future<void> _unsubscribeFromRealtime() async {
     if (_realtimeChannel != null) {
       try {
         await _supabase.removeChannel(_realtimeChannel!);
       } catch (_) {}
       _realtimeChannel = null;
     }
+  }
 
-    // Suscríbete a cambios de la tabla notificaciones
+  Future<void> _subscribeToRealtime() async {
+    await _unsubscribeFromRealtime();
     _realtimeChannel = _supabase.channel('notificaciones-recent-card')
       ..onPostgresChanges(
-        event: PostgresChangeEvent.all,
+        event: PostgresChangeEvent.insert,
         schema: 'public',
         table: 'notificaciones',
-        // Si tu tabla notificaciones tiene un campo 'alumno_id' y quieres reducir eventos,
-        // podrías filtrar aquí por fecha de hoy o por algún criterio.
-        // filter: PostgresChangeFilter.eq('alumno_id', '...'),
-        callback: (payload) {
-          // Pequeño debounce para agrupar ráfagas de eventos
+        callback: (_) {
           _debounceReloadTimer?.cancel();
-          _debounceReloadTimer = Timer(const Duration(milliseconds: 250), () {
-            if (mounted) _loadRecentNotifications();
-          });
+          _debounceReloadTimer = Timer(
+            Duration(
+                milliseconds: (widget.screenSize.shortestSide * 0.4).round()),
+            () {
+              if (mounted) _loadRecentNotifications();
+            },
+          );
         },
       )
       ..subscribe();
@@ -94,7 +123,8 @@ class _RecentAttendanceCardState extends State<RecentAttendanceCard> {
   Future<void> _loadRecentNotifications() async {
     final l10n = AppLocalizations.of(context);
     try {
-      if (_escuelaIdInUse == null) {
+      final escuelaId = _escuelaIdInUse;
+      if (escuelaId == null || escuelaId.isEmpty) {
         setState(() {
           _error = l10n.couldNotGetUserSchool;
           _isLoading = false;
@@ -107,33 +137,35 @@ class _RecentAttendanceCardState extends State<RecentAttendanceCard> {
         _error = null;
       });
 
-      // Consulta de las 3 más recientes
       final response = await _supabase
           .from('notificaciones')
           .select('''
-            *,
+            id,
+            tipo_notificacion,
+            fecha_registro,
             alumnos!inner(
               id,
               nombre,
               matricula,
-              grupos!inner(
+              grupos(
+                id,
                 grupo,
                 nivel_educativo
               )
             )
           ''')
-          .eq('alumnos.id_escuela', _escuelaIdInUse!)
+          .eq('alumnos.id_escuela', escuelaId)
           .inFilter('tipo_notificacion', ['entrada', 'salida', 'retraso'])
           .order('fecha_registro', ascending: false)
           .limit(3);
 
       if (!mounted) return;
       setState(() {
-        _recentNotifications = List<Map<String, dynamic>>.from(response);
+        _recentNotifications =
+            List<Map<String, dynamic>>.from(response as List);
         _isLoading = false;
       });
     } catch (e) {
-      debugPrint('Error loading recent notifications: $e');
       if (!mounted) return;
       setState(() {
         _error = e.toString();
@@ -145,21 +177,23 @@ class _RecentAttendanceCardState extends State<RecentAttendanceCard> {
   @override
   void dispose() {
     _debounceReloadTimer?.cancel();
-    if (_realtimeChannel != null) {
-      try {
-        _supabase.removeChannel(_realtimeChannel!);
-      } catch (_) {}
+    if (_userProviderListener != null) {
+      _userProvider?.removeListener(_userProviderListener!);
     }
+    _unsubscribeFromRealtime();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final radius = AppTheme.getLargeRadius(widget.screenSize);
+    final borderW = widget.screenSize.width * 0.0025;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Encabezado con CTA
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -181,27 +215,24 @@ class _RecentAttendanceCardState extends State<RecentAttendanceCard> {
                 l10n.viewAll,
                 style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
                   color: AppTheme.accentPurple,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
           ],
         ),
         SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
+
+        // Tarjeta estilo "capsule" sin sombras
         Container(
           padding: EdgeInsets.all(AppTheme.getMediumPadding(widget.screenSize)),
           decoration: BoxDecoration(
             color: AppTheme.getCardColor(context),
-            borderRadius: BorderRadius.circular(
-              AppTheme.getLargeRadius(widget.screenSize),
+            borderRadius: BorderRadius.circular(radius),
+            border: Border.all(
+              color: AppTheme.getDividerColor(context),
+              width: borderW,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.getShadowColor(context),
-                blurRadius: widget.screenSize.height * 0.015,
-                offset: Offset(0, widget.screenSize.height * 0.005),
-              ),
-            ],
           ),
           child: _buildContent(context, l10n),
         ),
@@ -211,34 +242,32 @@ class _RecentAttendanceCardState extends State<RecentAttendanceCard> {
 
   Widget _buildContent(BuildContext context, AppLocalizations l10n) {
     if (_isLoading) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(20.0),
-          child: CircularProgressIndicator(),
-        ),
+      return Padding(
+        padding: EdgeInsets.all(AppTheme.getMediumPadding(widget.screenSize)),
+        child: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: widget.screenSize.height * 0.05,
+      return Padding(
+        padding: EdgeInsets.all(AppTheme.getMediumPadding(widget.screenSize)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: widget.screenSize.height * 0.05,
+              color: AppTheme.errorColor,
+            ),
+            SizedBox(height: AppTheme.getSmallPadding(widget.screenSize)),
+            Text(
+              l10n.errorLoadingData,
+              style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
                 color: AppTheme.errorColor,
               ),
-              const SizedBox(height: 8),
-              Text(
-                l10n.errorLoadingData,
-                style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
-                  color: AppTheme.errorColor,
-                ),
-              ),
-            ],
-          ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       );
     }
@@ -275,14 +304,44 @@ class _AttendanceItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final tipoNotificacion = notification['tipo_notificacion'] ?? '';
+    final tipoNotificacion =
+        (notification['tipo_notificacion'] ?? '') as String;
+
     final statusColor = _getStatusColor(tipoNotificacion);
     final statusIcon = _getStatusIcon(tipoNotificacion);
-    final fechaRegistro = DateTime.parse(notification['fecha_registro']);
+
+    // Fecha segura
+    DateTime fechaRegistro;
+    final rawFecha = notification['fecha_registro'];
+    try {
+      fechaRegistro = rawFecha is String
+          ? DateTime.parse(rawFecha)
+          : (rawFecha is DateTime ? rawFecha : DateTime.now());
+    } catch (_) {
+      fechaRegistro = DateTime.now();
+    }
     final timeAgo = _getTimeAgo(fechaRegistro, l10n);
-    final alumnoNombre = notification['alumnos']['nombre'] ?? 'Estudiante';
-    final alumnoGrado =
-        '${notification['alumnos']['grupos']['nivel_educativo']} - ${notification['alumnos']['grupos']['grupo']}';
+
+    final alumno = Map<String, dynamic>.from(notification['alumnos'] ?? {});
+    final alumnoNombre = (alumno['nombre'] ?? 'Estudiante') as String;
+
+    final grupos = alumno['grupos'];
+    String gradoGrupo;
+    if (grupos is Map) {
+      final g = Map<String, dynamic>.from(grupos);
+      final nivel = (g['nivel_educativo'] ?? g['grado'] ?? '').toString();
+      final grupoLetra = (g['grupo'] ?? '').toString();
+      gradoGrupo = [
+        if (nivel.isNotEmpty) nivel,
+        if (grupoLetra.isNotEmpty) grupoLetra,
+      ].join(' - ');
+      if (gradoGrupo.isEmpty) gradoGrupo = 'Grupo';
+    } else {
+      gradoGrupo = 'Grupo';
+    }
+
+    final rowPad = AppTheme.getSmallPadding(screenSize);
+    final badgeRad = AppTheme.getSmallRadius(screenSize) * 0.5;
 
     return Container(
       margin: EdgeInsets.only(
@@ -291,13 +350,15 @@ class _AttendanceItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Ícono de estado (cápsula plana)
           Container(
             width: screenSize.width * 0.12,
             height: screenSize.width * 0.12,
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.15),
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
+              color: statusColor.withOpacity(0.14),
+              borderRadius: BorderRadius.circular(
+                AppTheme.getSmallRadius(screenSize),
+              ),
             ),
             child: Icon(
               statusIcon,
@@ -306,10 +367,13 @@ class _AttendanceItem extends StatelessWidget {
             ),
           ),
           SizedBox(width: AppTheme.getMediumPadding(screenSize)),
+
+          // Texto
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Nombre + tiempo (pill)
                 Row(
                   children: [
                     Expanded(
@@ -317,49 +381,62 @@ class _AttendanceItem extends StatelessWidget {
                         alumnoNombre,
                         style: AppTheme.getBodyMedium(screenSize).copyWith(
                           color: AppTheme.getTextPrimaryColor(context),
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-                    Text(
-                      timeAgo,
-                      style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                        color: AppTheme.getTextSecondaryColor(context),
-                        fontWeight: FontWeight.w500,
+                    SizedBox(width: rowPad),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: rowPad * 0.7,
+                        vertical: rowPad * 0.3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.getNeutralLightColor(context),
+                        borderRadius: BorderRadius.circular(badgeRad),
+                      ),
+                      child: Text(
+                        timeAgo,
+                        style: AppTheme.getCaptionSmall(screenSize).copyWith(
+                          color: AppTheme.getTextSecondaryColor(context),
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.5),
+
+                SizedBox(height: rowPad * 0.5),
+
+                // Grado + descripción
                 Row(
                   children: [
                     Container(
                       padding: EdgeInsets.symmetric(
-                        horizontal: AppTheme.getSmallPadding(screenSize) * 0.75,
-                        vertical: AppTheme.getSmallPadding(screenSize) * 0.25,
+                        horizontal: rowPad * 0.8,
+                        vertical: rowPad * 0.25,
                       ),
                       decoration: BoxDecoration(
                         color: AppTheme.accentBlue.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(
-                            AppTheme.getSmallRadius(screenSize) * 0.5),
+                        borderRadius: BorderRadius.circular(badgeRad),
                       ),
                       child: Text(
-                        alumnoGrado,
+                        gradoGrupo,
                         style: AppTheme.getCaptionSmall(screenSize).copyWith(
                           color: AppTheme.accentBlue,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
-                    SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+                    SizedBox(width: rowPad),
                     Expanded(
                       child: Text(
                         _getStatusText(tipoNotificacion, l10n),
                         style: AppTheme.getCaptionSmall(screenSize).copyWith(
                           color: AppTheme.getTextSecondaryColor(context),
+                          fontWeight: FontWeight.w700,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -417,10 +494,8 @@ class _AttendanceItem extends StatelessWidget {
   String _getTimeAgo(DateTime timestamp, AppLocalizations l10n) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
-
-    if (difference.inMinutes < 1) {
-      return l10n.timeAgoNow;
-    } else if (difference.inMinutes < 60) {
+    if (difference.inMinutes < 1) return l10n.timeAgoNow;
+    if (difference.inMinutes < 60) {
       return l10n.timeAgoMinutes(difference.inMinutes);
     } else if (difference.inHours < 24) {
       return l10n.timeAgoHours(difference.inHours);
@@ -441,7 +516,8 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return Padding(
+      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
       child: Column(
         children: [
           Icon(
@@ -454,13 +530,16 @@ class _EmptyState extends StatelessWidget {
             l10n.noAttendanceRecords,
             style: AppTheme.getSubtitle1(screenSize).copyWith(
               color: AppTheme.getTextSecondaryColor(context),
+              fontWeight: FontWeight.w800,
             ),
+            textAlign: TextAlign.center,
           ),
           SizedBox(height: screenSize.height * 0.01),
           Text(
             l10n.startScanningToSeeRecords,
             style: AppTheme.getCaption(screenSize).copyWith(
               color: AppTheme.getTextSecondaryColor(context),
+              fontWeight: FontWeight.w700,
             ),
             textAlign: TextAlign.center,
           ),

@@ -13,19 +13,37 @@ class HomeHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
+    final outerPad = AppTheme.getLargePadding(screenSize);
+    final innerPad = AppTheme.getMediumPadding(screenSize);
+    final avatarSide = screenSize.height * 0.065;
+    final borderW = screenSize.width * 0.0025;
+
     return SliverToBoxAdapter(
       child: Container(
-        color: AppTheme.getCardColor(context),
+        decoration: BoxDecoration(
+          color: AppTheme.getCardColor(context),
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(AppTheme.getLargeRadius(screenSize)),
+          ),
+          border: Border.all(
+            color: AppTheme.getDividerColor(context),
+            width: borderW,
+          ),
+        ),
         child: SafeArea(
+          bottom: false,
           child: Padding(
-            padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
+            padding:
+                EdgeInsets.fromLTRB(outerPad, innerPad, outerPad, innerPad),
             child: Consumer<UserProvider>(
               builder: (context, userProvider, child) {
                 final user = userProvider.currentUser;
-                final firstName = user?.nombre.split(' ').first ?? l10n.user;
+                final firstName = (user?.nombre ?? l10n.user).split(' ').first;
 
                 return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    // Saludo (estética plana como la referencia)
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -34,45 +52,50 @@ class HomeHeader extends StatelessWidget {
                             l10n.welcomeBack,
                             style: AppTheme.getCaption(screenSize).copyWith(
                               color: AppTheme.getTextSecondaryColor(context),
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                           SizedBox(
-                            height: AppTheme.getSmallPadding(screenSize) * 0.5,
-                          ),
+                              height:
+                                  AppTheme.getSmallPadding(screenSize) * 0.4),
                           Text(
                             firstName,
                             style: AppTheme.getH1(screenSize).copyWith(
                               color: AppTheme.getTextPrimaryColor(context),
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ],
                       ),
                     ),
+
+                    // Avatar inicial sin sombra, con aro/borde
                     Container(
-                      width: screenSize.height * 0.06,
-                      height: screenSize.height * 0.06,
+                      width: avatarSide,
+                      height: avatarSide,
                       decoration: BoxDecoration(
                         color: AppTheme.accentPurple,
                         borderRadius: BorderRadius.circular(
                           AppTheme.getMediumRadius(screenSize),
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.accentPurple.withOpacity(0.2),
-                            blurRadius: screenSize.height * 0.01,
-                            offset: Offset(0, screenSize.height * 0.005),
-                          ),
-                        ],
+                        border: Border.all(
+                          color: AppTheme.getDividerColor(context),
+                          width: screenSize.width * 0.003,
+                        ),
                       ),
                       child: Center(
                         child: Text(
-                          firstName[0].toUpperCase(),
+                          firstName.isNotEmpty
+                              ? firstName[0].toUpperCase()
+                              : 'A',
                           style: AppTheme.getH2(screenSize).copyWith(
                             color: Colors.white,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
                     ),
+                    SizedBox(width: AppTheme.getSmallPadding(screenSize)),
                   ],
                 );
               },

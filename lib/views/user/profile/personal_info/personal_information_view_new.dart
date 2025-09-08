@@ -22,6 +22,9 @@ class _PersonalInformationViewState extends State<PersonalInformationView> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _lastNameController;
+  final FocusNode _nameFocus = FocusNode();
+  final FocusNode _lastNameFocus = FocusNode();
+
   bool _isLoading = false;
 
   @override
@@ -36,7 +39,17 @@ class _PersonalInformationViewState extends State<PersonalInformationView> {
   void dispose() {
     _nameController.dispose();
     _lastNameController.dispose();
+    _nameFocus.dispose();
+    _lastNameFocus.dispose();
     super.dispose();
+  }
+
+  bool get _hasUnsavedChanges {
+    final up = Provider.of<UserProvider>(context, listen: false).currentUser;
+    final originalName = (up?.nombre ?? '').trim();
+    final originalLast = (up?.apellido ?? '').trim();
+    return _nameController.text.trim() != originalName ||
+        _lastNameController.text.trim() != originalLast;
   }
 
   @override
@@ -46,47 +59,60 @@ class _PersonalInformationViewState extends State<PersonalInformationView> {
 
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        return Scaffold(
-          backgroundColor: AppTheme.getBackgroundColor(context),
-          resizeToAvoidBottomInset: true,
-          body: CustomScrollView(
-            slivers: [
-              NavHeader(title: l10n.personalInformation),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding:
-                      EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Edit Form Section
-                      PersonalInfoSectionTitle(
-                        title: l10n.editInformation,
-                        screenSize: screenSize,
+        return GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: WillPopScope(
+            // Evita salir mientras se está guardando (para no romper el LoadingDialog)
+            onWillPop: () async => !_isLoading,
+            child: Scaffold(
+              backgroundColor: AppTheme.getBackgroundColor(context),
+              resizeToAvoidBottomInset: true,
+              body: CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  NavHeader(title: l10n.personalInformation),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding:
+                          EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Edit Form Section
+                          PersonalInfoSectionTitle(
+                            title: l10n.editInformation,
+                            screenSize: screenSize,
+                          ),
+                          SizedBox(
+                              height: AppTheme.getSmallPadding(screenSize)),
+
+                          PersonalInfoFormCard(
+                            formKey: _formKey,
+                            nameController: _nameController,
+                            lastNameController: _lastNameController,
+                            isLoading: _isLoading,
+                            onReset: () => _resetForm(l10n),
+                            onSave: () => _saveChanges(l10n),
+                            screenSize: screenSize,
+                            nameFocus: _nameFocus,
+                            lastNameFocus: _lastNameFocus,
+                          ),
+
+                          SizedBox(
+                              height: AppTheme.getMediumPadding(screenSize)),
+
+                          // Display current full name with simple styling
+                          CurrentNameDisplayCard(screenSize: screenSize),
+
+                          SizedBox(
+                              height: AppTheme.getLargePadding(screenSize)),
+                        ],
                       ),
-                      SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-
-                      PersonalInfoFormCard(
-                        formKey: _formKey,
-                        nameController: _nameController,
-                        lastNameController: _lastNameController,
-                        isLoading: _isLoading,
-                        onReset: () => _resetForm(l10n),
-                        onSave: () => _saveChanges(l10n),
-                        screenSize: screenSize,
-                      ),
-
-                      SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-                      // Display current full name with simple styling
-                      CurrentNameDisplayCard(screenSize: screenSize),
-
-                      SizedBox(height: AppTheme.getLargePadding(screenSize)),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         );
       },
@@ -94,26 +120,39 @@ class _PersonalInformationViewState extends State<PersonalInformationView> {
   }
 
   Future<void> _saveChanges(AppLocalizations l10n) async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    // Quitar foco y limpiar espacios extra
+    FocusScope.of(context).unfocus();
+    _nameController.text = _nameController.text.trim();
+    _lastNameController.text = _lastNameController.text.trim();
+
+    setState(() => _isLoading = true);
 
     try {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
 
-      // Llamamos directamente al nuevo método específico
-      await userProvider.updatePersonalInfo(_nameController.text.trim(),
-          _lastNameController.text.trim(), context);
+      // Si no hay cambios reales, evitamos golpe a la BD; el provider igual muestra snack
+      final current = userProvider.currentUser;
+      if (current != null &&
+          current.nombre.trim() == _nameController.text &&
+          current.apellido.trim() == _lastNameController.text) {
+        CustomSnackBar.show(
+          context: context,
+          message: l10n.noChangesDetected,
+        );
+        return;
+      }
+
+      await userProvider.updatePersonalInfo(
+        _nameController.text,
+        _lastNameController.text,
+        context,
+      );
     } catch (e) {
       _showMessage('${l10n.errorUpdatingInformation}: $e', isError: true);
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

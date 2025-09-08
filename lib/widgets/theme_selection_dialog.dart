@@ -10,7 +10,7 @@ class ThemeSelectionDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.maybeOf(context);
     final screenSize = MediaQuery.of(context).size;
 
     return Dialog(
@@ -64,7 +64,7 @@ class ThemeSelectionDialog extends StatelessWidget {
                       SizedBox(width: AppTheme.getMediumPadding(screenSize)),
                       Expanded(
                         child: Text(
-                          l10n.selectTheme,
+                          (l10n?.selectTheme) ?? 'Select theme',
                           style: AppTheme.getH2(screenSize).copyWith(
                             color: AppTheme.getTextPrimaryColor(context),
                             fontWeight: FontWeight.w700,
@@ -82,8 +82,9 @@ class ThemeSelectionDialog extends StatelessWidget {
                       return Column(
                         children: [
                           _ThemeOption(
-                            title: l10n.lightTheme,
-                            subtitle: l10n.lightThemeDescription,
+                            title: (l10n?.lightTheme) ?? 'Light',
+                            subtitle: (l10n?.lightThemeDescription) ??
+                                'Bright colors and light surfaces.',
                             icon: Icons.light_mode_rounded,
                             isSelected:
                                 themeProvider.themeMode == ThemeMode.light,
@@ -96,8 +97,9 @@ class ThemeSelectionDialog extends StatelessWidget {
                           SizedBox(
                               height: AppTheme.getSmallPadding(screenSize)),
                           _ThemeOption(
-                            title: l10n.darkTheme,
-                            subtitle: l10n.darkThemeDescription,
+                            title: (l10n?.darkTheme) ?? 'Dark',
+                            subtitle: (l10n?.darkThemeDescription) ??
+                                'Comfortable viewing in low light.',
                             icon: Icons.dark_mode_rounded,
                             isSelected:
                                 themeProvider.themeMode == ThemeMode.dark,
@@ -110,8 +112,9 @@ class ThemeSelectionDialog extends StatelessWidget {
                           SizedBox(
                               height: AppTheme.getSmallPadding(screenSize)),
                           _ThemeOption(
-                            title: l10n.systemTheme,
-                            subtitle: l10n.systemThemeDescription,
+                            title: (l10n?.systemTheme) ?? 'System default',
+                            subtitle: (l10n?.systemThemeDescription) ??
+                                'Match your device setting.',
                             icon: Icons.settings_rounded,
                             isSelected:
                                 themeProvider.themeMode == ThemeMode.system,
@@ -132,10 +135,11 @@ class ThemeSelectionDialog extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: SolidButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        label: l10n.cancel,
-                        backgroundColor: AppTheme.accentPurple,
-                        screenSize: screenSize),
+                      onPressed: () => Navigator.of(context).pop(),
+                      label: (l10n?.cancel) ?? 'Cancel',
+                      backgroundColor: AppTheme.accentPurple,
+                      screenSize: screenSize,
+                    ),
                   ),
                 ],
               ),
@@ -225,7 +229,8 @@ class _ThemeOption extends StatelessWidget {
                       ),
                     ),
                     SizedBox(
-                        height: AppTheme.getSmallPadding(screenSize) * 0.3),
+                      height: AppTheme.getSmallPadding(screenSize) * 0.3,
+                    ),
                     Text(
                       subtitle,
                       style: AppTheme.getCaptionSmall(screenSize).copyWith(

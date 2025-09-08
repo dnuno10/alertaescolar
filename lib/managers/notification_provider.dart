@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'package:alertaescolar/services/notification_send_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -11,6 +12,14 @@ class NotificationProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  // --- Realtime ---
+  final List<RealtimeChannel> _notiChannels = [];
+  Set<String> _childrenIds = {};
+
+  // Pequeño anti-duplicados (insert + update back-to-back)
+  final Map<String, DateTime> _lastUpsertAt = HashMap();
+
+  // Getters
   List<Notificacion> get notifications => List.unmodifiable(_notifications);
   List<Notificacion> get unreadNotifications => _notifications
       .where((n) => n.estado == EstadoNotificacion.nueva)
@@ -29,9 +38,7 @@ class NotificationProvider extends ChangeNotifier {
 
     try {
       final currentUser = _supabase.auth.currentUser;
-      if (currentUser == null) {
-        throw Exception('Usuario no autenticado');
-      }
+      if (currentUser == null) throw Exception('Usuario no autenticado');
 
       // 1) Ids de alumnos vinculados a este tutor
       final childrenRows = await _supabase
@@ -39,19 +46,18 @@ class NotificationProvider extends ChangeNotifier {
           .select('id_alumno')
           .eq('id_tutor', currentUser.id);
 
-      if (childrenRows.isEmpty) {
+      _childrenIds = childrenRows
+          .map<String>((r) => (r['id_alumno'] ?? '').toString())
+          .where((s) => s.isNotEmpty)
+          .toSet();
+
+      if (_childrenIds.isEmpty) {
         _notifications = [];
         _isLoading = false;
         notifyListeners();
         return;
       }
 
-      final childrenIds = childrenRows
-          .map<String>((r) => (r['id_alumno'] ?? '').toString())
-          .where((s) => s.isNotEmpty)
-          .toList();
-
-      // 2) Notificaciones de esos alumnos (filtros ANTES de order/limit)
       // 2) Notificaciones de esos alumnos (filtros ANTES de order/limit)
       var query = _supabase.from('notificaciones').select(r'''
   id,
@@ -62,8 +68,9 @@ class NotificationProvider extends ChangeNotifier {
   estado,
   fecha_registro,
   tipo_notificacion,
-  tipo,
-  datos_adicionales,
+  tipo_comunicado,
+  prioridad_comunicado,
+  destinatarios_comunicado,
   alumnos:id_alumno (
     nombre,
     matricula,
@@ -79,9 +86,8 @@ class NotificationProvider extends ChangeNotifier {
   )
 ''');
 
-      query = query.inFilter('id_alumno', childrenIds);
+      query = query.inFilter('id_alumno', _childrenIds.toList());
 
-// Intentamos ordenar por fecha_registro; si falla, ordenaremos localmente tras mapear.
       List rows;
       try {
         rows =
@@ -91,15 +97,10 @@ class NotificationProvider extends ChangeNotifier {
       }
 
       _notifications = _mapNotificationsFromDb(rows);
-
-// Si no pudimos ordenar en la DB, ordenamos localmente.
       _notifications.sort((a, b) => b.fechaHora.compareTo(a.fechaHora));
-
-      debugPrint('Loaded ${_notifications.length} notifications for user');
     } catch (e) {
       debugPrint('Error loading notifications: $e');
       _error = e.toString();
-      // En error dejamos la lista vacía (ya no usamos mock/legacy service)
       _notifications = [];
     } finally {
       _isLoading = false;
@@ -107,35 +108,181 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
+  /// Ayudante para flujos donde cambian los hijos (vinculaciones).
+  Future<void> reloadAndRefreshRealtime() async {
+    await loadNotifications();
+    await startRealtimeForCurrentUser();
+  }
+
+  /// Inicia suscripciones Realtime (por cada hijo, para filtrar en servidor).
+  Future<void> startRealtimeForCurrentUser() async {
+    try {
+      final currentUser = _supabase.auth.currentUser;
+      if (currentUser == null) return;
+
+      // Asegura hijos cargados
+      if (_childrenIds.isEmpty) {
+        final rows = await _supabase
+            .from('alumno_tutores')
+            .select('id_alumno')
+            .eq('id_tutor', currentUser.id);
+        _childrenIds = rows
+            .map<String>((r) => (r['id_alumno'] ?? '').toString())
+            .where((s) => s.isNotEmpty)
+            .toSet();
+      }
+
+      // Limpia canales anteriores
+      for (final ch in _notiChannels) {
+        try {
+          await _supabase.removeChannel(ch);
+        } catch (_) {}
+      }
+      _notiChannels.clear();
+
+      // Crea un canal por alumno para que el filtro ocurra en Postgres
+      for (final childId in _childrenIds) {
+        final ch = _supabase.channel('noti_alumno_$childId');
+
+        ch.onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'notificaciones',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'id_alumno',
+            value: childId,
+          ),
+          callback: (payload) {
+            final rec = payload.newRecord ?? {};
+            _upsertFromRealtime(rec);
+          },
+        );
+
+        ch.onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'notificaciones',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'id_alumno',
+            value: childId,
+          ),
+          callback: (payload) {
+            final rec = payload.newRecord ?? {};
+            _upsertFromRealtime(rec);
+          },
+        );
+
+        ch.onPostgresChanges(
+          event: PostgresChangeEvent.delete,
+          schema: 'public',
+          table: 'notificaciones',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'id_alumno',
+            value: childId,
+          ),
+          callback: (payload) {
+            final oldRec = payload.oldRecord ?? {};
+            final id = (oldRec['id'] ?? '').toString();
+            if (id.isNotEmpty) {
+              _notifications.removeWhere((n) => n.id == id);
+              _notifications.sort((a, b) => b.fechaHora.compareTo(a.fechaHora));
+              notifyListeners();
+            }
+          },
+        );
+
+        ch.subscribe();
+        _notiChannels.add(ch);
+      }
+    } catch (e) {
+      debugPrint('Error starting realtime notifications: $e');
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  /// Inserta/actualiza un registro recibido por Realtime.
+  Future<void> _upsertFromRealtime(Map<String, dynamic> rec) async {
+    try {
+      final id = (rec['id'] ?? '').toString();
+      if (id.isEmpty) return;
+
+      // Antiduplicado básico (250ms)
+      final now = DateTime.now();
+      final last = _lastUpsertAt[id];
+      if (last != null && now.difference(last).inMilliseconds < 250) return;
+      _lastUpsertAt[id] = now;
+
+      final rows = await _supabase.from('notificaciones').select(r'''
+  id,
+  id_alumno,
+  id_admin,
+  titulo,
+  mensaje,
+  estado,
+  fecha_registro,
+  tipo_notificacion,
+  tipo_comunicado,
+  prioridad_comunicado,
+  destinatarios_comunicado,
+  alumnos:id_alumno (
+    nombre,
+    matricula,
+    id_grupo,
+    id_turno,
+    grupos:id_grupo (
+      grupo,
+      nivel_educativo
+    ),
+    turnos:id_turno (
+      turno
+    )
+  )
+''').eq('id', id).limit(1);
+
+      if (rows is List && rows.isNotEmpty) {
+        final mapped = _mapNotificationsFromDb(rows).first;
+        final i = _notifications.indexWhere((n) => n.id == mapped.id);
+        if (i == -1) {
+          _notifications.insert(0, mapped);
+        } else {
+          _notifications[i] = mapped;
+        }
+        _notifications.sort((a, b) => b.fechaHora.compareTo(a.fechaHora));
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error upserting realtime notification: $e');
+    }
+  }
+
   /// Mapea filas de Supabase → modelo Notificacion (esquema actual).
   List<Notificacion> _mapNotificationsFromDb(List<dynamic> data) {
     return data.map<Notificacion>((record) {
-      // Fecha: preferimos fecha_registro; si no, created_at; si no, ahora.
       final fechaStr =
           (record['fecha_registro'] ?? record['created_at'] ?? '').toString();
       final fecha = DateTime.tryParse(fechaStr) ?? DateTime.now();
 
-      // Tipo: preferimos tipo_notificacion; si no, tipo.
-      final tipoDb =
-          (record['tipo_notificacion'] ?? record['tipo'] ?? '').toString();
-
+      final tipoDb = (record['tipo_notificacion'] ?? '').toString();
       final estadoDb = (record['estado'] ?? '').toString().toLowerCase();
 
       final alumnos = record['alumnos'] as Map<String, dynamic>?;
       final grupos = alumnos?['grupos'] as Map<String, dynamic>?;
       final turnos = alumnos?['turnos'] as Map<String, dynamic>?;
 
-      final Map<String, dynamic> datosAd = (record['datos_adicionales'] is Map)
-          ? Map<String, dynamic>.from(record['datos_adicionales'])
-          : <String, dynamic>{};
-
-      datosAd.addAll({
+      final Map<String, dynamic> datosAd = <String, dynamic>{
         'alumno_nombre': alumnos?['nombre'] ?? '',
         'alumno_matricula': alumnos?['matricula'] ?? '',
         'alumno_grupo': grupos?['grupo'] ?? '',
         'alumno_nivel_educativo': grupos?['nivel_educativo'] ?? '',
         'alumno_turno': turnos?['turno'] ?? '',
-      });
+        'tipo_comunicado': record['tipo_comunicado'],
+        'prioridad_comunicado': record['prioridad_comunicado'],
+        'destinatarios_comunicado': record['destinatarios_comunicado'],
+      };
 
       return Notificacion(
         id: (record['id'] ?? '').toString(),
@@ -153,9 +300,9 @@ class NotificationProvider extends ChangeNotifier {
     }).toList();
   }
 
-  /// Mapea `tipo` (DB) → enum.
-  TipoNotificacion _mapTipoFromDb(String tipo) {
-    switch (tipo.toLowerCase()) {
+  TipoNotificacion _mapTipoFromDb(String rawTipo) {
+    final tipo = rawTipo.trim().toLowerCase();
+    switch (tipo) {
       case 'entrada':
         return TipoNotificacion.entrada;
       case 'salida':
@@ -165,11 +312,11 @@ class NotificationProvider extends ChangeNotifier {
       case 'ausencia':
         return TipoNotificacion.ausencia;
       case 'permisoespecial':
+      case 'permiso_especial':
+      case 'permiso-especial':
         return TipoNotificacion.permisoEspecial;
       case 'comunicado':
-        return TipoNotificacion.comunicado;
       default:
-        // Fallback seguro
         return TipoNotificacion.comunicado;
     }
   }
@@ -188,8 +335,6 @@ class NotificationProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error marking notification as read: $e');
       _error = e.toString();
-
-      // Aún actualizamos localmente para mantener UX responsiva
       final i = _notifications.indexWhere((n) => n.id == notificationId);
       if (i != -1) {
         _notifications[i] =
@@ -202,9 +347,7 @@ class NotificationProvider extends ChangeNotifier {
   Future<void> markAllAsRead() async {
     try {
       final currentUser = _supabase.auth.currentUser;
-      if (currentUser == null) {
-        throw Exception('Usuario no autenticado');
-      }
+      if (currentUser == null) throw Exception('Usuario no autenticado');
 
       final childrenRows = await _supabase
           .from('alumno_tutores')
@@ -238,13 +381,11 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
-  List<Notificacion> getNotificationsByStudent(String studentId) {
-    return _notifications.where((n) => n.alumnoId == studentId).toList();
-  }
+  List<Notificacion> getNotificationsByStudent(String studentId) =>
+      _notifications.where((n) => n.alumnoId == studentId).toList();
 
-  List<Notificacion> getNotificationsByType(TipoNotificacion type) {
-    return _notifications.where((n) => n.tipo == type).toList();
-  }
+  List<Notificacion> getNotificationsByType(TipoNotificacion type) =>
+      _notifications.where((n) => n.tipo == type).toList();
 
   List<Notificacion> getRecentNotifications({int limit = 5}) {
     final sorted = List<Notificacion>.from(_notifications)
@@ -271,7 +412,6 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
-  /// Estadísticas rápidas por alumno en una ventana de días.
   Map<String, int> getNotificationStatsByStudent(String studentId, int days) {
     final now = DateTime.now();
     final startDate = now.subtract(Duration(days: days));
@@ -314,7 +454,6 @@ class NotificationProvider extends ChangeNotifier {
     };
   }
 
-  /// Cambio de tasa de asistencia entre dos periodos consecutivos del mismo tamaño.
   double getAttendanceRateChange(String studentId, int days) {
     final now = DateTime.now();
     final currentStart = now.subtract(Duration(days: days));
@@ -348,5 +487,16 @@ class NotificationProvider extends ChangeNotifier {
     _isLoading = false;
     _error = null;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    for (final ch in _notiChannels) {
+      try {
+        _supabase.removeChannel(ch);
+      } catch (_) {}
+    }
+    _notiChannels.clear();
+    super.dispose();
   }
 }

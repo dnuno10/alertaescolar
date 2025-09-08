@@ -18,10 +18,14 @@ class CustomInputField extends StatefulWidget {
   final bool? enableSuggestions;
   final bool? autocorrect;
 
-  // NUEVO: soportar onSubmitted, readOnly e inputFormatters
+  /// NUEVO: API moderna
   final ValueChanged<String>? onSubmitted;
   final bool readOnly;
   final List<TextInputFormatter>? inputFormatters;
+
+  /// COMPAT: para no romper llamadas existentes
+  final bool? enabled; // si viene false => readOnly efectivo
+  final ValueChanged<String>? onFieldSubmitted; // alias del nuevo onSubmitted
 
   const CustomInputField({
     super.key,
@@ -38,9 +42,13 @@ class CustomInputField extends StatefulWidget {
     this.autofillHints,
     this.enableSuggestions,
     this.autocorrect,
-    this.onSubmitted, // nuevo
-    this.readOnly = false, // nuevo
-    this.inputFormatters, // nuevo
+    // nuevos
+    this.onSubmitted,
+    this.readOnly = false,
+    this.inputFormatters,
+    // compat
+    this.enabled,
+    this.onFieldSubmitted,
   });
 
   @override
@@ -52,6 +60,13 @@ class _CustomInputFieldState extends State<CustomInputField> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final themeTextColor = AppTheme.getTextPrimaryColor(context);
+
+    // Compat: si enabled == false, forzamos readOnly efectivo
+    final bool effectiveReadOnly = widget.readOnly || (widget.enabled == false);
+
+    // Compat: priorizamos el nuevo onSubmitted y si no, usamos onFieldSubmitted
+    final ValueChanged<String>? effectiveOnSubmitted =
+        widget.onSubmitted ?? widget.onFieldSubmitted;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -76,8 +91,8 @@ class _CustomInputFieldState extends State<CustomInputField> {
           enableSuggestions: widget.enableSuggestions ?? true,
           autocorrect: widget.autocorrect ?? true,
           autofillHints: widget.autofillHints,
-          readOnly: widget.readOnly, // <-- nuevo
-          inputFormatters: widget.inputFormatters, // <-- nuevo
+          readOnly: effectiveReadOnly, // <— nuevo/compat
+          inputFormatters: widget.inputFormatters, // <— nuevo
           keyboardAppearance: theme.brightness == Brightness.dark
               ? Brightness.dark
               : Brightness.light,
@@ -86,8 +101,9 @@ class _CustomInputFieldState extends State<CustomInputField> {
             color: themeTextColor,
           ),
           onFieldSubmitted: (value) {
-            if (widget.onSubmitted != null) {
-              widget.onSubmitted!(value); // <-- nuevo
+            // <— nuevo/compat
+            if (effectiveOnSubmitted != null) {
+              effectiveOnSubmitted(value);
             } else if (widget.textInputAction == TextInputAction.next) {
               FocusScope.of(context).nextFocus();
             }
@@ -111,6 +127,8 @@ class _CustomInputFieldState extends State<CustomInputField> {
                 AppTheme.getSmallRadius(widget.screenSize),
               ),
               borderSide: BorderSide(
+                // Nota: withOpacity puede mostrar warning en SDKs muy recientes.
+                // Lo mantenemos por compatibilidad con versiones estables.
                 color: theme.colorScheme.primary.withOpacity(0.25),
                 width: 1,
               ),

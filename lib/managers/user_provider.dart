@@ -1,3 +1,4 @@
+// lib/managers/user_provider.dart
 import 'package:alertaescolar/components/loading_dialog.dart';
 import 'package:alertaescolar/l10n/app_localizations.dart';
 import 'package:alertaescolar/widgets/custom_snack_bar.dart';
@@ -14,10 +15,14 @@ class UserProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isLoggedIn => _currentUser != null;
-// Alias para compatibilidad con vistas que esperan isLoadingUser
+  // Alias para compatibilidad con vistas que esperan isLoadingUser
   bool get isLoadingUser => _isLoading;
 
   final SupabaseClient _supabase = Supabase.instance.client;
+
+  /// Nuevo: verificación real de email vía Supabase Auth.
+  bool get isEmailVerified =>
+      _supabase.auth.currentUser?.emailConfirmedAt != null;
 
   Future<String?> _resolveEscuelaIdForUser({
     required String userId,
@@ -60,22 +65,56 @@ class UserProvider extends ChangeNotifier {
     return null;
   }
 
+  // ► Helpers para mostrar datos en UI sin lógica repetida
+  String get displayName {
+    final u = _currentUser;
+    if (u == null) return '';
+    // nombreCompleto si tu modelo lo expone, sino "Nombre Apellido"
+    final byModel = (u.nombreCompleto ?? '').trim();
+    if (byModel.isNotEmpty) return byModel;
+    final full = '${u.nombre} ${u.apellido}'.trim();
+    if (full.isNotEmpty) return full;
+    // fallback: parte local del email
+    final email = (u.email).trim();
+    return email.contains('@') ? email.split('@').first : email;
+  }
+
+  String get initials {
+    final u = _currentUser;
+    if (u == null) return '';
+    final base = displayName.isNotEmpty ? displayName : (u.email);
+    final parts = base.trim().split(RegExp(r'\s+'));
+    if (parts.length >= 2) {
+      final a = parts[0].isNotEmpty ? parts[0][0] : '';
+      final b = parts[1].isNotEmpty ? parts[1][0] : '';
+      return (a + b).toUpperCase();
+    }
+    return base.isNotEmpty ? base[0].toUpperCase() : '';
+  }
+
+  bool get hasUser => _currentUser != null;
+
+  // ► Reload silencioso para pull-to-refresh / initState
+  Future<void> reloadSilently(BuildContext context) =>
+      loadCurrentUser(context, showDialog: false);
+
   /// Carga el usuario actual desde Supabase.
   Future<void> loadCurrentUser(BuildContext context,
       {bool showDialog = true}) async {
     if (!context.mounted) return;
 
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.maybeOf(context); // ← seguro
     bool dialogShown = false;
-
-    String? _nn(String? s) => (s == null || s.trim().isEmpty) ? null : s.trim();
 
     try {
       _isLoading = true;
       _error = null;
       notifyListeners();
 
-      if (showDialog && (ModalRoute.of(context)?.isCurrent ?? false)) {
+      // Solo mostrar diálogo si ya hay Localizations en el árbol
+      if (showDialog &&
+          l10n != null &&
+          (ModalRoute.of(context)?.isCurrent ?? false)) {
         LoadingDialog.show(context, message: l10n.loadingUserData);
         dialogShown = true;
       }
@@ -103,7 +142,8 @@ class UserProvider extends ChangeNotifier {
       var u = Usuario.fromJson(Map<String, dynamic>.from(row));
 
       // 2) Si es admin y no tiene escuelaId en memoria, resolverla por email en admin_access_list
-      if (u.esAdministrador && (u.escuelaId == null || u.escuelaId!.isEmpty)) {
+      if (u.esAdministrador &&
+          (u.escuelaId == null || u.escuelaId!.isNotEmpty == false)) {
         final emailNorm = u.email.trim().toLowerCase();
         final adminRow = await _supabase
             .from('admin_access_list')

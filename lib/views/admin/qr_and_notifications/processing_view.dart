@@ -30,6 +30,7 @@ class ProcessingView extends StatefulWidget {
   final String escuelaId;
   final ScannerAccessType accessType;
   final bool isDefaultEntryConfig;
+  final bool isExtracurricular; // Nuevo parámetro
 
   /// Nuevo: modo de visualización. En headless no se muestran pantallas de resultado.
   final ProcessingDisplayMode displayMode;
@@ -44,6 +45,7 @@ class ProcessingView extends StatefulWidget {
     required this.escuelaId,
     required this.accessType,
     required this.isDefaultEntryConfig,
+    this.isExtracurricular = false, // Por defecto falso
     this.displayMode = ProcessingDisplayMode.full,
     this.returnDetailedResult = false,
   });
@@ -200,6 +202,7 @@ class _ProcessingViewState extends State<ProcessingView>
         escuelaIdFromContext: widget.escuelaId,
         accessType: widget.accessType,
         isDefaultEntryConfig: widget.isDefaultEntryConfig,
+        isExtracurricular: widget.isExtracurricular, // Nuevo parámetro
         turnoProvider: turnoProvider,
       );
 

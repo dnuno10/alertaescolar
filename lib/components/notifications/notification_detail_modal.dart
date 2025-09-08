@@ -24,54 +24,83 @@ class NotificationDetailModal extends StatelessWidget {
     String status = l10n.notifications;
     Color statusColor = AppTheme.accentPurple;
 
-    // Use the same icon and color logic as in NotificationsView
     final cleanType = notification.tipo
         .toString()
         .toLowerCase()
         .replaceAll('tiponotificacion.', '');
-    switch (cleanType) {
-      case 'entrada':
-        icon = Icons.login_rounded;
-        status = l10n.entryRegistered;
-        statusColor = AppTheme.successColor;
-        break;
-      case 'salida':
-        icon = Icons.logout_rounded;
-        status = l10n.exitRegistered;
-        statusColor = AppTheme.accentBlue;
-        break;
-      case 'retraso':
-        icon = Icons.schedule_rounded;
-        status = l10n.arrivedLate;
-        statusColor = AppTheme.warningColor;
-        break;
-      case 'ausencia':
-        icon = Icons.cancel_rounded;
-        status = l10n.absent;
-        statusColor = AppTheme.errorColor;
-        break;
-      case 'permisoespecial':
-        icon = Icons.event_available_rounded;
-        status = l10n.specialPermission;
-        statusColor = AppTheme.accentPurple;
-        break;
-      case 'comunicado':
-        icon = Icons.announcement_rounded;
-        status = l10n.announcement;
-        statusColor = AppTheme.accentPurple;
-        break;
-      default:
-        icon = Icons.info_outline_rounded;
-        status = l10n.notifications;
-        statusColor = AppTheme.accentBlue;
+
+    // emergencia enviada como comunicado
+    final isComunicadoEmergencia = cleanType == 'comunicado' &&
+        (notification.datosAdicionales?['tipo_comunicado']
+                ?.toString()
+                .toLowerCase() ==
+            'emergencia');
+
+    if (isComunicadoEmergencia) {
+      icon = Icons.warning_rounded;
+      status = 'Emergencia'; // usa l10n si existe la clave
+      statusColor = AppTheme.errorColor;
+    } else {
+      switch (cleanType) {
+        case 'entrada':
+          icon = Icons.login_rounded;
+          status = l10n.entryRegistered;
+          statusColor = AppTheme.successColor; // ✅ verde
+          break;
+        case 'salida':
+          icon = Icons.logout_rounded;
+          status = l10n.exitRegistered;
+          statusColor = AppTheme.errorColor; // ✅ rojo (antes azul)
+          break;
+        case 'retraso':
+          icon = Icons.schedule_rounded;
+          status = l10n.arrivedLate;
+          statusColor = AppTheme.warningColor;
+          break;
+        case 'ausencia':
+          icon = Icons.cancel_rounded;
+          status = l10n.absent;
+          statusColor = AppTheme.errorColor;
+          break;
+        case 'permisoespecial':
+          icon = Icons.event_available_rounded;
+          status = l10n.specialPermission;
+          statusColor = AppTheme.accentPurple;
+          break;
+        case 'comunicado':
+          icon = Icons.announcement_rounded;
+          status = l10n.announcement;
+          statusColor = AppTheme.accentPurple;
+          break;
+        case 'emergency':
+          icon = Icons.warning_rounded;
+          status = 'Emergencia';
+          statusColor = AppTheme.errorColor;
+          break;
+        default:
+          icon = Icons.info_outline_rounded;
+          status = l10n.notifications;
+          statusColor = AppTheme.accentBlue;
+      }
     }
 
-    // Get student info from datosAdicionales
+    // Datos del alumno desde datosAdicionales (mapeados en NotificationProvider)
     final studentName =
-        notification.datosAdicionales?['alumno_nombre'] ?? 'Estudiante';
-    final studentGroup = notification.datosAdicionales?['alumno_grupo'] ?? '';
+        (notification.datosAdicionales?['alumno_nombre'] ?? 'Estudiante')
+            .toString();
+    final studentGroup =
+        (notification.datosAdicionales?['alumno_grupo'] ?? '').toString();
     final studentLevel =
-        notification.datosAdicionales?['alumno_nivel_educativo'] ?? '';
+        (notification.datosAdicionales?['alumno_nivel_educativo'] ?? '')
+            .toString();
+    final studentMatricula =
+        (notification.datosAdicionales?['alumno_matricula'] ?? '').toString();
+    final studentTurno =
+        (notification.datosAdicionales?['alumno_turno'] ?? '').toString();
+
+    // Metadatos de comunicado
+    final destinatariosRaw =
+        notification.datosAdicionales?['destinatarios_comunicado'];
 
     return Container(
       decoration: BoxDecoration(
@@ -120,7 +149,8 @@ class NotificationDetailModal extends StatelessWidget {
                 },
                 child: Container(
                   padding: EdgeInsets.all(
-                      AppTheme.getSmallPadding(screenSize) * 0.5),
+                    AppTheme.getSmallPadding(screenSize) * 0.5,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.getBackgroundColor(context),
                     shape: BoxShape.circle,
@@ -155,10 +185,28 @@ class NotificationDetailModal extends StatelessWidget {
                   _buildDetailRow(
                     context,
                     l10n.group,
-                    "$studentGroup - $studentLevel",
+                    '$studentGroup - $studentLevel',
                     Icons.group_rounded,
                     screenSize,
                   ),
+
+                  if (studentMatricula.isNotEmpty)
+                    _buildDetailRow(
+                      context,
+                      'Matrícula',
+                      studentMatricula,
+                      Icons.badge_rounded,
+                      screenSize,
+                    ),
+
+                  if (studentTurno.isNotEmpty)
+                    _buildDetailRow(
+                      context,
+                      l10n.shift ?? 'Turno',
+                      studentTurno,
+                      Icons.school_rounded,
+                      screenSize,
+                    ),
 
                   _buildDetailRow(
                     context,
@@ -211,11 +259,11 @@ class NotificationDetailModal extends StatelessWidget {
                     ),
                   ),
 
-                  // Información específica de comunicados y permisos especiales
+                  // Información específica de comunicados
                   if (notification.tipo == TipoNotificacion.comunicado) ...[
                     SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-                    // Sección de metadatos del comunicado con mejor diseño
+                    // Sección de metadatos del comunicado
                     Container(
                       width: double.infinity,
                       padding:
@@ -254,9 +302,9 @@ class NotificationDetailModal extends StatelessWidget {
                                   color: AppTheme.accentPurple,
                                 ),
                                 SizedBox(
-                                    width:
-                                        AppTheme.getSmallPadding(screenSize) *
-                                            0.75),
+                                  width: AppTheme.getSmallPadding(screenSize) *
+                                      0.75,
+                                ),
                                 Text(
                                   'Tipo:',
                                   style: AppTheme.getBodyMedium(screenSize)
@@ -266,9 +314,9 @@ class NotificationDetailModal extends StatelessWidget {
                                   ),
                                 ),
                                 SizedBox(
-                                    width:
-                                        AppTheme.getSmallPadding(screenSize) *
-                                            0.5),
+                                  width: AppTheme.getSmallPadding(screenSize) *
+                                      0.5,
+                                ),
                                 Container(
                                   padding: EdgeInsets.symmetric(
                                     horizontal:
@@ -283,8 +331,10 @@ class NotificationDetailModal extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(16),
                                   ),
                                   child: Text(
-                                    _formatComunicadoType(notification
-                                        .datosAdicionales?['tipo_comunicado']),
+                                    _formatComunicadoType(
+                                      notification
+                                          .datosAdicionales?['tipo_comunicado'],
+                                    ),
                                     style: AppTheme.getCaption(screenSize)
                                         .copyWith(
                                       color: Colors.white,
@@ -308,13 +358,14 @@ class NotificationDetailModal extends StatelessWidget {
                                   Icons.priority_high_rounded,
                                   size: screenSize.height * 0.022,
                                   color: _getPriorityColor(
-                                      notification.datosAdicionales?[
-                                          'prioridad_comunicado']),
+                                    notification.datosAdicionales?[
+                                        'prioridad_comunicado'],
+                                  ),
                                 ),
                                 SizedBox(
-                                    width:
-                                        AppTheme.getSmallPadding(screenSize) *
-                                            0.75),
+                                  width: AppTheme.getSmallPadding(screenSize) *
+                                      0.75,
+                                ),
                                 Text(
                                   'Prioridad:',
                                   style: AppTheme.getBodyMedium(screenSize)
@@ -324,9 +375,9 @@ class NotificationDetailModal extends StatelessWidget {
                                   ),
                                 ),
                                 SizedBox(
-                                    width:
-                                        AppTheme.getSmallPadding(screenSize) *
-                                            0.5),
+                                  width: AppTheme.getSmallPadding(screenSize) *
+                                      0.5,
+                                ),
                                 Container(
                                   padding: EdgeInsets.symmetric(
                                     horizontal:
@@ -338,19 +389,76 @@ class NotificationDetailModal extends StatelessWidget {
                                   ),
                                   decoration: BoxDecoration(
                                     color: _getPriorityColor(
-                                        notification.datosAdicionales?[
-                                            'prioridad_comunicado']),
+                                      notification.datosAdicionales?[
+                                          'prioridad_comunicado'],
+                                    ),
                                     borderRadius: BorderRadius.circular(16),
                                   ),
                                   child: Text(
                                     _formatPrioridad(
-                                        notification.datosAdicionales?[
-                                            'prioridad_comunicado']),
+                                      notification.datosAdicionales?[
+                                          'prioridad_comunicado'],
+                                    ),
                                     style: AppTheme.getCaption(screenSize)
                                         .copyWith(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w500,
                                     ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+
+                          // Destinatarios del comunicado
+                          if (destinatariosRaw != null) ...[
+                            SizedBox(
+                                height: AppTheme.getSmallPadding(screenSize)),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  Icons.group_outlined,
+                                  size: screenSize.height * 0.022,
+                                  color: AppTheme.accentBlue,
+                                ),
+                                SizedBox(
+                                  width: AppTheme.getSmallPadding(screenSize) *
+                                      0.75,
+                                ),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Destinatarios:',
+                                        style:
+                                            AppTheme.getBodyMedium(screenSize)
+                                                .copyWith(
+                                          color: AppTheme.getTextSecondaryColor(
+                                              context),
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        height: AppTheme.getSmallPadding(
+                                                screenSize) *
+                                            0.5,
+                                      ),
+                                      Wrap(
+                                        spacing: AppTheme.getSmallPadding(
+                                                screenSize) *
+                                            0.5,
+                                        runSpacing: AppTheme.getSmallPadding(
+                                                screenSize) *
+                                            0.5,
+                                        children: _mapDestinatariosChips(
+                                          context,
+                                          screenSize,
+                                          destinatariosRaw,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
@@ -363,7 +471,7 @@ class NotificationDetailModal extends StatelessWidget {
 
                   SizedBox(height: AppTheme.getSmallPadding(screenSize)),
 
-                  // Message content
+                  // Contenido del mensaje
                   Text(
                     'Mensaje',
                     style: AppTheme.getSubtitle1(screenSize).copyWith(
@@ -400,15 +508,14 @@ class NotificationDetailModal extends StatelessWidget {
             ),
           ),
 
-          // Action button (fixed at bottom)
+          // Botón de acción (fijo)
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () => Navigator.of(context).pop(),
               style: ElevatedButton.styleFrom(
                 backgroundColor: statusColor,
-                foregroundColor:
-                    Colors.white, // Siempre blanco para mejor contraste
+                foregroundColor: Colors.white,
                 padding: EdgeInsets.symmetric(
                   vertical: AppTheme.getMediumPadding(screenSize) * 0.75,
                 ),
@@ -418,14 +525,14 @@ class NotificationDetailModal extends StatelessWidget {
                 ),
                 textStyle: AppTheme.getSubtitle1(screenSize).copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Colors.white, // Garantizar color de texto blanco
+                  color: Colors.white,
                 ),
               ),
               child: Text(
                 l10n.close,
                 style: AppTheme.getSubtitle1(screenSize).copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Colors.white, // Always white for contrast
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -508,8 +615,8 @@ class NotificationDetailModal extends StatelessWidget {
       case 'cambiohorario':
         return 'Cambio de horario';
       default:
-        return tipo.replaceFirstMapped(
-            tipo[0], (match) => match.group(0)!.toUpperCase());
+        if (tipo.isEmpty) return 'Informativo';
+        return tipo[0].toUpperCase() + tipo.substring(1);
     }
   }
 
@@ -527,8 +634,8 @@ class NotificationDetailModal extends StatelessWidget {
       case 'critica':
         return 'Crítica';
       default:
-        return prioridad.replaceFirstMapped(
-            prioridad[0], (match) => match.group(0)!.toUpperCase());
+        if (prioridad.isEmpty) return 'Normal';
+        return prioridad[0].toUpperCase() + prioridad.substring(1);
     }
   }
 
@@ -550,14 +657,59 @@ class NotificationDetailModal extends StatelessWidget {
     }
   }
 
-  // Format a date string from the database
+  // Chips para destinatarios (acepta lista o string separado por comas)
+  List<Widget> _mapDestinatariosChips(
+    BuildContext context,
+    Size screenSize,
+    dynamic destinatariosRaw,
+  ) {
+    Iterable<String> items;
+
+    if (destinatariosRaw is List) {
+      items = destinatariosRaw.map((e) => e.toString());
+    } else if (destinatariosRaw is String) {
+      items = destinatariosRaw
+          .split(',')
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty);
+    } else {
+      items = const <String>[];
+    }
+
+    if (items.isEmpty) {
+      items = const <String>['General'];
+    }
+
+    return items.map((txt) {
+      return Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: AppTheme.getSmallPadding(screenSize) * 0.9,
+          vertical: AppTheme.getSmallPadding(screenSize) * 0.35,
+        ),
+        decoration: BoxDecoration(
+          color: AppTheme.getBackgroundColor(context),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.getBorderColor(context)),
+        ),
+        child: Text(
+          txt,
+          style: AppTheme.getCaption(screenSize).copyWith(
+            color: AppTheme.getTextPrimaryColor(context),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    }).toList();
+  }
+
+  // Por si la necesitas: formateo desde string ISO
   String _formatDateFromString(String? dateString) {
     if (dateString == null) return '';
     try {
       final DateTime date = DateTime.parse(dateString);
       return _formatDate(date);
-    } catch (e) {
-      return dateString; // Return original string if parsing fails
+    } catch (_) {
+      return dateString; // Fallback si falla el parseo
     }
   }
 }

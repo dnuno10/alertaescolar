@@ -1,4 +1,6 @@
+import 'package:alertaescolar/app/app_routes.dart';
 import 'package:alertaescolar/components/students/empty_students_card.dart';
+import 'package:alertaescolar/views/user/students/add_student_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../app/app_theme.dart';
@@ -54,9 +56,9 @@ class StudentsOverviewSection extends StatelessWidget {
         ),
         SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-        // Lista de estudiantes
         Consumer<StudentProvider>(
           builder: (context, provider, child) {
+            // 1) Loading
             if (provider.isLoading) {
               return Container(
                 width: double.infinity,
@@ -86,11 +88,83 @@ class StudentsOverviewSection extends StatelessWidget {
               );
             }
 
-            final students = provider.students;
-
-            if (students.isEmpty) {
-              return EmptyStudentsCard(screenSize: screenSize);
+            // 2) Error
+            if ((provider.error ?? '').isNotEmpty) {
+              return Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+                decoration: BoxDecoration(
+                  color: AppTheme.getCardColor(context),
+                  borderRadius: BorderRadius.circular(
+                      AppTheme.getLargeRadius(screenSize)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.getShadowColor(context),
+                      blurRadius: screenSize.height * 0.015,
+                      offset: Offset(0, screenSize.height * 0.005),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.error_outline, color: AppTheme.errorColor),
+                        SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+                        Expanded(
+                          child: Text(
+                            provider.error!,
+                            style: AppTheme.getBodyMedium(screenSize).copyWith(
+                              color: AppTheme.errorColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: () {
+                          HapticFeedback.mediumImpact();
+                          provider.clearError();
+                          // Si procede, vuelve a cargar según tu flujo (tutor/admin)
+                          // Por ej. si usas UserProvider en Home, se recargará solo.
+                        },
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: Text(
+                          'Reintentar',
+                          style: AppTheme.getBodyMedium(screenSize).copyWith(
+                            color: AppTheme.accentPurple,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
             }
+
+            // 3) Lista
+            final students = provider.students;
+            if (students.isEmpty) {
+              // dentro del builder donde students.isEmpty
+              return EmptyStudentsCard(
+                screenSize: screenSize,
+                onPrimaryAction: () {
+                  HapticFeedback.mediumImpact();
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => AddStudentView()));
+                },
+                primaryLabel:
+                    l10n.linkStudent, // agrega esta key a tu l10n si no existe
+              );
+            }
+
+            final visible = students.take(3).toList();
 
             return Container(
               width: double.infinity,
@@ -108,13 +182,13 @@ class StudentsOverviewSection extends StatelessWidget {
                 ],
               ),
               child: Column(
-                children: students.take(3).map((student) {
-                  final index = students.indexOf(student);
+                children: visible.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final student = entry.value;
                   return GestureDetector(
                     onTap: () {
                       HapticFeedback.mediumImpact();
 
-                      // Mapear StudentDetails -> Alumno (modelo nuevo)
                       final alumno = Alumno(
                         id: student.id,
                         nombre: student.nombre,
@@ -125,7 +199,7 @@ class StudentsOverviewSection extends StatelessWidget {
                         fechaRegistro: student.fechaRegistro,
                         idTurno: (student.turnoId ?? '').toString(),
                         turno: _mapStringToTurnoEnum(student.turno),
-                        idLlave: student.llaveId, // puede ser null
+                        idLlave: student.llaveId,
                         vinculado: student.llaveActiva,
                       );
 
@@ -140,7 +214,7 @@ class StudentsOverviewSection extends StatelessWidget {
                     child: StudentListItem(
                       student: student,
                       index: index,
-                      totalVisible: students.take(3).length,
+                      totalVisible: visible.length,
                       screenSize: screenSize,
                     ),
                   );
@@ -148,7 +222,7 @@ class StudentsOverviewSection extends StatelessWidget {
               ),
             );
           },
-        ),
+        )
       ],
     );
   }
@@ -251,7 +325,9 @@ class StudentListItem extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        student.grupo,
+                        student.nivelEducativo.isNotEmpty
+                            ? '${student.nivelEducativo} - ${student.grupo}'
+                            : student.grupo,
                         style: AppTheme.getCaptionSmall(screenSize).copyWith(
                           color: color,
                           fontWeight: FontWeight.w600,

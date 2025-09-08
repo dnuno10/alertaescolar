@@ -1,3 +1,4 @@
+// lib/components/dialogs/logout_dialog.dart
 import 'package:flutter/material.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';

@@ -4,7 +4,7 @@ import 'package:alertaescolar/components/school/school_header_card.dart';
 import 'package:alertaescolar/components/school/quick_stats_section.dart';
 import 'package:alertaescolar/components/school/info_section.dart';
 import 'package:alertaescolar/components/school/info_row.dart';
-import 'package:alertaescolar/components/school/education_level_chips.dart';
+// import 'package:alertaescolar/components/school/education_level_chips.dart'; // ← ya no se usa
 import 'package:alertaescolar/components/school/contact_card.dart';
 import 'package:alertaescolar/components/school/description_section.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
@@ -255,24 +255,27 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
   Widget _buildContent(AppLocalizations l10n, Size size, Escuela s) {
     final tipoStr = _getSchoolType(s.tipo, l10n);
 
+    // Quick stats: solo datos existentes en la tabla `escuelas`
     final stats = [
       {
-        'title': _getEducationalLevel(s.nivelesEducativos, l10n),
-        'subtitle': l10n.educationalLevel,
-        'icon': Icons.grade_rounded,
-        'color': AppTheme.successColor,
-      },
-      {
         'title': tipoStr,
-        'subtitle': l10n.institution,
+        'subtitle': l10n.institution, // tipo de institución
         'icon': Icons.apartment_rounded,
         'color': AppTheme.warningColor,
+      },
+      {
+        'title':
+            (s.codigo ?? '').isNotEmpty ? (s.codigo ?? '') : l10n.notAvailable,
+        'subtitle': l10n.schoolCode,
+        'icon': Icons.tag_rounded,
+        'color': AppTheme.accentBlue,
       },
     ];
 
     return Column(
       children: [
         SizedBox(height: AppTheme.getSmallPadding(size)),
+
         // Header + acciones
         SchoolHeaderCard(
           schoolName: s.nombre,
@@ -357,6 +360,20 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
               isClickable: s.email.isNotEmpty,
               onTap: s.email.isNotEmpty ? () => _sendEmail(s.email) : null,
             ),
+            if ((s.sitioWeb ?? '').isNotEmpty)
+              ContactCard(
+                label: l10n.website,
+                value: s.sitioWeb!,
+                icon: Icons.language_rounded,
+                screenSize: size,
+                isClickable: true,
+                onTap: () async {
+                  final url = Uri.parse(s.sitioWeb!);
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  }
+                },
+              ),
           ],
         ),
 
@@ -375,8 +392,6 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
     );
   }
 
-  // (Removed) previous toast helper; now using real actions
-
   // ---------- Helpers de mapeo ----------
   String _getSchoolType(TipoEscuela? tipo, AppLocalizations l10n) {
     if (tipo == null) return l10n.public;
@@ -387,21 +402,6 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
         return l10n.private;
       case TipoEscuela.mixta:
         return l10n.mixed;
-    }
-  }
-
-  String _getEducationalLevel(
-      List<NivelEducativo>? niveles, AppLocalizations l10n) {
-    if (niveles == null || niveles.isEmpty) return l10n.primary;
-    switch (niveles.first) {
-      case NivelEducativo.preescolar:
-        return l10n.preschool;
-      case NivelEducativo.primaria:
-        return l10n.primary;
-      case NivelEducativo.secundaria:
-        return l10n.secondary;
-      case NivelEducativo.bachillerato:
-        return l10n.highSchool;
     }
   }
 }

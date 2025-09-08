@@ -17,13 +17,19 @@ class GroupProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  // Helper local para evitar dependencia a extensiones firstOrNull
+  T? _firstOrNull<T>(Iterable<T> it) {
+    final i = it.iterator;
+    return i.moveNext() ? i.current : null;
+  }
+
   // Clear error message
   void clearError() {
     _error = null;
     notifyListeners();
   }
 
-  // Load all groups for a school
+  // Load all groups for a school (opcionalmente filtrado por nivel)
   Future<void> loadGroups({
     required String escuelaId,
     String? nivelEducativo,
@@ -42,13 +48,18 @@ class GroupProvider with ChangeNotifier {
       }
       notifyListeners();
 
-      var query = _supabase.from('grupos').select().eq('id_escuela', escuelaId);
+      // Primero filtros (PostgrestFilterBuilder)...
+      var filterBuilder =
+          _supabase.from('grupos').select().eq('id_escuela', escuelaId);
 
       if (nivelEducativo != null && nivelEducativo.isNotEmpty) {
-        query = query.eq('nivel_educativo', nivelEducativo);
+        filterBuilder = filterBuilder.eq('nivel_educativo', nivelEducativo);
       }
 
-      final response = await query.order('nivel_educativo').order('grupo');
+      // ...al final los orders (TransformBuilder)
+      final response =
+          await filterBuilder.order('nivel_educativo').order('grupo');
+
       _grupos = (response as List).map((item) => Grupo.fromJson(item)).toList();
 
       _error = null;
@@ -122,13 +133,11 @@ class GroupProvider with ChangeNotifier {
       }
       notifyListeners();
 
-      // Check if group already exists for this school and level
-      final existingGroup = _grupos
-          .where((g) =>
-              g.idEscuela == escuelaId &&
-              g.grupo == grupo &&
-              g.nivelEducativo == nivelEducativo)
-          .firstOrNull;
+      // Evita duplicados locales (rápido) — no bloquea validación en BD
+      final existingGroup = _firstOrNull(_grupos.where((g) =>
+          g.idEscuela == escuelaId &&
+          g.grupo == grupo &&
+          g.nivelEducativo == nivelEducativo));
 
       if (existingGroup != null) {
         throw Exception(
@@ -267,7 +276,7 @@ class GroupProvider with ChangeNotifier {
     }
   }
 
-  // Get groups by educational level
+  // Get groups by educational level (nombre de nivel)
   List<Grupo> getGroupsByNivelEducativo(String nivelEducativo) {
     return _grupos
         .where((grupo) => grupo.nivelEducativo == nivelEducativo)
@@ -324,10 +333,8 @@ class GroupProvider with ChangeNotifier {
 
   // Get group by name and educational level
   Grupo? getGroupByNameAndLevel(String grupoName, String nivelEducativo) {
-    return _grupos
-        .where((grupo) =>
-            grupo.grupo == grupoName && grupo.nivelEducativo == nivelEducativo)
-        .firstOrNull;
+    return _firstOrNull(_grupos.where((grupo) =>
+        grupo.grupo == grupoName && grupo.nivelEducativo == nivelEducativo));
   }
 
   // Helper method to sort groups
@@ -374,7 +381,7 @@ class GroupProvider with ChangeNotifier {
       return false;
     }
 
-    // Check for valid group format (could be customized)
+    // Check for valid group format (personalizable)
     final groupRegex = RegExp(r'^[0-9]{1,2}°?[A-Z]?$');
     if (!groupRegex.hasMatch(grupo)) {
       _error = 'El formato del grupo no es válido (ej: 1°A, 2B, 3°)';

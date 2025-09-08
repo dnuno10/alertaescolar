@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../textfield/custom_input_field.dart';
 import '../../models/contacto_familiar.dart';
 import '../../l10n/app_localizations.dart';
@@ -14,6 +15,11 @@ class NewContactForm extends StatelessWidget {
   final ValueChanged<TipoParentesco?> onRelationChanged;
   final Size screenSize;
 
+  // NUEVO: encadenado de focus para onSubmitted
+  final FocusNode? nameFocus;
+  final FocusNode? phoneFocus;
+  final FocusNode? emailFocus;
+
   const NewContactForm({
     super.key,
     required this.formKey,
@@ -23,6 +29,9 @@ class NewContactForm extends StatelessWidget {
     required this.selectedRelation,
     required this.onRelationChanged,
     required this.screenSize,
+    this.nameFocus,
+    this.phoneFocus,
+    this.emailFocus,
   });
 
   @override
@@ -54,6 +63,10 @@ class NewContactForm extends StatelessWidget {
               label: l10n.fullName,
               icon: Icons.person_outline,
               screenSize: screenSize,
+              focusNode: nameFocus,
+              textInputAction: TextInputAction.next,
+              onSubmitted: (_) =>
+                  FocusScope.of(context).requestFocus(phoneFocus),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return l10n.nameRequired;
@@ -75,36 +88,44 @@ class NewContactForm extends StatelessWidget {
             ),
             SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-            // Phone Field
+            // Phone Field (solo dígitos)
             CustomInputField(
               controller: contactPhoneController,
               label: l10n.phone,
               keyboardType: TextInputType.phone,
               icon: Icons.phone_outlined,
               screenSize: screenSize,
+              focusNode: phoneFocus,
+              textInputAction: TextInputAction.next,
+              onSubmitted: (_) =>
+                  FocusScope.of(context).requestFocus(emailFocus),
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return l10n.phoneRequired;
-                }
+                final v = (value ?? '').trim();
+                if (v.isEmpty) return l10n.phoneRequired;
+                if (v.length < 7)
+                  return "Escibe un número válido"; // regla simple
                 return null;
               },
             ),
 
             SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-            // Email Field
+            // Email Field (opcional)
             CustomInputField(
               controller: contactEmailController,
               label: l10n.emailOptional,
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
               screenSize: screenSize,
+              focusNode: emailFocus,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => FocusScope.of(context).unfocus(),
               validator: (value) {
                 if (value != null && value.isNotEmpty) {
-                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                      .hasMatch(value)) {
-                    return l10n.enterValidEmail;
-                  }
+                  final ok = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                      .hasMatch(value);
+                  if (!ok) return l10n.enterValidEmail;
                 }
                 return null;
               },

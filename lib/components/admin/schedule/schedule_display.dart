@@ -45,7 +45,7 @@ class ScheduleDisplay extends StatelessWidget {
       );
     }
 
-    // Filtro por día específico
+    // Filtro por día específico (usa flags lunes..domingo del modelo)
     if (selectedDayKey != null) {
       final daySchedules = schedules
           .where((s) => _isOnDay(s, selectedDayKey!))
@@ -161,7 +161,7 @@ class ScheduleDisplay extends StatelessWidget {
         if (_isOnDay(s, d)) byDay[d]!.add(s);
       }
     }
-    // Ordenar cada día por hora de inicio (HH:MM string)
+    // Ordenar cada día por hora de inicio (HH:MM[:SS])
     for (final d in orderedDays) {
       byDay[d]!.sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
     }
@@ -342,7 +342,7 @@ class ScheduleDisplay extends StatelessWidget {
       case 'domingo':
         return l10n.sunday;
       default:
-        return l10n.unknown; // opcional en tu l10n
+        return l10n.unknown;
     }
   }
 

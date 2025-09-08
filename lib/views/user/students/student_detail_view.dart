@@ -11,8 +11,8 @@ import 'package:alertaescolar/components/students/student_key_info_card.dart';
 import 'package:alertaescolar/components/students/student_action_buttons.dart';
 
 import 'package:alertaescolar/l10n/app_localizations.dart';
-import 'package:alertaescolar/models/models.dart'; // Alumno, etc.
-import 'package:alertaescolar/managers/student_provider.dart'; // StudentDetails, TutorInfo, StudentProvider
+import 'package:alertaescolar/models/models.dart';
+import 'package:alertaescolar/managers/student_provider.dart';
 import 'package:alertaescolar/managers/school_provider.dart';
 
 import '../schedule/schedule_view.dart';

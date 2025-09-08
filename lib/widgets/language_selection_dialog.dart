@@ -10,7 +10,7 @@ class LanguageSelectionDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.maybeOf(context);
     final screenSize = MediaQuery.of(context).size;
 
     return Dialog(
@@ -40,54 +40,50 @@ class LanguageSelectionDialog extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Header with background contrast
+                // Header
                 Container(
                   padding:
                       EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-                  child: Column(
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: screenSize.width * 0.12,
-                            height: screenSize.width * 0.12,
-                            decoration: BoxDecoration(
-                              color: AppTheme.getTextPrimaryColor(context)
-                                  .withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(
-                                  AppTheme.getSmallRadius(screenSize)),
-                            ),
-                            child: Icon(
-                              Icons.language,
-                              color: AppTheme.getTextPrimaryColor(context),
-                              size: screenSize.width * 0.06,
-                            ),
+                      Container(
+                        width: screenSize.width * 0.12,
+                        height: screenSize.width * 0.12,
+                        decoration: BoxDecoration(
+                          color: AppTheme.getTextPrimaryColor(context)
+                              .withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.getSmallRadius(screenSize),
                           ),
-                          SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  l10n.selectLanguage,
-                                  style: AppTheme.getH2(screenSize).copyWith(
-                                    color:
-                                        AppTheme.getTextPrimaryColor(context),
-                                  ),
-                                ),
-                                SizedBox(height: screenSize.height * 0.005),
-                                Text(
-                                  l10n.choosePreferredLanguage,
-                                  style:
-                                      AppTheme.getCaption(screenSize).copyWith(
-                                    color:
-                                        AppTheme.getTextSecondaryColor(context),
-                                  ),
-                                ),
-                              ],
+                        ),
+                        child: Icon(
+                          Icons.language,
+                          color: AppTheme.getTextPrimaryColor(context),
+                          size: screenSize.width * 0.06,
+                        ),
+                      ),
+                      SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              (l10n?.selectLanguage) ?? 'Select language',
+                              style: AppTheme.getH2(screenSize).copyWith(
+                                color: AppTheme.getTextPrimaryColor(context),
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
-                          ),
-                        ],
+                            SizedBox(height: screenSize.height * 0.005),
+                            Text(
+                              (l10n?.choosePreferredLanguage) ??
+                                  'Choose your preferred language.',
+                              style: AppTheme.getCaption(screenSize).copyWith(
+                                color: AppTheme.getTextSecondaryColor(context),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -97,46 +93,55 @@ class LanguageSelectionDialog extends StatelessWidget {
                 Padding(
                   padding:
                       EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-                  child: Column(
-                    children: [
-                      // Spanish language option
-                      _buildLanguageOption(
-                        context: context,
-                        l10n: l10n,
-                        screenSize: screenSize,
-                        locale: const Locale('es', 'ES'),
-                        title: l10n.spanish,
-                        subtitle: 'Español',
-                        flagEmoji: '🇪🇸',
-                        isSelected: _isSpanish(context),
-                        accentColor: AppTheme.accentPurple,
-                      ),
+                  child: Consumer<LocaleProvider>(
+                    builder: (context, localeProvider, _) {
+                      final isEs = localeProvider.locale.languageCode == 'es';
+                      final isEn = localeProvider.locale.languageCode == 'en';
 
-                      SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-
-                      // English language option
-                      _buildLanguageOption(
-                        context: context,
-                        l10n: l10n,
-                        screenSize: screenSize,
-                        locale: const Locale('en', 'US'),
-                        title: l10n.english,
-                        subtitle: 'English',
-                        flagEmoji: '🇺🇸',
-                        isSelected: _isEnglish(context),
-                        accentColor: AppTheme.accentBlue,
-                      ),
-
-                      SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                      SizedBox(
-                        width: double.infinity,
-                        child: SolidButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            label: l10n.cancel,
-                            backgroundColor: AppTheme.accentPurple,
-                            screenSize: screenSize),
-                      ),
-                    ],
+                      return Column(
+                        children: [
+                          _LanguageOption(
+                            screenSize: screenSize,
+                            title: (l10n?.spanish) ?? 'Spanish',
+                            subtitle: 'Español',
+                            flagEmoji: '🇪🇸',
+                            isSelected: isEs,
+                            accentColor: AppTheme.accentPurple,
+                            onTap: () async {
+                              await localeProvider
+                                  .setLocale(const Locale('es', 'ES'));
+                              if (context.mounted) Navigator.of(context).pop();
+                            },
+                          ),
+                          SizedBox(
+                              height: AppTheme.getSmallPadding(screenSize)),
+                          _LanguageOption(
+                            screenSize: screenSize,
+                            title: (l10n?.english) ?? 'English',
+                            subtitle: 'English',
+                            flagEmoji: '🇺🇸',
+                            isSelected: isEn,
+                            accentColor: AppTheme.accentBlue,
+                            onTap: () async {
+                              await localeProvider
+                                  .setLocale(const Locale('en', 'US'));
+                              if (context.mounted) Navigator.of(context).pop();
+                            },
+                          ),
+                          SizedBox(
+                              height: AppTheme.getMediumPadding(screenSize)),
+                          SizedBox(
+                            width: double.infinity,
+                            child: SolidButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              label: (l10n?.cancel) ?? 'Cancel',
+                              backgroundColor: AppTheme.accentPurple,
+                              screenSize: screenSize,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ],
@@ -146,32 +151,36 @@ class LanguageSelectionDialog extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildLanguageOption({
-    required BuildContext context,
-    required AppLocalizations l10n,
-    required Size screenSize,
-    required Locale locale,
-    required String title,
-    required String subtitle,
-    required String flagEmoji,
-    required bool isSelected,
-    required Color accentColor,
-  }) {
+class _LanguageOption extends StatelessWidget {
+  final Size screenSize;
+  final String title;
+  final String subtitle;
+  final String flagEmoji;
+  final bool isSelected;
+  final Color accentColor;
+  final VoidCallback onTap;
+
+  const _LanguageOption({
+    required this.screenSize,
+    required this.title,
+    required this.subtitle,
+    required this.flagEmoji,
+    required this.isSelected,
+    required this.accentColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () async {
-          await _changeLanguage(context, locale);
-          if (context.mounted) {
-            final localeProvider =
-                Provider.of<LocaleProvider>(context, listen: false);
-            localeProvider.setLocale(Locale(locale.languageCode));
-            Navigator.of(context).pop();
-          }
-        },
-        borderRadius:
-            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(
+          AppTheme.getMediumRadius(screenSize),
+        ),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -179,8 +188,9 @@ class LanguageSelectionDialog extends StatelessWidget {
             color: isSelected
                 ? accentColor.withOpacity(0.1)
                 : AppTheme.getContainerBackgroundColor(context),
-            borderRadius:
-                BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+            borderRadius: BorderRadius.circular(
+              AppTheme.getMediumRadius(screenSize),
+            ),
             border: Border.all(
               color:
                   isSelected ? accentColor : AppTheme.getBorderColor(context),
@@ -189,28 +199,19 @@ class LanguageSelectionDialog extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // Flag container
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+              // Flag
+              SizedBox(
                 width: screenSize.width * 0.12,
                 height: screenSize.width * 0.12,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getSmallRadius(screenSize)),
-                ),
                 child: Center(
                   child: Text(
                     flagEmoji,
-                    style: TextStyle(
-                      fontSize: screenSize.width * 0.06,
-                    ),
+                    style: TextStyle(fontSize: screenSize.width * 0.06),
                   ),
                 ),
               ),
-
               SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-
-              // Text content
+              // Texts
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,8 +233,7 @@ class LanguageSelectionDialog extends StatelessWidget {
                   ],
                 ),
               ),
-
-              // Selection indicator
+              // Check
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 width: screenSize.width * 0.06,
@@ -261,51 +261,5 @@ class LanguageSelectionDialog extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  bool _isSpanish(BuildContext context) {
-    try {
-      final localeProvider =
-          Provider.of<LocaleProvider>(context, listen: false);
-      return localeProvider.locale.languageCode == 'es';
-    } catch (e) {
-      // Fallback to system locale detection if provider is not available
-      return Localizations.localeOf(context).languageCode == 'es';
-    }
-  }
-
-  bool _isEnglish(BuildContext context) {
-    try {
-      final localeProvider =
-          Provider.of<LocaleProvider>(context, listen: false);
-      return localeProvider.locale.languageCode == 'en';
-    } catch (e) {
-      // Fallback to system locale detection if provider is not available
-      return Localizations.localeOf(context).languageCode == 'en';
-    }
-  }
-
-  Future<void> _changeLanguage(BuildContext context, Locale locale) async {
-    try {
-      final localeProvider =
-          Provider.of<LocaleProvider>(context, listen: false);
-      await localeProvider.setLocale(locale);
-    } catch (e) {
-      // Handle case where provider is not available
-      debugPrint('LocaleProvider not available: $e');
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Language change not available: ${e.toString()}'),
-            duration: const Duration(seconds: 3),
-            action: SnackBarAction(
-              label: 'OK',
-              onPressed: () {},
-            ),
-          ),
-        );
-      }
-    }
   }
 }

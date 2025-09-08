@@ -1,26 +1,27 @@
-enum TipoEscuela { publica, privada, mixta }
+// models/escuela.dart
+// Alineado a public.escuelas del SQL proporcionado.
+// Columnas: id, nombre, codigo, tipo, direccion, telefono, email, fecha_registro, descripcion, sitio_web
 
-enum NivelEducativo { preescolar, primaria, secundaria, bachillerato }
+enum TipoEscuela { publica, privada, mixta }
 
 class Escuela {
   final String id;
   final String nombre;
-  final String? codigo; // en BD puede ser NULL
-  final TipoEscuela tipo;
-  final List<NivelEducativo> nivelesEducativos;
+  final String? codigo; // NULL en BD
+  final TipoEscuela tipo; // text en BD: "publica" | "privada" | "mixta"
   final String direccion;
   final String telefono;
   final String email;
-  final String? sitioWeb;
-  final String? descripcion;
-  final DateTime fechaRegistro;
+  final String? sitioWeb; // sitio_web en BD
+  final String? descripcion; // descripcion en BD
+  final DateTime
+      fechaRegistro; // fecha_registro (GENERADO por BD, solo lectura)
 
   const Escuela({
     required this.id,
     required this.nombre,
-    this.codigo, // ahora opcional
+    this.codigo,
     required this.tipo,
-    required this.nivelesEducativos,
     required this.direccion,
     required this.telefono,
     required this.email,
@@ -29,57 +30,59 @@ class Escuela {
     required this.fechaRegistro,
   });
 
-  factory Escuela.fromJson(Map<String, dynamic> json) {
-    // Convert boolean flags to enums
-    final niveles = <NivelEducativo>[];
-    if (json['preescolar'] == true) {
-      niveles.add(NivelEducativo.preescolar);
+  /// Mapea el string de BD a enum, tolerante a mayúsculas/minúsculas.
+  static TipoEscuela _tipoFromDb(String? value) {
+    final v = (value ?? '').toLowerCase().trim();
+    switch (v) {
+      case 'privada':
+        return TipoEscuela.privada;
+      case 'mixta':
+        return TipoEscuela.mixta;
+      case 'publica':
+      default:
+        return TipoEscuela.publica;
     }
-    if (json['primaria'] == true) {
-      niveles.add(NivelEducativo.primaria);
-    }
-    if (json['secundaria'] == true) {
-      niveles.add(NivelEducativo.secundaria);
-    }
-    if (json['preparatoria'] == true) {
-      niveles.add(NivelEducativo.bachillerato);
-    }
+  }
 
+  factory Escuela.fromJson(Map<String, dynamic> json) {
     return Escuela(
-      id: json['id'] ?? '',
-      nombre: json['nombre'] ?? '',
-      codigo: json['codigo'], // puede venir null
-      tipo: TipoEscuela.values.firstWhere(
-        (e) => e.name == (json['tipo'] ?? '').toLowerCase(),
-        orElse: () => TipoEscuela.publica,
-      ),
-      nivelesEducativos:
-          niveles.isNotEmpty ? niveles : [NivelEducativo.primaria],
-      direccion: json['direccion'] ?? '',
-      telefono: json['telefono'] ?? '',
-      email: json['email'] ?? '',
-      sitioWeb: json['sitio_web'],
-      descripcion: json['descripcion'],
+      id: (json['id'] ?? '').toString(),
+      nombre: (json['nombre'] ?? '').toString(),
+      codigo: json['codigo'] as String?,
+      tipo: _tipoFromDb(json['tipo'] as String?),
+      direccion: (json['direccion'] ?? '').toString(),
+      telefono: (json['telefono'] ?? '').toString(),
+      email: (json['email'] ?? '').toString(),
+      sitioWeb: json['sitio_web'] as String?,
+      descripcion: json['descripcion'] as String?,
       fechaRegistro:
-          DateTime.tryParse(json['fecha_registro'] ?? '') ?? DateTime.now(),
+          DateTime.tryParse((json['fecha_registro'] ?? '').toString()) ??
+              DateTime.now(),
     );
   }
 
+  /// Payload para UPDATE/INSERT a Supabase.
+  /// Importante: **NO** incluir `id` ni `fecha_registro` (ambas controladas por BD).
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'nombre': nombre,
       'codigo': codigo,
-      'tipo': tipo.name,
-      'preescolar': nivelesEducativos.contains(NivelEducativo.preescolar),
-      'primaria': nivelesEducativos.contains(NivelEducativo.primaria),
-      'secundaria': nivelesEducativos.contains(NivelEducativo.secundaria),
-      'preparatoria': nivelesEducativos.contains(NivelEducativo.bachillerato),
+      'tipo': tipo.name, // "publica" | "privada" | "mixta"
       'direccion': direccion,
       'telefono': telefono,
       'email': email,
       'sitio_web': sitioWeb,
       'descripcion': descripcion,
+      // 'fecha_registro':  // ← NO enviar, lo maneja la BD
+      // 'id':              // ← NO enviar en update; se usa en .eq('id', ...)
+    };
+  }
+
+  /// Útil para depuración (no usar para update).
+  Map<String, dynamic> toDebugMap() {
+    return {
+      'id': id,
+      ...toJson(),
       'fecha_registro': fechaRegistro.toIso8601String(),
     };
   }
@@ -89,7 +92,6 @@ class Escuela {
     String? nombre,
     String? codigo,
     TipoEscuela? tipo,
-    List<NivelEducativo>? nivelesEducativos,
     String? direccion,
     String? telefono,
     String? email,
@@ -102,7 +104,6 @@ class Escuela {
       nombre: nombre ?? this.nombre,
       codigo: codigo ?? this.codigo,
       tipo: tipo ?? this.tipo,
-      nivelesEducativos: nivelesEducativos ?? this.nivelesEducativos,
       direccion: direccion ?? this.direccion,
       telefono: telefono ?? this.telefono,
       email: email ?? this.email,
@@ -113,8 +114,7 @@ class Escuela {
   }
 
   @override
-  String toString() =>
-      'Escuela(id: $id, nombre: $nombre, codigo: $codigo, tipo: $tipo)';
+  String toString() => 'Escuela(id: $id, nombre: $nombre, tipo: ${tipo.name})';
 
   @override
   bool operator ==(Object other) =>

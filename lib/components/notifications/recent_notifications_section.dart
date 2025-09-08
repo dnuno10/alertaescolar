@@ -5,27 +5,23 @@ import 'package:provider/provider.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../managers/notification_provider.dart';
-import '../../../models/models.dart';
 import 'notification_card.dart';
 
 class RecentNotificationsSection extends StatelessWidget {
   final Size screenSize;
   final VoidCallback onTapSeeAll;
-  final List<Notificacion> notifications;
   final Function(String)? onNotificationTap;
 
   const RecentNotificationsSection({
     super.key,
     required this.screenSize,
     required this.onTapSeeAll,
-    required this.notifications,
     this.onNotificationTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final recentNotifications = notifications.take(5).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -44,20 +40,20 @@ class RecentNotificationsSection extends StatelessWidget {
               ),
             ),
             SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-            Consumer<NotificationProvider>(
-              builder: (context, provider, child) {
-                final unreadCount = provider.unreadCount;
+
+            // Badge "Ver todo" optimizado: solo escucha unreadCount
+            Selector<NotificationProvider, int>(
+              selector: (_, p) => p.unreadCount,
+              builder: (context, unreadCount, _) {
                 final showBadge = unreadCount > 0;
 
                 return GestureDetector(
-                  onTap: () {
+                  onTap: () async {
                     HapticFeedback.mediumImpact();
-                    // Mark all notifications as read when navigating to notifications view
                     if (showBadge) {
-                      final provider = Provider.of<NotificationProvider>(
-                          context,
-                          listen: false);
-                      provider.markAllAsRead();
+                      await context
+                          .read<NotificationProvider>()
+                          .markAllAsRead();
                     }
                     onTapSeeAll();
                   },
@@ -124,16 +120,27 @@ class RecentNotificationsSection extends StatelessWidget {
         ),
         SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-        // Lista de notificaciones
+        // Lista de notificaciones (solo escucha top-5 e isLoading)
         SizedBox(
           height: screenSize.height * 0.2,
-          child: Consumer<NotificationProvider>(
-            builder: (context, provider, child) {
-              final recentNotifications =
-                  provider.notifications.take(5).toList();
+          child: Selector<NotificationProvider,
+              ({bool loading, List notifications})>(
+            selector: (_, p) => (
+              loading: p.isLoading,
+              notifications: p.getRecentNotifications(limit: 5)
+            ),
+            builder: (context, data, _) {
+              if (data.loading) {
+                return _SkeletonNotificationsRow(screenSize: screenSize);
+              }
 
+              final recentNotifications = data.notifications;
               if (recentNotifications.isEmpty) {
-                return EmptyNotificationsCard(screenSize: screenSize);
+                return EmptyNotificationsCard(
+                  screenSize: screenSize,
+                  onRefresh: () =>
+                      context.read<NotificationProvider>().loadNotifications(),
+                );
               }
 
               return ListView.builder(
@@ -144,18 +151,21 @@ class RecentNotificationsSection extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final notification = recentNotifications[index];
                   final studentName =
-                      notification.datosAdicionales?['alumno_nombre'] ??
-                          'Estudiante';
+                      (notification.datosAdicionales?['alumno_nombre'] ??
+                              'Estudiante')
+                          .toString();
                   final studentGroup =
-                      notification.datosAdicionales?['alumno_grupo'] ?? '';
+                      (notification.datosAdicionales?['alumno_grupo'] ?? '')
+                          .toString();
 
                   return NotificationCard(
                     notification: notification,
                     index: index,
                     screenSize: screenSize,
                     onTap: () {
-                      if (onNotificationTap != null) {
-                        onNotificationTap!(notification.id);
+                      final cb = onNotificationTap;
+                      if (cb != null) {
+                        cb(notification.id);
                       } else {
                         onTapSeeAll();
                       }
@@ -168,6 +178,63 @@ class RecentNotificationsSection extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Skeleton muy ligero para el top-5 horizontal
+class _SkeletonNotificationsRow extends StatelessWidget {
+  final Size screenSize;
+  const _SkeletonNotificationsRow({required this.screenSize});
+
+  @override
+  Widget build(BuildContext context) {
+    final itemWidth = screenSize.width * 0.7;
+    final itemHeight = screenSize.height * 0.18;
+
+    return ListView.separated(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      itemCount: 3,
+      separatorBuilder: (_, __) =>
+          SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+      itemBuilder: (context, index) {
+        return Container(
+          width: itemWidth,
+          height: itemHeight,
+          decoration: BoxDecoration(
+            color: AppTheme.getCardColor(context),
+            borderRadius:
+                BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
+            border: Border.all(color: AppTheme.getBorderColor(context)),
+          ),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: AnimatedOpacity(
+                  opacity: 0.5,
+                  duration: const Duration(milliseconds: 400),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment(-1, -0.2),
+                        end: Alignment(1, 0.2),
+                        colors: [
+                          AppTheme.getBorderColor(context).withOpacity(0.35),
+                          AppTheme.getBorderColor(context).withOpacity(0.15),
+                          AppTheme.getBorderColor(context).withOpacity(0.35),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(
+                          AppTheme.getLargeRadius(screenSize)),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

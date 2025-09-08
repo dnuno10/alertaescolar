@@ -29,17 +29,97 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
   String? _error;
   String? _selectedStudentId;
 
+  VoidCallback? _studentListener;
+  VoidCallback? _scheduleListener;
+
+  // 🔒 Referencias seguras a los providers (no usar context en dispose)
+  StudentProvider? _sp;
+  ScheduleProvider? _sch;
+
+  bool _listenersAttached = false;
+
+  DateTime _lastLoad = DateTime.fromMillisecondsSinceEpoch(0);
+  static const _minReloadGap = Duration(milliseconds: 300);
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeStudentSelection();
-    });
+    // ❌ Ya no adjuntamos listeners aquí para no depender de context en initState
+    // y para poder reacoplar si los providers cambian.
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Obtiene instancias actuales de los providers SIN registrar dependencias reactivas.
+    final sp = Provider.of<StudentProvider>(context, listen: false);
+    final sch = Provider.of<ScheduleProvider>(context, listen: false);
+
+    // Si las referencias cambiaron (o es la primera vez), desacopla antiguos y acopla nuevos
+    final spChanged = _sp != sp;
+    final schChanged = _sch != sch;
+
+    if (spChanged || schChanged) {
+      _detachProviderListeners(); // por si ya había
+      _sp = sp;
+      _sch = sch;
+      _attachProviderListeners();
+      _initializeStudentSelection(); // asegura selección inicial y primer load
+    }
+  }
+
+  void _attachProviderListeners() {
+    if (_sp == null || _sch == null) return;
+
+    _studentListener = () {
+      // Si cambia la lista de alumnos o su info, revalida selección y recarga
+      if (_selectedStudentId == null && _sp!.students.isNotEmpty) {
+        setState(() => _selectedStudentId = _sp!.students.first.id);
+      }
+      _loadTodaySchedule();
+    };
+    _sp!.addListener(_studentListener!);
+
+    _scheduleListener = () {
+      // Cuando el provider de horarios cambie (por realtime o manual), recarga
+      _loadTodaySchedule();
+    };
+    _sch!.addListener(_scheduleListener!);
+
+    _listenersAttached = true;
+  }
+
+  void _detachProviderListeners() {
+    if (_sp != null && _studentListener != null) {
+      try {
+        _sp!.removeListener(_studentListener!);
+      } catch (_) {}
+      _studentListener = null;
+    }
+    if (_sch != null && _scheduleListener != null) {
+      try {
+        _sch!.removeListener(_scheduleListener!);
+      } catch (_) {}
+      _scheduleListener = null;
+    }
+    _listenersAttached = false;
+  }
+
+  @override
+  void dispose() {
+    // ✅ Usa referencias guardadas, NO uses context aquí
+    _detachProviderListeners();
+    _sp = null;
+    _sch = null;
+    super.dispose();
   }
 
   // Selecciona automáticamente el primer estudiante disponible
   void _initializeStudentSelection() {
-    final sp = Provider.of<StudentProvider>(context, listen: false);
+    final sp = _sp;
+    if (sp == null) return;
+
     if (sp.students.isNotEmpty && _selectedStudentId == null) {
       setState(() => _selectedStudentId = sp.students.first.id);
       _loadTodaySchedule();
@@ -48,13 +128,15 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
     }
   }
 
-  // Recarga estudiantes si no hay (espera a que el padre los cargue)
   Future<void> _loadStudents() async {
     try {
-      final sp = Provider.of<StudentProvider>(context, listen: false);
+      final sp = _sp;
+      if (sp == null) return;
+
       if (sp.students.isEmpty) {
         setState(() => _isLoading = true);
-        await Future.delayed(const Duration(milliseconds: 500));
+        // si hay otra carga en curso, esto evita parpadeo
+        await Future.delayed(const Duration(milliseconds: 300));
         if (!mounted) return;
 
         if (sp.students.isNotEmpty) {
@@ -71,6 +153,7 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
         }
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _error = 'Error al cargar estudiantes: $e';
@@ -78,7 +161,6 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
     }
   }
 
-  // Cambio de alumno seleccionado
   void _onStudentSelected(String? studentId) {
     if (studentId != _selectedStudentId) {
       setState(() => _selectedStudentId = studentId);
@@ -86,7 +168,6 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
     }
   }
 
-  // Devuelve true si la clase aplica para el weekday (1=lun ... 7=dom)
   bool _isClassOnWeekday(ClaseHorario c, int weekday) {
     switch (weekday) {
       case DateTime.monday:
@@ -147,6 +228,12 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
   }
 
   Future<void> _loadTodaySchedule() async {
+    final now = DateTime.now();
+    if (now.difference(_lastLoad) < _minReloadGap) {
+      return;
+    }
+    _lastLoad = now;
+
     if (_selectedStudentId == null) {
       setState(() {
         _todayClasses = [];
@@ -162,10 +249,15 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
         _error = null;
       });
 
-      final studentProvider =
-          Provider.of<StudentProvider>(context, listen: false);
-      final scheduleProvider =
-          Provider.of<ScheduleProvider>(context, listen: false);
+      final studentProvider = _sp;
+      final scheduleProvider = _sch;
+      if (studentProvider == null || scheduleProvider == null) {
+        setState(() {
+          _isLoading = false;
+          _error = 'No hay servicios disponibles';
+        });
+        return;
+      }
 
       final student =
           _findStudentById(studentProvider.students, _selectedStudentId);
@@ -179,31 +271,26 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
         return;
       }
 
-      // Aseguramos catálogos mínimos
+      // Cargas base (si ya están cacheadas, Supabase no penaliza mucho)
       await scheduleProvider.loadMaterias(
         escuelaId: student.escuelaId,
         context: null,
       );
-      // Carga horarios del grupo específico
       await scheduleProvider.loadHorarios(
         escuelaId: student.escuelaId,
         grupoId: student.grupoId,
         context: null,
       );
 
-      // Tomamos horarios directamente por id de grupo
       final allClasses =
           scheduleProvider.getHorariosForGroupId(student.grupoId);
-
       final weekday = DateTime.now().weekday;
 
-      // Filtramos por día actual y ordenamos por hora de inicio
       final todayClasses = allClasses
           .where((c) => _isClassOnWeekday(c, weekday))
           .toList()
         ..sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
 
-      // Deduplicado simple por (idMateria, horaInicio, horaFin)
       final map = <String, ClaseHorario>{};
       for (final c in todayClasses) {
         map['${c.idMateria}_${c.horaInicio}_${c.horaFin}'] = c;
@@ -330,8 +417,9 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
   }
 
   void _navigateToFullSchedule(BuildContext context) {
-    final sp = Provider.of<StudentProvider>(context, listen: false);
-    final student = _findStudentById(sp.students, _selectedStudentId);
+    final sp = _sp; // ✅ usa referencia guardada
+    final student =
+        _findStudentById(sp?.students ?? const [], _selectedStudentId);
 
     if (student != null) {
       final alumno = Alumno(
@@ -350,9 +438,7 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
 
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (context) => ScheduleView(student: alumno),
-        ),
+        MaterialPageRoute(builder: (context) => ScheduleView(student: alumno)),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -375,8 +461,9 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
   TurnoEnum _mapStringToTurnoEnum(String? turno) {
     if (turno == null) return TurnoEnum.desconocido;
     final t = turno.toLowerCase();
-    if (t.contains('vespertino') || t.contains('tarde'))
+    if (t.contains('vespertino') || t.contains('tarde')) {
       return TurnoEnum.vespertino;
+    }
     if (t.contains('matutino') ||
         t.contains('mañana') ||
         t.contains('manana')) {
@@ -416,7 +503,6 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
           );
         }
 
-        // Si aún no hay valor, selecciona el primero
         final currentValue = _selectedStudentId ??
             (sp.students.isNotEmpty ? sp.students.first.id : '');
 
@@ -432,7 +518,7 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
           },
           screenSize: widget.screenSize,
           backgroundColor: AppTheme.getSecondaryBackgroundColor(context)
-              .withValues(alpha: 0.9),
+              .withOpacity(0.9), // was withValues
         );
       },
     );
@@ -643,7 +729,7 @@ class _TodayClassCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(
                         AppTheme.getMediumRadius(screenSize)),
                     border: Border.all(
-                      color: cardColor.withValues(alpha: 0.18),
+                      color: cardColor.withOpacity(0.18),
                       width: 1.2,
                     ),
                   ),
@@ -652,12 +738,11 @@ class _TodayClassCard extends StatelessWidget {
                         EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
                     child: Row(
                       children: [
-                        // Indicador de horas
                         Container(
                           width: 60,
                           height: 60,
                           decoration: BoxDecoration(
-                            color: cardColor.withValues(alpha: 0.13),
+                            color: cardColor.withOpacity(0.13),
                             borderRadius: BorderRadius.circular(12),
                             border: status == ClaseStatus.inProgress
                                 ? Border.all(color: cardColor, width: 2)
@@ -677,13 +762,13 @@ class _TodayClassCard extends StatelessWidget {
                               Container(
                                 width: 15,
                                 height: 1,
-                                color: cardColor.withValues(alpha: 0.5),
+                                color: cardColor.withOpacity(0.5),
                                 margin: const EdgeInsets.symmetric(vertical: 1),
                               ),
                               Text(
                                 TimeFormat.format24to12(clase.horaFin),
                                 style: AppTheme.getCaption(screenSize).copyWith(
-                                  color: cardColor.withValues(alpha: 0.8),
+                                  color: cardColor.withOpacity(0.8),
                                   fontSize: 10,
                                 ),
                               ),
@@ -694,7 +779,6 @@ class _TodayClassCard extends StatelessWidget {
                           height: AppTheme.getMediumPadding(screenSize),
                           width: AppTheme.getMediumPadding(screenSize),
                         ),
-                        // Detalles
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -712,24 +796,20 @@ class _TodayClassCard extends StatelessWidget {
                                       ),
                                     ),
                                   ),
-                                  // Badge de estado
                                   Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 8,
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: cardColor.withValues(alpha: 0.13),
+                                      color: cardColor.withOpacity(0.13),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(
-                                          _getStatusIcon(),
-                                          size: 12,
-                                          color: cardColor,
-                                        ),
+                                        Icon(_getStatusIcon(),
+                                            size: 12, color: cardColor),
                                         const SizedBox(width: 4),
                                         Text(
                                           _getStatusText(),

@@ -6,41 +6,23 @@ import '../../../components/textfield/custom_input_field.dart';
 import '../../../components/textfield/custom_text_area_field.dart';
 import '../../../components/admin/school/section_card.dart';
 import '../../../utils/modern_dropdown.dart';
-import '../../../components/admin/school/education_level_checkboxes.dart';
 
 class InformationTab extends StatelessWidget {
   final GlobalKey<FormState> formKey;
   final TextEditingController nombreController;
-  final TextEditingController codigoController;
-  final TextEditingController descripcionController;
-  final TextEditingController yearFoundedController;
-  final TipoEscuela selectedTipo;
+  final TextEditingController codigoController; // opcional en DB
+  final TextEditingController descripcionController; // opcional en DB
+  final TipoEscuela selectedTipo; // mapea a `tipo` (text)
   final ValueChanged<TipoEscuela> onTipoChanged;
 
-  // Focus nodes
+  // Focus
   final FocusNode? nombreFocusNode;
   final FocusNode? codigoFocusNode;
   final FocusNode? descripcionFocusNode;
-  final FocusNode? yearFoundedFocusNode;
-
-  // Education level booleans
-  final bool hasPreescolar;
-  final bool hasPrimaria;
-  final bool hasSecundaria;
-  final bool hasBachillerato;
-  final ValueChanged<bool> onPreescolarChanged;
-  final ValueChanged<bool> onPrimariaChanged;
-  final ValueChanged<bool> onSecundariaChanged;
-  final ValueChanged<bool> onBachilleratoChanged;
-
-  // Keep original fields for backwards compatibility
-  final List<NivelEducativo> selectedNiveles;
-  final ValueChanged<List<NivelEducativo>> onNivelesChanged;
 
   final bool isLoading;
   final VoidCallback onSave;
   final String Function(TipoEscuela) getTipoLabel;
-  final String Function(NivelEducativo) getNivelLabel;
 
   const InformationTab({
     super.key,
@@ -48,27 +30,14 @@ class InformationTab extends StatelessWidget {
     required this.nombreController,
     required this.codigoController,
     required this.descripcionController,
-    required this.yearFoundedController,
     required this.selectedTipo,
-    required this.selectedNiveles,
     required this.onTipoChanged,
-    required this.onNivelesChanged,
     required this.isLoading,
     required this.onSave,
     required this.getTipoLabel,
-    required this.getNivelLabel,
-    this.hasPreescolar = false,
-    this.hasPrimaria = true,
-    this.hasSecundaria = false,
-    this.hasBachillerato = false,
-    required this.onPreescolarChanged,
-    required this.onPrimariaChanged,
-    required this.onSecundariaChanged,
-    required this.onBachilleratoChanged,
     this.nombreFocusNode,
     this.codigoFocusNode,
     this.descripcionFocusNode,
-    this.yearFoundedFocusNode,
   });
 
   @override
@@ -87,61 +56,31 @@ class InformationTab extends StatelessWidget {
               icon: Icons.school_rounded,
               color: AppTheme.accentBlue,
               children: [
+                // NOMBRE (requerido)
                 CustomInputField(
                   controller: nombreController,
                   label: l10n.schoolName,
                   screenSize: screenSize,
                   icon: Icons.business_rounded,
                   focusNode: nombreFocusNode,
-                  validator: (value) =>
-                      value?.isEmpty == true ? l10n.fieldRequired : null,
+                  validator: (v) =>
+                      v?.isEmpty == true ? l10n.fieldRequired : null,
                 ),
+
                 SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                Row(
-                  children: [
-                    Expanded(
-                      child: CustomInputField(
-                        controller: codigoController,
-                        label: l10n.schoolCode,
-                        screenSize: screenSize,
-                        icon: Icons.tag_rounded,
-                        focusNode: codigoFocusNode,
-                        validator: (value) =>
-                            value?.isEmpty == true ? l10n.fieldRequired : null,
-                      ),
-                    ),
-                    SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-                    Expanded(
-                      child: CustomInputField(
-                        controller: yearFoundedController,
-                        label: l10n.foundedYear,
-                        screenSize: screenSize,
-                        icon: Icons.calendar_today_rounded,
-                        keyboardType: TextInputType.number,
-                        focusNode: yearFoundedFocusNode,
-                        validator: (value) =>
-                            value?.isEmpty == true ? l10n.fieldRequired : null,
-                      ),
-                    ),
-                  ],
+
+                // CÓDIGO (opcional según schema)
+                CustomInputField(
+                  controller: codigoController,
+                  label: l10n.schoolCode,
+                  screenSize: screenSize,
+                  icon: Icons.tag_rounded,
+                  focusNode: codigoFocusNode,
                 ),
+
                 SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                CustomTextAreaField(
-                  textInputAction: TextInputAction.done,
-                  label: l10n.description,
-                  controller: descripcionController,
-                  icon: Icons.description_rounded,
-                  maxLines: 3,
-                  focusNode: descripcionFocusNode,
-                ),
-              ],
-            ),
-            SizedBox(height: AppTheme.getLargePadding(screenSize)),
-            SectionCard(
-              title: l10n.institutionalConfiguration,
-              icon: Icons.settings_rounded,
-              color: AppTheme.successColor,
-              children: [
+
+                // TIPO (enum local -> text en DB)
                 ModernDropdown<TipoEscuela>(
                   label: l10n.schoolType,
                   value: selectedTipo,
@@ -152,23 +91,24 @@ class InformationTab extends StatelessWidget {
                   screenSize: screenSize,
                   backgroundColor: AppTheme.getInputFillColor(context),
                 ),
-                SizedBox(height: AppTheme.getLargePadding(screenSize)),
-                EducationLevelCheckboxes(
-                  label: l10n.educationLevels,
-                  hasPreescolar: hasPreescolar,
-                  hasPrimaria: hasPrimaria,
-                  hasSecundaria: hasSecundaria,
-                  hasBachillerato: hasBachillerato,
-                  onPreescolarChanged: onPreescolarChanged,
-                  onPrimariaChanged: onPrimariaChanged,
-                  onSecundariaChanged: onSecundariaChanged,
-                  onBachilleratoChanged: onBachilleratoChanged,
+
+                SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+
+                // DESCRIPCIÓN (opcional)
+                CustomTextAreaField(
+                  textInputAction: TextInputAction.done,
+                  label: l10n.description,
+                  controller: descripcionController,
+                  icon: Icons.description_rounded,
+                  maxLines: 3,
+                  focusNode: descripcionFocusNode,
                 ),
               ],
             ),
+
             SizedBox(height: AppTheme.getLargePadding(screenSize)),
-            // El botón de guardar/actualizar ha sido removido para ser flotante en el view principal
-            SizedBox(height: AppTheme.getLargePadding(screenSize) * 6),
+            // El botón de guardar está flotante en la vista principal
+            SizedBox(height: AppTheme.getLargePadding(screenSize) * 2),
           ],
         ),
       ),

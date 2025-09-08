@@ -25,15 +25,20 @@ class StudentAttendanceHistoryView extends StatefulWidget {
 class _StudentAttendanceHistoryViewState
     extends State<StudentAttendanceHistoryView> {
   String _selectedStatus = 'all';
-  DateTime? _selectedDate;
+  DateTime? _selectedDate; // Se setea a HOY en initState
   List<Map<String, dynamic>> _allRecords = [];
   List<Map<String, dynamic>> _filteredRecords = [];
   bool _isLoading = false;
   String? _error;
 
+  // Helper: solo la parte de fecha (sin hora)
+  DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
   @override
   void initState() {
     super.initState();
+    // Selecciona automáticamente HOY
+    _selectedDate = _dateOnly(DateTime.now());
     _loadAttendanceData();
   }
 
@@ -51,16 +56,16 @@ class _StudentAttendanceHistoryViewState
     try {
       final supabase = Supabase.instance.client;
 
-      // Get notifications for this student from the last 30 days
-      final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
-
+      // Traer TODOS los registros del alumno (sin rango de 30 días)
       final response = await supabase
           .from('notificaciones')
           .select('*')
           .eq('id_alumno', widget.student.id)
-          .inFilter('tipo_notificacion', ['entrada', 'salida', 'retraso'])
-          .gte('fecha_registro', thirtyDaysAgo.toIso8601String())
-          .order('fecha_registro', ascending: false);
+          .inFilter('tipo_notificacion', [
+        'entrada',
+        'salida',
+        'retraso'
+      ]).order('fecha_registro', ascending: false);
 
       setState(() {
         _allRecords = List<Map<String, dynamic>>.from(response);
@@ -84,11 +89,11 @@ class _StudentAttendanceHistoryViewState
         final tipoNotificacion = record['tipo_notificacion'] as String;
         final fechaRegistro = DateTime.parse(record['fecha_registro']);
 
-        // Filter by status
+        // Filtro por tipo
         final matchesStatus =
             _selectedStatus == 'all' || tipoNotificacion == _selectedStatus;
 
-        // Filter by selected date
+        // Filtro por fecha (por día)
         final matchesDate = _selectedDate == null ||
             (fechaRegistro.year == _selectedDate!.year &&
                 fechaRegistro.month == _selectedDate!.month &&
@@ -139,26 +144,22 @@ class _StudentAttendanceHistoryViewState
           ),
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-          // Date picker - Modernized version
+          // Date picker + Status
           Column(
             children: [
-              // First row: Date selector
               _buildDateSelector(context, screenSize),
-
               SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-              // Second row: Status filter
               _buildStatusFilter(context, screenSize),
             ],
           ),
 
-          // Clear filters button
+          // Botón limpiar filtros
           if (_selectedDate != null || _selectedStatus != 'all') ...[
             SizedBox(height: AppTheme.getMediumPadding(screenSize)),
             TextButton(
               onPressed: () {
                 setState(() {
-                  _selectedDate = null;
+                  _selectedDate = null; // Todas las fechas
                   _selectedStatus = 'all';
                   _filterRecords();
                 });
@@ -190,7 +191,7 @@ class _StudentAttendanceHistoryViewState
             final picked = await showDatePicker(
               context: context,
               initialDate: _selectedDate ?? DateTime.now(),
-              firstDate: DateTime.now().subtract(const Duration(days: 30)),
+              firstDate: DateTime(2000, 1, 1),
               lastDate: DateTime.now(),
               builder: (context, child) {
                 return Theme(
@@ -208,7 +209,7 @@ class _StudentAttendanceHistoryViewState
             );
             if (picked != null) {
               setState(() {
-                _selectedDate = picked;
+                _selectedDate = _dateOnly(picked);
                 _filterRecords();
               });
             }
@@ -451,7 +452,7 @@ class _StudentAttendanceHistoryViewState
                                 ),
                                 ElevatedButton(
                                   onPressed: _loadAttendanceData,
-                                  child: Text('Reintentar'),
+                                  child: const Text('Reintentar'),
                                 ),
                               ],
                             ),

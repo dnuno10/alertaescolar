@@ -32,55 +32,98 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
   Timer? _debounceReloadTimer;
   String? _escuelaIdInUse;
 
+  UserProvider? _userProvider;
+  VoidCallback? _userProviderListener;
+
+  ({DateTime startUtc, DateTime endUtc}) _todayUtcRangeFromLocal() {
+    final nowLocal = DateTime.now();
+    final startOfDayLocal =
+        DateTime(nowLocal.year, nowLocal.month, nowLocal.day);
+    final endOfDayLocal = startOfDayLocal.add(const Duration(days: 1));
+    return (startUtc: startOfDayLocal.toUtc(), endUtc: endOfDayLocal.toUtc());
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_isInitialized) {
       _isInitialized = true;
+      _userProvider = Provider.of<UserProvider>(context, listen: false);
+
+      _userProviderListener = () async {
+        try {
+          final isLoggedIn = _userProvider?.isLoggedIn ?? false;
+          final newEscuelaId = _userProvider?.currentUser?.escuelaId ?? '';
+
+          if (!isLoggedIn) {
+            _escuelaIdInUse = null;
+            _totalScanned = 0;
+            _presentStudents = 0;
+            _lateStudents = 0;
+            _error = null;
+            _isLoading = false;
+            if (mounted) setState(() {});
+            await _unsubscribeFromRealtime();
+            return;
+          }
+
+          if (newEscuelaId.isNotEmpty && newEscuelaId != _escuelaIdInUse) {
+            _escuelaIdInUse = newEscuelaId;
+            if (mounted) setState(() => _isLoading = true);
+            await _loadTodayStats();
+            await _subscribeToRealtime();
+          }
+        } catch (_) {}
+      };
+
+      _userProvider?.addListener(_userProviderListener!);
       _setupAndLoad();
     }
   }
 
   Future<void> _setupAndLoad() async {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final escuelaId = userProvider.currentUser?.escuelaId;
+    final l10n = AppLocalizations.of(context);
+    try {
+      final escuelaId = await Provider.of<UserProvider>(context, listen: false)
+          .ensureEscuelaIdOrThrow();
 
-    if (escuelaId == null) {
-      final l10n = AppLocalizations.of(context);
+      _escuelaIdInUse = escuelaId;
+      await _loadTodayStats();
+      await _subscribeToRealtime();
+    } catch (_) {
+      if (!mounted) return;
       setState(() {
         _error = l10n.couldNotGetUserSchool;
         _isLoading = false;
       });
-      return;
     }
-
-    _escuelaIdInUse = escuelaId;
-
-    // 1) Carga inicial
-    await _loadTodayStats();
-
-    // 2) Suscripción a Realtime
-    await _subscribeToRealtime();
   }
 
-  Future<void> _subscribeToRealtime() async {
+  Future<void> _unsubscribeFromRealtime() async {
     if (_realtimeChannel != null) {
       try {
         await _supabase.removeChannel(_realtimeChannel!);
       } catch (_) {}
       _realtimeChannel = null;
     }
+  }
 
-    _realtimeChannel = _supabase.channel('notificaciones-stats-card')
+  Future<void> _subscribeToRealtime() async {
+    await _unsubscribeFromRealtime();
+    _realtimeChannel = _supabase.channel('rt-notificaciones-stats-card')
       ..onPostgresChanges(
-        event: PostgresChangeEvent.all,
+        event: PostgresChangeEvent.insert,
         schema: 'public',
         table: 'notificaciones',
-        callback: (payload) {
+        callback: (_) {
           _debounceReloadTimer?.cancel();
-          _debounceReloadTimer = Timer(const Duration(milliseconds: 250), () {
-            if (mounted) _loadTodayStats();
-          });
+          _debounceReloadTimer = Timer(
+            Duration(
+                milliseconds: (widget.screenSize.shortestSide * 0.4).round()),
+            () {
+              if (mounted) _loadTodayStats();
+            },
+          );
         },
       )
       ..subscribe();
@@ -89,7 +132,8 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
   Future<void> _loadTodayStats() async {
     final l10n = AppLocalizations.of(context);
     try {
-      if (_escuelaIdInUse == null) {
+      final escuelaId = _escuelaIdInUse;
+      if (escuelaId == null || escuelaId.isEmpty) {
         setState(() {
           _error = l10n.couldNotGetUserSchool;
           _isLoading = false;
@@ -102,42 +146,42 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
         _error = null;
       });
 
-      final today = DateTime.now();
-      final startOfDay = DateTime(today.year, today.month, today.day);
-      final endOfDay = startOfDay.add(const Duration(days: 1));
+      final range = _todayUtcRangeFromLocal();
+      final startIso = range.startUtc.toIso8601String();
+      final endIso = range.endUtc.toIso8601String();
 
-      final response = await _supabase
+      final totalRows = await _supabase
           .from('notificaciones')
-          .select('''
-            tipo_notificacion,
-            alumnos!inner(
-              id_escuela
-            )
-          ''')
-          .eq('alumnos.id_escuela', _escuelaIdInUse!)
+          .select('id, tipo_notificacion, alumnos!inner(id_escuela)')
+          .eq('alumnos.id_escuela', escuelaId)
           .inFilter('tipo_notificacion', ['entrada', 'salida', 'retraso'])
-          .gte('fecha_registro', startOfDay.toIso8601String())
-          .lt('fecha_registro', endOfDay.toIso8601String());
+          .gte('fecha_registro', startIso)
+          .lt('fecha_registro', endIso);
 
-      final notifications = List<Map<String, dynamic>>.from(response);
+      final entradasRows = await _supabase
+          .from('notificaciones')
+          .select('id, alumnos!inner(id_escuela)')
+          .eq('alumnos.id_escuela', escuelaId)
+          .eq('tipo_notificacion', 'entrada')
+          .gte('fecha_registro', startIso)
+          .lt('fecha_registro', endIso);
 
-      final totalScanned = notifications.length;
-      final presentStudents = notifications
-          .where((n) => n['tipo_notificacion'] == 'entrada')
-          .length;
-      final lateStudents = notifications
-          .where((n) => n['tipo_notificacion'] == 'retraso')
-          .length;
+      final retrasosRows = await _supabase
+          .from('notificaciones')
+          .select('id, alumnos!inner(id_escuela)')
+          .eq('alumnos.id_escuela', escuelaId)
+          .eq('tipo_notificacion', 'retraso')
+          .gte('fecha_registro', startIso)
+          .lt('fecha_registro', endIso);
 
       if (!mounted) return;
       setState(() {
-        _totalScanned = totalScanned;
-        _presentStudents = presentStudents;
-        _lateStudents = lateStudents;
+        _totalScanned = (totalRows as List).length;
+        _presentStudents = (entradasRows as List).length;
+        _lateStudents = (retrasosRows as List).length;
         _isLoading = false;
       });
     } catch (e) {
-      debugPrint('Error loading today stats: $e');
       if (!mounted) return;
       setState(() {
         _error = e.toString();
@@ -149,11 +193,10 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
   @override
   void dispose() {
     _debounceReloadTimer?.cancel();
-    if (_realtimeChannel != null) {
-      try {
-        _supabase.removeChannel(_realtimeChannel!);
-      } catch (_) {}
+    if (_userProviderListener != null) {
+      _userProvider?.removeListener(_userProviderListener!);
     }
+    _unsubscribeFromRealtime();
     super.dispose();
   }
 
@@ -163,115 +206,126 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
     final today = DateTime.now();
 
     return Container(
-      padding: EdgeInsets.all(AppTheme.getLargePadding(widget.screenSize)),
+      padding: EdgeInsets.all(AppTheme.getMediumPadding(widget.screenSize)),
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
         borderRadius:
             BorderRadius.circular(AppTheme.getLargeRadius(widget.screenSize)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context).withOpacity(0.1),
-            blurRadius: widget.screenSize.height * 0.02,
-            offset: Offset(0, widget.screenSize.height * 0.008),
-          ),
-        ],
+        border: Border.all(
+          color: AppTheme.getTextSecondaryColor(context).withOpacity(0.08),
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          Row(
+          // Header simple sin icono
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding:
-                    EdgeInsets.all(AppTheme.getSmallPadding(widget.screenSize)),
-                decoration: BoxDecoration(
-                  color: AppTheme.accentBlue,
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getSmallRadius(widget.screenSize)),
-                ),
-                child: Text(
-                  today.day.toString(),
-                  style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              SizedBox(width: AppTheme.getMediumPadding(widget.screenSize)),
               Text(
                 l10n.todayAttendance,
                 style: AppTheme.getH2(widget.screenSize).copyWith(
-                  fontSize: MediaQuery.of(context).size.height * 0.023,
                   color: AppTheme.getTextPrimaryColor(context),
                   fontWeight: FontWeight.w700,
+                ),
+              ),
+              Text(
+                'Hoy, ${today.day}',
+                style: AppTheme.getCaptionSmall(widget.screenSize).copyWith(
+                  color: AppTheme.getTextSecondaryColor(context),
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
 
-          SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
-
           if (_isLoading)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(20.0),
-                child: CircularProgressIndicator(),
-              ),
-            )
-          else if (_error != null)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
+            Container(
+              height: widget.screenSize.height * 0.12,
+              child: Center(
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: widget.screenSize.height * 0.05,
-                      color: AppTheme.errorColor,
+                    SizedBox(
+                      width: widget.screenSize.width * 0.05,
+                      height: widget.screenSize.width * 0.05,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppTheme.accentBlue,
+                      ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(
+                        height:
+                            AppTheme.getSmallPadding(widget.screenSize) * 0.8),
                     Text(
-                      l10n.errorLoadingStats,
-                      style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
-                        color: AppTheme.errorColor,
+                      'Cargando...',
+                      style:
+                          AppTheme.getCaptionSmall(widget.screenSize).copyWith(
+                        color: AppTheme.getTextSecondaryColor(context),
                       ),
                     ),
                   ],
                 ),
               ),
             )
+          else if (_error != null)
+            Container(
+              padding: EdgeInsets.all(
+                  AppTheme.getSmallPadding(widget.screenSize) * 1.5),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(
+                    AppTheme.getSmallRadius(widget.screenSize)),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.warning_rounded,
+                    size: widget.screenSize.width * 0.04,
+                    color: Colors.red,
+                  ),
+                  SizedBox(width: AppTheme.getSmallPadding(widget.screenSize)),
+                  Expanded(
+                    child: Text(
+                      'Error al cargar datos',
+                      style: AppTheme.getCaption(widget.screenSize).copyWith(
+                        color: Colors.red,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
           else
-            Row(
+            // Diseño tipo transacciones de la imagen
+            Column(
               children: [
-                Expanded(
-                  child: _ModernStatItem(
-                    icon: Icons.qr_code_2_rounded,
-                    color: AppTheme.accentBlue,
-                    value: _totalScanned.toString(),
-                    label: l10n.totalScanned,
-                    screenSize: widget.screenSize,
-                  ),
+                _buildStatRow(
+                  context: context,
+                  icon: Icons.qr_code_2_rounded,
+                  title: 'Total escaneados',
+                  value: _totalScanned.toString(),
+                  color: AppTheme.accentBlue,
+                  isFirst: true,
                 ),
-                SizedBox(width: AppTheme.getMediumPadding(widget.screenSize)),
-                Expanded(
-                  child: _ModernStatItem(
-                    icon: Icons.check_circle_rounded,
-                    color: AppTheme.successColor,
-                    value: _presentStudents.toString(),
-                    label: l10n.presentStudents,
-                    screenSize: widget.screenSize,
-                  ),
+                _buildDivider(),
+                _buildStatRow(
+                  context: context,
+                  icon: Icons.check_circle_outline_rounded,
+                  title: 'Presentes',
+                  value: _presentStudents.toString(),
+                  color: Colors.green,
                 ),
-                SizedBox(width: AppTheme.getMediumPadding(widget.screenSize)),
-                Expanded(
-                  child: _ModernStatItem(
-                    icon: Icons.schedule_rounded,
-                    color: AppTheme.warningColor,
-                    value: _lateStudents.toString(),
-                    label: l10n.lateStudents,
-                    screenSize: widget.screenSize,
-                  ),
+                _buildDivider(),
+                _buildStatRow(
+                  context: context,
+                  icon: Icons.schedule_rounded,
+                  title: 'Tardanzas',
+                  value: _lateStudents.toString(),
+                  color: Colors.orange,
+                  isLast: true,
                 ),
               ],
             ),
@@ -279,69 +333,106 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
       ),
     );
   }
-}
 
-class _ModernStatItem extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String value;
-  final String label;
-  final Size screenSize;
+  Widget _buildStatRow({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String value,
+    required Color color,
+    bool isFirst = false,
+    bool isLast = false,
+  }) {
+    // Calcular tamaño de font basado en la longitud del número
+    double fontSize;
+    int valueLength = value.length;
+    if (valueLength <= 1) {
+      fontSize = widget.screenSize.height * 0.032;
+    } else if (valueLength <= 2) {
+      fontSize = widget.screenSize.height * 0.028;
+    } else if (valueLength <= 3) {
+      fontSize = widget.screenSize.height * 0.024;
+    } else if (valueLength <= 4) {
+      fontSize = widget.screenSize.height * 0.020;
+    } else if (valueLength <= 5) {
+      fontSize = widget.screenSize.height * 0.017;
+    } else if (valueLength <= 6) {
+      fontSize = widget.screenSize.height * 0.015;
+    } else {
+      fontSize = widget.screenSize.height * 0.013;
+    }
 
-  const _ModernStatItem({
-    required this.icon,
-    required this.color,
-    required this.value,
-    required this.label,
-    required this.screenSize,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Circular icon container
-        Container(
-          width: screenSize.width * 0.15,
-          height: screenSize.width * 0.15,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.15),
-            shape: BoxShape.circle,
+    return Container(
+      padding: EdgeInsets.symmetric(
+        vertical: AppTheme.getSmallPadding(widget.screenSize) * 1.2,
+        horizontal: AppTheme.getSmallPadding(widget.screenSize) * 0.8,
+      ),
+      child: Row(
+        children: [
+          // Icono con fondo de color
+          Container(
+            width: widget.screenSize.width * 0.11,
+            height: widget.screenSize.width * 0.11,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius:
+                  BorderRadius.circular(widget.screenSize.width * 0.022),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: widget.screenSize.width * 0.05,
+            ),
           ),
-          child: Icon(
-            icon,
-            color: color,
-            size: screenSize.width * 0.07,
+
+          SizedBox(width: AppTheme.getSmallPadding(widget.screenSize) * 1.5),
+
+          // Contenido principal
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
+                    color: AppTheme.getTextPrimaryColor(context),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: widget.screenSize.height * 0.002),
+                Text(
+                  'Registros de hoy',
+                  style: AppTheme.getCaptionSmall(widget.screenSize).copyWith(
+                    color: AppTheme.getTextSecondaryColor(context),
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
 
-        SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-        // Value
-        Text(
-          value,
-          style: AppTheme.getH1(screenSize).copyWith(
-            color: color,
-            fontWeight: FontWeight.w800,
-            height: 1.0,
+          // Valor
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: FontWeight.w800,
+              color: color,
+              height: 1.0,
+            ),
           ),
-        ),
+        ],
+      ),
+    );
+  }
 
-        SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.5),
-
-        // Label
-        Text(
-          label,
-          style: AppTheme.getCaptionSmall(screenSize).copyWith(
-            color: AppTheme.getTextSecondaryColor(context),
-            fontWeight: FontWeight.w500,
-            height: 1.2,
-          ),
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
+  Widget _buildDivider() {
+    return Container(
+      margin: EdgeInsets.symmetric(
+        horizontal: widget.screenSize.width * 0.02,
+      ),
+      height: 1,
+      color: AppTheme.getTextSecondaryColor(context).withOpacity(0.08),
     );
   }
 }

@@ -3,558 +3,428 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // 🎨 Modern Color Palette - Specified Design System
-  static const Color primaryColor =
-      Color(0xFF000000); // CTA buttons - pure black
-  static const Color primaryColorDark = Color(0xFF1A1A1A);
-  static const Color secondaryColor = Color(0xFF58CC02); // Keep existing green
+  // =========================
+  // BRAND & SEMÁNTICA (COLORES)
+  // =========================
+  // Paleta principal: CTA negro, verde institucional, neutros cálidos/fríos.
+  static const Color primaryColor = Color(0xFF0D0D0D); // CTA / acciones clave
+  static const Color primaryColorDark = Color(0xFF111213);
+  static const Color secondaryColor = Color(0xFF58CC02); // Verde institucional
 
-  // Modern Accent Colors - As Specified
-  static const Color accentPurple = Color(0xFF9B5DE5); // Purple accent
-  static const Color accentYellow =
-      Color(0xFFFDCB5A); // Yellow accent (updated)
-  static const Color accentBlue = Color(0xFF3A86FF); // Blue accent
-  static const Color accentOrange = Color(0xFFFF6B35); // Orange accent
-  static const Color accentGold =
-      Color(0xFFFDCB5A); // Gold accent (alias to yellow)
+  // Acentos modernos (mantengo nombres existentes)
+  static const Color accentPurple = Color(0xFF8E7CFF);
+  static const Color accentYellow = Color(0xFFF5C76A);
+  static const Color accentBlue = Color(0xFF4C9DFF);
+  static const Color accentOrange = Color(0xFFFF7A45);
+  static const Color accentGold = accentYellow;
 
-  // Status Colors
+  // Estados
   static const Color successColor = Color(0xFF58CC02);
-  static const Color warningColor =
-      Color(0xFFFDCB5A); // Updated to match accent yellow
-  static const Color errorColor = Color(0xFFFF4757);
-  static const Color infoColor =
-      Color(0xFF3A86FF); // Updated to match accent blue
+  static const Color warningColor = Color(0xFFF5C76A);
+  static const Color errorColor = Color(0xFFFF5757);
+  static const Color infoColor = Color(0xFF4C9DFF);
 
-  // 🌈 Background Colors - Modern & Clean
-  static const Color backgroundLight =
-      Color(0xFFF6F7FB); // Specified background
-  static const Color backgroundDark = Color(0xFF1C1C1E); // Dark background
-  static const Color surfaceLight = Color(0xFFFFFFFF); // Cards - pure white
-  static const Color surfaceDark = Color(0xFF2C2C2E); // Dark surface color
-  static const Color cardLight = Color(0xFFFFFFFF); // Pure white cards
-  static const Color cardDark = Color(0xFF2C2C2E); // Dark card color
+  // Fondos
+  static const Color backgroundLight = Color(0xFFF7F8FA); // gris muy claro
+  static const Color backgroundDark = Color(0xFF0E0F11);
+  static const Color surfaceLight = Color(0xFFFFFFFF);
+  static const Color surfaceDark = Color(0xFF17181B);
+  static const Color cardLight = Color(0xFFFFFFFF);
+  static const Color cardDark = Color(0xFF1D1F22);
 
-  // 📝 Text Colors - Specified High Contrast
-  static const Color textPrimaryLight =
-      Color(0xFF1C1C1E); // Primary text - specified
-  static const Color textSecondaryLight =
-      Color(0xFF7A7A7A); // Secondary text - specified
+  // Texto
+  static const Color textPrimaryLight = Color(0xFF121316);
+  static const Color textSecondaryLight = Color(0xFF81848B);
   static const Color textPrimaryDark = Color(0xFFFFFFFF);
-  static const Color textSecondaryDark = Color(0xFFAEAEB2);
+  static const Color textSecondaryDark = Color(0xFFB7BBC2);
 
-  // 🔲 Border Colors - Subtle & Clean
-  static const Color borderLight = Color(0xFFE5E5E7); // Subtle border color
-  static const Color borderDark = Color(0xFF3A3A3C); // Dark divider color
+  // Bordes
+  static const Color borderLight = Color(0xFFE8EAF0);
+  static const Color borderDark = Color(0xFF2A2D33);
 
-  // 🎯 Icon Container Colors
-  static const Color iconContainerPurple = Color(0xFF9B5DE5);
-  static const Color iconContainerBlue = Color(0xFF3A86FF);
+  // Contenedores de íconos
+  static const Color iconContainerPurple = accentPurple;
+  static const Color iconContainerBlue = accentBlue;
 
-  // 🔘 Additional UI Colors - Subtle shadows as specified
-  static const Color shadowLight =
-      Color(0x0A000000); // 4% black shadow (rgba(0,0,0,0.04))
-  static const Color shadowDark = Color(0x4D000000); // 30% black shadow
+  // Sombras (referencias existentes – se mantienen pero NO se usan)
+  static const Color shadowLight = Color(0x00000000);
+  static const Color shadowDark = Color(0x00000000);
 
-  // 🔧 Missing Color Properties for Attendance View
+  // Propiedades usadas por vistas de asistencia (mantengo nombres)
   static const Color backgroundColor = backgroundLight;
   static const Color surfaceColor = surfaceLight;
-  static const Color onPrimaryColor =
-      Color(0xFFFFFFFF); // White text on primary
-  static const Color onPrimarySecondaryColor =
-      Color(0xFFB3B3B3); // Light gray on primary
-  static const Color primaryLightColor = Color(0x1A000000); // 10% black opacity
+  static const Color onPrimaryColor = Color(0xFFFFFFFF);
+  static const Color onPrimarySecondaryColor = Color(0xFFB3B3B3);
+  static const Color primaryLightColor = Color(0x14000000); // 8% negro
 
   static const Color iconColor = textPrimaryLight;
-  static const Color inputFillColor =
-      Color(0xFFF8F9FA); // Light input background
-  static const Color inputFillColorDark =
-      Color(0xFF3A3A3C); // Dark input background
-  static const Color neutralLightColor =
-      Color(0xFFF5F5F5); // Neutral background
-  static const Color neutralLightColorDark =
-      Color(0xFF4A4A4A); // Dark neutral background
-  static const Color onErrorColor =
-      Color(0xFFFFFFFF); // White text on error background
+  static const Color inputFillColor = Color(0xFFF2F3F6);
+  static const Color inputFillColorDark = Color(0xFF212329);
+  static const Color neutralLightColor = Color(0xFFF4F5F7);
+  static const Color neutralLightColorDark = Color(0xFF2A2D33);
+  static const Color onErrorColor = Color(0xFFFFFFFF);
   static const Color shadowColor = shadowLight;
 
-  // 📏 Design Constants - Specified Border Radius
+  // ==================================================
+  // (DEPRECATED) CONSTANTES DE ESPACIADO/RADIO – SE MANTIENEN
+  // ==================================================
+  @deprecated
   static const double borderRadiusSmall = 12.0;
-  static const double borderRadiusMedium = 20.0; // 20-24px as specified
-  static const double borderRadiusLarge = 24.0; // 20-24px as specified
+  @deprecated
+  static const double borderRadiusMedium = 20.0;
+  @deprecated
+  static const double borderRadiusLarge = 24.0;
+  @deprecated
   static const double paddingSmall = 12.0;
+  @deprecated
   static const double paddingMedium = 20.0;
+  @deprecated
   static const double paddingLarge = 32.0;
 
-  // Static getters for convenience (theme-aware)
+  // =========================================
+  // HELPERS DE ESCALA (100% MediaQuery-based)
+  // =========================================
+  // Base: iPhone 12/13 = 390x844 (ancho guía 390)
+  static double _scaleW(Size s) => (s.width / 390.0).clamp(0.85, 1.35);
+  static double _scaleH(Size s) => (s.height / 844.0).clamp(0.85, 1.35);
+
+  /// Escala general (promedio ponderado a ancho)
+  static double scale(Size s, double value) {
+    final k = _scaleW(s) * 0.75 + _scaleH(s) * 0.25;
+    return value * k;
+  }
+
+  /// Tamaños de texto responsivos
+  static double ts(Size s, double px) => scale(s, px);
+
+  /// Radios responsivos
+  static double r(Size s, double px) => scale(s, px);
+
+  /// Padding/Gutters responsivos
+  static double p(Size s, double px) => scale(s, px);
+
+  /// Unidades de grilla (para alturas ancladas)
+  static double gu(Size s) => scale(s, 8); // grid unit
+
+  // =========================
+  // GETTERS TEMA-AWARE
+  // =========================
   static Color get textPrimary => textPrimaryLight;
   static Color get textSecondary => textSecondaryLight;
   static Color get borderColor => borderLight;
   static Color get accentColor => secondaryColor;
 
-  // Static getters for icon colors (theme-aware)
   static Color get iconPrimary => textPrimaryLight;
   static Color get iconSecondary => textSecondaryLight;
   static Color get iconPrimaryDark => textPrimaryDark;
   static Color get iconSecondaryDark => textSecondaryDark;
 
-  // 🎨 Theme-aware color getters for attendance view
-  static Color getBackgroundColor(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? backgroundDark
-        : backgroundLight;
-  }
+  static Color getBackgroundColor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? backgroundDark
+          : backgroundLight;
 
-  static Color getSurfaceColor(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? surfaceDark
-        : surfaceLight;
-  }
+  static Color getSurfaceColor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? surfaceDark
+          : surfaceLight;
 
-  static Color getCardColor(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? cardDark
-        : cardLight;
-  }
+  static Color getCardColor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? cardDark : cardLight;
 
-  static Color getTextPrimaryColor(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? textPrimaryDark
-        : textPrimaryLight;
-  }
+  static Color getTextPrimaryColor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? textPrimaryDark
+          : textPrimaryLight;
 
-  static Color getTextSecondaryColor(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? textSecondaryDark
-        : textSecondaryLight;
-  }
+  static Color getTextSecondaryColor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? textSecondaryDark
+          : textSecondaryLight;
 
-  static Color getBorderColor(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? borderDark
-        : borderLight;
-  }
+  static Color getBorderColor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? borderDark
+          : borderLight;
 
-  static Color getShadowColor(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? shadowDark
-        : shadowLight;
-  }
+  static Color getShadowColor(BuildContext context) => Colors.transparent;
 
-  static Color getIconColor(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? textPrimaryDark
-        : textPrimaryLight;
-  }
+  static Color getIconColor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? textPrimaryDark
+          : textPrimaryLight;
 
-  static Color getInputFillColor(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? inputFillColorDark
-        : inputFillColor;
-  }
+  static Color getInputFillColor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? inputFillColorDark
+          : inputFillColor;
 
-  static Color getNeutralLightColor(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? neutralLightColorDark
-        : neutralLightColor;
-  }
+  static Color getNeutralLightColor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? neutralLightColorDark
+          : neutralLightColor;
 
-  static Color getOnPrimaryColor(BuildContext context) {
-    return onPrimaryColor; // Always white
-  }
+  static Color getOnPrimaryColor(BuildContext context) => onPrimaryColor;
 
-  static Color getOnPrimarySecondaryColor(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF8A8A8A) // Darker gray for dark theme
-        : onPrimarySecondaryColor;
-  }
+  static Color getOnPrimarySecondaryColor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF8A8A8A)
+          : onPrimarySecondaryColor;
 
-  static Color getPrimaryLightColor(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? const Color(0x1AFFFFFF) // 10% white opacity for dark theme
-        : primaryLightColor;
-  }
+  static Color getPrimaryLightColor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? const Color(0x14FFFFFF)
+          : primaryLightColor;
 
-  static Color getOnErrorColor(BuildContext context) {
-    return onErrorColor; // Always white
-  }
+  static Color getOnErrorColor(BuildContext context) => onErrorColor;
 
-  static Color getIconSecondaryColor(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? Colors.grey[500]!
-        : textSecondaryLight;
-  }
+  static Color getIconSecondaryColor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? Colors.grey[500]!
+          : textSecondaryLight;
 
-  // Additional UI color getters
-  static Color getDividerColor(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? borderDark
-        : borderLight;
-  }
+  static Color getDividerColor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? borderDark
+          : borderLight;
 
-  static Color getContainerBackgroundColor(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF3A3A3C)
-        : const Color(0xFFF6F7FB);
-  }
+  static Color getContainerBackgroundColor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF202227)
+          : const Color(0xFFF5F6FA);
 
-  static Color getOverlayColor(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? Colors.black.withOpacity(0.5)
-        : Colors.black.withOpacity(0.1);
-  }
+  static Color getOverlayColor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? Colors.black.withOpacity(0.45)
+          : Colors.black.withOpacity(0.08);
 
-  static Color getSecondaryBackgroundColor(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF2C2C2E)
-        : Colors.white;
-  }
+  static Color getSecondaryBackgroundColor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF1A1C20)
+          : Colors.white;
 
-  // 🎨 Typography Styles - Dynamic Poppins Font with Responsive Sizing
-  // h1: Dynamic sizing based on screen height (largest)
-  static TextStyle getH1(Size screenSize) => GoogleFonts.raleway(
-        fontSize: screenSize.height * 0.03, // ~32px on 800px screen
-        fontWeight: FontWeight.bold, // 700
+  // =========================
+  // TIPOGRAFÍA DINÁMICA
+  // =========================
+  // Headers más expresivos; números con Space Grotesk (balances/montos)
+  static TextStyle getH1(Size s) => GoogleFonts.spaceGrotesk(
+        fontSize: ts(s, 30),
+        fontWeight: FontWeight.w800,
+        letterSpacing: -0.2,
+        height: 1.2,
         color: textPrimaryLight,
-        letterSpacing: 0.2,
-        height: 1.4,
       );
 
-  // h2: Dynamic sizing (semi-bold headers)
-  static TextStyle getH2(Size screenSize) => GoogleFonts.raleway(
-        fontSize: screenSize.height * 0.025, // ~24px on 800px screen
-        fontWeight: FontWeight.w600, // semi-bold
+  static TextStyle getH2(Size s) => GoogleFonts.spaceGrotesk(
+        fontSize: ts(s, 24),
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.1,
+        height: 1.25,
         color: textPrimaryLight,
-        letterSpacing: 0.2,
-        height: 1.4,
       );
 
-  // body: Dynamic sizing (medium text) - Reference: 0.017-0.02
-  static TextStyle getBodyLarge(Size screenSize) => GoogleFonts.poppins(
-        fontSize: screenSize.height * 0.019, // ~18px on 800px screen
-        fontWeight: FontWeight.w400, // regular
-        color: textPrimaryLight,
-        letterSpacing: 0.1,
-        height: 1.4,
-      );
-
-  static TextStyle getBodyMedium(Size screenSize) => GoogleFonts.poppins(
-        fontSize: screenSize.height * 0.018, // ~16px on 800px screen
-        fontWeight: FontWeight.w400, // regular
-        color: textPrimaryLight,
-        letterSpacing: 0.1,
-        height: 1.4,
-      );
-
-  // captions: Dynamic sizing (smallest text)
-  static TextStyle getCaption(Size screenSize) => GoogleFonts.poppins(
-        fontSize: screenSize.height * 0.018, // ~14px on 800px screen
-        fontWeight: FontWeight.w300, // light
-        color: textSecondaryLight,
-        letterSpacing: 0.1,
-        height: 1.4,
-      );
-
-  static TextStyle getCaptionSmall(Size screenSize) => GoogleFonts.poppins(
-        fontSize: screenSize.height * 0.016, // ~13px on 800px screen
-        fontWeight: FontWeight.w300, // light
-        color: textSecondaryLight,
-        letterSpacing: 0.1,
-        height: 1.4,
-      );
-
-  // Additional typography variants with dynamic sizing
-  static TextStyle getSubtitle1(Size screenSize) => GoogleFonts.poppins(
-        fontSize: screenSize.height * 0.02, // ~16px on 800px screen
+  static TextStyle getBodyLarge(Size s) => GoogleFonts.plusJakartaSans(
+        fontSize: ts(s, 17),
         fontWeight: FontWeight.w500,
-        color: textPrimaryLight,
-        letterSpacing: 0.15,
         height: 1.4,
+        color: textPrimaryLight,
       );
 
-  static TextStyle getSubtitle2(Size screenSize) => GoogleFonts.poppins(
-        fontSize: screenSize.height * 0.017, // ~14px on 800px screen
+  static TextStyle getBodyMedium(Size s) => GoogleFonts.plusJakartaSans(
+        fontSize: ts(s, 15.5),
         fontWeight: FontWeight.w500,
+        height: 1.45,
         color: textPrimaryLight,
+      );
+
+  static TextStyle getCaption(Size s) => GoogleFonts.plusJakartaSans(
+        fontSize: ts(s, 13.5),
+        fontWeight: FontWeight.w500,
+        height: 1.35,
+        color: textSecondaryLight,
+      );
+
+  static TextStyle getCaptionSmall(Size s) => GoogleFonts.plusJakartaSans(
+        fontSize: ts(s, 12.5),
+        fontWeight: FontWeight.w500,
+        height: 1.3,
+        color: textSecondaryLight,
+      );
+
+  static TextStyle getSubtitle1(Size s) => GoogleFonts.plusJakartaSans(
+        fontSize: ts(s, 16),
+        fontWeight: FontWeight.w700,
+        height: 1.35,
+        color: textPrimaryLight,
+      );
+
+  static TextStyle getSubtitle2(Size s) => GoogleFonts.plusJakartaSans(
+        fontSize: ts(s, 14),
+        fontWeight: FontWeight.w700,
+        height: 1.35,
+        color: textPrimaryLight,
+      );
+
+  static TextStyle getButton(Size s) => GoogleFonts.plusJakartaSans(
+        fontSize: ts(s, 15),
+        fontWeight: FontWeight.w800,
+        letterSpacing: 0.2,
+        height: 1.2,
+        color: onPrimaryColor,
+      );
+
+  static TextStyle getAppBarTitle(Size s) => GoogleFonts.plusJakartaSans(
+        fontSize: ts(s, 18),
+        fontWeight: FontWeight.w700,
         letterSpacing: 0.1,
-        height: 1.4,
-      );
-
-  static TextStyle getButton(Size screenSize) => GoogleFonts.poppins(
-        fontSize: screenSize.height * 0.019, // ~14px on 800px screen
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.3,
-        height: 1.4,
-      );
-
-  // AppBar title with dynamic sizing
-  static TextStyle getAppBarTitle(Size screenSize) => GoogleFonts.poppins(
-        fontSize: screenSize.height * 0.022, // ~18px on 800px screen
-        fontWeight: FontWeight.w600,
+        height: 1.25,
         color: textPrimaryLight,
-        letterSpacing: 0.15,
-        height: 1.4,
       );
 
-  // Dark theme variants
-  static TextStyle getH1Dark(Size screenSize) =>
-      getH1(screenSize).copyWith(color: textPrimaryDark);
-  static TextStyle getH2Dark(Size screenSize) =>
-      getH2(screenSize).copyWith(color: textPrimaryDark);
-  static TextStyle getBodyLargeDark(Size screenSize) =>
-      getBodyLarge(screenSize).copyWith(color: textPrimaryDark);
-  static TextStyle getBodyMediumDark(Size screenSize) =>
-      getBodyMedium(screenSize).copyWith(color: textPrimaryDark);
-  static TextStyle getCaptionDark(Size screenSize) =>
-      getCaption(screenSize).copyWith(color: textSecondaryDark);
-  static TextStyle getCaptionSmallDark(Size screenSize) =>
-      getCaptionSmall(screenSize).copyWith(color: textSecondaryDark);
+  // Variantes dark
+  static TextStyle getH1Dark(Size s) =>
+      getH1(s).copyWith(color: textPrimaryDark);
+  static TextStyle getH2Dark(Size s) =>
+      getH2(s).copyWith(color: textPrimaryDark);
+  static TextStyle getBodyLargeDark(Size s) =>
+      getBodyLarge(s).copyWith(color: textPrimaryDark);
+  static TextStyle getBodyMediumDark(Size s) =>
+      getBodyMedium(s).copyWith(color: textPrimaryDark);
+  static TextStyle getCaptionDark(Size s) =>
+      getCaption(s).copyWith(color: textSecondaryDark);
+  static TextStyle getCaptionSmallDark(Size s) =>
+      getCaptionSmall(s).copyWith(color: textSecondaryDark);
 
-  // Legacy static getters (deprecated - use dynamic versions)
+  // (LEGACY) estáticos – se conservan
   @deprecated
   static TextStyle get h1 => GoogleFonts.podkova(
-        fontSize: 32,
-        fontWeight: FontWeight.bold,
-        color: textPrimaryLight,
-        letterSpacing: 0.2,
-        height: 1.4,
-      );
-
+      fontSize: 32, fontWeight: FontWeight.bold, color: textPrimaryLight);
   @deprecated
   static TextStyle get h2 => GoogleFonts.podkova(
-        fontSize: 24,
-        fontWeight: FontWeight.w600,
-        color: textPrimaryLight,
-        letterSpacing: 0.2,
-        height: 1.4,
-      );
-
+      fontSize: 24, fontWeight: FontWeight.w600, color: textPrimaryLight);
   @deprecated
   static TextStyle get bodyLarge => GoogleFonts.poppins(
-        fontSize: 18,
-        fontWeight: FontWeight.w400,
-        color: textPrimaryLight,
-        letterSpacing: 0.1,
-        height: 1.4,
-      );
-
+      fontSize: 18, fontWeight: FontWeight.w400, color: textPrimaryLight);
   @deprecated
   static TextStyle get bodyMedium => GoogleFonts.poppins(
-        fontSize: 16,
-        fontWeight: FontWeight.w400,
-        color: textPrimaryLight,
-        letterSpacing: 0.1,
-        height: 1.4,
-      );
-
+      fontSize: 16, fontWeight: FontWeight.w400, color: textPrimaryLight);
   @deprecated
   static TextStyle get caption => GoogleFonts.poppins(
-        fontSize: 14,
-        fontWeight: FontWeight.w300,
-        color: textSecondaryLight,
-        letterSpacing: 0.1,
-        height: 1.4,
-      );
-
+      fontSize: 14, fontWeight: FontWeight.w300, color: textSecondaryLight);
   @deprecated
   static TextStyle get captionSmall => GoogleFonts.poppins(
-        fontSize: 13,
-        fontWeight: FontWeight.w300,
-        color: textSecondaryLight,
-        letterSpacing: 0.1,
-        height: 1.4,
-      );
-
+      fontSize: 13, fontWeight: FontWeight.w300, color: textSecondaryLight);
   @deprecated
   static TextStyle get subtitle1 => GoogleFonts.poppins(
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-        color: textPrimaryLight,
-        letterSpacing: 0.15,
-        height: 1.4,
-      );
-
+      fontSize: 16, fontWeight: FontWeight.w500, color: textPrimaryLight);
   @deprecated
   static TextStyle get subtitle2 => GoogleFonts.poppins(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        color: textPrimaryLight,
-        letterSpacing: 0.1,
-        height: 1.4,
-      );
-
+      fontSize: 14, fontWeight: FontWeight.w500, color: textPrimaryLight);
   @deprecated
-  static TextStyle get button => GoogleFonts.poppins(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.3,
-        height: 1.4,
+  static TextStyle get button =>
+      GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600);
+
+  // =========================
+  // RADIOS / PADDINGS DINÁMICOS
+  // =========================
+  static double getSmallRadius(Size s) => r(s, 12);
+  static double getMediumRadius(Size s) => r(s, 20);
+  static double getLargeRadius(Size s) => r(s, 26);
+
+  static double getSmallPadding(Size s) => p(s, 12);
+  static double getMediumPadding(Size s) => p(s, 20);
+  static double getLargePadding(Size s) => p(s, 32);
+
+  // =========================
+  // NUMERAL STYLE para montos
+  // =========================
+  static TextStyle numericXL(Size s) => GoogleFonts.spaceGrotesk(
+        fontSize: ts(s, 34),
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.5,
+        height: 1.1,
+        color: getTextPrimaryColorFromSize(s, isDark: false),
       );
 
-  // Dynamic border radius based on screen size
-  static double getSmallRadius(Size screenSize) =>
-      screenSize.width * 0.03; // ~12px on 400px width
-  static double getMediumRadius(Size screenSize) =>
-      screenSize.width * 0.05; // ~20px on 400px width
-  static double getLargeRadius(Size screenSize) =>
-      screenSize.width * 0.06; // ~24px on 400px width
+  static Color getTextPrimaryColorFromSize(Size s, {required bool isDark}) =>
+      isDark ? textPrimaryDark : textPrimaryLight;
 
-  // Dynamic padding based on screen size
-  static double getSmallPadding(Size screenSize) =>
-      screenSize.width * 0.03; // ~12px on 400px width
-  static double getMediumPadding(Size screenSize) =>
-      screenSize.width * 0.05; // ~20px on 400px width
-  static double getLargePadding(Size screenSize) =>
-      screenSize.width * 0.08; // ~32px on 400px width
-
+  // =========================
+  // THEME DATA — LIGHT
+  // =========================
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: accentPurple,
+      seedColor: secondaryColor,
       brightness: Brightness.light,
-      surface: surfaceLight,
       background: backgroundLight,
+      surface: surfaceLight,
     ).copyWith(
-      primary: accentPurple,
+      primary: primaryColor,
       onPrimary: Colors.white,
       secondary: secondaryColor,
       error: errorColor,
     ),
 
-    // Modern Typography with Poppins - Dynamic Sizing
-    textTheme: GoogleFonts.poppinsTextTheme().copyWith(
-      // Using medium screen size as base (800x600)
-      displayLarge: GoogleFonts.poppins(
-        fontSize: 32, // Will be overridden by dynamic methods
-        fontWeight: FontWeight.bold,
-        color: textPrimaryLight,
-        letterSpacing: 0.2,
-        height: 1.4,
-      ),
-      displayMedium: GoogleFonts.poppins(
-        fontSize: 28,
-        fontWeight: FontWeight.bold,
-        color: textPrimaryLight,
-        letterSpacing: 0.2,
-        height: 1.4,
-      ),
-      displaySmall: GoogleFonts.poppins(
-        fontSize: 24,
-        fontWeight: FontWeight.w600,
-        color: textPrimaryLight,
-        letterSpacing: 0.2,
-        height: 1.4,
-      ),
-      headlineLarge: GoogleFonts.poppins(
-        fontSize: 22,
-        fontWeight: FontWeight.w600,
-        color: textPrimaryLight,
-        letterSpacing: 0.2,
-        height: 1.4,
-      ),
-      headlineMedium: GoogleFonts.poppins(
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        color: textPrimaryLight,
-        letterSpacing: 0.15,
-        height: 1.4,
-      ),
-      headlineSmall: GoogleFonts.poppins(
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        color: textPrimaryLight,
-        letterSpacing: 0.15,
-        height: 1.4,
-      ),
-      bodyLarge: GoogleFonts.poppins(
-        fontSize: 18,
-        fontWeight: FontWeight.w400,
-        color: textPrimaryLight,
-        letterSpacing: 0.1,
-        height: 1.4,
-      ),
-      bodyMedium: GoogleFonts.poppins(
-        fontSize: 16,
-        fontWeight: FontWeight.w400,
-        color: textPrimaryLight,
-        letterSpacing: 0.1,
-        height: 1.4,
-      ),
-      bodySmall: GoogleFonts.poppins(
-        fontSize: 14,
-        fontWeight: FontWeight.w300,
-        color: textSecondaryLight,
-        letterSpacing: 0.1,
-        height: 1.4,
-      ),
-      titleLarge: GoogleFonts.poppins(
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-        color: textPrimaryLight,
-        letterSpacing: 0.15,
-        height: 1.4,
-      ),
-      titleMedium: GoogleFonts.poppins(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        color: textPrimaryLight,
-        letterSpacing: 0.1,
-        height: 1.4,
-      ),
-      titleSmall: GoogleFonts.poppins(
-        fontSize: 13,
-        fontWeight: FontWeight.w300,
-        color: textSecondaryLight,
-        letterSpacing: 0.1,
-        height: 1.4,
-      ),
-      labelLarge: GoogleFonts.poppins(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: textPrimaryLight,
-        letterSpacing: 0.3,
-        height: 1.4,
-      ),
-      labelMedium: GoogleFonts.poppins(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        color: textPrimaryLight,
-        letterSpacing: 0.2,
-        height: 1.4,
-      ),
-      labelSmall: GoogleFonts.poppins(
-        fontSize: 10,
-        fontWeight: FontWeight.w500,
-        color: textSecondaryLight,
-        letterSpacing: 0.1,
-        height: 1.4,
-      ),
+    textTheme: GoogleFonts.plusJakartaSansTextTheme().copyWith(
+      displayLarge: GoogleFonts.spaceGrotesk(
+          fontSize: 34,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.5,
+          height: 1.1,
+          color: textPrimaryLight),
+      displayMedium: GoogleFonts.plusJakartaSans(
+          fontSize: 28,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.2,
+          color: textPrimaryLight),
+      displaySmall: GoogleFonts.plusJakartaSans(
+          fontSize: 24, fontWeight: FontWeight.w700, color: textPrimaryLight),
+      headlineLarge: GoogleFonts.plusJakartaSans(
+          fontSize: 22, fontWeight: FontWeight.w700, color: textPrimaryLight),
+      headlineMedium: GoogleFonts.plusJakartaSans(
+          fontSize: 20, fontWeight: FontWeight.w700, color: textPrimaryLight),
+      headlineSmall: GoogleFonts.plusJakartaSans(
+          fontSize: 18, fontWeight: FontWeight.w700, color: textPrimaryLight),
+      bodyLarge: GoogleFonts.plusJakartaSans(
+          fontSize: 16.5, fontWeight: FontWeight.w500, color: textPrimaryLight),
+      bodyMedium: GoogleFonts.plusJakartaSans(
+          fontSize: 15, fontWeight: FontWeight.w500, color: textPrimaryLight),
+      bodySmall: GoogleFonts.plusJakartaSans(
+          fontSize: 13.5,
+          fontWeight: FontWeight.w500,
+          color: textSecondaryLight),
+      titleLarge: GoogleFonts.plusJakartaSans(
+          fontSize: 16, fontWeight: FontWeight.w700, color: textPrimaryLight),
+      titleMedium: GoogleFonts.plusJakartaSans(
+          fontSize: 14, fontWeight: FontWeight.w700, color: textPrimaryLight),
+      titleSmall: GoogleFonts.plusJakartaSans(
+          fontSize: 12.5,
+          fontWeight: FontWeight.w700,
+          color: textSecondaryLight),
+      labelLarge: GoogleFonts.plusJakartaSans(
+          fontSize: 14, fontWeight: FontWeight.w800, color: textPrimaryLight),
+      labelMedium: GoogleFonts.plusJakartaSans(
+          fontSize: 12, fontWeight: FontWeight.w700, color: textPrimaryLight),
+      labelSmall: GoogleFonts.plusJakartaSans(
+          fontSize: 10.5,
+          fontWeight: FontWeight.w700,
+          color: textSecondaryLight),
     ),
 
-    // AppBar with dynamic styling
+    // AppBar
     appBarTheme: AppBarTheme(
       centerTitle: true,
       elevation: 0,
-      scrolledUnderElevation: 4,
+      scrolledUnderElevation: 0,
       backgroundColor: surfaceLight,
       foregroundColor: textPrimaryLight,
       surfaceTintColor: Colors.transparent,
-      titleTextStyle: GoogleFonts.poppins(
-        fontSize: 18, // Base size - will be overridden
-        fontWeight: FontWeight.w600,
-        color: textPrimaryLight,
-        letterSpacing: 0.15,
-        height: 1.4,
-      ),
-      iconTheme: const IconThemeData(
-        color: textPrimaryLight,
-        size: 24,
-      ),
-      actionsIconTheme: const IconThemeData(
-        color: textPrimaryLight,
-        size: 24,
-      ),
+      titleTextStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 18, fontWeight: FontWeight.w700, color: textPrimaryLight),
+      iconTheme: const IconThemeData(color: textPrimaryLight, size: 24),
+      actionsIconTheme: const IconThemeData(color: textPrimaryLight, size: 24),
       systemOverlayStyle: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.dark,
@@ -562,547 +432,360 @@ class AppTheme {
       ),
     ),
 
-    // Modern Buttons with dynamic border radius
+    // Botones
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         elevation: 0,
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
-        disabledBackgroundColor: Colors.grey.shade300,
-        disabledForegroundColor: Colors.grey.shade600,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-              borderRadiusMedium), // Will use dynamic version
-        ),
-        padding: const EdgeInsets.symmetric(
-            horizontal: 24, vertical: 16), // Will use dynamic version
-        textStyle: GoogleFonts.poppins(
-          fontSize: 14, // Base size - will be overridden
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.3,
-          height: 1.4,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        textStyle: GoogleFonts.plusJakartaSans(
+            fontSize: 15, fontWeight: FontWeight.w800, height: 1.2),
       ),
     ),
-
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
+        elevation: 0,
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
-        disabledBackgroundColor: Colors.grey.shade300,
-        disabledForegroundColor: Colors.grey.shade600,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-              borderRadiusMedium), // Will use dynamic version
-        ),
-        padding: const EdgeInsets.symmetric(
-            horizontal: 24, vertical: 16), // Will use dynamic version
-        textStyle: GoogleFonts.poppins(
-          fontSize: 14, // Base size - will be overridden
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.3,
-          height: 1.4,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        textStyle: GoogleFonts.plusJakartaSans(
+            fontSize: 15, fontWeight: FontWeight.w800, height: 1.2),
       ),
     ),
-
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
+        elevation: 0,
         foregroundColor: primaryColor,
-        side: BorderSide(color: primaryColor, width: 1.5),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-              borderRadiusMedium), // Will use dynamic version
-        ),
-        padding: const EdgeInsets.symmetric(
-            horizontal: 24, vertical: 16), // Will use dynamic version
-        textStyle: GoogleFonts.poppins(
-          fontSize: 14, // Base size - will be overridden
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.3,
-          height: 1.4,
-        ),
+        side: const BorderSide(color: primaryColor, width: 1.5),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        textStyle: GoogleFonts.plusJakartaSans(
+            fontSize: 15, fontWeight: FontWeight.w800, height: 1.2),
       ),
     ),
-
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: primaryColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(borderRadiusSmall), // 12px
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        textStyle: GoogleFonts.poppins(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          letterSpacing: 0.2,
-          height: 1.4,
-        ),
+        textStyle: GoogleFonts.plusJakartaSans(
+            fontSize: 14, fontWeight: FontWeight.w700),
       ),
     ),
 
-    // Modern Input Fields with dynamic border radius
+    // Inputs
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: backgroundLight,
+      fillColor: inputFillColor,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(
-            borderRadiusMedium), // Will use dynamic version
-        borderSide: BorderSide(color: borderLight),
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: borderLight),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(
-            borderRadiusMedium), // Will use dynamic version
-        borderSide: BorderSide(color: borderLight),
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: borderLight),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(
-            borderRadiusMedium), // Will use dynamic version
-        borderSide: BorderSide(color: accentPurple, width: 2),
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: primaryColor, width: 2),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(
-            borderRadiusMedium), // Will use dynamic version
-        borderSide: BorderSide(color: errorColor, width: 1.5),
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: errorColor, width: 1.5),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(
-            borderRadiusMedium), // Will use dynamic version
-        borderSide: BorderSide(color: errorColor, width: 2),
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: errorColor, width: 2),
       ),
-      contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16, vertical: 16), // Will use dynamic version
-      labelStyle: GoogleFonts.poppins(
-        fontSize: 14, // Base size - will be overridden
-        fontWeight: FontWeight.w500,
-        color: textSecondaryLight,
-        letterSpacing: 0.1,
-        height: 1.4,
-      ),
-      hintStyle: GoogleFonts.poppins(
-        fontSize: 14, // Base size - will be overridden
-        fontWeight: FontWeight.w400,
-        color: textSecondaryLight,
-        letterSpacing: 0.1,
-        height: 1.4,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      labelStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 14, fontWeight: FontWeight.w700, color: textSecondaryLight),
+      hintStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 14, fontWeight: FontWeight.w500, color: textSecondaryLight),
     ),
 
-    // Modern Bottom Navigation
+    // Bottom Navigation
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
       type: BottomNavigationBarType.fixed,
-      elevation: 8,
+      elevation: 0,
       backgroundColor: surfaceLight,
       selectedItemColor: primaryColor,
       unselectedItemColor: textSecondaryLight,
-      selectedIconTheme: const IconThemeData(
-        color: primaryColor,
-        size: 24,
-      ),
-      unselectedIconTheme: const IconThemeData(
-        color: textSecondaryLight,
-        size: 24,
-      ),
-      selectedLabelStyle: GoogleFonts.poppins(
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-      ),
-      unselectedLabelStyle: GoogleFonts.poppins(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-      ),
+      selectedIconTheme: const IconThemeData(size: 24, color: primaryColor),
+      unselectedIconTheme:
+          const IconThemeData(size: 24, color: textSecondaryLight),
+      selectedLabelStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 12, fontWeight: FontWeight.w800),
+      unselectedLabelStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 12, fontWeight: FontWeight.w700),
       showUnselectedLabels: true,
     ),
 
-    // Floating Action Button
+    // FAB
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: primaryColor,
       foregroundColor: Colors.white,
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
     ),
 
-    // List Tiles
+    // ListTile
     listTileTheme: ListTileThemeData(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       iconColor: textPrimaryLight,
       textColor: textPrimaryLight,
-      titleTextStyle: GoogleFonts.poppins(
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-        color: textPrimaryLight,
-      ),
-      subtitleTextStyle: GoogleFonts.poppins(
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        color: textSecondaryLight,
-      ),
+      titleTextStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 16, fontWeight: FontWeight.w700, color: textPrimaryLight),
+      subtitleTextStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 14, fontWeight: FontWeight.w500, color: textSecondaryLight),
     ),
 
-    // Chip Theme
+    // Chip
     chipTheme: ChipThemeData(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: const Color(0xFFF1F2F6),
       deleteIconColor: textSecondaryLight,
-      disabledColor: Colors.grey.shade300,
-      selectedColor: primaryColor.withOpacity(0.2),
-      secondarySelectedColor: secondaryColor.withOpacity(0.2),
+      disabledColor: const Color(0xFFE8EAEE),
+      selectedColor: primaryColor.withOpacity(0.10),
+      secondarySelectedColor: secondaryColor.withOpacity(0.14),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
-      labelStyle: GoogleFonts.poppins(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-      ),
-      secondaryLabelStyle: GoogleFonts.poppins(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        color: Colors.white,
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+      labelStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 12, fontWeight: FontWeight.w700, color: textPrimaryLight),
+      secondaryLabelStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
       brightness: Brightness.light,
     ),
 
-    // Extensions
+    // Extensiones
     extensions: <ThemeExtension<dynamic>>[
       const AppThemeExtension(
         attendancePresent: successColor,
         attendanceAbsent: errorColor,
         attendanceLate: warningColor,
-        successContainer: Color(0xFFE8F5E8),
-        warningContainer: Color(0xFFFEF7E0),
-        errorContainer: Color(0xFFFEE2E2),
-        infoContainer: Color(0xFFE0F2FE),
+        successContainer: Color(0xFFEAF7E8),
+        warningContainer: Color(0xFFFFF6E3),
+        errorContainer: Color(0xFFFEE7E7),
+        infoContainer: Color(0xFFE6F1FF),
       ),
     ],
   );
 
+  // =========================
+  // THEME DATA — DARK
+  // =========================
   static ThemeData darkTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: accentPurple,
+      seedColor: secondaryColor,
       brightness: Brightness.dark,
-      surface: surfaceDark,
       background: backgroundDark,
+      surface: surfaceDark,
     ).copyWith(
-      primary: accentPurple,
+      primary: primaryColor,
       onPrimary: Colors.white,
       secondary: secondaryColor,
       error: errorColor,
     ),
-
-    textTheme:
-        GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme).copyWith(
-      displayLarge: GoogleFonts.poppins(
-        fontSize: 32,
-        fontWeight: FontWeight.bold,
-        color: textPrimaryDark,
-        letterSpacing: 0.2,
-        height: 1.4,
-      ),
-      displayMedium: GoogleFonts.poppins(
-        fontSize: 28,
-        fontWeight: FontWeight.bold,
-        color: textPrimaryDark,
-        letterSpacing: 0.2,
-        height: 1.4,
-      ),
-      displaySmall: GoogleFonts.poppins(
-        fontSize: 24,
-        fontWeight: FontWeight.w600,
-        color: textPrimaryDark,
-        letterSpacing: 0.2,
-        height: 1.4,
-      ),
-      headlineLarge: GoogleFonts.poppins(
-        fontSize: 22,
-        fontWeight: FontWeight.w600,
-        color: textPrimaryDark,
-        letterSpacing: 0.2,
-        height: 1.4,
-      ),
-      headlineMedium: GoogleFonts.poppins(
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        color: textPrimaryDark,
-        letterSpacing: 0.15,
-        height: 1.4,
-      ),
-      headlineSmall: GoogleFonts.poppins(
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        color: textPrimaryDark,
-        letterSpacing: 0.15,
-        height: 1.4,
-      ),
-      bodyLarge: GoogleFonts.poppins(
-        fontSize: 18,
-        fontWeight: FontWeight.w400,
-        color: textPrimaryDark,
-        letterSpacing: 0.1,
-        height: 1.4,
-      ),
-      bodyMedium: GoogleFonts.poppins(
-        fontSize: 16,
-        fontWeight: FontWeight.w400,
-        color: textPrimaryDark,
-        letterSpacing: 0.1,
-        height: 1.4,
-      ),
-      bodySmall: GoogleFonts.poppins(
-        fontSize: 14,
-        fontWeight: FontWeight.w300,
-        color: textSecondaryDark,
-        letterSpacing: 0.1,
-        height: 1.4,
-      ),
-      // ...existing code for other text styles...
+    textTheme: GoogleFonts.plusJakartaSansTextTheme(ThemeData.dark().textTheme)
+        .copyWith(
+      displayLarge: GoogleFonts.spaceGrotesk(
+          fontSize: 34,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.5,
+          height: 1.1,
+          color: textPrimaryDark),
+      displayMedium: GoogleFonts.plusJakartaSans(
+          fontSize: 28,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.2,
+          color: textPrimaryDark),
+      displaySmall: GoogleFonts.plusJakartaSans(
+          fontSize: 24, fontWeight: FontWeight.w700, color: textPrimaryDark),
+      headlineLarge: GoogleFonts.plusJakartaSans(
+          fontSize: 22, fontWeight: FontWeight.w700, color: textPrimaryDark),
+      headlineMedium: GoogleFonts.plusJakartaSans(
+          fontSize: 20, fontWeight: FontWeight.w700, color: textPrimaryDark),
+      headlineSmall: GoogleFonts.plusJakartaSans(
+          fontSize: 18, fontWeight: FontWeight.w700, color: textPrimaryDark),
+      bodyLarge: GoogleFonts.plusJakartaSans(
+          fontSize: 16.5, fontWeight: FontWeight.w500, color: textPrimaryDark),
+      bodyMedium: GoogleFonts.plusJakartaSans(
+          fontSize: 15, fontWeight: FontWeight.w500, color: textPrimaryDark),
+      bodySmall: GoogleFonts.plusJakartaSans(
+          fontSize: 13.5,
+          fontWeight: FontWeight.w500,
+          color: textSecondaryDark),
+      titleLarge: GoogleFonts.plusJakartaSans(
+          fontSize: 16, fontWeight: FontWeight.w700, color: textPrimaryDark),
+      titleMedium: GoogleFonts.plusJakartaSans(
+          fontSize: 14, fontWeight: FontWeight.w700, color: textPrimaryDark),
+      titleSmall: GoogleFonts.plusJakartaSans(
+          fontSize: 12.5,
+          fontWeight: FontWeight.w700,
+          color: textSecondaryDark),
+      labelLarge: GoogleFonts.plusJakartaSans(
+          fontSize: 14, fontWeight: FontWeight.w800, color: textPrimaryDark),
+      labelMedium: GoogleFonts.plusJakartaSans(
+          fontSize: 12, fontWeight: FontWeight.w700, color: textPrimaryDark),
+      labelSmall: GoogleFonts.plusJakartaSans(
+          fontSize: 10.5,
+          fontWeight: FontWeight.w700,
+          color: textSecondaryDark),
     ),
-
-    // AppBar for Dark Theme
     appBarTheme: AppBarTheme(
       centerTitle: true,
       elevation: 0,
-      scrolledUnderElevation: 4,
+      scrolledUnderElevation: 0,
       backgroundColor: surfaceDark,
       foregroundColor: textPrimaryDark,
       surfaceTintColor: Colors.transparent,
-      titleTextStyle: GoogleFonts.poppins(
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        color: textPrimaryDark,
-        letterSpacing: 0.15,
-        height: 1.4,
-      ),
-      iconTheme: const IconThemeData(
-        color: textPrimaryDark,
-        size: 24,
-      ),
-      actionsIconTheme: const IconThemeData(
-        color: textPrimaryDark,
-        size: 24,
-      ),
+      titleTextStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 18, fontWeight: FontWeight.w700, color: textPrimaryDark),
+      iconTheme: const IconThemeData(color: textPrimaryDark, size: 24),
+      actionsIconTheme: const IconThemeData(color: textPrimaryDark, size: 24),
       systemOverlayStyle: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
       ),
     ),
-
-    // Buttons for Dark Theme
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         elevation: 0,
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
-        disabledBackgroundColor: Colors.grey.shade700,
-        disabledForegroundColor: Colors.grey.shade500,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        textStyle: GoogleFonts.poppins(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.3,
-          height: 1.4,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        textStyle: GoogleFonts.plusJakartaSans(
+            fontSize: 15, fontWeight: FontWeight.w800, height: 1.2),
       ),
     ),
-
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
+        elevation: 0,
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
-        disabledBackgroundColor: Colors.grey.shade700,
-        disabledForegroundColor: Colors.grey.shade500,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        textStyle: GoogleFonts.poppins(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.3,
-          height: 1.4,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        textStyle: GoogleFonts.plusJakartaSans(
+            fontSize: 15, fontWeight: FontWeight.w800, height: 1.2),
       ),
     ),
-
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
+        elevation: 0,
         foregroundColor: primaryColor,
-        side: BorderSide(color: primaryColor, width: 1.5),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        textStyle: GoogleFonts.poppins(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.3,
-          height: 1.4,
-        ),
+        side: const BorderSide(color: primaryColor, width: 1.5),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        textStyle: GoogleFonts.plusJakartaSans(
+            fontSize: 15, fontWeight: FontWeight.w800, height: 1.2),
       ),
     ),
-
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: primaryColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        textStyle: GoogleFonts.poppins(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          letterSpacing: 0.2,
-          height: 1.4,
-        ),
+        textStyle: GoogleFonts.plusJakartaSans(
+            fontSize: 14, fontWeight: FontWeight.w700),
       ),
     ),
-
-    // Input Fields for Dark Theme
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Colors.grey.shade900,
+      fillColor: inputFillColorDark,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade700),
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: borderDark),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade700),
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: borderDark),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: primaryColor, width: 2),
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: primaryColor, width: 2),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: errorColor, width: 1.5),
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: errorColor, width: 1.5),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: errorColor, width: 2),
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: errorColor, width: 2),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      labelStyle: GoogleFonts.poppins(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        color: textSecondaryDark,
-        letterSpacing: 0.1,
-        height: 1.4,
-      ),
-      hintStyle: GoogleFonts.poppins(
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        color: textSecondaryDark,
-        letterSpacing: 0.1,
-        height: 1.4,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      labelStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 14, fontWeight: FontWeight.w700, color: textSecondaryDark),
+      hintStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 14, fontWeight: FontWeight.w500, color: textSecondaryDark),
     ),
-
-    // Bottom Navigation for Dark Theme
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
       type: BottomNavigationBarType.fixed,
-      elevation: 8,
+      elevation: 0,
       backgroundColor: surfaceDark,
       selectedItemColor: primaryColor,
       unselectedItemColor: textSecondaryDark,
-      selectedIconTheme: const IconThemeData(
-        color: primaryColor,
-        size: 24,
-      ),
-      unselectedIconTheme: const IconThemeData(
-        color: textSecondaryDark,
-        size: 24,
-      ),
-      selectedLabelStyle: GoogleFonts.poppins(
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-      ),
-      unselectedLabelStyle: GoogleFonts.poppins(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-      ),
+      selectedIconTheme: const IconThemeData(size: 24, color: primaryColor),
+      unselectedIconTheme:
+          const IconThemeData(size: 24, color: textSecondaryDark),
+      selectedLabelStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 12, fontWeight: FontWeight.w800),
+      unselectedLabelStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 12, fontWeight: FontWeight.w700),
       showUnselectedLabels: true,
     ),
-
-    // Floating Action Button for Dark Theme
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: primaryColor,
       foregroundColor: Colors.white,
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
     ),
-
-    // List Tiles for Dark Theme
     listTileTheme: ListTileThemeData(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       iconColor: textPrimaryDark,
       textColor: textPrimaryDark,
-      titleTextStyle: GoogleFonts.poppins(
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-        color: textPrimaryDark,
-      ),
-      subtitleTextStyle: GoogleFonts.poppins(
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        color: textSecondaryDark,
-      ),
+      titleTextStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 16, fontWeight: FontWeight.w700, color: textPrimaryDark),
+      subtitleTextStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 14, fontWeight: FontWeight.w500, color: textSecondaryDark),
     ),
-
-    // Chip Theme for Dark Theme
     chipTheme: ChipThemeData(
-      backgroundColor: Colors.grey.shade800,
+      backgroundColor: const Color(0xFF24272E),
       deleteIconColor: textSecondaryDark,
-      disabledColor: Colors.grey.shade700,
-      selectedColor: primaryColor.withOpacity(0.3),
-      secondarySelectedColor: secondaryColor.withOpacity(0.3),
+      disabledColor: const Color(0xFF2D3138),
+      selectedColor: primaryColor.withOpacity(0.22),
+      secondarySelectedColor: secondaryColor.withOpacity(0.22),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
-      labelStyle: GoogleFonts.poppins(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        color: textPrimaryDark,
-      ),
-      secondaryLabelStyle: GoogleFonts.poppins(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        color: Colors.white,
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+      labelStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 12, fontWeight: FontWeight.w700, color: textPrimaryDark),
+      secondaryLabelStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
       brightness: Brightness.dark,
     ),
-
-    // Extensions
     extensions: <ThemeExtension<dynamic>>[
       const AppThemeExtension(
         attendancePresent: successColor,
         attendanceAbsent: errorColor,
         attendanceLate: warningColor,
-        successContainer: Color(0xFF064E3B),
-        warningContainer: Color(0xFF92400E),
-        errorContainer: Color(0xFF991B1B),
-        infoContainer: Color(0xFF164E63),
+        successContainer: Color(0xFF0F2E12),
+        warningContainer: Color(0xFF3B2A09),
+        errorContainer: Color(0xFF3A1010),
+        infoContainer: Color(0xFF0D223D),
       ),
     ],
   );
 
-  // Colores personalizados para estados de asistencia
+  // =========================
+  // UTILIDADES DE ESTADO/ICONOS
+  // =========================
   static Color getAttendanceColor(String estado) {
     switch (estado.toLowerCase()) {
       case 'presente':
@@ -1118,7 +801,6 @@ class AppTheme {
     }
   }
 
-  // Iconos para tipos de notificación
   static IconData getNotificationIcon(String tipo) {
     switch (tipo.toLowerCase()) {
       case 'entrada':
@@ -1140,7 +822,6 @@ class AppTheme {
     }
   }
 
-  // Helper para convertir un string hex a Color
   static Color hexToColor(String hex) {
     final buffer = StringBuffer();
     if (hex.length == 6 || hex.length == 7) buffer.write('ff');
@@ -1149,7 +830,9 @@ class AppTheme {
   }
 }
 
-// Custom theme extension for additional colors
+// =========================
+// EXTENSIÓN PERSONALIZADA
+// =========================
 @immutable
 class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
   const AppThemeExtension({
@@ -1193,9 +876,7 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
 
   @override
   AppThemeExtension lerp(ThemeExtension<AppThemeExtension>? other, double t) {
-    if (other is! AppThemeExtension) {
-      return this;
-    }
+    if (other is! AppThemeExtension) return this;
     return AppThemeExtension(
       attendancePresent:
           Color.lerp(attendancePresent, other.attendancePresent, t)!,

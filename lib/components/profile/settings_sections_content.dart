@@ -1,5 +1,5 @@
-import 'package:alertaescolar/widgets/language_selection_dialog.dart';
-import 'package:alertaescolar/widgets/theme_selection_dialog.dart';
+import 'package:alertaescolar/components/dialogs/language_dialog_handler.dart';
+import 'package:alertaescolar/components/dialogs/theme_dialog_handler.dart';
 import 'package:flutter/material.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
@@ -10,12 +10,9 @@ import '../profile/settings_tile.dart';
 import '../profile/theme_settings_tile.dart';
 import '../profile/language_settings_tile.dart';
 import '../profile/logout_button.dart';
-import '../dialogs/help_dialog.dart';
-import '../dialogs/feedback_dialog.dart';
-import '../dialogs/about_app_dialog.dart';
 import '../dialogs/logout_dialog.dart';
 
-class SettingsSectionsContent extends StatelessWidget {
+class SettingsSectionsContent extends StatefulWidget {
   final Size screenSize;
 
   const SettingsSectionsContent({
@@ -24,20 +21,47 @@ class SettingsSectionsContent extends StatelessWidget {
   });
 
   @override
+  State<SettingsSectionsContent> createState() =>
+      _SettingsSectionsContentState();
+}
+
+class _SettingsSectionsContentState extends State<SettingsSectionsContent> {
+  bool _isLogoutDialogOpen = false;
+
+  Future<void> _handleLogoutTap() async {
+    if (_isLogoutDialogOpen) return;
+    setState(() => _isLogoutDialogOpen = true);
+    try {
+      // Aguardar a que cierre para evitar diálogos múltiples por taps rápidos
+      LogoutDialog.show(context);
+    } finally {
+      if (mounted) {
+        setState(() => _isLogoutDialogOpen = false);
+      } else {
+        _isLogoutDialogOpen = false;
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
     return Padding(
       padding: EdgeInsets.symmetric(
-          horizontal: AppTheme.getMediumPadding(screenSize)),
+        horizontal: AppTheme.getMediumPadding(widget.screenSize),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Account Section
-          SettingsSectionTitle(title: l10n.account, screenSize: screenSize),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+          SettingsSectionTitle(
+            title: l10n.account,
+            screenSize: widget.screenSize,
+          ),
+          SizedBox(height: AppTheme.getSmallPadding(widget.screenSize)),
           SettingsCard(
-            screenSize: screenSize,
+            screenSize: widget.screenSize,
             children: [
               SettingsTile(
                 icon: Icons.person_outline,
@@ -45,7 +69,8 @@ class SettingsSectionsContent extends StatelessWidget {
                 subtitle: l10n.editProfileAndContactData,
                 onTap: () => Navigator.pushNamed(
                     context, AppRoutes.personalDataNavigation),
-                screenSize: screenSize,
+                screenSize: widget.screenSize,
+                isFirst: true,
               ),
               Divider(height: 1, color: AppTheme.getDividerColor(context)),
               SettingsTile(
@@ -54,98 +79,99 @@ class SettingsSectionsContent extends StatelessWidget {
                 subtitle: l10n.emergencyDataAndContacts,
                 onTap: () =>
                     Navigator.pushNamed(context, AppRoutes.familyInformation),
-                screenSize: screenSize,
+                screenSize: widget.screenSize,
+                isLast: true,
               ),
             ],
           ),
 
-          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+          SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
 
           // Preferences Section
-          SettingsSectionTitle(title: l10n.preferences, screenSize: screenSize),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+          SettingsSectionTitle(
+            title: l10n.preferences,
+            screenSize: widget.screenSize,
+          ),
+          SizedBox(height: AppTheme.getSmallPadding(widget.screenSize)),
           SettingsCard(
-            screenSize: screenSize,
+            screenSize: widget.screenSize,
             children: [
-              SettingsTile(
-                icon: Icons.notifications_outlined,
-                title: l10n.notifications,
-                subtitle: l10n.configureAlertsAndReminders,
-                onTap: () => Navigator.of(context)
-                    .pushNamed(AppRoutes.notificationSettings),
-                screenSize: screenSize,
-              ),
-              Divider(height: 1, color: AppTheme.getDividerColor(context)),
               ThemeSettingsTile(
-                onTap: () => _showThemeDialog(context),
-                screenSize: screenSize,
+                screenSize: widget.screenSize,
+                onTap: () => ThemeDialogHandler.showThemeDialog(context),
+                isFirst: true,
               ),
               Divider(height: 1, color: AppTheme.getDividerColor(context)),
               LanguageSettingsTile(
-                onTap: () => _showLanguageDialog(context),
-                screenSize: screenSize,
+                screenSize: widget.screenSize,
+                onTap: () => LanguageDialogHandler.showLanguageDialog(context),
+                isLast: true,
               ),
             ],
           ),
 
-          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+          SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
 
           // Support Section
-          SettingsSectionTitle(title: l10n.support, screenSize: screenSize),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+          SettingsSectionTitle(
+            title: l10n.support,
+            screenSize: widget.screenSize,
+          ),
+          SizedBox(height: AppTheme.getSmallPadding(widget.screenSize)),
           SettingsCard(
-            screenSize: screenSize,
+            screenSize: widget.screenSize,
             children: [
               SettingsTile(
                 icon: Icons.help_outline,
                 title: l10n.helpCenter,
                 subtitle: l10n.faqAndGuides,
-                onTap: () => HelpDialog.show(context),
-                screenSize: screenSize,
+                onTap: () => Navigator.pushNamed(
+                  context,
+                  AppRoutes.helpCenterNavigation,
+                ),
+                screenSize: widget.screenSize,
+                isFirst: true,
               ),
               Divider(height: 1, color: AppTheme.getDividerColor(context)),
+
+              // Contacto y Soporte (si ya tienes l10n, cámbialo por claves)
               SettingsTile(
-                icon: Icons.feedback_outlined,
-                title: l10n.sendFeedback,
-                subtitle: l10n.shareYourExperienceWithUs,
-                onTap: () => FeedbackDialog.show(context),
-                screenSize: screenSize,
+                icon: Icons.support_agent_outlined,
+                title: 'Contacto y soporte',
+                subtitle: 'Instagram, WhatsApp, correo',
+                onTap: () => Navigator.pushNamed(
+                  context,
+                  AppRoutes.contactSupport,
+                ),
+                screenSize: widget.screenSize,
               ),
               Divider(height: 1, color: AppTheme.getDividerColor(context)),
+
+              // About / Legal
               SettingsTile(
                 icon: Icons.info_outline,
-                title: l10n.about,
+                title: l10n.aboutAlertaEscolar,
                 subtitle: l10n.versionTermsAndPrivacy,
-                onTap: () => AboutAppDialog.show(context),
-                screenSize: screenSize,
+                onTap: () => Navigator.pushNamed(
+                  context,
+                  AppRoutes.legalCenter,
+                ),
+                screenSize: widget.screenSize,
+                isLast: true,
               ),
             ],
           ),
 
-          SizedBox(height: AppTheme.getLargePadding(screenSize)),
+          SizedBox(height: AppTheme.getLargePadding(widget.screenSize)),
 
-          // Logout Button
+          // Logout Button (con guard de doble tap)
           LogoutButton(
-            onTap: () => LogoutDialog.show(context),
-            screenSize: screenSize,
+            screenSize: widget.screenSize,
+            onTap: _handleLogoutTap,
           ),
-          SizedBox(height: AppTheme.getLargePadding(screenSize)),
+          SizedBox(height: AppTheme.getLargePadding(widget.screenSize)),
         ],
       ),
-    );
-  }
-
-  void _showLanguageDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => const LanguageSelectionDialog(),
-    );
-  }
-
-  void _showThemeDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => const ThemeSelectionDialog(),
     );
   }
 }

@@ -260,8 +260,8 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                       ),
                       child: ListView.separated(
                         padding: EdgeInsets.only(
-                          top: AppTheme.getSmallPadding(screenSize),
-                          bottom: (viewInsets > 0 ? 8 : 0),
+                          top: AppTheme.getSmallPadding(screenSize) * 0.5,
+                          bottom: (viewInsets > 0 ? 6 : 0),
                           left: AppTheme.getSmallPadding(screenSize),
                           right: AppTheme.getSmallPadding(screenSize),
                         ),
@@ -274,8 +274,15 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                         ),
                         itemBuilder: (context, index) {
                           final s = suggestions[index];
+
+                          // === ESTADO ACTIVO CORRECTO (ventana de vigencia + vínculo) ===
+                          final now = DateTime.now();
+                          final start = s.fechaRegistroLlave ?? s.fechaRegistro;
+                          final end = s.fechaDesactivacionLlave;
+                          final dentroVentana = !now.isBefore(start) &&
+                              (end == null || !now.isAfter(end));
                           final consideredActive =
-                              (s.hasTutores && s.llaveActiva);
+                              s.hasTutores && dentroVentana;
 
                           return InkWell(
                             onTap: () {
@@ -283,22 +290,24 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                               _openStudentProfile(s);
                             },
                             child: Padding(
+                              // Menor padding para bajar la altura
                               padding: EdgeInsets.symmetric(
-                                vertical: AppTheme.getSmallPadding(screenSize),
+                                vertical:
+                                    AppTheme.getSmallPadding(screenSize) * 0.5,
                                 horizontal:
                                     AppTheme.getSmallPadding(screenSize),
                               ),
                               child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.person_outline_rounded,
-                                      color: AppTheme.accentBlue),
-                                  SizedBox(
-                                      width:
-                                          AppTheme.getSmallPadding(screenSize)),
+                                  // SIN ÍCONO para compactar
+
+                                  // Contenido principal (2 líneas compactas con elipsis)
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Text(
                                           s.nombre,
@@ -328,41 +337,42 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                                       ],
                                     ),
                                   ),
+
                                   SizedBox(
-                                      width:
-                                          AppTheme.getSmallPadding(screenSize)),
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal:
-                                          AppTheme.getSmallPadding(screenSize),
-                                      vertical:
-                                          AppTheme.getSmallPadding(screenSize) *
-                                              0.4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: consideredActive
-                                          ? AppTheme.successColor
-                                              .withOpacity(0.12)
-                                          : AppTheme.errorColor
-                                              .withOpacity(0.12),
-                                      borderRadius: BorderRadius.circular(
-                                        AppTheme.getSmallRadius(screenSize),
+                                    width: AppTheme.getSmallPadding(screenSize),
+                                  ),
+
+                                  // Estado muy compacto: punto + texto pequeño
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          color: consideredActive
+                                              ? AppTheme.successColor
+                                              : AppTheme.errorColor,
+                                          shape: BoxShape.circle,
+                                        ),
                                       ),
-                                    ),
-                                    child: Text(
-                                      consideredActive
-                                          ? AppLocalizations.of(context).active
-                                          : AppLocalizations.of(context)
-                                              .inactive,
-                                      style:
-                                          AppTheme.getCaptionSmall(screenSize)
-                                              .copyWith(
-                                        color: consideredActive
-                                            ? AppTheme.successColor
-                                            : AppTheme.errorColor,
-                                        fontWeight: FontWeight.w600,
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        consideredActive
+                                            ? AppLocalizations.of(context)
+                                                .active
+                                            : AppLocalizations.of(context)
+                                                .inactive,
+                                        style:
+                                            AppTheme.getCaptionSmall(screenSize)
+                                                .copyWith(
+                                          color: consideredActive
+                                              ? AppTheme.successColor
+                                              : AppTheme.errorColor,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
-                                    ),
+                                    ],
                                   ),
                                 ],
                               ),
@@ -618,8 +628,6 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                                         getLabel: (String value) =>
                                             value == 'all' ? l10n.all : value,
                                         screenSize: screenSize,
-                                        backgroundColor: AppTheme.accentBlue
-                                            .withOpacity(0.05),
                                       ),
                                     ),
                                     SizedBox(
@@ -643,8 +651,6 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                                         getLabel: (String value) =>
                                             value == 'all' ? l10n.all : value,
                                         screenSize: screenSize,
-                                        backgroundColor: AppTheme.accentPurple
-                                            .withOpacity(0.05),
                                       ),
                                     ),
                                   ],
@@ -968,9 +974,24 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
     );
   }
 
-  Widget _buildStudentCard(BuildContext context, dynamic student,
-      Size screenSize, AppLocalizations l10n) {
-    final consideredActive = (student.hasTutores && student.llaveActiva);
+  Widget _buildStudentCard(
+    BuildContext context,
+    dynamic student,
+    Size screenSize,
+    AppLocalizations l10n,
+  ) {
+    // === ACTIVO correcto: vínculo + ventana de vigencia ===
+    final now = DateTime.now();
+    final start = student.fechaRegistroLlave ?? student.fechaRegistro;
+    final end = student.fechaDesactivacionLlave;
+    final dentroVentana =
+        !now.isBefore(start) && (end == null || !now.isAfter(end));
+    final consideredActive = (student.hasTutores && dentroVentana);
+
+    final statusColor =
+        consideredActive ? AppTheme.successColor : AppTheme.errorColor;
+    final statusIcon =
+        consideredActive ? Icons.verified_rounded : Icons.block_rounded;
 
     return Material(
       color: Colors.transparent,
@@ -979,7 +1000,11 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
         child: Container(
-          padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+          // Más compacto: menos padding vertical
+          padding: EdgeInsets.symmetric(
+            vertical: AppTheme.getSmallPadding(screenSize) * 0.8,
+            horizontal: AppTheme.getMediumPadding(screenSize),
+          ),
           decoration: BoxDecoration(
             color: AppTheme.getBackgroundColor(context),
             borderRadius:
@@ -990,26 +1015,9 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
             ),
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Avatar
-              Container(
-                width: screenSize.width * 0.12,
-                height: screenSize.width * 0.12,
-                decoration: BoxDecoration(
-                  color: AppTheme.accentBlue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getSmallRadius(screenSize)),
-                ),
-                child: Icon(
-                  Icons.person_rounded,
-                  color: AppTheme.accentBlue,
-                  size: screenSize.width * 0.06,
-                ),
-              ),
-
-              SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-
-              // Info
+              // Info (sin avatar, todo con elipsis)
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1020,60 +1028,82 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                         fontWeight: FontWeight.w600,
                         color: AppTheme.getTextPrimaryColor(context),
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(
-                        height: AppTheme.getSmallPadding(screenSize) * 0.3),
+                        height: AppTheme.getSmallPadding(screenSize) * 0.25),
                     Text(
                       '${student.nivelEducativo} - ${student.grupo}',
-                      style: AppTheme.getCaption(screenSize).copyWith(
+                      style: AppTheme.getCaptionSmall(screenSize).copyWith(
                         color: AppTheme.getTextSecondaryColor(context),
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    if (student.matricula.isNotEmpty) ...[
+                    if (student.matricula != null &&
+                        student.matricula.isNotEmpty) ...[
                       SizedBox(
-                          height: AppTheme.getSmallPadding(screenSize) * 0.3),
+                          height: AppTheme.getSmallPadding(screenSize) * 0.2),
                       Text(
                         'Matrícula: ${student.matricula}',
                         style: AppTheme.getCaptionSmall(screenSize).copyWith(
                           color: AppTheme.getTextSecondaryColor(context),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ],
                 ),
               ),
 
-              // Estado + flecha
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+
+              // Estado (chip con ícono) + chevron pequeño
+              Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
                     padding: EdgeInsets.symmetric(
-                      horizontal: AppTheme.getSmallPadding(screenSize),
-                      vertical: AppTheme.getSmallPadding(screenSize) * 0.5,
+                      horizontal: AppTheme.getSmallPadding(screenSize) * 0.8,
+                      vertical: AppTheme.getSmallPadding(screenSize) * 0.4,
                     ),
                     decoration: BoxDecoration(
-                      color: consideredActive
-                          ? AppTheme.successColor.withOpacity(0.1)
-                          : AppTheme.errorColor.withOpacity(0.1),
+                      color: statusColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(
                           AppTheme.getSmallRadius(screenSize)),
-                    ),
-                    child: Text(
-                      consideredActive ? l10n.active : l10n.inactive,
-                      style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                        color: consideredActive
-                            ? AppTheme.successColor
-                            : AppTheme.errorColor,
-                        fontWeight: FontWeight.w600,
+                      border: Border.all(
+                        color: statusColor.withOpacity(0.25),
+                        width: 1,
                       ),
                     ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          statusIcon,
+                          color: statusColor,
+                          size: screenSize.height * 0.018,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          consideredActive ? l10n.active : l10n.inactive,
+                          style: AppTheme.getCaptionSmall(screenSize).copyWith(
+                            color: statusColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
-                  SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.3),
+                  SizedBox(width: AppTheme.getSmallPadding(screenSize) * 0.5),
                   Icon(
                     Icons.chevron_right_rounded,
                     color: AppTheme.getTextSecondaryColor(context),
-                    size: screenSize.height * 0.025,
+                    size: screenSize.height * 0.022,
                   ),
                 ],
               ),

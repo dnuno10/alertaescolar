@@ -1,8 +1,8 @@
-// lib/managers/schedule_provider.dart
 import 'package:alertaescolar/main.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../components/loading_dialog.dart'; // opcional si pasas context
+import '../components/loading_dialog.dart';
 import '../models/models.dart';
 
 class ScheduleProvider with ChangeNotifier {
@@ -15,6 +15,13 @@ class ScheduleProvider with ChangeNotifier {
 
   bool _isLoading = false;
   String? _error;
+
+  RealtimeChannel? _chHorarios;
+  RealtimeChannel? _chMaterias;
+  RealtimeChannel? _chGrupos;
+  RealtimeChannel? _chTurnos;
+
+  String? _currentSchoolIdForRealtime;
 
   // Getters
   List<Materia> get materias => _materias;
@@ -37,6 +44,161 @@ class ScheduleProvider with ChangeNotifier {
   void clearError() {
     _error = null;
     _safeNotifyListeners();
+  }
+
+  void _disposeRealtime() {
+    try {
+      _chHorarios?.unsubscribe();
+    } catch (_) {}
+    try {
+      _chMaterias?.unsubscribe();
+    } catch (_) {}
+    try {
+      _chGrupos?.unsubscribe();
+    } catch (_) {}
+    try {
+      _chTurnos?.unsubscribe();
+    } catch (_) {}
+    _chHorarios = _chMaterias = _chGrupos = _chTurnos = null;
+  }
+
+  /// Arranca realtime tomando la escuela del tutor (vía alumno_tutores)
+  Future<void> startRealtimeForTutor(String userId) async {
+    final schoolId = await _getUserSchoolId(userId);
+    if (schoolId != null) {
+      await startRealtimeForSchool(schoolId);
+    } else {
+      debugPrint('ScheduleProvider.startRealtimeForTutor: no se halló escuela');
+    }
+  }
+
+  /// Arranca realtime para una escuela (filtra por id_escuela en tablas clave)
+  Future<void> startRealtimeForSchool(String escuelaId) async {
+    // Evita re-crear suscripciones iguales
+    if (_currentSchoolIdForRealtime == escuelaId &&
+        (_chHorarios != null ||
+            _chMaterias != null ||
+            _chGrupos != null ||
+            _chTurnos != null)) {
+      return;
+    }
+
+    _disposeRealtime();
+    _currentSchoolIdForRealtime = escuelaId;
+
+    // --- HORARIOS ---
+    _chHorarios = supabase.channel('sch_horarios_$escuelaId')
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'horarios',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'id_escuela',
+          value: escuelaId,
+        ),
+        callback: (payload) async {
+          try {
+            final newRec = payload.newRecord as Map<String, dynamic>?;
+            final oldRec = payload.oldRecord as Map<String, dynamic>?;
+
+            final affectedSchool =
+                (newRec?['id_escuela'] ?? oldRec?['id_escuela'])?.toString();
+            if (affectedSchool != escuelaId) return;
+
+            final affectedGroupId =
+                (newRec?['id_grupo'] ?? oldRec?['id_grupo'])?.toString();
+
+            if (affectedGroupId != null && affectedGroupId.isNotEmpty) {
+              await loadHorarios(
+                escuelaId: escuelaId,
+                grupoId: affectedGroupId,
+                context: null, // evita superposición de diálogos
+              );
+            } else {
+              await loadHorarios(escuelaId: escuelaId, context: null);
+            }
+          } catch (e) {
+            debugPrint('Realtime horarios callback error: $e');
+          }
+        },
+      )
+      ..subscribe();
+
+    // --- MATERIAS ---
+    _chMaterias = supabase.channel('sch_materias_$escuelaId')
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'materias',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'id_escuela',
+          value: escuelaId,
+        ),
+        callback: (payload) async {
+          await loadMaterias(escuelaId: escuelaId, context: null);
+        },
+      )
+      ..subscribe();
+
+    // --- GRUPOS ---
+    _chGrupos = supabase.channel('sch_grupos_$escuelaId')
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'grupos',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'id_escuela',
+          value: escuelaId,
+        ),
+        callback: (payload) async {
+          await loadGrupos(escuelaId: escuelaId, loadAll: true, context: null);
+          await loadHorarios(escuelaId: escuelaId, context: null);
+        },
+      )
+      ..subscribe();
+
+    // --- TURNOS ---
+    _chTurnos = supabase.channel('sch_turnos_$escuelaId')
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'turnos',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'id_escuela',
+          value: escuelaId,
+        ),
+        callback: (payload) async {
+          _safeNotifyListeners();
+        },
+      )
+      ..subscribe();
+  }
+
+  /// Detiene todas las suscripciones
+  Future<void> stopRealtime() async {
+    _disposeRealtime();
+    _currentSchoolIdForRealtime = null;
+  }
+
+  Future<String?> _getUserSchoolId(String userId) async {
+    try {
+      final resp = await supabase.from('alumno_tutores').select('''
+        alumnos!inner(id_escuela)
+      ''').eq('id_tutor', userId).limit(1);
+      if (resp.isNotEmpty) {
+        final alumno = (resp.first['alumnos'] as Map?) ?? {};
+        final raw = (alumno['id_escuela'] ?? '').toString().trim();
+        return raw.isEmpty ? null : raw;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('_getUserSchoolId error: $e');
+      return null;
+    }
   }
 
   // ===== Niveles educativos =====
@@ -107,10 +269,8 @@ class ScheduleProvider with ChangeNotifier {
   // ===== Grupos =====
   Future<void> loadGrupos({
     required String escuelaId,
-    String?
-        nivelEducativoId, // opcional: filtrar por id de nivel (tabla niveles_educativos)
-    String?
-        nivelEducativoNombre, // opcional: filtrar por nombre (lo que guarda grupos.nivel_educativo)
+    String? nivelEducativoId,
+    String? nivelEducativoNombre,
     bool loadAll = false,
     BuildContext? context,
   }) async {
@@ -121,33 +281,29 @@ class ScheduleProvider with ChangeNotifier {
       }
       _safeNotifyListeners();
 
-      var query = supabase.from('grupos').select().eq('id_escuela', escuelaId);
+      var filterBuilder =
+          supabase.from('grupos').select().eq('id_escuela', escuelaId);
 
       if (!loadAll) {
         if (nivelEducativoNombre != null && nivelEducativoNombre.isNotEmpty) {
-          query = query.eq('nivel_educativo', nivelEducativoNombre);
+          filterBuilder =
+              filterBuilder.eq('nivel_educativo', nivelEducativoNombre);
         } else if (nivelEducativoId != null) {
-          // traducir id -> nombre usando _nivelesEducativos ya cargados
           final nivel = _firstOrNull(_nivelesEducativos
               .where((n) => (n['id']?.toString() ?? '') == nivelEducativoId));
           final nombre = nivel?['nombre']?.toString();
           if (nombre != null && nombre.isNotEmpty) {
-            query = query.eq('nivel_educativo', nombre);
+            filterBuilder = filterBuilder.eq('nivel_educativo', nombre);
           }
         }
       }
 
-      final response = await query.order('grupo');
+      // Orden al final para mantener el tipo correcto
+      final response = await filterBuilder.order('grupo');
+
       _grupos =
           (response as List).map<Grupo>((row) => Grupo.fromJson(row)).toList();
-
       _error = null;
-
-      // Debug útil
-      // debugPrint('Grupos cargados: ${_grupos.length}');
-      // for (final g in _grupos) {
-      //   debugPrint('Grupo: ${g.grupo} | Nivel: ${g.nivelEducativo}');
-      // }
     } catch (e) {
       _error = 'Error al cargar grupos: $e';
       debugPrint(_error);
@@ -172,7 +328,7 @@ class ScheduleProvider with ChangeNotifier {
       _error = null;
 
       if (context != null && context.mounted) {
-        // Evita abrir múltiples diálogos si ya hay uno activo
+        // evita abrir múltiples diálogos si ya hay uno activo
         if (!LoadingDialog.isVisible) {
           LoadingDialog.show(context, message: 'Cargando horarios...');
           showDialogHere = true;
@@ -180,25 +336,29 @@ class ScheduleProvider with ChangeNotifier {
       }
       _safeNotifyListeners();
 
-      var query =
+      // Filtros primero
+      var filterBuilder =
           supabase.from('horarios').select().eq('id_escuela', escuelaId);
 
       if (grupoId != null && grupoId.isNotEmpty) {
-        query = query.eq('id_grupo', grupoId);
+        filterBuilder = filterBuilder.eq('id_grupo', grupoId);
       }
 
-      final response = await query;
+      // ❗ No existe 'dia_semana' en la tabla, solo booleans por día.
+      // Ordenamos por hora de inicio únicamente.
+      final response =
+          await filterBuilder.order('hora_inicio', ascending: true);
+
       final list =
           (response as List).map((r) => ClaseHorario.fromJson(r)).toList();
 
       if (grupoId == null || grupoId.isEmpty) {
         _horariosPorGrupoId.clear();
+        for (final ch in list) {
+          _horariosPorGrupoId.putIfAbsent(ch.idGrupo, () => []).add(ch);
+        }
       } else {
-        _horariosPorGrupoId[grupoId] = [];
-      }
-
-      for (final ch in list) {
-        _horariosPorGrupoId.putIfAbsent(ch.idGrupo, () => []).add(ch);
+        _horariosPorGrupoId[grupoId] = list;
       }
 
       _error = null;
@@ -225,7 +385,7 @@ class ScheduleProvider with ChangeNotifier {
         .where((g) => g.grupo.toLowerCase() == nombreGrupo.toLowerCase()));
   }
 
-  /// Devuelve horarios por **id de grupo** (recomendado)
+  /// Devuelve horarios por **id de grupo**
   List<ClaseHorario> getHorariosForGroupId(String grupoId) {
     return _horariosPorGrupoId[grupoId] ?? const [];
   }
@@ -283,7 +443,7 @@ class ScheduleProvider with ChangeNotifier {
     return g?.nivelEducativo;
   }
 
-  // ===== Inicialización de todo (opcional) =====
+  // ===== Inicialización de todo =====
   Future<void> initialize(String escuelaId, {BuildContext? context}) async {
     bool showDialogHere = false;
     try {
@@ -318,6 +478,7 @@ class ScheduleProvider with ChangeNotifier {
 
   // ===== Limpieza =====
   void clearAllData() {
+    _disposeRealtime();
     _materias = [];
     _grupos = [];
     _nivelesEducativos = [];
@@ -325,5 +486,11 @@ class ScheduleProvider with ChangeNotifier {
     _isLoading = false;
     _error = null;
     _safeNotifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposeRealtime();
+    super.dispose();
   }
 }

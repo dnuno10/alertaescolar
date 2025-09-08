@@ -213,13 +213,11 @@ class StudentProvider with ChangeNotifier {
   // Helpers privados
   // ------------------------------
 
-  /// Normaliza UUIDs: convierte null o cadena vacía en null seguro.
   String? _normalizeUuid(String? raw) {
     final s = (raw ?? '').trim();
     return s.isEmpty ? null : s;
   }
 
-  /// Encuentra la llave activa de forma segura.
   Map<String, dynamic>? _findActiveLlave(List? llavesRaw) {
     if (llavesRaw == null) return null;
     for (final item in llavesRaw) {
@@ -232,7 +230,7 @@ class StudentProvider with ChangeNotifier {
 
   final Map<String, String> _adminEscuelaCacheByUserId = {};
 
-// NUEVO: grupos por nivel educativo
+  // NUEVO: grupos por nivel educativo
   List<Grupo> getGruposByNivelEducativo(String nivelEducativo) {
     if (nivelEducativo.trim().isEmpty) return const [];
     return _availableGrupos
@@ -240,7 +238,7 @@ class StudentProvider with ChangeNotifier {
         .toList();
   }
 
-// NUEVO: nombres (string) de grupo por nivel educativo (ordenados, únicos)
+  // NUEVO: nombres de grupo por nivel educativo
   List<String> getGrupoNamesByNivelEducativo(String nivelEducativo) {
     final names = getGruposByNivelEducativo(nivelEducativo)
         .map((g) => g.grupo)
@@ -251,7 +249,6 @@ class StudentProvider with ChangeNotifier {
     return names;
   }
 
-  /// Resuelve id_escuela para ADMIN: usuarios.email -> admin_access_list.id_escuela
   Future<String?> getAdminEscuelaUuidByUserId(String userId) async {
     if (_adminEscuelaCacheByUserId.containsKey(userId)) {
       return _adminEscuelaCacheByUserId[userId];
@@ -292,7 +289,6 @@ class StudentProvider with ChangeNotifier {
     }
   }
 
-  /// Formatea hora (time o timestamp/timestamptz) a `HH:mm`.
   String? _fmtHora(dynamic value) {
     if (value == null) return null;
     final s = value.toString();
@@ -365,6 +361,12 @@ class StudentProvider with ChangeNotifier {
         event: PostgresChangeEvent.all,
         schema: 'public',
         table: 'alumno_tutores',
+        // Filtro por tutor ↓ (reduce ruido)
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'id_tutor',
+          value: userId,
+        ),
         callback: (payload) async {
           await loadStudentsForUser(userId: userId, forceReload: true);
         },
@@ -415,12 +417,23 @@ class StudentProvider with ChangeNotifier {
   }
 
   // ------------------------------
-  // API pública
+  // 🚀 API pública (NUEVO: métodos explícitos)
+  // ------------------------------
+
+  Future<void> startRealtimeForTutor(String userId) async {
+    _startRealtimeForUser(userId);
+  }
+
+  Future<void> startRealtimeForSchool(String schoolId) async {
+    _startRealtimeForSchool(schoolId);
+  }
+
+  // ------------------------------
+  // API pública existente
   // ------------------------------
 
   void clearError() => _setError(null);
 
-  /// Resuelve escuela de un TUTOR, mirando alumno_tutores → alumnos.id_escuela
   Future<String?> getUserSchoolId(String userId) async {
     debugPrint('getUserSchoolId: userId=$userId');
     try {
@@ -448,6 +461,7 @@ class StudentProvider with ChangeNotifier {
   }) async {
     debugPrint('loadStudentsForUser: userId=$userId, force=$forceReload');
 
+    // Si ya cargaste en modo admin y no se fuerza, no sobreescribas la lista
     if (_currentLoadingMode == 'admin' && !forceReload) {
       debugPrint('loadStudentsForUser: skipping (admin list loaded)');
       return;
@@ -457,61 +471,73 @@ class StudentProvider with ChangeNotifier {
       _setLoading(true, mode: 'user');
       _setError(null);
 
-      final response = await _supabase.from('alumno_tutores').select('''
-        alumnos!inner(
+      // Base query: alumnos vinculados al tutor
+      var query = _supabase.from('alumno_tutores').select('''
+      alumnos!inner(
+        id,
+        nombre,
+        matricula,
+        fecha_registro,
+        id_grupo,
+        id_turno,
+        id_escuela,
+        grupos!inner(
           id,
-          nombre,
-          matricula,
+          grupo,
+          nivel_educativo
+        ),
+        turnos(
+          id,
+          turno,
+          hora_inicio,
+          hora_fin
+        ),
+        llaves(
+          id,
+          codigo,
+          activo,
           fecha_registro,
-          id_grupo,
-          id_turno,
-          id_escuela,
-          grupos!inner(
-            id,
-            grupo,
-            nivel_educativo
-          ),
-          turnos(
-            id,
-            turno,
-            hora_inicio,
-            hora_fin
-          ),
-          llaves(
-            id,
-            codigo,
-            activo,
-            fecha_registro,
-            fecha_desactivacion,
-            limite_vinculacion
-          )
-        ),
-        usuarios!inner(
+          fecha_desactivacion,
+          limite_vinculacion
+        )
+      ),
+      usuarios!inner(
+        id,
+        nombre,
+        apellido,
+        email,
+        contactos_familiares(
           id,
+          id_usuario,
           nombre,
-          apellido,
+          parentesco,
+          telefono,
           email,
-          contactos_familiares(
-            id,
-            id_usuario,
-            nombre,
-            parentesco,
-            telefono,
-            email,
-            fecha_registro
-          )
-        ),
-        fecha_vinculacion
-      ''').eq('id_tutor', userId);
+          fecha_registro
+        )
+      ),
+      fecha_vinculacion
+    ''').eq('id_tutor', userId);
 
+      // Filtros opcionales sobre campos del alumno (cuando apliquen)
+      if (grupoId != null && grupoId.isNotEmpty) {
+        query = query.eq('alumnos.id_grupo', grupoId);
+      }
+      if (turnoId != null && turnoId.isNotEmpty) {
+        query = query.eq('alumnos.id_turno', turnoId);
+      }
+
+      final response = await query;
+
+      // Mapear a StudentDetails
       final list = <StudentDetails>[];
-
       for (final item in response) {
         final alumno = Map<String, dynamic>.from(item['alumnos'] as Map);
         final usuario = Map<String, dynamic>.from(item['usuarios'] as Map);
         final fechaVinc = item['fecha_vinculacion']?.toString() ??
             DateTime.now().toIso8601String();
 
+        // Incrustar datos de vínculo/usuario para el mapper existente
         alumno['alumno_tutores'] = [
           {
             'id_tutor': userId,
@@ -530,17 +556,22 @@ class StudentProvider with ChangeNotifier {
         list.add(sd);
       }
 
+      // Ordenar por nombre (case-insensitive)
+      list.sort(
+          (a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()));
+
+      // Publicar en estado
       _students = list;
       _filteredStudents = List.from(_students);
 
-      // Intenta resolver escuela (tutor → admin fallback)
+      // Resolver escuela (primero por tutor, fallback admin)
       String? resolvedSchool = _normalizeUuid(await getUserSchoolId(userId)) ??
           _normalizeUuid(await getAdminEscuelaUuidByUserId(userId));
 
       _currentSchoolId = resolvedSchool;
       debugPrint('loadStudentsForUser: resolved schoolId = $_currentSchoolId');
 
-      // Realtime: si hay escuela, suscríbete por escuela; si no, por usuario
+      // Realtime: si hay escuela, suscribirse por escuela; si no, por usuario
       if (_currentSchoolId != null) {
         _startRealtimeForSchool(_currentSchoolId!);
       } else {
@@ -556,20 +587,27 @@ class StudentProvider with ChangeNotifier {
     }
   }
 
-  /// Devuelve una lista filtrada SIN mutar el estado (_filteredStudents).
-  /// Útil para autocompletados / sugerencias en tiempo real.
+  bool _isLlaveVigenteFor(StudentDetails s) {
+    if (s.fechaRegistroLlave == null) return false;
+    final now = DateTime.now();
+    final start = s.fechaRegistroLlave!;
+    final end = s.fechaDesactivacionLlave;
+    final startOk = !now.isBefore(start);
+    final endOk = (end == null) || !now.isAfter(end);
+    return startOk && endOk;
+  }
+
   List<StudentDetails> getFilteredBy({
     String? searchQuery,
-    String? grupo, // nombre de grupo o 'all'
-    String? nivelEducativo, // nombre de nivel o 'all'
-    String? status, // 'all' | 'active' | 'inactive'
-    String? turno, // nombre de turno o 'all'
+    String? grupo,
+    String? nivelEducativo,
+    String? status,
+    String? turno,
     int? limit,
   }) {
     final q = (searchQuery ?? '').trim().toLowerCase();
 
     final results = _students.where((s) {
-      // Búsqueda por nombre/matrícula/id
       bool matchesSearch = true;
       if (q.isNotEmpty) {
         matchesSearch = s.nombre.toLowerCase().contains(q) ||
@@ -577,7 +615,6 @@ class StudentProvider with ChangeNotifier {
             s.id.toLowerCase().contains(q);
       }
 
-      // Filtros cruzados
       final matchesGrupo =
           (grupo == null || grupo == 'all') ? true : s.grupo == grupo;
 
@@ -585,12 +622,9 @@ class StudentProvider with ChangeNotifier {
           ? true
           : s.nivelEducativo == nivelEducativo;
 
-      // Semántica solicitada:
-      // ACTIVO = tiene al menos un tutor vinculado (alumno_tutores) Y llave activa = TRUE
-      // INACTIVO = lo contrario
       bool matchesStatus = true;
       if (status != null && status != 'all') {
-        final consideredActive = (s.hasTutores && s.llaveActiva);
+        final consideredActive = s.hasTutores && _isLlaveVigenteFor(s);
         matchesStatus = (status == 'active' && consideredActive) ||
             (status == 'inactive' && !consideredActive);
       }
@@ -618,55 +652,58 @@ class StudentProvider with ChangeNotifier {
       _setError(null);
 
       final response = await _supabase.from('alumnos').select('''
+      id,
+      nombre,
+      matricula,
+      fecha_registro,
+      id_grupo,
+      id_turno,
+      id_escuela,
+      grupos(
         id,
-        nombre,
-        matricula,
+        grupo,
+        nivel_educativo
+      ),
+      turnos(
+        id,
+        turno,
+        hora_inicio,
+        hora_fin
+      ),
+      llaves(
+        id,
+        codigo,
+        activo,
         fecha_registro,
-        id_grupo,
-        id_turno,
-        id_escuela,
-        grupos(
+        fecha_desactivacion,
+        limite_vinculacion
+      ),
+      alumno_tutores(
+        id_tutor,
+        fecha_vinculacion,
+        usuarios(
           id,
-          grupo,
-          nivel_educativo
-        ),
-        turnos(
-          id,
-          turno,
-          hora_inicio,
-          hora_fin
-        ),
-        llaves(
-          id,
-          codigo,
-          activo,
-          fecha_registro,
-          fecha_desactivacion,
-          limite_vinculacion
-        ),
-        alumno_tutores(
-          id_tutor,
-          fecha_vinculacion,
-          usuarios(
+          nombre,
+          apellido,
+          email,
+          contactos_familiares(
             id,
+            id_usuario,
             nombre,
-            apellido,
+            parentesco,
+            telefono,
             email,
-            contactos_familiares(
-              id,
-              id_usuario,
-              nombre,
-              parentesco,
-              telefono,
-              email,
-              fecha_registro
-            )
+            fecha_registro
           )
         )
-      ''').eq('id', studentId).single();
+      )
+    ''').eq('id', studentId).single();
 
-      _selectedStudent =
-          _mapToStudentDetailsWithContacts(Map<String, dynamic>.from(response));
+      final full = _mapToStudentDetailsWithContacts(
+        Map<String, dynamic>.from(response),
+      );
+
+      setSelectedStudent(full);
     } catch (e) {
       _setError('Error al cargar estudiante: $e');
       debugPrint('loadStudentById error: $e');
@@ -686,10 +723,8 @@ class StudentProvider with ChangeNotifier {
       _setLoading(true, mode: 'admin');
       _setError(null);
 
-      // Normaliza inputs
       String? schoolId = _normalizeUuid(escuelaId);
 
-      // Si viene userId, intenta derivar escuela (tutor → admin)
       if (userId != null && schoolId == null) {
         schoolId = _normalizeUuid(await getUserSchoolId(userId));
         if (schoolId == null) {
@@ -746,7 +781,6 @@ class StudentProvider with ChangeNotifier {
         )
       ''');
 
-      // Guard contra UUID vacío (previene 22P02)
       if (schoolId.trim().isEmpty) {
         throw Exception('El id_escuela resuelto está vacío');
       }
@@ -769,7 +803,6 @@ class StudentProvider with ChangeNotifier {
       _filteredStudents = List.from(_students);
       _currentSchoolId = schoolId;
 
-      // Realtime por escuela ya resuelta
       _startRealtimeForSchool(schoolId);
 
       _setError(null);
@@ -785,13 +818,30 @@ class StudentProvider with ChangeNotifier {
   // Mappers
   // ------------------------------
   Future<StudentDetails> _mapToStudentDetailsWithSeparateContacts(
-      Map<String, dynamic> data) async {
+    Map<String, dynamic> data,
+  ) async {
     final grupo = data['grupos'] as Map?;
     final turno = data['turnos'] as Map?;
     final llaves = data['llaves'] as List?;
     final tutoresBasic = data['alumno_tutores'] as List?;
 
-    final activeLlave = _findActiveLlave(llaves);
+    Map<String, dynamic>? latestKey;
+    if (llaves != null && llaves.isNotEmpty) {
+      for (final raw in llaves) {
+        if (raw is Map) {
+          final m = Map<String, dynamic>.from(raw);
+          if (latestKey == null) {
+            latestKey = m;
+          } else {
+            final a = _parseDate(latestKey!['fecha_registro']) ??
+                DateTime.fromMillisecondsSinceEpoch(0);
+            final b = _parseDate(m['fecha_registro']) ??
+                DateTime.fromMillisecondsSinceEpoch(0);
+            if (b.isAfter(a)) latestKey = m;
+          }
+        }
+      }
+    }
 
     final tutorsList = <TutorInfo>[];
     final familyContacts = <Json>[];
@@ -819,21 +869,47 @@ class StudentProvider with ChangeNotifier {
               fechaVinculacion: fechaVinc,
             ));
 
-            final contactsResp = await _supabase
-                .from('contactos_familiares')
-                .select(
-                    'id, id_usuario, nombre, parentesco, telefono, email, fecha_registro')
-                .eq('id_usuario', tutorId);
-
-            familyContacts.addAll(List<Json>.from(
-                contactsResp.map((e) => Map<String, dynamic>.from(e))));
+            try {
+              final contactsResp = await _supabase
+                  .from('contactos_familiares')
+                  .select(
+                      'id, id_usuario, nombre, parentesco, telefono, email, fecha_registro')
+                  .eq('id_usuario', tutorId);
+              familyContacts.addAll(List<Json>.from(
+                  contactsResp.map((e) => Map<String, dynamic>.from(e))));
+            } catch (_) {}
+          } else {
+            tutorsList.add(TutorInfo(
+              id: tutorId,
+              nombre: '',
+              apellido: '',
+              email: '',
+              telefono: null,
+              fechaVinculacion: fechaVinc,
+            ));
           }
-        } catch (e) {
-          debugPrint(
-              '_mapToStudentDetailsWithSeparateContacts tutor error: $e');
+        } catch (_) {
+          tutorsList.add(TutorInfo(
+            id: tutorId,
+            nombre: '',
+            apellido: '',
+            email: '',
+            telefono: null,
+            fechaVinculacion: fechaVinc,
+          ));
         }
       }
     }
+
+    final now = DateTime.now();
+    final hasKey = latestKey != null;
+    final fRegL = hasKey ? _parseDate(latestKey!['fecha_registro']) : null;
+    final fDesL = hasKey ? _parseDate(latestKey!['fecha_desactivacion']) : null;
+
+    final vigente = hasKey &&
+        fRegL != null &&
+        !now.isBefore(fRegL) &&
+        (fDesL == null || !now.isAfter(fDesL));
 
     return StudentDetails(
       id: data['id'].toString(),
@@ -847,16 +923,14 @@ class StudentProvider with ChangeNotifier {
       turno: turno?['turno']?.toString() ?? 'Sin turno',
       horaInicioTurno: _fmtHora(turno?['hora_inicio']),
       horaFinTurno: _fmtHora(turno?['hora_fin']),
-      llaveId: activeLlave?['id']?.toString(),
-      llaveCodigo: activeLlave?['codigo']?.toString(),
-      llaveActiva: (activeLlave?['activo'] == true),
+      llaveId: latestKey?['id']?.toString(),
+      llaveCodigo: latestKey?['codigo']?.toString(),
+      llaveActiva: vigente,
       fechaRegistro: _parseDate(data['fecha_registro']) ?? DateTime.now(),
-      fechaRegistroLlave: _parseDate(
-          activeLlave != null ? activeLlave['fecha_registro'] : null),
-      fechaDesactivacionLlave: _parseDate(
-          activeLlave != null ? activeLlave['fecha_desactivacion'] : null),
-      limiteVinculacion: activeLlave?['limite_vinculacion'] is num
-          ? (activeLlave?['limite_vinculacion'] as num).toInt()
+      fechaRegistroLlave: fRegL,
+      fechaDesactivacionLlave: fDesL,
+      limiteVinculacion: latestKey?['limite_vinculacion'] is num
+          ? (latestKey?['limite_vinculacion'] as num).toInt()
           : null,
       tutores: tutorsList,
       familyContacts: familyContacts,
@@ -869,7 +943,23 @@ class StudentProvider with ChangeNotifier {
     final llaves = data['llaves'] as List?;
     final tutores = data['alumno_tutores'] as List?;
 
-    final activeLlave = _findActiveLlave(llaves);
+    Map<String, dynamic>? latestKey;
+    if (llaves != null && llaves.isNotEmpty) {
+      for (final raw in llaves) {
+        if (raw is Map) {
+          final m = Map<String, dynamic>.from(raw);
+          if (latestKey == null) {
+            latestKey = m;
+          } else {
+            final a = _parseDate(latestKey!['fecha_registro']) ??
+                DateTime.fromMillisecondsSinceEpoch(0);
+            final b = _parseDate(m['fecha_registro']) ??
+                DateTime.fromMillisecondsSinceEpoch(0);
+            if (b.isAfter(a)) latestKey = m;
+          }
+        }
+      }
+    }
 
     final tutorsList = <TutorInfo>[];
     final familyContacts = <Json>[];
@@ -877,6 +967,8 @@ class StudentProvider with ChangeNotifier {
     if (tutores != null) {
       for (final t in tutores) {
         final usuario = t['usuarios'];
+        final fechaVinc = _parseDate(t['fecha_vinculacion']) ?? DateTime.now();
+
         if (usuario != null) {
           tutorsList.add(TutorInfo(
             id: usuario['id'].toString(),
@@ -884,8 +976,7 @@ class StudentProvider with ChangeNotifier {
             apellido: (usuario['apellido'] ?? '').toString(),
             email: (usuario['email'] ?? '').toString(),
             telefono: null,
-            fechaVinculacion:
-                _parseDate(t['fecha_vinculacion']) ?? DateTime.now(),
+            fechaVinculacion: fechaVinc,
           ));
 
           final contacts = usuario['contactos_familiares'] as List?;
@@ -893,9 +984,29 @@ class StudentProvider with ChangeNotifier {
             familyContacts.addAll(List<Json>.from(
                 contacts.map((e) => Map<String, dynamic>.from(e))));
           }
+        } else {
+          final idTutor = t['id_tutor']?.toString() ?? '';
+          tutorsList.add(TutorInfo(
+            id: idTutor,
+            nombre: '',
+            apellido: '',
+            email: '',
+            telefono: null,
+            fechaVinculacion: fechaVinc,
+          ));
         }
       }
     }
+
+    final now = DateTime.now();
+    final hasKey = latestKey != null;
+    final fRegL = hasKey ? _parseDate(latestKey!['fecha_registro']) : null;
+    final fDesL = hasKey ? _parseDate(latestKey!['fecha_desactivacion']) : null;
+
+    final vigente = hasKey &&
+        fRegL != null &&
+        !now.isBefore(fRegL) &&
+        (fDesL == null || !now.isAfter(fDesL));
 
     return StudentDetails(
       id: data['id'].toString(),
@@ -909,16 +1020,14 @@ class StudentProvider with ChangeNotifier {
       turno: turno?['turno']?.toString() ?? 'Sin turno',
       horaInicioTurno: _fmtHora(turno?['hora_inicio']),
       horaFinTurno: _fmtHora(turno?['hora_fin']),
-      llaveId: activeLlave?['id']?.toString(),
-      llaveCodigo: activeLlave?['codigo']?.toString(),
-      llaveActiva: (activeLlave?['activo'] == true),
+      llaveId: latestKey?['id']?.toString(),
+      llaveCodigo: latestKey?['codigo']?.toString(),
+      llaveActiva: vigente,
       fechaRegistro: _parseDate(data['fecha_registro']) ?? DateTime.now(),
-      fechaRegistroLlave: _parseDate(
-          activeLlave != null ? activeLlave['fecha_registro'] : null),
-      fechaDesactivacionLlave: _parseDate(
-          activeLlave != null ? activeLlave['fecha_desactivacion'] : null),
-      limiteVinculacion: activeLlave?['limite_vinculacion'] is num
-          ? (activeLlave?['limite_vinculacion'] as num).toInt()
+      fechaRegistroLlave: fRegL,
+      fechaDesactivacionLlave: fDesL,
+      limiteVinculacion: latestKey?['limite_vinculacion'] is num
+          ? (latestKey?['limite_vinculacion'] as num).toInt()
           : null,
       tutores: tutorsList,
       familyContacts: familyContacts,
@@ -936,7 +1045,6 @@ class StudentProvider with ChangeNotifier {
     }
 
     try {
-      // 1) NIVELES EDUCATIVOS (tabla niveles_educativos.nombre)
       final nivelesResponse = await _supabase
           .from('niveles_educativos')
           .select('nombre')
@@ -950,7 +1058,6 @@ class StudentProvider with ChangeNotifier {
           .toList()
         ..sort();
 
-      // 2) GRUPOS (tabla grupos) - se usan para el combo de "Grupo"
       final gruposResponse = await _supabase
           .from('grupos')
           .select()
@@ -961,7 +1068,6 @@ class StudentProvider with ChangeNotifier {
       _availableGrupos =
           (gruposResponse as List).map((item) => Grupo.fromJson(item)).toList();
 
-      // 3) TURNOS (tabla turnos)
       final turnosResponse = await _supabase
           .from('turnos')
           .select()
@@ -978,10 +1084,10 @@ class StudentProvider with ChangeNotifier {
 
   void filterStudents({
     String? searchQuery,
-    String? grupo, // nombre de grupo
+    String? grupo,
     String? nivelEducativo,
-    String? status, // 'all' | 'active' | 'inactive'
-    String? turno, // nombre de turno
+    String? status,
+    String? turno,
   }) {
     _filteredStudents = _students.where((s) {
       bool matchesSearch = true;
@@ -992,20 +1098,20 @@ class StudentProvider with ChangeNotifier {
             s.id.toLowerCase().contains(q);
       }
 
-      bool matchesGrupo =
+      final matchesGrupo =
           (grupo == null || grupo == 'all') ? true : s.grupo == grupo;
-      bool matchesNivel = (nivelEducativo == null || nivelEducativo == 'all')
+      final matchesNivel = (nivelEducativo == null || nivelEducativo == 'all')
           ? true
           : s.nivelEducativo == nivelEducativo;
 
       bool matchesStatus = true;
       if (status != null && status != 'all') {
-        final consideredActive = (s.hasTutores && s.llaveActiva);
+        final consideredActive = s.hasTutores && _isLlaveVigenteFor(s);
         matchesStatus = (status == 'active' && consideredActive) ||
             (status == 'inactive' && !consideredActive);
       }
 
-      bool matchesTurno =
+      final matchesTurno =
           (turno == null || turno == 'all') ? true : (s.turno ?? '') == turno;
 
       return matchesSearch &&
@@ -1023,7 +1129,6 @@ class StudentProvider with ChangeNotifier {
   }
 
   List<String> getAvailableNivelesEducativos() {
-    // Devuelve EXACTAMENTE lo que hay en niveles_educativos.nombre (ordenado, único)
     return List<String>.from(_availableNivelesEducativos);
   }
 
@@ -1210,7 +1315,6 @@ class StudentProvider with ChangeNotifier {
     return turnos;
   }
 
-  /// Conversión al modelo ligero `Alumno` (con tu nuevo esquema).
   List<Alumno> getAlumnosFromStudents() {
     final studentsToConvert = List<StudentDetails>.from(_filteredStudents);
     if (studentsToConvert.length != _lastConvertedCount) {
@@ -1243,7 +1347,6 @@ class StudentProvider with ChangeNotifier {
     }
   }
 
-  /// Matchea string de turno a tu `TurnoEnum` (con `desconocido`).
   TurnoEnum _mapTurnoEnumFromString(String? turnoString) {
     if (turnoString == null || turnoString.trim().isEmpty) {
       return TurnoEnum.desconocido;
@@ -1318,7 +1421,6 @@ class StudentProvider with ChangeNotifier {
       _setLoading(true);
       _setError(null);
 
-      // 1) Buscar la llave por código
       final keyExists = await _supabase
           .from('llaves')
           .select('id, codigo, id_alumno, activo')
@@ -1330,7 +1432,6 @@ class StudentProvider with ChangeNotifier {
         return null;
       }
 
-      // 2) Alumno + escuela
       final alumnoWithSchool = await _supabase.from('alumnos').select('''
         id,
         nombre,
@@ -1369,7 +1470,6 @@ class StudentProvider with ChangeNotifier {
         return null;
       }
 
-      // 3) Info completa de la llave
       final keyData = await _supabase.from('llaves').select('''
         id,
         codigo,
@@ -1380,7 +1480,6 @@ class StudentProvider with ChangeNotifier {
         activo
       ''').eq('codigo', keyCode).single();
 
-      // Validaciones de ventana/limite
       final now = DateTime.now();
       final int? limiteV = keyData['limite_vinculacion'] is num
           ? (keyData['limite_vinculacion'] as num).toInt()
@@ -1417,7 +1516,6 @@ class StudentProvider with ChangeNotifier {
 
       final remainingDays = fDesact?.difference(now).inDays;
 
-      // Armado de respuesta
       final alumnoData = Map<String, dynamic>.from(alumnoWithSchool);
       final grupoData = alumnoData['grupos'] as Map?;
       final turnoData = alumnoData['turnos'] as Map?;

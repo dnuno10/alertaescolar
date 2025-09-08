@@ -1,7 +1,7 @@
 import '../l10n/app_localizations.dart';
 
 /// Valores alineados con lo que almacenamos en la columna `parentesco` (TEXT).
-/// Si en la BD guardas exactamente estos nombres (en minúsculas), quedará 1:1.
+/// Si en la BD guardas exactamente estos nombres (en minúsculas/camelCase), queda 1:1.
 enum TipoParentesco {
   padre,
   madre,
@@ -47,14 +47,14 @@ extension TipoParentescoExtension on TipoParentesco {
 
 class ContactoFamiliar {
   /// === Columnas reales en la tabla `contactos_familiares` ===
-  /// id (pk, uuid), id_usuario (fk uuid), nombre (text), parentesco (text),
+  /// id (pk uuid), id_usuario (fk uuid), nombre (text), parentesco (text),
   /// telefono (text/null), email (text/null), fecha_registro (timestamptz)
   final String id;
   final String usuarioId; // id_usuario
   final String nombre;
   final TipoParentesco parentesco;
-  final String? telefono; // Puede ser NULL en BD
-  final String? email; // Puede ser NULL en BD
+  final String? telefono; // puede ser NULL en BD
+  final String? email; // puede ser NULL en BD
   final DateTime fechaRegistro; // fecha_registro
 
   const ContactoFamiliar({
@@ -69,17 +69,16 @@ class ContactoFamiliar {
 
   // -------------------------
   //        APP <-> JSON
-  // (útil si en el app layer usas camelCase)
   // -------------------------
   factory ContactoFamiliar.fromJson(Map<String, dynamic> json) {
     return ContactoFamiliar(
-      id: json['id'] ?? '',
-      usuarioId: json['usuarioId'] ?? '',
-      nombre: json['nombre'] ?? '',
+      id: (json['id'] ?? '').toString(),
+      usuarioId: (json['usuarioId'] ?? '').toString(),
+      nombre: (json['nombre'] ?? '').toString(),
       parentesco: _parentescoFromString(json['parentesco']),
-      telefono: json['telefono'],
-      email: json['email'],
-      fechaRegistro: DateTime.parse(json['fechaRegistro']),
+      telefono: json['telefono']?.toString(),
+      email: json['email']?.toString(),
+      fechaRegistro: _parseDate(json['fechaRegistro']),
     );
   }
 
@@ -107,11 +106,12 @@ class ContactoFamiliar {
       parentesco: _parentescoFromString(row['parentesco']),
       telefono: row['telefono']?.toString(),
       email: row['email']?.toString(),
-      fechaRegistro: DateTime.parse(row['fecha_registro'].toString()),
+      fechaRegistro: _parseDate(row['fecha_registro']),
     );
   }
 
-  /// Mapa listo para `insert`/`update` en Supabase.
+  /// Mapa listo para `insert`/`upsert` en Supabase.
+  /// Incluye todas las columnas habituales.
   Map<String, dynamic> toDbMap() {
     return {
       'id': id,
@@ -121,6 +121,16 @@ class ContactoFamiliar {
       'telefono': telefono,
       'email': email,
       'fecha_registro': fechaRegistro.toIso8601String(),
+    };
+  }
+
+  /// Mapa recomendado para `update` (sin tocar claves ni fecha_registro).
+  Map<String, dynamic> toDbUpdateMap() {
+    return {
+      'nombre': nombre,
+      'parentesco': parentesco.name,
+      'telefono': telefono,
+      'email': email,
     };
   }
 
@@ -149,31 +159,47 @@ class ContactoFamiliar {
   // -------------------------
   static TipoParentesco _parentescoFromString(dynamic value) {
     final raw = (value ?? '').toString().trim();
-    // intentamos machacar directo con el enum.name
+    // intento directo con enum.name
     final hit = TipoParentesco.values.where((e) => e.name == raw).toList();
     if (hit.isNotEmpty) return hit.first;
 
-    // normalización por si llegan variantes (ej: 'otro_familiar', 'OTROFAMILIAR', etc.)
-    final norm = raw.toLowerCase().replaceAll(' ', '').replaceAll('_', '');
+    // normalización: espacios/guiones/underscores mayúsculas
+    final norm = raw.toLowerCase().replaceAll(RegExp(r'[\s_-]+'), '');
     for (final e in TipoParentesco.values) {
-      final en = e.name.toLowerCase().replaceAll(' ', '').replaceAll('_', '');
+      final en = e.name.toLowerCase().replaceAll(RegExp(r'[\s_-]+'), '');
       if (en == norm) return e;
     }
     return TipoParentesco.otroFamiliar;
   }
 
+  static DateTime _parseDate(dynamic value) {
+    if (value == null) return DateTime.now().toUtc();
+    final s = value.toString();
+    if (s.isEmpty) return DateTime.now().toUtc();
+    try {
+      return DateTime.parse(s);
+    } catch (_) {
+      // Si llega en formato inesperado, evita romper la UI
+      return DateTime.now().toUtc();
+    }
+  }
+
+  /// Normaliza el teléfono para almacenar de forma consistente.
+  /// Conserva solo dígitos y `+` (elimina espacios/guiones/caracteres).
+  static String normalizePhone(String input) {
+    return input.replaceAll(RegExp(r'[^0-9+]'), '');
+  }
+
   static bool isValidPhone(String? phone) {
-    if (phone == null) return true; // es opcional
-    final p = phone.replaceAll(RegExp(r'\s+'), '');
-    // Valida 8–15 dígitos (con posible + al inicio)
+    if (phone == null || phone.isEmpty) return true; // opcional
+    final p = normalizePhone(phone);
+    // 8–15 dígitos, opcional prefijo +
     return RegExp(r'^\+?\d{8,15}$').hasMatch(p);
   }
 
   static bool isValidEmail(String? mail) {
     if (mail == null || mail.isEmpty) return true; // opcional
-    return RegExp(
-      r"^[^\s@]+@[^\s@]+\.[^\s@]+$",
-    ).hasMatch(mail);
+    return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(mail);
   }
 
   @override

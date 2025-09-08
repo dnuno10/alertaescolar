@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../managers/notification_provider.dart';
+import '../../models/models.dart'; // ⬅️ para Notificacion
 
 class NotificationsListSection extends StatelessWidget {
   final Size screenSize;
@@ -10,7 +11,8 @@ class NotificationsListSection extends StatelessWidget {
   final Map<String, List<dynamic>> Function(List<dynamic>) groupNotifications;
   final String Function(String) formatDateHeader;
   final String Function(DateTime) formatDateTime;
-  final Map<String, dynamic> Function(String) getNotificationType;
+  // ⬇️ ahora acepta la notificación completa
+  final Map<String, dynamic> Function(Notificacion) getNotificationType;
   final void Function(String) onNotificationTap;
 
   const NotificationsListSection({
@@ -46,7 +48,7 @@ class NotificationsListSection extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      CircularProgressIndicator(
+                      const CircularProgressIndicator(
                         color: AppTheme.accentPurple,
                         strokeWidth: 3,
                       ),
@@ -104,7 +106,10 @@ class NotificationsListSection extends StatelessWidget {
   }
 
   Widget _buildDaySection(
-      BuildContext context, String dateKey, List<dynamic> notifications) {
+    BuildContext context,
+    String dateKey,
+    List<dynamic> notifications,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -124,7 +129,7 @@ class NotificationsListSection extends StatelessWidget {
         ),
         ...notifications.asMap().entries.map((entry) {
           final index = entry.key;
-          final notification = entry.value;
+          final notification = entry.value as Notificacion;
           final isLast = index == notifications.length - 1;
 
           return Padding(
@@ -137,10 +142,11 @@ class NotificationsListSection extends StatelessWidget {
     );
   }
 
-  Widget _buildNotificationCard(BuildContext context, dynamic notification) {
+  Widget _buildNotificationCard(
+      BuildContext context, Notificacion notification) {
     final isUnread =
         notification.estado.toString() != 'EstadoNotificacion.leida';
-    final notificationType = getNotificationType(notification.tipo.toString());
+    final notificationType = getNotificationType(notification);
 
     return Container(
       decoration: BoxDecoration(

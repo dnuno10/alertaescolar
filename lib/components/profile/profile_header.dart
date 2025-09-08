@@ -53,14 +53,42 @@ class ProfileHeader extends StatelessWidget {
                         Consumer<UserProvider>(
                           builder: (context, provider, child) {
                             final user = provider.currentUser;
-                            return Text(
-                              user?.email ?? l10n.manageYourAccount,
-                              style:
-                                  AppTheme.getBodyMedium(screenSize).copyWith(
-                                fontWeight: FontWeight.w500,
-                                color: AppTheme.getTextSecondaryColor(context),
-                                height: 1.4,
-                              ),
+                            final subtitle =
+                                user?.email ?? l10n.manageYourAccount;
+                            return Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    subtitle,
+                                    style: AppTheme.getBodyMedium(screenSize)
+                                        .copyWith(
+                                      fontWeight: FontWeight.w500,
+                                      color: AppTheme.getTextSecondaryColor(
+                                          context),
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ),
+                                if (provider.isLoadingUser && user == null)
+                                  const Padding(
+                                    padding: EdgeInsets.only(left: 8),
+                                    child: SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  ),
+                                if (!provider.isLoadingUser &&
+                                    provider.error != null &&
+                                    user == null)
+                                  TextButton(
+                                    onPressed: () =>
+                                        provider.reloadSilently(context),
+                                    child: Text(l10n.retry),
+                                  ),
+                              ],
                             );
                           },
                         ),
@@ -74,13 +102,19 @@ class ProfileHeader extends StatelessWidget {
               Consumer<UserProvider>(
                 builder: (context, userProvider, child) {
                   final user = userProvider.currentUser;
+                  final initials = userProvider.initials;
+                  final displayName = userProvider.displayName;
+                  final isLoading = userProvider.isLoadingUser;
+                  final hasError = userProvider.error != null && user == null;
+
                   return Container(
                     padding:
                         EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
                     decoration: BoxDecoration(
                       color: AppTheme.getBackgroundColor(context),
                       borderRadius: BorderRadius.circular(
-                          AppTheme.getMediumRadius(screenSize)),
+                        AppTheme.getMediumRadius(screenSize),
+                      ),
                       border: Border.all(
                         color: AppTheme.getBorderColor(context),
                         width: 1,
@@ -95,13 +129,13 @@ class ProfileHeader extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: AppTheme.accentPurple,
                             borderRadius: BorderRadius.circular(
-                                AppTheme.getMediumRadius(screenSize)),
+                              AppTheme.getMediumRadius(screenSize),
+                            ),
                           ),
                           child: Center(
-                            child: (user?.nombre != null &&
-                                    user!.nombre.isNotEmpty)
+                            child: (initials.isNotEmpty)
                                 ? Text(
-                                    user.nombre[0].toUpperCase(),
+                                    initials,
                                     style: AppTheme.getH2(screenSize).copyWith(
                                       fontWeight: FontWeight.w700,
                                       color: Colors.white,
@@ -120,8 +154,11 @@ class ProfileHeader extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Nombre mostrado
                               Text(
-                                user?.nombreCompleto ?? l10n.user,
+                                displayName.isNotEmpty
+                                    ? displayName
+                                    : l10n.user,
                                 style:
                                     AppTheme.getSubtitle1(screenSize).copyWith(
                                   fontWeight: FontWeight.w600,
@@ -129,31 +166,78 @@ class ProfileHeader extends StatelessWidget {
                                   height: 1.4,
                                 ),
                               ),
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal:
-                                      AppTheme.getSmallPadding(screenSize) *
-                                          0.75,
-                                  vertical:
-                                      AppTheme.getSmallPadding(screenSize) *
-                                          0.25,
+
+                              // Estado/rol
+                              if (isLoading && user == null) ...[
+                                SizedBox(
+                                  height: AppTheme.getSmallPadding(screenSize) *
+                                      0.5,
                                 ),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.accentPurple.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(
-                                      AppTheme.getSmallRadius(screenSize) *
-                                          0.5),
-                                ),
-                                child: Text(
-                                  _getRoleText(user?.tipo, l10n),
+                                Text(
+                                  l10n.loadingUserData,
                                   style: AppTheme.getCaptionSmall(screenSize)
                                       .copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppTheme.accentPurple,
-                                    height: 1.2,
+                                    color:
+                                        AppTheme.getTextSecondaryColor(context),
                                   ),
                                 ),
-                              ),
+                              ] else if (hasError) ...[
+                                SizedBox(
+                                  height: AppTheme.getSmallPadding(screenSize) *
+                                      0.5,
+                                ),
+                                Wrap(
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  spacing: 8,
+                                  children: [
+                                    Text(
+                                      l10n.errorLoadingData,
+                                      style:
+                                          AppTheme.getCaptionSmall(screenSize)
+                                              .copyWith(
+                                        color: AppTheme.errorColor,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    TextButton(
+                                      onPressed: () =>
+                                          userProvider.reloadSilently(context),
+                                      child: Text(l10n.retry),
+                                    ),
+                                  ],
+                                ),
+                              ] else ...[
+                                SizedBox(
+                                  height: AppTheme.getSmallPadding(screenSize) *
+                                      0.5,
+                                ),
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal:
+                                        AppTheme.getSmallPadding(screenSize) *
+                                            0.75,
+                                    vertical:
+                                        AppTheme.getSmallPadding(screenSize) *
+                                            0.25,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        AppTheme.accentPurple.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(
+                                      AppTheme.getSmallRadius(screenSize) * 0.5,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    _getRoleText(user?.tipo, l10n),
+                                    style: AppTheme.getCaptionSmall(screenSize)
+                                        .copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.accentPurple,
+                                      height: 1.2,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -171,7 +255,6 @@ class ProfileHeader extends StatelessWidget {
 
   String _getRoleText(TipoUsuario? tipo, AppLocalizations l10n) {
     if (tipo == null) return l10n.parentRole;
-
     switch (tipo) {
       case TipoUsuario.padre:
         return l10n.fatherRole;

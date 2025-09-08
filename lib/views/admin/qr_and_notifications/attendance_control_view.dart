@@ -722,23 +722,17 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
         message = 'Modo automático inteligente (actualmente: $currentDefault)';
         _determineDefaultAccessTypeFromAllTurnos();
         break;
-      case AccessType.auto_entry:
-        message = 'Modo automático forzado: Entrada';
-        setState(() {
-          _isDefaultEntryConfig = true;
-        });
+      case AccessType.fixed_entry:
+        message = 'Modo: Entrada fija';
         break;
-      case AccessType.auto_exit:
-        message = 'Modo automático forzado: Salida';
-        setState(() {
-          _isDefaultEntryConfig = false;
-        });
+      case AccessType.fixed_exit:
+        message = 'Modo: Salida fija';
         break;
-      case AccessType.entry:
-        message = 'Modo fijo: Registro de entrada';
+      case AccessType.extracurricular_entry:
+        message = 'Modo: Entrada extracurricular';
         break;
-      case AccessType.exit:
-        message = 'Modo fijo: Registro de salida';
+      case AccessType.extracurricular_exit:
+        message = 'Modo: Salida extracurricular';
         break;
     }
     CustomSnackBar.show(message: message, isError: false, context: context);
@@ -746,6 +740,11 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
 
   // ----------------- Navegación -----------------
   void _navigateToCameraScanner() {
+    // Determinar si es extracurricular
+    final bool isExtracurricular =
+        _selectedAccessType == AccessType.extracurricular_entry ||
+            _selectedAccessType == AccessType.extracurricular_exit;
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -753,12 +752,18 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
           onCodeScanned: _handleScannedCode,
           accessType: _convertToScannerAccessType(_selectedAccessType),
           isDefaultEntryConfig: _isDefaultEntryConfig,
+          isExtracurricular: isExtracurricular, // Nuevo parámetro
         ),
       ),
     );
   }
 
   void _navigateToPhysicalScanner() {
+    // Determinar si es extracurricular
+    final bool isExtracurricular =
+        _selectedAccessType == AccessType.extracurricular_entry ||
+            _selectedAccessType == AccessType.extracurricular_exit;
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -766,6 +771,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
           onCodeScanned: _handleScannedCode,
           accessType: _convertToScannerAccessType(_selectedAccessType),
           isDefaultEntryConfig: _isDefaultEntryConfig,
+          isExtracurricular: isExtracurricular, // Nuevo parámetro
         ),
       ),
     );
@@ -813,6 +819,18 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
       final accessType =
           _convertToScannerAccessType(_selectedAccessType); // auto/fijo
 
+      // Determinar si es extracurricular
+      final bool isExtracurricular =
+          _selectedAccessType == AccessType.extracurricular_entry ||
+              _selectedAccessType == AccessType.extracurricular_exit;
+
+      // Determinar si es acceso fijo (no automático)
+      final bool isFixedAccess =
+          _selectedAccessType == AccessType.fixed_entry ||
+              _selectedAccessType == AccessType.fixed_exit ||
+              _selectedAccessType == AccessType.extracurricular_entry ||
+              _selectedAccessType == AccessType.extracurricular_exit;
+
       // 2) Llamar al servicio con escuelaIdFromContext (requerido)
       final result = await _scannerService.processScannedCode(
         escuelaIdFromContext: escuelaId, // <-- requerido
@@ -820,6 +838,8 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
         adminId: adminId,
         accessType: accessType,
         isDefaultEntryConfig: _isDefaultEntryConfig,
+        isExtracurricular: isExtracurricular, // <-- nuevo parámetro
+        isFixedAccess: isFixedAccess, // <-- nuevo parámetro
       );
 
       if (result['success'] == true) {
@@ -856,12 +876,14 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
   ScannerAccessType _convertToScannerAccessType(AccessType accessType) {
     switch (accessType) {
       case AccessType.default_config:
-      case AccessType.auto_entry:
-      case AccessType.auto_exit:
         return ScannerAccessType.automatic;
-      case AccessType.entry:
+      case AccessType.fixed_entry:
         return ScannerAccessType.entry;
-      case AccessType.exit:
+      case AccessType.fixed_exit:
+        return ScannerAccessType.exit;
+      case AccessType.extracurricular_entry:
+        return ScannerAccessType.entry;
+      case AccessType.extracurricular_exit:
         return ScannerAccessType.exit;
     }
   }

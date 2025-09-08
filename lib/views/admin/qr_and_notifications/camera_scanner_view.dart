@@ -18,6 +18,7 @@ class CameraScannerView extends StatefulWidget {
   final Function(String) onCodeScanned;
   final ScannerAccessType? accessType;
   final bool? isDefaultEntryConfig;
+  final bool isExtracurricular; // Nuevo parámetro
 
   /// true  => mostrar detalles en ProcessingView (pantalla completa)
   /// false => headless (solo loader) y mensaje por CustomSnackBar
@@ -28,6 +29,7 @@ class CameraScannerView extends StatefulWidget {
     required this.onCodeScanned,
     this.accessType,
     this.isDefaultEntryConfig,
+    this.isExtracurricular = false, // Por defecto falso
     this.initialShowResultInProcessing = true,
   });
 
@@ -538,6 +540,7 @@ class _CameraScannerViewState extends State<CameraScannerView>
             escuelaId: escuelaId, // <-- YA DEFINIDO
             accessType: widget.accessType ?? ScannerAccessType.automatic,
             isDefaultEntryConfig: widget.isDefaultEntryConfig ?? true,
+            isExtracurricular: widget.isExtracurricular, // Nuevo parámetro
             displayMode: displayMode,
             returnDetailedResult: returnDetailed,
           ),
@@ -615,14 +618,15 @@ class _CameraScannerViewState extends State<CameraScannerView>
   String _getAccessTypeText() {
     final accessType = widget.accessType ?? ScannerAccessType.automatic;
     final isDefaultEntry = widget.isDefaultEntryConfig ?? true;
+    final isExtracurricular = widget.isExtracurricular;
 
     switch (accessType) {
       case ScannerAccessType.automatic:
         return isDefaultEntry ? 'Entrada Automática' : 'Salida Automática';
       case ScannerAccessType.entry:
-        return 'Entrada';
+        return isExtracurricular ? 'Entrada Extracurricular' : 'Entrada Fija';
       case ScannerAccessType.exit:
-        return 'Salida';
+        return isExtracurricular ? 'Salida Extracurricular' : 'Salida Fija';
     }
   }
 
@@ -632,11 +636,11 @@ class _CameraScannerViewState extends State<CameraScannerView>
 
     switch (accessType) {
       case ScannerAccessType.automatic:
-        return isDefaultEntry ? Colors.green : Colors.orange;
+        return isDefaultEntry ? Colors.green : Colors.red;
       case ScannerAccessType.entry:
-        return Colors.blue;
+        return Colors.green; // Verde para todas las entradas
       case ScannerAccessType.exit:
-        return Colors.red;
+        return Colors.red; // Rojo para todas las salidas
     }
   }
 

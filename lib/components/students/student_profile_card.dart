@@ -19,44 +19,37 @@ class StudentProfileCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
+    // Regla única de negocio: ACTIVO = tiene vínculo + llave vigente
+    // (El provider fija `llaveActiva` solo si hay llave y está en ventana)
+    final consideredActive = student.hasTutores && student.llaveActiva;
+
+    final bgColor = consideredActive
+        ? AppTheme.successColor.withOpacity(0.1)
+        : AppTheme.errorColor.withOpacity(0.1);
+    final fgColor =
+        consideredActive ? AppTheme.successColor : AppTheme.errorColor;
+
     return Center(
       child: Container(
         width: MediaQuery.of(context).size.width,
-        padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-        decoration: BoxDecoration(
-          color: AppTheme.getCardColor(context),
-          borderRadius:
-              BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-          border: Border.all(color: AppTheme.getBorderColor(context)),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.getShadowColor(context),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
         child: Column(
           children: [
+            // CHIP de estado (VERDE/ROJO)
             Container(
               padding: EdgeInsets.symmetric(
                 horizontal: AppTheme.getSmallPadding(screenSize),
                 vertical: screenSize.height * 0.01,
               ),
               decoration: BoxDecoration(
-                color: student.llaveActiva
-                    ? AppTheme.successColor.withOpacity(0.1)
-                    : AppTheme.warningColor.withOpacity(0.1),
+                color: bgColor,
                 borderRadius:
                     BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
               ),
               child: Text(
-                student.llaveActiva ? l10n.active : l10n.inactive,
+                consideredActive ? l10n.active : l10n.inactive,
                 style: AppTheme.getCaption(screenSize).copyWith(
                   fontWeight: FontWeight.w600,
-                  color: student.llaveActiva
-                      ? AppTheme.successColor
-                      : AppTheme.warningColor,
+                  color: fgColor, // activo=verde, inactivo=rojo
                   letterSpacing: 0.1,
                 ),
               ),
