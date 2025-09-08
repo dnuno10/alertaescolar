@@ -2,6 +2,7 @@
 import 'package:alertaescolar/models/notification_draft.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../app/app_theme.dart';
 import '../../../managers/user_provider.dart';
@@ -9,7 +10,6 @@ import '../../../services/notification_send_service.dart';
 import '../../../widgets/custom_snack_bar.dart';
 import '../../../components/headers/nav_header.dart';
 import '../../../components/buttons/solid_button.dart';
-import '../../../components/buttons/custom_outline_button.dart';
 import '../../../components/loading_dialog.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -27,16 +27,26 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
   late final AnimationController _animationController;
   late final Animation<double> _fadeAnimation;
 
+  // ====== Estado para nombres legibles ======
+  String? _alumnoNombre;
+  String? _turnoNombre;
+  // Para grupos, mapeamos por ID para evitar desalineos (orden de inFilter no es garantizado)
+  Map<String, String> _grupoEtiquetasById = {};
+  bool _isLoadingNames = true;
+
   @override
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 350),
       vsync: this,
     );
-    _fadeAnimation =
-        CurvedAnimation(parent: _animationController, curve: Curves.easeOut);
+    _fadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
+    );
     _animationController.forward();
+    _fetchRecipientNames();
   }
 
   @override
@@ -46,12 +56,89 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
   }
 
   // =========================
+  // Fetch recipient names from database (IDs -> nombres)
+  // =========================
+  Future<void> _fetchRecipientNames() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final kind = widget.draft.tipoDestinatario;
+
+      switch (kind) {
+        case 'individual':
+          if (widget.draft.alumnoId != null &&
+              widget.draft.alumnoId!.isNotEmpty) {
+            final response = await supabase
+                .from('alumnos')
+                .select('nombre')
+                .eq('id', widget.draft.alumnoId!)
+                .maybeSingle();
+            _alumnoNombre =
+                (response?['nombre'] as String?) ?? 'Nombre no disponible';
+          }
+          break;
+
+        case 'grupo':
+          final ids = widget.draft.grupoIds ?? const [];
+          if (ids.isNotEmpty) {
+            final response = await supabase
+                .from('grupos')
+                .select('id, grupo, nivel_educativo')
+                .inFilter('id', ids);
+
+            final map = <String, String>{};
+            for (final item in (response as List)) {
+              final id = (item['id'] ?? '').toString();
+              final g = (item['grupo'] ?? 'Sin grupo').toString();
+              final n = (item['nivel_educativo'] ?? 'Sin nivel').toString();
+              if (id.isNotEmpty) map[id] = '$n - $g';
+            }
+            _grupoEtiquetasById = map;
+          }
+          break;
+
+        case 'turno':
+          if (widget.draft.turnoId != null &&
+              widget.draft.turnoId!.isNotEmpty) {
+            final response = await supabase
+                .from('turnos')
+                .select('turno')
+                .eq('id', widget.draft.turnoId!)
+                .maybeSingle();
+            _turnoNombre =
+                (response?['turno'] as String?) ?? 'Nombre no disponible';
+          }
+          break;
+
+        case 'todos':
+          // No hace falta traer nombres
+          break;
+
+        default:
+          // Nada
+          break;
+      }
+    } catch (e) {
+      debugPrint('Error fetching recipient names: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingNames = false;
+        });
+      }
+    }
+  }
+
+  // =========================
   // UI
   // =========================
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
     final l10n = AppLocalizations.of(context);
+    final size = MediaQuery.of(context).size;
+    final pad = size.width * 0.045; // padding base relativo
+    final gapS = size.height * 0.008;
+    final gapM = size.height * 0.016;
+    final gapL = size.height * 0.024;
 
     final isPermiso = widget.draft.tipoMensaje == 'permiso';
     final isComunicado = widget.draft.tipoMensaje == 'comunicado';
@@ -66,146 +153,84 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
             NavHeader(title: l10n.reviewMessage),
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+                padding: EdgeInsets.all(pad),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header
-                    Container(
-                      width: double.infinity,
-                      padding:
-                          EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppTheme.accentPurple.withOpacity(0.1),
-                            AppTheme.accentBlue.withOpacity(0.1),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(
-                            AppTheme.getLargeRadius(screenSize)),
-                        border: Border.all(
-                          color: AppTheme.accentPurple.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            isPermiso
-                                ? Icons.assignment_turned_in_rounded
-                                : Icons.campaign_rounded,
-                            color: isPermiso
-                                ? AppTheme.accentBlue
-                                : AppTheme.warningColor,
-                            size: screenSize.height * 0.06,
-                          ),
-                          SizedBox(
-                              height: AppTheme.getMediumPadding(screenSize)),
-                          Text(
-                            isPermiso
-                                ? l10n.specialPermission
-                                : l10n.officialCommunication,
-                            style: AppTheme.getH2(screenSize).copyWith(
-                              color: AppTheme.getTextPrimaryColor(context),
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          SizedBox(
-                              height: AppTheme.getSmallPadding(screenSize)),
-                          Text(
-                            l10n.reviewCarefullyBeforeContinuing,
-                            style: AppTheme.getBodyMedium(screenSize).copyWith(
-                              color: AppTheme.getTextSecondaryColor(context),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    SizedBox(height: AppTheme.getLargePadding(screenSize)),
-
                     // Contenido del mensaje
                     _buildMessageContentSection(
                       context: context,
-                      screenSize: screenSize,
+                      pad: pad,
+                      gapS: gapS,
+                      gapM: gapM,
                     ),
 
-                    SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+                    SizedBox(height: gapM),
 
                     // Detalles de comunicado (si aplica)
                     if (isComunicado &&
                         widget.draft.tipoComunicado != null &&
                         widget.draft.prioridad != null) ...[
-                      _buildSection(
-                        context: context,
-                        screenSize: screenSize,
+                      _Section(
                         title: l10n.communicationDetails,
-                        icon: Icons.info_rounded,
-                        iconColor: AppTheme.warningColor,
+                        pad: pad,
+                        gapM: gapM,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _InfoRow(
+                              label: l10n.type,
+                              value: _displayTipoComunicado(
+                                  widget.draft.tipoComunicado!),
+                              pad: pad,
+                            ),
+                            SizedBox(height: gapS),
+                            _InfoRow(
+                              label: l10n.priority,
+                              value: _displayPrioridad(widget.draft.prioridad!),
+                              pad: pad,
+                              valueColor:
+                                  _priorityColorFromDb(widget.draft.prioridad!),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: gapM),
+                    ],
+
+                    // Destinatarios (nombres legibles)
+                    _Section(
+                      title: l10n.recipients,
+                      pad: pad,
+                      gapM: gapM,
+                      child: _buildRecipientSummary(context, pad, gapS),
+                    ),
+
+                    SizedBox(height: gapM),
+
+                    _Section(
+                      title: 'Información de envío',
+                      pad: pad,
+                      gapM: gapM,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildInfoRow(
-                            context: context,
-                            screenSize: screenSize,
-                            label: l10n.type,
-                            value: _displayTipoComunicado(
-                                widget.draft.tipoComunicado!),
+                          _InfoRow(
+                            label: 'Fecha y hora',
+                            value: _formatDateTime(DateTime.now()),
+                            pad: pad,
                           ),
-                          SizedBox(
-                              height: AppTheme.getSmallPadding(screenSize)),
-                          _buildInfoRow(
-                            context: context,
-                            screenSize: screenSize,
-                            label: l10n.priority,
-                            value: _displayPrioridad(widget.draft.prioridad!),
-                            valueColor:
-                                _priorityColorFromDb(widget.draft.prioridad!),
+                          SizedBox(height: gapS),
+                          _InfoRow(
+                            label: 'Método',
+                            value: 'Notificación push inmediata',
+                            pad: pad,
                           ),
                         ],
                       ),
-                      SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                    ],
-
-                    // Destinatarios
-                    _buildSection(
-                      context: context,
-                      screenSize: screenSize,
-                      title: l10n.recipients,
-                      icon: Icons.people_rounded,
-                      iconColor: AppTheme.accentPurple,
-                      children: [_buildRecipientSummary(context, screenSize)],
                     ),
 
-                    SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-                    // Información de envío
-                    _buildSection(
-                      context: context,
-                      screenSize: screenSize,
-                      title: 'Información de Envío',
-                      icon: Icons.send_rounded,
-                      iconColor: AppTheme.accentOrange,
-                      children: [
-                        _buildInfoRow(
-                          context: context,
-                          screenSize: screenSize,
-                          label: 'Fecha y hora:',
-                          value: _formatDateTime(DateTime.now()),
-                        ),
-                        SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-                        _buildInfoRow(
-                          context: context,
-                          screenSize: screenSize,
-                          label: 'Método:',
-                          value: 'Notificación push inmediata',
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: AppTheme.getLargePadding(screenSize) * 2),
+                    SizedBox(height: gapL * 1.5),
                   ],
                 ),
               ),
@@ -213,81 +238,12 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-        decoration: BoxDecoration(
-          color: AppTheme.getCardColor(context),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.getShadowColor(context),
-              blurRadius: 12,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Advertencia
-              Container(
-                padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
-                decoration: BoxDecoration(
-                  color: AppTheme.warningColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getSmallRadius(screenSize)),
-                  border:
-                      Border.all(color: AppTheme.warningColor.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.warning_rounded,
-                        color: AppTheme.warningColor,
-                        size: screenSize.height * 0.02),
-                    SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-                    Expanded(
-                      child: Text(
-                        'Una vez enviado, el mensaje no podrá ser modificado ni cancelado.',
-                        style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                          color: AppTheme.warningColor,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
 
-              SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-              // Botones
-              Row(
-                children: [
-                  Expanded(
-                    child: CustomOutlineButton(
-                      color: AppTheme.getTextSecondaryColor(context),
-                      label: 'Modificar',
-                      icon: Icons.edit_rounded,
-                      onPressed: () => Navigator.pop(context),
-                      screenSize: screenSize,
-                    ),
-                  ),
-                  SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-                  Expanded(
-                    flex: 2,
-                    child: SolidButton(
-                      label: 'Confirmar y Enviar',
-                      icon: Icons.send_rounded,
-                      onPressed: _sendNotification,
-                      screenSize: screenSize,
-                      backgroundColor: AppTheme.accentPurple,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+      // Barra inferior (solo confirmar)
+      bottomNavigationBar: _BottomBar(
+        pad: pad,
+        gapM: gapM,
+        onConfirm: _sendNotification,
       ),
     );
   }
@@ -296,159 +252,65 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
   // Secciones y helpers UI
   // =========================
 
-  Widget _buildSection({
-    required BuildContext context,
-    required Size screenSize,
-    required String title,
-    required IconData icon,
-    required Color iconColor,
-    required List<Widget> children,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        border: Border.all(
-          color: AppTheme.getBorderColor(context).withOpacity(0.3),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding:
-                    EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.8),
-                decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getSmallRadius(screenSize)),
-                ),
-                child: Icon(icon,
-                    color: iconColor, size: screenSize.height * 0.025),
-              ),
-              SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-              Text(
-                title,
-                style: AppTheme.getBodyMedium(screenSize).copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.getTextPrimaryColor(context),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-          ...children,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow({
-    required BuildContext context,
-    required Size screenSize,
-    required String label,
-    required String value,
-    Color? valueColor,
-    bool isTitle = false,
-    bool isMultiline = false,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTheme.getCaptionSmall(screenSize).copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppTheme.getTextSecondaryColor(context),
-          ),
-        ),
-        SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.5),
-        Container(
-          width: double.infinity,
-          padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-          decoration: BoxDecoration(
-            color: AppTheme.getBackgroundColor(context),
-            borderRadius:
-                BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-            border: Border.all(
-              color: AppTheme.getBorderColor(context).withOpacity(0.3),
-            ),
-          ),
-          child: Text(
-            value,
-            style: (isTitle
-                    ? AppTheme.getBodyLarge(screenSize)
-                    : AppTheme.getBodyMedium(screenSize))
-                .copyWith(
-              color: valueColor ?? AppTheme.getTextPrimaryColor(context),
-              fontWeight: isTitle ? FontWeight.w700 : FontWeight.w500,
-              height: isMultiline ? 1.4 : null,
-            ),
-            maxLines: isMultiline ? null : 3,
-            overflow: isMultiline ? null : TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Resumen compacto de destinatarios a partir del draft (ids/alcance).
-  Widget _buildRecipientSummary(BuildContext context, Size screenSize) {
+  Widget _buildRecipientSummary(BuildContext context, double pad, double gapS) {
     final kind = widget.draft.tipoDestinatario;
+
+    if (_isLoadingNames) {
+      return const _LoaderLine();
+    }
 
     switch (kind) {
       case 'individual':
-        return _buildInfoRow(
-          context: context,
-          screenSize: screenSize,
-          label: 'Destinatario',
-          value: widget.draft.alumnoId ?? 'N/D',
+        return _RecipientBlock(
+          pad: pad,
+          label: 'Alumno',
+          children: [
+            _Pill(text: _alumnoNombre ?? 'Nombre no disponible'),
+          ],
         );
 
       case 'grupo':
-        return _buildInfoRow(
-          context: context,
-          screenSize: screenSize,
-          label: 'Grupos',
-          value: (widget.draft.grupoIds ?? const []).isEmpty
-              ? 'N/D'
-              : widget.draft.grupoIds!.join(', '),
-        );
+        {
+          final ids = widget.draft.grupoIds ?? const [];
+          final pills = <Widget>[];
+
+          for (final id in ids) {
+            final etiqueta = _grupoEtiquetasById[id] ?? 'Nombre no disponible';
+            pills.add(_Pill(text: etiqueta));
+          }
+
+          return _RecipientBlock(
+            pad: pad,
+            label: 'Grupos',
+            children: pills,
+          );
+        }
 
       case 'turno':
-        return _buildInfoRow(
-          context: context,
-          screenSize: screenSize,
+        return _RecipientBlock(
+          pad: pad,
           label: 'Turno',
-          value: widget.draft.turnoId ?? 'N/D',
+          children: [
+            _Pill(text: _turnoNombre ?? 'Nombre no disponible'),
+          ],
         );
 
       case 'todos':
-        return _buildInfoRow(
-          context: context,
-          screenSize: screenSize,
+        return _RecipientBlock(
+          pad: pad,
           label: 'Cobertura',
-          value: 'Toda la institución',
+          children: const [
+            _Pill(text: 'Todos los estudiantes'),
+          ],
         );
 
       default:
-        return _buildInfoRow(
-          context: context,
-          screenSize: screenSize,
+        return _RecipientBlock(
+          pad: pad,
           label: 'Destinatario',
-          value: 'Tipo no reconocido',
+          children: const [
+            _Pill(text: 'Tipo no reconocido'),
+          ],
         );
     }
   }
@@ -462,7 +324,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
 
     LoadingDialog.show(
       context,
-      message: 'Enviando ${isPermiso ? 'permiso especial' : 'comunicado'}...',
+      message: 'Enviando ${isPermiso ? 'permiso especial' : 'comunicado'}…',
     );
 
     try {
@@ -504,7 +366,9 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
   }
 
   void _showSuccessDialog(BuildContext context, Map<String, dynamic> result) {
-    final screenSize = MediaQuery.of(context).size;
+    final size = MediaQuery.of(context).size;
+    final pad = size.width * 0.045;
+    final gapM = size.height * 0.016;
     final notificationsSent =
         result['data']?['notifications_created'] as int? ?? 0;
 
@@ -512,72 +376,62 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
       context: context,
       barrierDismissible: false,
       builder: (context) => Dialog(
+        insetPadding: EdgeInsets.symmetric(horizontal: pad),
         shape: RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
+          borderRadius: BorderRadius.circular(AppTheme.getLargeRadius(size)),
         ),
         child: Container(
-          padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
+          padding: EdgeInsets.all(pad),
           decoration: BoxDecoration(
             color: AppTheme.getCardColor(context),
-            borderRadius:
-                BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
+            borderRadius: BorderRadius.circular(AppTheme.getLargeRadius(size)),
+            border: Border.all(
+              color: AppTheme.getBorderColor(context).withOpacity(0.4),
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Icono de éxito
-              Container(
-                padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-                decoration: BoxDecoration(
-                  color: AppTheme.successColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getLargeRadius(screenSize)),
-                ),
-                child: Icon(
-                  Icons.check_circle_rounded,
-                  color: AppTheme.successColor,
-                  size: screenSize.height * 0.08,
-                ),
-              ),
-              SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+              // Minimal: sin ícono, mensaje claro
               Text(
-                '¡Mensaje Enviado!',
-                style: AppTheme.getH2(screenSize).copyWith(
+                '¡Mensaje enviado!',
+                style: AppTheme.getH2(size).copyWith(
                   color: AppTheme.getTextPrimaryColor(context),
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                 ),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+              SizedBox(height: gapM * 0.75),
               Text(
-                'Tu ${widget.draft.tipoMensaje == 'permiso' ? 'permiso especial' : 'comunicado'} ha sido enviado exitosamente a $notificationsSent ${notificationsSent == 1 ? 'estudiante' : 'estudiantes'}.\n\nLas notificaciones push también fueron enviadas a los tutores.',
-                style: AppTheme.getBodyMedium(screenSize).copyWith(
+                'Se envió a $notificationsSent ${notificationsSent == 1 ? 'estudiante' : 'estudiantes'}.',
+                style: AppTheme.getBodyMedium(size).copyWith(
                   color: AppTheme.getTextSecondaryColor(context),
                 ),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: AppTheme.getLargePadding(screenSize)),
+              SizedBox(height: gapM),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.pop(context); // Cerrar diálogo
-                    Navigator.pop(context); // Regresar a NotificationSendView
-                    Navigator.pop(context); // Regresar a la vista principal
+                    Navigator.pop(context); // cerrar diálogo
+                    Navigator.pop(context); // volver a Review
+                    Navigator.pop(context); // volver al flujo anterior
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.accentPurple,
                     foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(
-                      vertical: AppTheme.getMediumPadding(screenSize),
+                    padding: EdgeInsets.symmetric(vertical: gapM * 0.9),
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.circular(AppTheme.getMediumRadius(size)),
                     ),
                   ),
                   child: Text(
                     'Finalizar',
-                    style: AppTheme.getBodyMedium(screenSize).copyWith(
+                    style: AppTheme.getBodyMedium(size).copyWith(
                       color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -601,7 +455,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
       case 'evento':
         return 'Evento';
       case 'recordatorio_pago':
-        return 'Recordatorio de Pago';
+        return 'Recordatorio de pago';
       case 'citatorio':
         return 'Citatorio';
       case 'informativo':
@@ -609,9 +463,9 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
       case 'celebracion':
         return 'Celebración';
       case 'suspension_clases':
-        return 'Suspensión de Clases';
+        return 'Suspensión de clases';
       case 'cambio_horario':
-        return 'Cambio de Horario';
+        return 'Cambio de horario';
       default:
         return db;
     }
@@ -662,187 +516,427 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
       'noviembre',
       'diciembre'
     ];
-    final day = dateTime.day;
-    final month = months[dateTime.month - 1];
-    final year = dateTime.year;
-    final hour = dateTime.hour.toString().padLeft(2, '0');
-    final minute = dateTime.minute.toString().padLeft(2, '0');
-    return '$day de $month de $year a las $hour:$minute';
+    final d = dateTime.day;
+    final m = months[dateTime.month - 1];
+    final y = dateTime.year;
+    final h = dateTime.hour.toString().padLeft(2, '0');
+    final min = dateTime.minute.toString().padLeft(2, '0');
+    return '$d de $m de $y a las $h:$min';
   }
 
   Widget _buildMessageContentSection({
     required BuildContext context,
-    required Size screenSize,
+    required double pad,
+    required double gapS,
+    required double gapM,
   }) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
-        border: Border.all(
-          color: AppTheme.getBorderColor(context).withOpacity(0.3),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+    final size = MediaQuery.of(context).size;
+
+    return _Section(
+      title: 'Contenido del mensaje',
+      pad: pad,
+      gapM: gapM,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _LabeledBlock(
+            label: 'Título',
+            pad: pad,
+            child: Text(
+              widget.draft.titulo,
+              style: AppTheme.getBodyLarge(size).copyWith(
+                color: AppTheme.getTextPrimaryColor(context),
+                fontWeight: FontWeight.w700,
+                height: 1.25,
+              ),
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          SizedBox(height: gapM),
+          _LabeledBlock(
+            label: 'Mensaje',
+            pad: pad,
+            child: Text(
+              widget.draft.mensaje,
+              style: AppTheme.getBodyMedium(size).copyWith(
+                color: AppTheme.getTextPrimaryColor(context),
+                height: 1.45,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// =========================
+// Widgets minimalistas (sin íconos)
+// =========================
+
+class _HeaderSummary extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final double pad;
+  final double gapS;
+  final double gapM;
+  final Color accentColor;
+
+  const _HeaderSummary({
+    required this.title,
+    required this.subtitle,
+    required this.pad,
+    required this.gapS,
+    required this.gapM,
+    required this.accentColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final border = AppTheme.getBorderColor(context).withOpacity(0.35);
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(pad),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius: BorderRadius.circular(AppTheme.getLargeRadius(size)),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Barra sutil superior como acento
+          Container(
+            width: 42,
+            height: 4,
+            decoration: BoxDecoration(
+              color: accentColor,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          SizedBox(height: gapM),
+          Text(
+            title,
+            style: AppTheme.getH2(size).copyWith(
+              color: AppTheme.getTextPrimaryColor(context),
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.2,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: gapS),
+          Text(
+            subtitle,
+            style: AppTheme.getBodyMedium(size).copyWith(
+              color: AppTheme.getTextSecondaryColor(context),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Section extends StatelessWidget {
+  final String title;
+  final Widget child;
+  final double pad;
+  final double gapM;
+
+  const _Section({
+    required this.title,
+    required this.child,
+    required this.pad,
+    required this.gapM,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final border = AppTheme.getBorderColor(context).withOpacity(0.35);
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(pad * 0.8),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
+        border: Border.all(color: border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-            decoration: BoxDecoration(
-              color: AppTheme.accentBlue.withOpacity(0.05),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(AppTheme.getLargeRadius(screenSize)),
-                topRight: Radius.circular(AppTheme.getLargeRadius(screenSize)),
-              ),
-              border: Border(
-                bottom: BorderSide(
-                  color: AppTheme.accentBlue.withOpacity(0.2),
-                ),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(
-                      AppTheme.getSmallPadding(screenSize) * 0.8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentBlue.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(
-                        AppTheme.getSmallRadius(screenSize)),
-                  ),
-                  child: Icon(
-                    Icons.message_rounded,
-                    color: AppTheme.accentBlue,
-                    size: screenSize.height * 0.025,
-                  ),
-                ),
-                SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-                Text(
-                  'Contenido del Mensaje',
-                  style: AppTheme.getBodyMedium(screenSize).copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.accentBlue,
-                  ),
-                ),
-              ],
+          // Título simple (sin icono)
+          Text(
+            title,
+            style: AppTheme.getBodyLarge(size).copyWith(
+              color: AppTheme.getTextPrimaryColor(context),
+              fontWeight: FontWeight.w700,
             ),
           ),
-
-          // Content
-          Padding(
-            padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Título
-                Container(
-                  width: double.infinity,
-                  padding:
-                      EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentBlue.withOpacity(0.03),
-                    borderRadius: BorderRadius.circular(
-                        AppTheme.getMediumRadius(screenSize)),
-                    border: Border.all(
-                      color: AppTheme.accentBlue.withOpacity(0.1),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.title_rounded,
-                            color: AppTheme.accentBlue,
-                            size: screenSize.height * 0.02,
-                          ),
-                          SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-                          Text(
-                            'Título',
-                            style:
-                                AppTheme.getCaptionSmall(screenSize).copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.accentBlue,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-                      Text(
-                        widget.draft.titulo,
-                        style: AppTheme.getBodyLarge(screenSize).copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.getTextPrimaryColor(context),
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-                // Mensaje
-                Container(
-                  width: double.infinity,
-                  padding:
-                      EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-                  decoration: BoxDecoration(
-                    color: AppTheme.getBackgroundColor(context),
-                    borderRadius: BorderRadius.circular(
-                        AppTheme.getMediumRadius(screenSize)),
-                    border: Border.all(
-                      color: AppTheme.getBorderColor(context).withOpacity(0.3),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.description_rounded,
-                            color: AppTheme.getTextSecondaryColor(context),
-                            size: screenSize.height * 0.02,
-                          ),
-                          SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-                          Text(
-                            'Mensaje',
-                            style:
-                                AppTheme.getCaptionSmall(screenSize).copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.getTextSecondaryColor(context),
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-                      Text(
-                        widget.draft.mensaje,
-                        style: AppTheme.getBodyMedium(screenSize).copyWith(
-                          color: AppTheme.getTextPrimaryColor(context),
-                          height: 1.5,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          SizedBox(height: gapM),
+          child,
         ],
+      ),
+    );
+  }
+}
+
+class _LabeledBlock extends StatelessWidget {
+  final String label;
+  final Widget child;
+  final double pad;
+
+  const _LabeledBlock({
+    required this.label,
+    required this.child,
+    required this.pad,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final border = AppTheme.getBorderColor(context).withOpacity(0.35);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTheme.getCaptionSmall(size).copyWith(
+            color: AppTheme.getTextSecondaryColor(context),
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
+          ),
+        ),
+        SizedBox(height: pad * 0.2),
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(pad * 0.6),
+          decoration: BoxDecoration(
+            color: AppTheme.getBackgroundColor(context),
+            borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
+            border: Border.all(color: border),
+          ),
+          child: child,
+        ),
+      ],
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final double pad;
+  final Color? valueColor;
+
+  const _InfoRow({
+    required this.label,
+    required this.value,
+    required this.pad,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final border = AppTheme.getBorderColor(context).withOpacity(0.35);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTheme.getCaptionSmall(size).copyWith(
+            color: AppTheme.getTextSecondaryColor(context),
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
+          ),
+        ),
+        SizedBox(height: pad * 0.2),
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(pad * 0.6),
+          decoration: BoxDecoration(
+            color: AppTheme.getBackgroundColor(context),
+            borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
+            border: Border.all(color: border),
+          ),
+          child: Text(
+            value,
+            style: AppTheme.getBodyMedium(size).copyWith(
+              color: valueColor ?? AppTheme.getTextPrimaryColor(context),
+              fontWeight: FontWeight.w600,
+              height: 1.35,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RecipientBlock extends StatelessWidget {
+  final String label;
+  final List<Widget> children;
+  final double pad;
+
+  const _RecipientBlock({
+    required this.label,
+    required this.children,
+    required this.pad,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTheme.getCaptionSmall(size).copyWith(
+            color: AppTheme.getTextSecondaryColor(context),
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
+          ),
+        ),
+        SizedBox(height: pad * 0.35),
+        Wrap(
+          spacing: pad * 0.35,
+          runSpacing: pad * 0.35,
+          children: children,
+        ),
+      ],
+    );
+  }
+}
+
+class _Pill extends StatelessWidget {
+  final String text;
+
+  const _Pill({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final pad = size.width * 0.045;
+    final base = AppTheme.getTextPrimaryColor(context);
+    final bg = base.withOpacity(0.06);
+    final border = base.withOpacity(0.18);
+
+    return Container(
+      padding:
+          EdgeInsets.symmetric(horizontal: pad * 0.6, vertical: pad * 0.33),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
+        border: Border.all(color: border),
+      ),
+      child: Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: AppTheme.getCaptionSmall(size).copyWith(
+          color: AppTheme.getTextPrimaryColor(context),
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _LoaderLine extends StatelessWidget {
+  const _LoaderLine();
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final base = AppTheme.getBorderColor(context).withOpacity(0.35);
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppTheme.getSmallRadius(size)),
+      child: LinearProgressIndicator(
+        minHeight: 4,
+        color: AppTheme.accentPurple,
+        backgroundColor: base,
+      ),
+    );
+  }
+}
+
+class _BottomBar extends StatelessWidget {
+  final double pad;
+  final double gapM;
+  final VoidCallback onConfirm;
+
+  const _BottomBar({
+    required this.pad,
+    required this.gapM,
+    required this.onConfirm,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        border: Border(
+          top: BorderSide(
+            color: AppTheme.getBorderColor(context).withOpacity(0.4),
+          ),
+        ),
+      ),
+      padding: EdgeInsets.all(pad),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Aviso discreto (texto únicamente)
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(pad * 0.55),
+              decoration: BoxDecoration(
+                color: AppTheme.warningColor.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(
+                  AppTheme.getSmallRadius(size),
+                ),
+                border: Border.all(
+                  color: AppTheme.warningColor.withOpacity(0.25),
+                ),
+              ),
+              child: Text(
+                'Una vez enviado, el mensaje no podrá modificarse ni cancelarse.',
+                style: AppTheme.getCaptionSmall(size).copyWith(
+                  color: AppTheme.warningColor,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            SizedBox(height: gapM),
+            // Confirmar y enviar
+            SizedBox(
+              width: double.infinity,
+              child: SolidButton(
+                label: 'Confirmar y enviar',
+                onPressed: onConfirm,
+                screenSize: size,
+                backgroundColor: AppTheme.accentPurple,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,4 +1,7 @@
 // lib/components/admin/qr_and_notifications/attendance_control_view.dart
+// Modo automático alineado a TurnoProvider.resolveAccessPhase()
+// SIN SOMBRAS en la UI principal.
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +10,8 @@ import '../../../app/app_theme.dart';
 import '../../../components/admin/qr_and_notifications/attendance_control_header.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../managers/turno_provider.dart';
+import '../../../managers/turno_provider.dart'
+    as tp; // alias para enums de fase
 import '../../../managers/user_provider.dart';
 import '../../../providers/attendance_scanner_provider.dart';
 import '../../../providers/theme_provider.dart';
@@ -26,7 +31,7 @@ class AttendanceControlView extends StatefulWidget {
 }
 
 class _AttendanceControlViewState extends State<AttendanceControlView> {
-  // --- Config local (se alimenta desde TurnoProvider) ---
+  // --- Config local (tokens de UI; horas reales llegan de TurnoProvider) ---
   TimeOfDay _turnoAStart = const TimeOfDay(hour: 7, minute: 0);
   TimeOfDay _turnoAEnd = const TimeOfDay(hour: 12, minute: 0);
   TimeOfDay _turnoBStart = const TimeOfDay(hour: 13, minute: 0);
@@ -35,7 +40,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
 
   // Control de acceso
   AccessType _selectedAccessType = AccessType.default_config;
-  bool _isDefaultEntryConfig = true;
+  bool _isDefaultEntryConfig = true; // true=Entrada, false=Salida (auto)
 
   // Estado de carga
   bool _isLoading = true;
@@ -55,7 +60,6 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
   // Helpers
   TimeOfDay _fallbackStartB() => const TimeOfDay(hour: 13, minute: 0);
   TimeOfDay _fallbackEndB() => const TimeOfDay(hour: 18, minute: 0);
-  int _toMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
 
   @override
   void initState() {
@@ -102,7 +106,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
       if (!mounted) return;
       if (_selectedAccessType == AccessType.default_config) {
         final prev = _isDefaultEntryConfig;
-        _determineDefaultAccessTypeFromAllTurnos();
+        _updateAutomaticModeFromTurnoProvider();
         if (!mounted) return;
         if (prev != _isDefaultEntryConfig) {
           final newType = _isDefaultEntryConfig ? 'Entrada' : 'Salida';
@@ -191,7 +195,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
       // Tolerancia base
       _toleranceMinutes = tA.tolerancia;
 
-      // Turno B si existe
+      // Turno B si existe (solo para prellenar UI)
       if (turnos.length >= 2) {
         final tB = turnos[1];
         final tBStart = _p(tB.horaInicio);
@@ -206,7 +210,8 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
         _turnoBEnd = _fallbackEndB();
       }
 
-      _determineDefaultAccessTypeFromAllTurnos();
+      // Determinar modo automático basado en TurnoProvider.resolveAccessPhase()
+      _updateAutomaticModeFromTurnoProvider();
 
       if (!mounted) return;
       setState(() {
@@ -228,70 +233,16 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
     }
   }
 
-  // ----------------- Lógica de modo automático -----------------
-  void _determineDefaultAccessTypeFromAllTurnos() {
-    final turnoProvider = Provider.of<TurnoProvider>(context, listen: false);
-    final now = TimeOfDay.now();
-    final nowM = _toMinutes(now);
+  // ----------------- Lógica de modo automático (alineado a reglas de turnos) -----------------
+  void _updateAutomaticModeFromTurnoProvider() {
+    final tpv = Provider.of<TurnoProvider>(context, listen: false);
+    final phase = tpv.resolveAccessPhase(); // usa hora actual
 
-    // Ventanas por turno:
-    // Entrada: [inicio - 30, inicio + tolerancia]
-    // Salida : [fin - tolerancia, fin + 30]
-    final windows = <_Window>[];
-
-    for (final t in turnoProvider.turnos) {
-      final s = turnoProvider.parseTimeString(t.horaInicio);
-      final e = turnoProvider.parseTimeString(t.horaFin);
-      if (s == null || e == null) continue;
-
-      final startM = _toMinutes(s);
-      final endM = _toMinutes(e);
-      final tol = (t.tolerancia is int) ? t.tolerancia : _toleranceMinutes;
-
-      windows.addAll([
-        _Window(label: _WLabel.entry, from: startM - 30, to: startM + tol),
-        _Window(label: _WLabel.exit, from: endM - tol, to: endM + 30),
-      ]);
-    }
-
-    if (windows.isEmpty) {
-      setState(() => _isDefaultEntryConfig = true);
-      return;
-    }
-
-    // ¿now cae en alguna ventana?
-    for (final w in windows) {
-      if (nowM >= w.from && nowM <= w.to) {
-        setState(() => _isDefaultEntryConfig = (w.label == _WLabel.entry));
-        return;
-      }
-    }
-
-    // Antes del primer turno → entrada
-    windows.sort((a, b) => a.from.compareTo(b.from));
-    final firstStartWindow = windows
-        .where((w) => w.label == _WLabel.entry)
-        .toList()
-      ..sort((a, b) => a.from.compareTo(b.from));
-
-    if (firstStartWindow.isNotEmpty &&
-        nowM < firstStartWindow.first.from - 30) {
-      setState(() => _isDefaultEntryConfig = true);
-      return;
-    }
-
-    // Después de todas las ventanas → salida
-    if (nowM > windows.last.to + 60) {
-      setState(() => _isDefaultEntryConfig = false);
-      return;
-    }
-
-    // Hueco entre ventanas → preferir entrada (siguiente cercana)
-    final nextEntry = firstStartWindow.firstWhere(
-      (w) => nowM < w.from,
-      orElse: () => firstStartWindow.last,
-    );
-    setState(() => _isDefaultEntryConfig = nowM <= nextEntry.from);
+    // Entrada: mientras estamos dentro de un turno (tolerancia solo califica retraso)
+    // Salida: desde hora_fin del turno activo hasta que arranque otro turno.
+    setState(() {
+      _isDefaultEntryConfig = (phase.type == ScannerAccessType.entry);
+    });
   }
 
   // ----------------- UI -----------------
@@ -408,13 +359,8 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
         color: AppTheme.getCardColor(context),
         borderRadius:
             BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context).withOpacity(0.1),
-            blurRadius: screenSize.height * 0.02,
-            offset: Offset(0, screenSize.height * 0.008),
-          ),
-        ],
+        // ❌ sin sombras
+        border: Border.all(color: AppTheme.getBorderColor(context), width: 1),
       ),
       child: _buildScannerSelection(context, screenSize, l10n),
     );
@@ -693,9 +639,9 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
     String message;
     switch (newType) {
       case AccessType.default_config:
+        _updateAutomaticModeFromTurnoProvider();
         final currentDefault = _isDefaultEntryConfig ? 'entrada' : 'salida';
         message = 'Modo automático inteligente (actualmente: $currentDefault)';
-        _determineDefaultAccessTypeFromAllTurnos();
         break;
       case AccessType.fixed_entry:
         message = 'Modo: Entrada fija';
@@ -715,7 +661,6 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
 
   // ----------------- Navegación -----------------
   void _navigateToCameraScanner() {
-    // Determinar si es extracurricular
     final bool isExtracurricular =
         _selectedAccessType == AccessType.extracurricular_entry ||
             _selectedAccessType == AccessType.extracurricular_exit;
@@ -727,14 +672,13 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
           onCodeScanned: _handleScannedCode,
           accessType: _convertToScannerAccessType(_selectedAccessType),
           isDefaultEntryConfig: _isDefaultEntryConfig,
-          isExtracurricular: isExtracurricular, // Nuevo parámetro
+          isExtracurricular: isExtracurricular,
         ),
       ),
     );
   }
 
   void _navigateToPhysicalScanner() {
-    // Determinar si es extracurricular
     final bool isExtracurricular =
         _selectedAccessType == AccessType.extracurricular_entry ||
             _selectedAccessType == AccessType.extracurricular_exit;
@@ -746,14 +690,13 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
           onCodeScanned: _handleScannedCode,
           accessType: _convertToScannerAccessType(_selectedAccessType),
           isDefaultEntryConfig: _isDefaultEntryConfig,
-          isExtracurricular: isExtracurricular, // Nuevo parámetro
+          isExtracurricular: isExtracurricular,
         ),
       ),
     );
   }
 
   // ----------------- Escaneo (producción, sin mocks) -----------------
-// ----------------- Escaneo (producción, sin mocks) -----------------
   Future<void> _handleScannedCode(String code) async {
     if (_isProcessingScan) return; // evita doble lectura
     _isProcessingScan = true;
@@ -774,10 +717,8 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
       // 1) Resolver escuelaId desde el contexto (UserProvider)
       String? escuelaId;
       try {
-        // usa la versión que lanza para asegurar que exista
         escuelaId = await userProvider.ensureEscuelaIdOrThrow();
       } catch (_) {
-        // intento suave si aún no estaba cacheado
         await userProvider.ensureEscuelaIdLoaded();
         escuelaId = userProvider.currentUser?.escuelaId;
       }
@@ -806,24 +747,18 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
               _selectedAccessType == AccessType.extracurricular_entry ||
               _selectedAccessType == AccessType.extracurricular_exit;
 
-      // 2) Llamar al servicio con escuelaIdFromContext (requerido)
+      // 2) Llamar al servicio
       final result = await _scannerService.processScannedCode(
-        escuelaIdFromContext: escuelaId, // <-- requerido
+        escuelaIdFromContext: escuelaId,
         scannedCode: code,
         adminId: adminId,
         accessType: accessType,
         isDefaultEntryConfig: _isDefaultEntryConfig,
-        isExtracurricular: isExtracurricular, // <-- nuevo parámetro
-        isFixedAccess: isFixedAccess, // <-- nuevo parámetro
+        isExtracurricular: isExtracurricular,
+        isFixedAccess: isFixedAccess,
       );
 
       if (result['success'] == true) {
-        // Si tienes un método de historial, puedes agregarlo aquí
-        // try {
-        //   final sp = context.read<AttendanceScannerProvider>();
-        //   sp.addToHistory(code);
-        // } catch (_) {}
-
         final accessMsg =
             (result['access']?['message'] as String?) ?? 'Registro realizado';
         CustomSnackBar.show(
@@ -894,7 +829,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
               _turnoBStart = bStart;
               _turnoBEnd = bEnd;
               _toleranceMinutes = tol;
-              _determineDefaultAccessTypeFromAllTurnos();
+              _updateAutomaticModeFromTurnoProvider(); // recalcular con reglas reales
             });
           },
         ),
@@ -908,14 +843,4 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
       MaterialPageRoute(builder: (context) => const NotificationSendView()),
     );
   }
-}
-
-// ----------------- Modelos auxiliares para ventanas -----------------
-enum _WLabel { entry, exit }
-
-class _Window {
-  final _WLabel label;
-  final int from; // minutos
-  final int to; // minutos
-  _Window({required this.label, required this.from, required this.to});
 }

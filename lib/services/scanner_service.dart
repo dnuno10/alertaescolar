@@ -30,6 +30,10 @@ class ScannerService {
   final SupabaseClient _supabase = Supabase.instance.client;
   final FCMService _fcmService = FCMService();
 
+  static final Map<String, Completer<Map<String, dynamic>>> _processingLocks =
+      {};
+  static final Map<String, DateTime> _lockTimestamps = {};
+
   // ⚡ OPTIMIZACIÓN: Cache para turnos para evitar consultas repetidas
   static final Map<String, Map<String, dynamic>> _turnoCache = {};
   static final Map<String, DateTime> _cacheTimestamps = {};
@@ -39,7 +43,6 @@ class ScannerService {
   static final Map<String, Map<String, dynamic>> _studentCache = {};
   static final Map<String, DateTime> _studentCacheTimestamps = {};
   static const Duration _studentCacheExpiry = Duration(minutes: 2);
-
   Future<Map<String, dynamic>> processScannedCode({
     required String scannedCode,
     required String adminId,
@@ -47,8 +50,8 @@ class ScannerService {
     required ScannerAccessType accessType,
     bool isDefaultEntryConfig = true,
     TurnoProvider? turnoProvider,
-    bool isExtracurricular = false, // Para indicar si es extracurricular
-    bool isFixedAccess = false, // Para distinguir entre fijo y automático
+    bool isExtracurricular = false,
+    bool isFixedAccess = false,
   }) async {
     try {
       if (scannedCode.trim().isEmpty) {
@@ -59,157 +62,246 @@ class ScannerService {
         };
       }
 
-      final currentTime = DateTime.now(); // ⚡ Capturar tiempo inmediatamente
+      // NUEVO: Crear clave única para el procesamiento
+      final processKey =
+          '${scannedCode.trim()}_${adminId}_${escuelaIdFromContext}';
 
-      // ⚡ OPTIMIZACIÓN 1: Buscar alumno + validar escaneado reciente en paralelo
-      debugPrint(
-          'ProcessScannedCode: Step 1 - Parallel student lookup and duplicate check for matricula: $scannedCode');
+      // NUEVO: Verificar si ya hay un procesamiento en curso para este código
+      if (_processingLocks.containsKey(processKey)) {
+        debugPrint('🔒 PROCESSING: Already processing $processKey, waiting...');
+        try {
+          // Esperar a que termine el procesamiento existente
+          final result = await _processingLocks[processKey]!.future;
+          debugPrint(
+              '🔒 PROCESSING: Got result from existing process: ${result['success']}');
+          return result;
+        } catch (e) {
+          debugPrint('🔒 PROCESSING: Error waiting for existing process: $e');
+          _processingLocks.remove(processKey);
+          _lockTimestamps.remove(processKey);
+        }
+      }
 
-      final results = await Future.wait([
-        _findStudentByMatricula(scannedCode.trim()),
-      ]);
+      // NUEVO: Limpiar locks antiguos (más de 30 segundos)
+      _cleanupOldLocks();
 
-      final studentData = results[0];
+      // NUEVO: Crear nuevo lock para este procesamiento
+      final completer = Completer<Map<String, dynamic>>();
+      _processingLocks[processKey] = completer;
+      _lockTimestamps[processKey] = DateTime.now();
 
-      if (studentData == null) {
+      debugPrint('🔒 PROCESSING: Starting new process for $processKey');
+
+      try {
+        final result = await _doProcessScannedCode(
+          scannedCode: scannedCode,
+          adminId: adminId,
+          escuelaIdFromContext: escuelaIdFromContext,
+          accessType: accessType,
+          isDefaultEntryConfig: isDefaultEntryConfig,
+          turnoProvider: turnoProvider,
+          isExtracurricular: isExtracurricular,
+          isFixedAccess: isFixedAccess,
+        );
+
+        // NUEVO: Completar el lock con el resultado
+        completer.complete(result);
         debugPrint(
-            'ProcessScannedCode: Student not found with matricula: $scannedCode');
-        return {
+            '🔒 PROCESSING: Completed process for $processKey: ${result['success']}');
+
+        return result;
+      } catch (e) {
+        // NUEVO: Completar el lock con error
+        final errorResult = {
           'success': false,
-          'error': 'Estudiante no encontrado con matrícula: $scannedCode',
+          'error': 'Error interno al procesar el código: $e',
           'shouldTerminate': true
         };
+        completer.complete(errorResult);
+        rethrow;
+      } finally {
+        // NUEVO: Limpiar lock después de un delay
+        Future.delayed(const Duration(seconds: 5), () {
+          _processingLocks.remove(processKey);
+          _lockTimestamps.remove(processKey);
+        });
       }
-      debugPrint(
-          'ProcessScannedCode: Student found → ${studentData['nombre']}');
-
-      final String studentId = studentData['id']?.toString() ?? '';
-      final String? turnoValue = studentData['id_turno']?.toString();
-      final String? escuelaIdAlumno = studentData['id_escuela']?.toString();
-
-      if (studentId.isEmpty || turnoValue == null || escuelaIdAlumno == null) {
-        debugPrint('ProcessScannedCode: Incomplete student data');
-        return {
-          'success': false,
-          'error': 'Datos del estudiante incompletos',
-          'shouldTerminate': true
-        };
-      }
-
-      // ⚡ OPTIMIZACIÓN 2: Validación de escuela + obtener turno + check duplicados en paralelo
-      debugPrint('ProcessScannedCode: Step 2-4 - Parallel operations');
-
-      final parallelResults = await Future.wait([
-        _getStudentTurno(turnoValue, escuelaIdAlumno),
-        _checkRecentNotification(studentId, currentTime,
-            expectedType:
-                NotificationType.entrada), // Asumimos entrada por defecto
-      ]);
-
-      final turnoData = parallelResults[0];
-      final recentNotification = parallelResults[1];
-
-      // Validar escuela sincrónicamente (es rápido)
-      if (escuelaIdFromContext.trim().isNotEmpty &&
-          escuelaIdAlumno.trim() != escuelaIdFromContext.trim()) {
-        return {
-          'success': false,
-          'error': 'El alumno pertenece a otra escuela.',
-          'shouldTerminate': true,
-        };
-      }
-
-      if (turnoData == null) {
-        debugPrint('ProcessScannedCode: Turno data not found');
-        return {
-          'success': false,
-          'error': 'No se pudo obtener información del turno del estudiante',
-          'shouldTerminate': true
-        };
-      }
-
-      // ⚡ Check duplicados temprano
-      if (recentNotification != null) {
-        debugPrint(
-            'ProcessScannedCode: Duplicate scan detected within 1 minute');
-        return {
-          'success': false,
-          'error':
-              'Este alumno ya fue escaneado hace menos de 1 minuto. Espera antes de volver a escanearlo.',
-          'reason': 'recentDuplicate',
-          'shouldTerminate': true,
-        };
-      }
-
-      debugPrint(
-          'ProcessScannedCode: Turno data found → ${turnoData['turno']}');
-
-      // ⚡ OPTIMIZACIÓN 3: Validación de tiempo (sincrónico, rápido)
-      final timeValidation = _validateAccessTime(
-        currentTime: currentTime,
-        turno: turnoData,
-        accessType: accessType,
-        isDefaultEntryConfig: isDefaultEntryConfig,
-        turnoProvider: turnoProvider,
-        escuelaIdFromContext: escuelaIdFromContext,
-        isFixedAccess: isFixedAccess, // Nuevo parámetro
-      );
-
-      // ⚡ OPTIMIZACIÓN 4: Crear notificación con FCM asíncrono
-      debugPrint(
-          'ProcessScannedCode: Step 5 - Creating notification with async FCM');
-      final notificationResult = await _createNotification(
-        studentData: studentData,
-        adminId: adminId,
-        escuelaIdContext: escuelaIdFromContext,
-        accessInfo: timeValidation,
-        timestamp: currentTime,
-        isExtracurricular: isExtracurricular, // Pasamos el indicador
-      );
-
-      if (notificationResult['success'] != true) {
-        final errorMessage = notificationResult['error']?.toString() ??
-            'Error desconocido en la creación de notificación';
-        debugPrint(
-            'ProcessScannedCode: Returning notification error → $errorMessage');
-        return {
-          'success': false,
-          'error': errorMessage,
-          'shouldTerminate': true,
-        };
-      }
-
-      return {
-        'success': true,
-        'student': {
-          'id': studentId,
-          'name': studentData['nombre']?.toString() ?? 'Sin nombre',
-          'matricula': studentData['matricula']?.toString() ?? '',
-          'grupo': studentData['grupos'] is Map
-              ? (studentData['grupos']['grupo']?.toString() ?? 'N/A')
-              : 'N/A',
-          'nivel': studentData['grupos'] is Map
-              ? (studentData['grupos']['nivel_educativo']?.toString() ?? 'N/A')
-              : 'N/A',
-          'turno': turnoData['turno']?.toString() ?? 'Sin turno',
-        },
-        'access': {
-          'type': timeValidation['accessType'],
-          'isLate': timeValidation['isLate'],
-          'time': currentTime.toIso8601String(),
-          'message': timeValidation['message'],
-        },
-        'notification': notificationResult['notification'],
-      };
     } catch (e) {
       debugPrint('Error processing scanned code: $e');
-      debugPrint('Error stack trace: ${StackTrace.current}');
       return {
         'success': false,
         'error': 'Error interno al procesar el código: $e',
         'shouldTerminate': true
       };
     }
+  }
+
+  void _cleanupOldLocks() {
+    final now = DateTime.now();
+    final keysToRemove = <String>[];
+
+    for (final entry in _lockTimestamps.entries) {
+      if (now.difference(entry.value).inSeconds > 30) {
+        keysToRemove.add(entry.key);
+      }
+    }
+
+    for (final key in keysToRemove) {
+      _processingLocks.remove(key);
+      _lockTimestamps.remove(key);
+    }
+  }
+
+  // NUEVO: Método interno que hace el procesamiento real
+  Future<Map<String, dynamic>> _doProcessScannedCode({
+    required String scannedCode,
+    required String adminId,
+    required String escuelaIdFromContext,
+    required ScannerAccessType accessType,
+    bool isDefaultEntryConfig = true,
+    TurnoProvider? turnoProvider,
+    bool isExtracurricular = false,
+    bool isFixedAccess = false,
+  }) async {
+    final currentTime = DateTime.now();
+
+    debugPrint(
+        'ProcessScannedCode: Step 1 - Finding student for matricula: $scannedCode');
+
+    final studentData = await _findStudentByMatricula(scannedCode.trim());
+
+    if (studentData == null) {
+      debugPrint(
+          'ProcessScannedCode: Student not found with matricula: $scannedCode');
+      return {
+        'success': false,
+        'error': 'Estudiante no encontrado con matrícula: $scannedCode',
+        'shouldTerminate': true
+      };
+    }
+
+    debugPrint('ProcessScannedCode: Student found → ${studentData['nombre']}');
+
+    final String studentId = studentData['id']?.toString() ?? '';
+    final String? turnoValue = studentData['id_turno']?.toString();
+    final String? escuelaIdAlumno = studentData['id_escuela']?.toString();
+
+    if (studentId.isEmpty || turnoValue == null || escuelaIdAlumno == null) {
+      debugPrint('ProcessScannedCode: Incomplete student data');
+      return {
+        'success': false,
+        'error': 'Datos del estudiante incompletos',
+        'shouldTerminate': true
+      };
+    }
+
+    // Validar escuela
+    if (escuelaIdFromContext.trim().isNotEmpty &&
+        escuelaIdAlumno.trim() != escuelaIdFromContext.trim()) {
+      return {
+        'success': false,
+        'error': 'El alumno pertenece a otra escuela.',
+        'shouldTerminate': true,
+      };
+    }
+
+    debugPrint('ProcessScannedCode: Step 2 - Getting turno data');
+    final turnoData = await _getStudentTurno(turnoValue, escuelaIdAlumno);
+
+    if (turnoData == null) {
+      debugPrint('ProcessScannedCode: Turno data not found');
+      return {
+        'success': false,
+        'error': 'No se pudo obtener información del turno del estudiante',
+        'shouldTerminate': true
+      };
+    }
+
+    debugPrint('ProcessScannedCode: Step 3 - Validating access time');
+    final timeValidation = _validateAccessTime(
+      currentTime: currentTime,
+      turno: turnoData,
+      accessType: accessType,
+      isDefaultEntryConfig: isDefaultEntryConfig,
+      turnoProvider: turnoProvider,
+      escuelaIdFromContext: escuelaIdFromContext,
+      isFixedAccess: isFixedAccess,
+    );
+
+    // Determinar el tipo de notificación ANTES del check de duplicados
+    final ScannerAccessType acType =
+        timeValidation['accessType'] as ScannerAccessType;
+    final bool isLate = (timeValidation['isLate'] ?? false) as bool;
+
+    final NotificationType expectedNotifType =
+        (acType == ScannerAccessType.exit)
+            ? NotificationType.salida
+            : (isLate ? NotificationType.retraso : NotificationType.entrada);
+
+    debugPrint(
+        'ProcessScannedCode: Step 4 - Checking for recent duplicate of type: ${expectedNotifType.name}');
+
+    // Check duplicados con el tipo correcto
+    final recentNotification = await _checkRecentNotification(
+        studentId, currentTime,
+        expectedType: expectedNotifType);
+
+    if (recentNotification != null) {
+      debugPrint(
+          'ProcessScannedCode: Recent duplicate (${expectedNotifType.name}) detected');
+      return {
+        'success': false,
+        'error':
+            'Este alumno ya fue escaneado hace menos de 1 minuto. Espera antes de volver a escanearlo.',
+        'reason': 'recentDuplicate',
+        'shouldTerminate': true,
+      };
+    }
+
+    debugPrint('ProcessScannedCode: Step 5 - Creating notification');
+    final notificationResult = await _createNotification(
+      studentData: studentData,
+      adminId: adminId,
+      escuelaIdContext: escuelaIdFromContext,
+      accessInfo: timeValidation,
+      timestamp: currentTime,
+      isExtracurricular: isExtracurricular,
+    );
+
+    if (notificationResult['success'] != true) {
+      final errorMessage = notificationResult['error']?.toString() ??
+          'Error desconocido en la creación de notificación';
+      debugPrint(
+          'ProcessScannedCode: Returning notification error → $errorMessage');
+      return {
+        'success': false,
+        'error': errorMessage,
+        'shouldTerminate': true,
+      };
+    }
+
+    return {
+      'success': true,
+      'student': {
+        'id': studentId,
+        'name': studentData['nombre']?.toString() ?? 'Sin nombre',
+        'matricula': studentData['matricula']?.toString() ?? '',
+        'grupo': studentData['grupos'] is Map
+            ? (studentData['grupos']['grupo']?.toString() ?? 'N/A')
+            : 'N/A',
+        'nivel': studentData['grupos'] is Map
+            ? (studentData['grupos']['nivel_educativo']?.toString() ?? 'N/A')
+            : 'N/A',
+        'turno': turnoData['turno']?.toString() ?? 'Sin turno',
+      },
+      'access': {
+        'type': timeValidation['accessType'],
+        'isLate': timeValidation['isLate'],
+        'time': currentTime.toIso8601String(),
+        'message': timeValidation['message'],
+      },
+      'notification': notificationResult['notification'],
+    };
   }
 
   /// === DB QUERIES Y VALIDACIONES OPTIMIZADAS ===
@@ -571,69 +663,59 @@ class ScannerService {
         }
       }
 
-      // === Uso estricto del tipo real de acceso y tardanza ===
       final ScannerAccessType acType =
           accessInfo['accessType'] as ScannerAccessType;
       final bool isLate = (accessInfo['isLate'] ?? false) as bool;
-
-      // Construir sufijo para el motivo
       final String motivoSufijo =
           isExtracurricular ? ' (motivo: extracurricular)' : '';
 
-      // Título y cuerpo según el tipo de acceso resuelto:
-      // - Salida: "ha salido"
-      // - Entrada: si tarde -> "llegó tarde", si no -> "ha llegado"
       final NotificationType notifType = (acType == ScannerAccessType.exit)
           ? NotificationType.salida
           : (isLate ? NotificationType.retraso : NotificationType.entrada);
 
-      final String hora = _formatTime12h(timestamp); // 12h para FCM
+      final String hora = _formatTime12h(timestamp);
+      final String titulo =
+          _buildTitle(studentName, acType, isLate, isExtracurricular);
+      final String mensaje =
+          _buildMessage(studentName, acType, isLate, hora, motivoSufijo);
 
-      // Construir título con "extracurricular" cuando corresponda
-      final String titulo = (acType == ScannerAccessType.exit)
-          ? isExtracurricular
-              ? '$studentName ha salido (extracurricular)'
-              : '$studentName ha salido'
-          : (isLate
-              ? isExtracurricular
-                  ? '$studentName llegó tarde (extracurricular)'
-                  : '$studentName llegó tarde'
-              : isExtracurricular
-                  ? '$studentName ha llegado (extracurricular)'
-                  : '$studentName ha llegado');
+      // NUEVO: Check de duplicados más estricto con ventana más amplia
+      final duplicateWindow =
+          timestamp.subtract(const Duration(seconds: 90)); // 90 segundos
 
-      final String mensaje = (acType == ScannerAccessType.exit)
-          ? '$studentName salió de la escuela a las $hora$motivoSufijo'
-          : (isLate
-              ? '$studentName llegó tarde a la escuela a las $hora$motivoSufijo'
-              : '$studentName llegó a la escuela a las $hora$motivoSufijo');
+      final existingNotifications = await _supabase
+          .from('notificaciones')
+          .select('id, fecha_registro, tipo_notificacion')
+          .eq('id_alumno', studentId)
+          .eq('tipo_notificacion', notifType.name)
+          .gte('fecha_registro', duplicateWindow.toUtc().toIso8601String())
+          .order('fecha_registro', ascending: false);
 
-// Dedupe por fecha_registro (60s). Si existe, return a specific error message.
-      final recent = await _checkRecentNotification(studentId, timestamp,
-          expectedType: notifType);
-      if (recent != null) {
-        debugPrint(
-            '_createNotification: Duplicate scan detected within 1 minute');
-        return {
-          'success': false,
-          'error':
-              'Debes esperar 1 minuto antes de volver a escanear al mismo estudiante',
-          'duplicateIgnored': true,
-          'notification': {
-            'id': recent['id'],
-            'titulo': recent['titulo'],
-            'mensaje': recent['mensaje'],
-            'tipo': recent['tipo_notificacion'],
-            'fecha': recent['fecha_registro'],
-          },
-        };
+      if (existingNotifications.isNotEmpty) {
+        final latest = existingNotifications.first;
+        final existingTime = DateTime.parse(latest['fecha_registro']);
+        final timeDiff = timestamp.difference(existingTime).inSeconds;
+
+        if (timeDiff < 60) {
+          debugPrint(
+              '_createNotification: Found duplicate within ${timeDiff}s');
+          return {
+            'success': false,
+            'error': 'Este alumno ya fue escaneado hace menos de 1 minuto.',
+            'duplicateIgnored': true,
+            'notification': {
+              'id': latest['id'],
+              'tipo': latest['tipo_notificacion'],
+              'fecha': latest['fecha_registro'],
+            },
+          };
+        }
       }
-      // Logging para auditoría
+
       debugPrint(
           'NOTIF BUILD → accessType=${acType.name} isLate=$isLate title="$titulo" body="$mensaje"');
 
-      // ⚡ OPTIMIZACIÓN: Insertar notificación y devolver éxito inmediatamente
-      // El FCM se enviará en background sin bloquear la UI
+      // Insertar notificación
       final inserted = await _supabase
           .from('notificaciones')
           .insert({
@@ -650,8 +732,7 @@ class ScannerService {
 
       final String notificationId = inserted['id']?.toString() ?? '';
 
-      // ⚡ OPTIMIZACIÓN: FCM completamente asíncrono - NO BLOQUEA LA UI
-      // Se ejecuta en background sin usar unawaited para evitar warnings
+      // FCM en background
       _sendFCMInBackground(
         studentId: studentId,
         titulo: titulo,
@@ -678,6 +759,39 @@ class ScannerService {
     } catch (e) {
       debugPrint('Error creating notification: $e');
       return {'success': false, 'error': 'Error al crear la notificación: $e'};
+    }
+  }
+
+// NUEVO: Helper methods para construir título y mensaje
+  String _buildTitle(String studentName, ScannerAccessType acType, bool isLate,
+      bool isExtracurricular) {
+    if (acType == ScannerAccessType.exit) {
+      return isExtracurricular
+          ? '$studentName ha salido (extracurricular)'
+          : '$studentName ha salido';
+    } else {
+      if (isLate) {
+        return isExtracurricular
+            ? '$studentName llegó tarde (extracurricular)'
+            : '$studentName llegó tarde';
+      } else {
+        return isExtracurricular
+            ? '$studentName ha llegado (extracurricular)'
+            : '$studentName ha llegado';
+      }
+    }
+  }
+
+  String _buildMessage(String studentName, ScannerAccessType acType,
+      bool isLate, String hora, String motivoSufijo) {
+    if (acType == ScannerAccessType.exit) {
+      return '$studentName salió de la escuela a las $hora$motivoSufijo';
+    } else {
+      if (isLate) {
+        return '$studentName llegó tarde a la escuela a las $hora$motivoSufijo';
+      } else {
+        return '$studentName llegó a la escuela a las $hora$motivoSufijo';
+      }
     }
   }
 

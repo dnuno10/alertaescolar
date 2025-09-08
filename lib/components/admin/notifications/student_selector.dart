@@ -29,7 +29,7 @@ class StudentSelector extends StatelessWidget {
           width: double.infinity,
           padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
           decoration: BoxDecoration(
-            color: AppTheme.accentOrange.withOpacity(0.05),
+            color: AppTheme.accentOrange.withOpacity(0.0),
             borderRadius:
                 BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
             border: Border.all(
@@ -67,7 +67,7 @@ class StudentSelector extends StatelessWidget {
             padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
             decoration: BoxDecoration(
               color: selectedStudent != null
-                  ? AppTheme.accentOrange.withOpacity(0.1)
+                  ? AppTheme.accentOrange.withOpacity(0.0)
                   : AppTheme.getCardColor(context),
               borderRadius:
                   BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
@@ -75,7 +75,7 @@ class StudentSelector extends StatelessWidget {
                 color: selectedStudent != null
                     ? AppTheme.accentOrange
                     : AppTheme.getBorderColor(context),
-                width: selectedStudent != null ? 2 : 1,
+                width: 1,
               ),
               boxShadow: [
                 BoxShadow(

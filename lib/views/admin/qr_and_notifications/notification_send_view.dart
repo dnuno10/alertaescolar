@@ -43,7 +43,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
   final _titleController = TextEditingController();
   bool _isNavigating = false;
 
-  String _selectedRecipient = _Recipient.individual;
+  String _selectedRecipient = _Recipient.none;
   TipoNotificacion _selectedType = TipoNotificacion.permisoEspecial;
   bool _sendPushNotification = true;
 
@@ -59,6 +59,22 @@ class _NotificationSendViewState extends State<NotificationSendView>
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+
+  bool get _hasAnyRecipientSelected =>
+      _selectedRecipient != _Recipient.none ||
+      _selectedStudent != null ||
+      _selectedGroups.isNotEmpty ||
+      _selectedShift != null;
+
+  void _clearRecipientFilters() {
+    setState(() {
+      _selectedRecipient = _Recipient.none;
+      _selectedStudent = null;
+      _selectedGroups.clear();
+      _selectedNivelesEducativos.clear();
+      _selectedShift = null;
+    });
+  }
 
   // --- Listeners para refrescar botón de acción
   void _attachTextListeners() {
@@ -395,8 +411,22 @@ class _NotificationSendViewState extends State<NotificationSendView>
                               ),
                             ),
 
+                            if (_hasAnyRecipientSelected)
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton.icon(
+                                  onPressed: _clearRecipientFilters,
+                                  icon:
+                                      const Icon(Icons.filter_alt_off_outlined),
+                                  label: const Text('Limpiar filtros'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor:
+                                        AppTheme.getTextSecondaryColor(context),
+                                  ),
+                                ),
+                              ),
                             SizedBox(
-                                height: AppTheme.getLargePadding(screenSize)),
+                                height: AppTheme.getSmallPadding(screenSize)),
 
                             // Contenido del mensaje
                             SectionContainer(
@@ -575,7 +605,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                       EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
                   decoration: BoxDecoration(
                     color: _selectedGroups.isNotEmpty
-                        ? AppTheme.accentBlue.withOpacity(0.1)
+                        ? AppTheme.accentBlue.withOpacity(0.0)
                         : AppTheme.getCardColor(context),
                     borderRadius: BorderRadius.circular(
                         AppTheme.getMediumRadius(screenSize)),
@@ -583,7 +613,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                       color: _selectedGroups.isNotEmpty
                           ? AppTheme.accentBlue
                           : AppTheme.getBorderColor(context),
-                      width: _selectedGroups.isNotEmpty ? 2 : 1,
+                      width: 1,
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -769,7 +799,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                       EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
                   decoration: BoxDecoration(
                     color: _selectedShift != null
-                        ? AppTheme.accentOrange.withOpacity(0.1)
+                        ? AppTheme.accentOrange.withOpacity(0.0)
                         : AppTheme.getCardColor(context),
                     borderRadius: BorderRadius.circular(
                         AppTheme.getMediumRadius(screenSize)),
@@ -777,7 +807,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                       color: _selectedShift != null
                           ? AppTheme.accentOrange
                           : AppTheme.getBorderColor(context),
-                      width: _selectedShift != null ? 2 : 1,
+                      width: 1,
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -1571,6 +1601,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
         _Recipient.grupo => _selectedGroups.isNotEmpty,
         _Recipient.turno => _selectedShift != null,
         _Recipient.todos => true,
+        _Recipient.none => false,
         _ => false,
       };
 
@@ -1834,6 +1865,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
 // Constantes de opción
 // -----------------------------
 class _Recipient {
+  static const none = 'none';
   static const individual = 'individual';
   static const grupo = 'grupo';
   static const turno = 'turno';

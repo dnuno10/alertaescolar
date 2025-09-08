@@ -49,6 +49,9 @@ class _CameraScannerViewState extends State<CameraScannerView>
   bool _hasError = false;
   bool _navigating = false; // evita múltiples pushes / resumes concurrentes
   bool _pausedByLifecycle = false;
+  bool _processing = false;
+  String? _lastProcessedCode; // NUEVO: para evitar duplicados del mismo código
+  DateTime? _lastProcessTime;
 
   // Mostramos/ocultamos la vista para forzar dispose/recreate del PlatformView
   bool _showCamera = true;
@@ -474,6 +477,28 @@ class _CameraScannerViewState extends State<CameraScannerView>
   }
 
   Future<void> _handleScanAndNavigate(String code) async {
+    // NUEVO: Evitar procesamiento si ya estamos procesando
+    if (_processing) {
+      debugPrint('🔒 SCANNER: Already processing, ignoring scan: $code');
+      return;
+    }
+
+    // NUEVO: Evitar duplicados del mismo código en un período corto
+    final now = DateTime.now();
+    if (_lastProcessedCode == code &&
+        _lastProcessTime != null &&
+        now.difference(_lastProcessTime!).inSeconds < 2) {
+      debugPrint('🔒 SCANNER: Same code scanned too quickly, ignoring: $code');
+      return;
+    }
+
+    // NUEVO: Marcar como procesando
+    _processing = true;
+    _lastProcessedCode = code;
+    _lastProcessTime = now;
+
+    debugPrint('🔒 SCANNER: Starting to process code: $code');
+
     // 1) Ocultar cámara → fuerza dispose del PlatformView
     setState(() {
       _showCamera = false;
@@ -489,7 +514,10 @@ class _CameraScannerViewState extends State<CameraScannerView>
       _recreateCameraKey(); // nueva GlobalKey => nuevo PlatformView
       _showCamera = true;
       _navigating = false;
+      _processing = false; // NUEVO: liberar el bloqueo
     });
+
+    debugPrint('🔒 SCANNER: Finished processing code: $code');
   }
 
   Future<void> _processScannedCode(String code) async {

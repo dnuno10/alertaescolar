@@ -1,5 +1,6 @@
-// physical_scanner_view.dart
+// physical_scanner_view.dart (SIN LOTTIE)
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:alertaescolar/components/headers/nav_header.dart';
 import 'package:alertaescolar/managers/user_provider.dart';
@@ -8,7 +9,6 @@ import 'package:alertaescolar/services/scanner_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:lottie/lottie.dart';
 
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
@@ -16,10 +16,7 @@ import 'processing_view.dart';
 import '../../../widgets/custom_snack_bar.dart';
 
 /// Vista para lectores de QR físicos (USB/Bluetooth) que emulan teclado.
-/// - Captura el input de teclado y lo "commitea" al presionar Enter/Tab o tras un
-///   breve periodo de inactividad (buffer).
-/// - Evita reentradas mientras procesa y asegura el enfoque del teclado.
-/// - Integra con `scanner_service.dart` vía `ProcessingView`.
+/// Versión sin Lottie: animaciones puras en Flutter (CustomPainter + Animations).
 class PhysicalScannerView extends StatefulWidget {
   final Function(String) onCodeScanned;
   final ScannerAccessType? accessType;
@@ -31,14 +28,15 @@ class PhysicalScannerView extends StatefulWidget {
     required this.onCodeScanned,
     this.accessType,
     this.isDefaultEntryConfig,
-    this.isExtracurricular = false, // Por defecto falso
+    this.isExtracurricular = false,
   });
 
   @override
   State<PhysicalScannerView> createState() => _PhysicalScannerViewState();
 }
 
-class _PhysicalScannerViewState extends State<PhysicalScannerView> {
+class _PhysicalScannerViewState extends State<PhysicalScannerView>
+    with TickerProviderStateMixin {
   // Estado de escucha / proceso
   bool _listening = true; // UI/animación
   bool _busy = false; // evita reentradas mientras navegamos
@@ -52,15 +50,11 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
   DateTime? _lastKeyAt;
   Timer? _commitTimer;
 
-  // Rutas Lottie (cámbialas si usas otros nombres)
-  static const String _lottieScan = 'assets/anim/qr_code_scanner.json';
-  static const String _lottieProcessing = 'assets/anim/processing_spinner.json';
-
   @override
   void initState() {
     super.initState();
 
-    // Oculta el teclado del sistema en móviles (no lo necesitamos para scanners)
+    // Oculta el teclado del sistema en móviles
     SystemChannels.textInput.invokeMethod('TextInput.hide');
 
     // Asegurar foco para recibir eventos del lector
@@ -93,9 +87,9 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
       case ScannerAccessType.automatic:
         return isDefaultEntry ? l10n.automaticEntry : l10n.automaticExit;
       case ScannerAccessType.entry:
-        return isExtracurricular ? 'Entrada Extracurricular' : 'Entrada Fija';
+        return isExtracurricular ? 'Entrada extracurricular' : 'Entrada';
       case ScannerAccessType.exit:
-        return isExtracurricular ? 'Salida Extracurricular' : 'Salida Fija';
+        return isExtracurricular ? 'Salida extracurricular' : 'Salida';
     }
   }
 
@@ -107,9 +101,9 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
       case ScannerAccessType.automatic:
         return isDefaultEntry ? Colors.green : Colors.red;
       case ScannerAccessType.entry:
-        return Colors.green; // Verde para todas las entradas
+        return Colors.green;
       case ScannerAccessType.exit:
-        return Colors.red; // Rojo para todas las salidas
+        return Colors.red;
     }
   }
 
@@ -118,7 +112,7 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
   // ========================
 
   void _onKeyEvent(KeyEvent event) {
-    if (!mounted || _busy) return; // si estamos procesando, ignorar input
+    if (!mounted || _busy) return;
     if (event is! KeyDownEvent) return;
 
     final key = event.logicalKey;
@@ -129,7 +123,7 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
       return;
     }
 
-    // Backspace → eliminar último caracter si existe
+    // Backspace → eliminar último caracter
     if (key == LogicalKeyboardKey.backspace) {
       if (_buffer.isNotEmpty) {
         _buffer = _buffer.substring(0, _buffer.length - 1);
@@ -275,7 +269,7 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
             escuelaId: escuelaId,
             accessType: widget.accessType ?? ScannerAccessType.automatic,
             isDefaultEntryConfig: widget.isDefaultEntryConfig ?? true,
-            isExtracurricular: widget.isExtracurricular, // Nuevo parámetro
+            isExtracurricular: widget.isExtracurricular,
             displayMode: displayMode,
             returnDetailedResult: returnDetailed,
           ),
@@ -286,15 +280,13 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
 
       // 5) Manejo de retorno
       if (_showResultInProcessing) {
-        // Modo clásico: ProcessingView ya mostró UI. Solo propagar OK a caller.
         if (result == true ||
             (result is ProcessingOutcome && result.success == true)) {
           widget.onCodeScanned(code);
         }
-        return; // IMPORTANTE: Salir aquí para NO mostrar CustomSnackBar
+        return;
       }
 
-      // Headless: esperamos un ProcessingOutcome para mostrar mensaje
       if (result is ProcessingOutcome) {
         final success = result.success;
         final msg = result.message ??
@@ -329,7 +321,6 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
         isError: true,
       );
     } finally {
-      // Siempre reiniciar para el siguiente escaneo
       _busy = false;
       _setListening(true);
     }
@@ -351,7 +342,7 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
           physics: const NeverScrollableScrollPhysics(),
           slivers: [
             // Header
-            NavHeader(title: 'Escáner Físico'),
+            NavHeader(title: 'Escáner físico'),
 
             // Main content
             SliverFillRemaining(
@@ -360,80 +351,46 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
                 padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
                 child: Column(
                   children: [
-                    // Indicador de tipo de acceso
+                    // Indicador de modo (minimal)
                     Container(
                       padding: EdgeInsets.symmetric(
                         horizontal: AppTheme.getMediumPadding(screenSize),
-                        vertical: AppTheme.getSmallPadding(screenSize),
+                        vertical: AppTheme.getSmallPadding(screenSize) * 0.8,
                       ),
                       decoration: BoxDecoration(
-                        color: _getAccessTypeColor().withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
+                        color: _getAccessTypeColor().withOpacity(0.07),
+                        borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: _getAccessTypeColor().withOpacity(0.3),
+                          color: _getAccessTypeColor().withOpacity(0.18),
                           width: 1,
                         ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: _getAccessTypeColor(),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-                          Text(
-                            _getAccessTypeText(),
-                            style: AppTheme.getBodyMedium(screenSize).copyWith(
-                              color: _getAccessTypeColor(),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        _getAccessTypeText(),
+                        style: AppTheme.getBodyMedium(screenSize).copyWith(
+                          color: _getAccessTypeColor(),
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
+                        ),
                       ),
                     ),
 
                     SizedBox(height: AppTheme.getLargePadding(screenSize) * 2),
 
-                    // Visualización del "área" de escaneo usando Lottie
+                    // Área animada (sin Lottie)
                     Expanded(
                       child: Center(
                         child: SizedBox(
-                          width: 340,
-                          // altura generosa para efecto
+                          width: 360,
                           child: AspectRatio(
                             aspectRatio: 16 / 9,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color:
-                                      AppTheme.accentOrange.withOpacity(0.25),
-                                  width: 1,
-                                ),
-                                color: AppTheme.accentOrange.withOpacity(0.03),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: _listening
-                                    ? _LottieBox(
-                                        asset: _lottieScan,
-                                        repeat: true,
-                                        hintIcon: Icons.qr_code_scanner,
-                                        hintText:
-                                            'Escanea un código QR con tu lector físico',
-                                      )
-                                    : _LottieBox(
-                                        asset: _lottieProcessing,
-                                        repeat: true,
-                                        hintIcon: Icons.hourglass_empty,
-                                        hintText: 'Procesando...',
-                                      ),
-                              ),
+                            child: _ScannerArea(
+                              listening: _listening,
+                              accent: AppTheme.accentOrange,
+                              background: AppTheme.getCardColor(context)
+                                  .withOpacity(.6),
+                              borderRadius:
+                                  BorderRadius.circular(16), // consistente
                             ),
                           ),
                         ),
@@ -442,12 +399,13 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
 
                     SizedBox(height: AppTheme.getLargePadding(screenSize)),
 
-                    // Estado
+                    // Estado (tipografía > iconografía)
                     Text(
-                      _listening ? 'Listo para escanear' : 'Procesando...',
+                      _listening ? 'Listo para escanear' : 'Procesando…',
                       style: AppTheme.getH2(screenSize).copyWith(
                         color: AppTheme.getTextPrimaryColor(context),
-                        fontWeight: FontWeight.w300,
+                        fontWeight: FontWeight.w400,
+                        letterSpacing: .2,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -462,10 +420,10 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
                           vertical: AppTheme.getSmallPadding(screenSize),
                         ),
                         decoration: BoxDecoration(
-                          color: AppTheme.accentOrange.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
+                          color: AppTheme.accentOrange.withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: AppTheme.accentOrange.withOpacity(0.3),
+                            color: AppTheme.accentOrange.withOpacity(0.2),
                             width: 1,
                           ),
                         ),
@@ -473,7 +431,7 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
                           _buffer,
                           style: AppTheme.getBodyMedium(screenSize).copyWith(
                             color: AppTheme.accentOrange,
-                            fontFamily: 'monospace',
+                            fontFeatures: const [FontFeature.tabularFigures()],
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -481,44 +439,51 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
                       SizedBox(height: AppTheme.getMediumPadding(screenSize)),
                     ],
 
-                    // Switch "Revisión de alumno" (fondo, centrado)
-                    Padding(
-                      padding: EdgeInsets.only(
-                        bottom: AppTheme.getLargePadding(screenSize),
-                      ),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                    // Switch "Revisión de alumno"
+                    Align(
+                      alignment: Alignment
+                          .center, // le da constraints “flojos” al hijo
+                      child: DecoratedBox(
+                        // en lugar de Container para evitar que expanda
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: AppTheme.getTextSecondaryColor(context)
-                                .withOpacity(0.2),
-                            width: 1,
-                          ),
+                              color: Colors.white.withOpacity(0.1), width: 1),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.person_search_rounded, size: 18),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Revisión de alumno',
-                              style: AppTheme.getCaption(screenSize),
-                            ),
-                            const SizedBox(width: 8),
-                            Switch(
-                              value: _showResultInProcessing,
-                              onChanged: (v) =>
-                                  setState(() => _showResultInProcessing = v),
-                              activeColor: AppTheme.accentBlue,
-                            ),
-                          ],
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: screenSize.width * 0.05,
+                              vertical: screenSize.height * 0.01),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.person_search_rounded,
+                                  color: Colors.white, size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Revisión de alumno',
+                                style: AppTheme.getCaption(screenSize)
+                                    .copyWith(color: Colors.white),
+                              ),
+                              const SizedBox(width: 8),
+                              Switch(
+                                value: _showResultInProcessing,
+                                onChanged: (v) =>
+                                    setState(() => _showResultInProcessing = v),
+                                activeColor: AppTheme.accentBlue,
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                                //visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
 
-                    // Ayuda
+                    SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+
+                    // Ayuda minimal
                     Container(
                       padding:
                           EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -528,27 +493,16 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: AppTheme.getTextSecondaryColor(context)
-                              .withOpacity(0.1),
+                              .withOpacity(0.08),
                           width: 1,
                         ),
                       ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.help_outline,
-                            color: AppTheme.getTextSecondaryColor(context),
-                            size: 24,
-                          ),
-                          SizedBox(
-                              height: AppTheme.getSmallPadding(screenSize)),
-                          Text(
-                            'Conecta tu lector de códigos QR USB o Bluetooth y escanea directamente. Los códigos aparecerán automáticamente.',
-                            style: AppTheme.getCaption(screenSize).copyWith(
-                              color: AppTheme.getTextSecondaryColor(context),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                      child: Text(
+                        'Conecta tu lector USB/Bluetooth y escanea. El código se procesará automáticamente.',
+                        style: AppTheme.getCaption(screenSize).copyWith(
+                          color: AppTheme.getTextSecondaryColor(context),
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
                   ],
@@ -562,107 +516,315 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView> {
   }
 }
 
-/// Widget auxiliar que intenta cargar una animación Lottie y
-/// muestra un “fallback” elegante si el asset no existe.
-class _LottieBox extends StatelessWidget {
-  final String asset;
-  final bool repeat;
-  final IconData? hintIcon;
-  final String? hintText;
+/// Caja de escaneo con borde degradado animado y línea de barrido.
+/// Cuando [listening] es false, muestra un spinner minimalista.
+class _ScannerArea extends StatefulWidget {
+  final bool listening;
+  final Color accent;
+  final Color background;
+  final BorderRadius borderRadius;
 
-  const _LottieBox({
-    required this.asset,
-    this.repeat = true,
-    this.hintIcon,
-    this.hintText,
+  const _ScannerArea({
+    required this.listening,
+    required this.accent,
+    required this.background,
+    this.borderRadius = const BorderRadius.all(Radius.circular(16)),
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // Animación Lottie de fondo
-        Lottie.asset(
-          asset,
-          repeat: repeat,
-          fit: BoxFit.contain,
-        ),
-        // Icono por encima
-        if (hintIcon != null)
-          Icon(
-            hintIcon,
-            size: 64,
-            color: AppTheme.accentOrange.withOpacity(0.8),
-          ),
-      ],
-    );
-  }
+  State<_ScannerArea> createState() => _ScannerAreaState();
 }
 
-class _FallbackScan extends StatefulWidget {
-  final IconData hintIcon;
-  final String hintText;
-
-  const _FallbackScan({
-    required this.hintIcon,
-    required this.hintText,
-  });
-
-  @override
-  State<_FallbackScan> createState() => _FallbackScanState();
-}
-
-class _FallbackScanState extends State<_FallbackScan>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double> _pulse;
+class _ScannerAreaState extends State<_ScannerArea>
+    with TickerProviderStateMixin {
+  late final AnimationController _borderCtrl;
+  late final AnimationController _sweepCtrl;
+  late final AnimationController _spinnerCtrl;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(
+    // Borde con gradiente que "respira"
+    _borderCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1100),
+      duration: const Duration(milliseconds: 1800),
     )..repeat(reverse: true);
-    _pulse = Tween(begin: 0.95, end: 1.05)
-        .chain(CurveTween(curve: Curves.easeInOut))
-        .animate(_ctrl);
+
+    // Línea de barrido vertical
+    _sweepCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat();
+
+    // Spinner para estado "procesando"
+    _spinnerCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
   }
 
   @override
   void dispose() {
-    _ctrl.dispose();
+    _borderCtrl.dispose();
+    _sweepCtrl.dispose();
+    _spinnerCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _pulse,
-      builder: (context, _) {
-        return Center(
-          child: Transform.scale(
-            scale: _pulse.value,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(widget.hintIcon,
-                    size: 56, color: AppTheme.accentOrange.withOpacity(0.7)),
-                const SizedBox(height: 8),
-                Text(
-                  widget.hintText,
-                  textAlign: TextAlign.center,
-                  style: AppTheme.getBodyMedium(MediaQuery.of(context).size)
-                      .copyWith(
-                    color: AppTheme.getTextSecondaryColor(context),
+    final listening = widget.listening;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        color: widget.background,
+        borderRadius: widget.borderRadius,
+      ),
+      child: ClipRRect(
+        borderRadius: widget.borderRadius,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Fondo sutil
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.black.withOpacity(0.02),
+                    Colors.black.withOpacity(0.06),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+            ),
+
+            // Borde animado (degradado)
+            AnimatedBuilder(
+              animation: _borderCtrl,
+              builder: (_, __) {
+                final t = _borderCtrl.value;
+                final c1 = Color.lerp(widget.accent, Colors.white, .7)!;
+                final c2 = Color.lerp(widget.accent, Colors.white, .35)!;
+                return CustomPaint(
+                  painter: _GradientBorderPainter(
+                    progress: t,
+                    color1: c1.withOpacity(0.7),
+                    color2: c2.withOpacity(0.35),
+                    strokeWidth: 1.3,
+                    borderRadius: widget.borderRadius,
+                  ),
+                );
+              },
+            ),
+
+            // Contenido según estado
+            if (listening) ...[
+              // Icono QR en el centro
+              Center(
+                child: Icon(
+                  Icons.qr_code_2_rounded,
+                  size: 80,
+                  color: widget.accent.withOpacity(0.3),
+                ),
+              ),
+              // Línea de barrido vertical
+              AnimatedBuilder(
+                animation: _sweepCtrl,
+                builder: (_, __) {
+                  return CustomPaint(
+                    painter: _SweepLinePainter(
+                      position: _sweepCtrl.value, // 0..1
+                      color: widget.accent.withOpacity(0.28),
+                      glow: widget.accent.withOpacity(0.10),
+                    ),
+                  );
+                },
+              ),
+              // Pista de texto
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    'Escanea un código con tu lector físico',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.white.withOpacity(.65),
+                          letterSpacing: .2,
+                          fontWeight: FontWeight.w600,
+                        ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
-              ],
-            ),
-          ),
-        );
-      },
+              ),
+            ] else ...[
+              // Spinner minimalista
+              Center(
+                child: SizedBox(
+                  width: 72,
+                  height: 72,
+                  child: AnimatedBuilder(
+                    animation: _spinnerCtrl,
+                    builder: (_, __) => CustomPaint(
+                      painter: _SpinnerDotsPainter(
+                        turn: _spinnerCtrl.value,
+                        baseColor: widget.accent.withOpacity(.20),
+                        dotColor: widget.accent,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    'Procesando…',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.white.withOpacity(.65),
+                          letterSpacing: .2,
+                          fontWeight: FontWeight.w600,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
+  }
+}
+
+/// Borde degradado que se anima alrededor del rectángulo.
+class _GradientBorderPainter extends CustomPainter {
+  final double progress; // 0..1
+  final Color color1;
+  final Color color2;
+  final double strokeWidth;
+  final BorderRadius borderRadius;
+
+  _GradientBorderPainter({
+    required this.progress,
+    required this.color1,
+    required this.color2,
+    required this.strokeWidth,
+    required this.borderRadius,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rrect = borderRadius.toRRect(rect);
+
+    final gradient = SweepGradient(
+      startAngle: 0,
+      endAngle: math.pi * 2,
+      transform: GradientRotation(progress * math.pi * 2),
+      colors: [color1, color2, color1],
+      stops: const [0.0, 0.5, 1.0],
+    );
+
+    final paint = Paint()
+      ..shader = gradient.createShader(rect)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+
+    canvas.drawRRect(rrect, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _GradientBorderPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.color1 != color1 ||
+        oldDelegate.color2 != color2 ||
+        oldDelegate.strokeWidth != strokeWidth ||
+        oldDelegate.borderRadius != borderRadius;
+  }
+}
+
+/// Línea de barrido vertical con leve "glow".
+class _SweepLinePainter extends CustomPainter {
+  final double position; // 0..1
+  final Color color;
+  final Color glow;
+
+  _SweepLinePainter({
+    required this.position,
+    required this.color,
+    required this.glow,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final x = size.width * position;
+
+    // Glow difuso
+    final glowPaint = Paint()
+      ..color = glow
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12)
+      ..style = PaintingStyle.fill;
+    canvas.drawRect(Rect.fromLTWH(x - 8, 0, 16, size.height), glowPaint);
+
+    // Línea principal
+    final linePaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    canvas.drawRect(Rect.fromLTWH(x - 1, 0, 2, size.height), linePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SweepLinePainter oldDelegate) {
+    return oldDelegate.position != position ||
+        oldDelegate.color != color ||
+        oldDelegate.glow != glow;
+  }
+}
+
+/// Spinner con 8 puntos orbitando.
+class _SpinnerDotsPainter extends CustomPainter {
+  final double turn; // 0..1
+  final Color baseColor;
+  final Color dotColor;
+
+  _SpinnerDotsPainter({
+    required this.turn,
+    required this.baseColor,
+    required this.dotColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final radius = size.shortestSide * 0.35;
+    const dots = 8;
+
+    final basePaint = Paint()..color = baseColor;
+    final dotPaint = Paint()..color = dotColor;
+
+    for (int i = 0; i < dots; i++) {
+      final angle = (i / dots) * 2 * math.pi + (turn * 2 * math.pi);
+      final offset = Offset(
+        center.dx + radius * math.cos(angle),
+        center.dy + radius * math.sin(angle),
+      );
+
+      // Tamaño varia ligeramente para efecto
+      final dotSize = i == 0 ? 6.0 : 4.0;
+      final paint = i == 0 ? dotPaint : basePaint;
+
+      canvas.drawCircle(offset, dotSize, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _SpinnerDotsPainter oldDelegate) {
+    return oldDelegate.turn != turn ||
+        oldDelegate.baseColor != baseColor ||
+        oldDelegate.dotColor != dotColor;
   }
 }

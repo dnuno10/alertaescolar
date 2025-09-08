@@ -15,15 +15,11 @@ class NotificationSendService {
   final SupabaseClient _sb = Supabase.instance.client;
   final FCMService _fcm = FCMService();
 
-  /// Envío principal basado en Draft:
-  /// - Resuelve destinatarios
-  /// - Filtra alumnos activos (con tutor registrado)
-  /// - Inserta en `notificaciones` (1 fila por alumno)
-  /// - Fanout a tutores -> tokens -> FCM (por lotes)
   Future<Map<String, dynamic>> sendDraft({
     required NotificationDraft draft,
     required String adminId,
-    required String escuelaId,
+    required String
+        escuelaId, // Se sigue usando para resolver destinatarios, no se inserta.
   }) async {
     try {
       // 1) Resolver alumnos destino
@@ -32,7 +28,7 @@ class NotificationSendService {
         escuelaId: escuelaId,
       );
 
-      // 2) Filtrar alumnos activos (con tutor registrado)
+      // 2) Filtrar alumnos activos (con tutor)
       final targetStudentIds = await _filterActiveStudents(rawStudentIds);
 
       if (targetStudentIds.isEmpty) {
@@ -43,35 +39,29 @@ class NotificationSendService {
         };
       }
 
-      // 3) Preparar inserciones a `notificaciones`
-      final nowIso = DateTime.now().toUtc().toIso8601String();
-      final tipoDb = _coerceTipoFromDraft(draft.tipoMensaje);
+      // 3) Preparar inserciones acorde al esquema REAL
+      // Tabla: notificaciones(
+      //   id, id_alumno, id_admin, titulo, mensaje,
+      //   tipo_notificacion, tipo_comunicado, prioridad_comunicado,
+      //   destinatarios_comunicado, estado, fecha_registro DEFAULT now()
+      // )
+      final String tipoNotifDb = _coerceTipoFromDraft(draft.tipoMensaje);
+      final String? tipoComunicadoDb = draft.tipoComunicado;
+      final String? prioridadDb = draft.prioridad;
+
+      final String destinatariosResumen = _buildDestinatariosResumen(draft);
 
       final List<Map<String, dynamic>> rows = targetStudentIds.map((alId) {
         return {
           'id_alumno': alId,
           'id_admin': adminId,
-          'id_escuela': escuelaId,
           'titulo': draft.titulo,
           'mensaje': draft.mensaje,
-          'tipo':
-              tipoDb, // entrada|salida|retraso|ausencia|permisoEspecial|comunicado
-          'estado': 'nueva',
-          'fecha_hora': nowIso,
-          'datos_adicionales': {
-            if (draft.tipoComunicado != null)
-              'tipo_comunicacion': draft.tipoComunicado, // 'emergencia', etc.
-            if (draft.prioridad != null)
-              'prioridad': draft.prioridad, // 'baja'|'media'|'alta'|'critica'
-            'destinatario': {
-              'tipo': draft
-                  .tipoDestinatario, // 'individual'|'grupo'|'turno'|'todos'
-              'alumno_id': draft.alumnoId,
-              'grupo_ids': draft.grupoIds,
-              'turno_id': draft.turnoId,
-            },
-            'enviar_push': true,
-          },
+          'tipo_notificacion': tipoNotifDb,
+          'tipo_comunicado': tipoComunicadoDb, // puede ser null
+          'prioridad_comunicado': prioridadDb, // puede ser null
+          'destinatarios_comunicado': destinatariosResumen, // text
+          'estado': 'nueva', // fecha_registro se autollenará con DEFAULT now()
         };
       }).toList();
 
@@ -90,13 +80,11 @@ class NotificationSendService {
       int pushes = 0;
       if (tokens.isNotEmpty) {
         final data = {
-          'tipo': tipoDb,
+          'tipo_notificacion': tipoNotifDb,
           'titulo': draft.titulo,
           'mensaje': draft.mensaje,
-          'id_escuela': escuelaId,
-          if (draft.tipoComunicado != null)
-            'tipo_comunicacion': draft.tipoComunicado,
-          if (draft.prioridad != null) 'prioridad': draft.prioridad,
+          if (tipoComunicadoDb != null) 'tipo_comunicado': tipoComunicadoDb,
+          if (prioridadDb != null) 'prioridad_comunicado': prioridadDb,
         };
 
         pushes = await _pushInBatches(
@@ -165,41 +153,40 @@ class NotificationSendService {
   }
 
   // =========================================================
-  //                 Lectura / Borrado (esquema actual)
+  //                 Lectura / Borrado (esquema real)
   // =========================================================
 
-  /// Lee notificaciones con el esquema actual (tipo / fecha_hora / datos_adicionales).
-  /// Puedes filtrar por escuela o por alumno si lo necesitas.
+  /// Lee notificaciones con el esquema real (sin datos_adicionales).
   Future<List<Notificacion>> getNotifications({
-    String? escuelaId,
+    String?
+        escuelaId, // se puede usar para filtrar destinatarios antes, no existe en tabla
     String? alumnoId,
     int limit = 200,
   }) async {
     try {
       var query = _sb.from('notificaciones').select("""
-  id,
-  id_alumno,
-  id_admin,
-  id_escuela,
-  titulo,
-  mensaje,
-  tipo,
-  estado,
-  fecha_hora,
-  datos_adicionales
-""");
+        id,
+        id_alumno,
+        id_admin,
+        titulo,
+        mensaje,
+        tipo_notificacion,
+        tipo_comunicado,
+        prioridad_comunicado,
+        destinatarios_comunicado,
+        estado,
+        fecha_registro
+      """);
 
-// 1) Aplica filtros ANTES de order/limit
-      if (escuelaId != null && escuelaId.isNotEmpty) {
-        query = query.eq('id_escuela', escuelaId);
-      }
+      // Filtros
       if (alumnoId != null && alumnoId.isNotEmpty) {
         query = query.eq('id_alumno', alumnoId);
       }
+      // Nota: no hay columna id_escuela en la tabla; si necesitas por escuela,
+      // filtra por ids de alumnos que pertenezcan a esa escuela ANTES de llamar.
 
-// 2) Ahora sí, ordena y limita
       final rows =
-          await query.order('fecha_hora', ascending: false).limit(limit);
+          await query.order('fecha_registro', ascending: false).limit(limit);
 
       return (rows as List).map((r) {
         return Notificacion(
@@ -208,18 +195,18 @@ class NotificationSendService {
           adminId: (r['id_admin'] ?? '').toString(),
           titulo: (r['titulo'] ?? '') as String,
           mensaje: (r['mensaje'] ?? '') as String,
-          tipo: _mapTipoNotificacionDb((r['tipo'] ?? '').toString()),
+          tipo:
+              _mapTipoNotificacionDb((r['tipo_notificacion'] ?? '').toString()),
           estado: ((r['estado'] ?? '').toString().toLowerCase() ==
                   EstadoNotificacion.leida.name)
               ? EstadoNotificacion.leida
               : EstadoNotificacion.nueva,
-          fechaHora: DateTime.tryParse((r['fecha_hora'] ?? '').toString()) ??
-              DateTime.now(),
-          datosAdicionales: (r['datos_adicionales'] is Map
-              ? Map<String, dynamic>.from(r['datos_adicionales'])
-              : null),
-          // Si tu modelo Notificacion tiene escuelaId, puedes añadirlo también:
-          // escuelaId: (r['id_escuela'] ?? '').toString(),
+          fechaHora:
+              DateTime.tryParse((r['fecha_registro'] ?? '').toString()) ??
+                  DateTime.now(),
+          datosAdicionales: null, // No existe en el esquema real
+          // Si tu modelo Notificacion tiene campos para tipo_comunicado/prioridad/destinatarios,
+          // puedes extenderlo y mapearlos aquí también.
         );
       }).toList();
     } catch (e) {
@@ -232,7 +219,6 @@ class NotificationSendService {
     try {
       final res =
           await _sb.from('notificaciones').delete().eq('id', notificationId);
-      // Supabase retorna lista de filas afectadas o vacío según config
       if (res == null) {
         throw Exception('Respuesta nula al eliminar.');
       }
@@ -253,7 +239,6 @@ class NotificationSendService {
     switch (draft.tipoDestinatario) {
       case 'individual':
         if ((draft.alumnoId ?? '').isEmpty) return [];
-        // Verificamos que pertenezca a la escuela (seguridad extra)
         final ok = await _belongToSchool(draft.alumnoId!, escuelaId);
         return ok ? [draft.alumnoId!] : [];
 
@@ -437,6 +422,7 @@ class NotificationSendService {
   //            Helpers de normalización / mapeos
   // =========================================================
 
+  /// Devuelve el valor que espera la columna `tipo_notificacion`.
   String _coerceTipoFromDraft(String raw) {
     final s = raw.trim().toLowerCase();
     if (s == 'permiso' || s == 'permiso_especial' || s == 'permisoespecial') {
@@ -447,8 +433,22 @@ class NotificationSendService {
     if (s == 'salida') return 'salida';
     if (s == 'retraso') return 'retraso';
     if (s == 'ausencia') return 'ausencia';
-    // Fallback conservador
     return 'comunicado';
+  }
+
+  String _buildDestinatariosResumen(NotificationDraft draft) {
+    switch (draft.tipoDestinatario) {
+      case 'individual':
+        return 'tipo=individual; alumno_id=${draft.alumnoId ?? '-'}';
+      case 'grupo':
+        return 'tipo=grupo; grupo_ids=${(draft.grupoIds ?? []).join(",")}';
+      case 'turno':
+        return 'tipo=turno; turno_id=${draft.turnoId ?? '-'}';
+      case 'todos':
+        return 'tipo=todos';
+      default:
+        return draft.tipoDestinatario;
+    }
   }
 
   String _tipoComunicacionDb(TipoComunicacion v) {
@@ -502,7 +502,6 @@ class NotificationSendService {
       case 'comunicado':
         return TipoNotificacion.comunicado;
       default:
-        // Si aparece un valor inesperado en DB, cae a 'comunicado' por seguridad.
         return TipoNotificacion.comunicado;
     }
   }

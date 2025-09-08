@@ -1,6 +1,52 @@
+import 'package:alertaescolar/services/scanner_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/turno.dart' as turno_model;
+
+/// Tipos de fase para el escáner (lo que la UI/servicio necesita resolver)
+
+/// Resultado de resolución de fase de acceso en el instante `now`.
+class AccessPhase {
+  final ScannerAccessType type;
+  final turno_model.Turno? turno; // Turno al que aplica la fase/validación
+  final DateTime?
+      windowStart; // Inicio de ventana considerada (para depurar/mostrar)
+  final DateTime?
+      windowEnd; // Fin de ventana considerada (para depurar/mostrar)
+  final bool withinTolerance; // Solo relevante cuando type==entry
+  final int
+      minutesLate; // Minutos de retraso (>=0); 0 si en tiempo. Solo para entrada.
+  final String?
+      reason; // Texto breve de por qué se resolvió así (útil para logs)
+
+  const AccessPhase({
+    required this.type,
+    required this.turno,
+    required this.windowStart,
+    required this.windowEnd,
+    required this.withinTolerance,
+    required this.minutesLate,
+    required this.reason,
+  });
+}
+
+/// Representa una ventana de turno aterrizada a DateTime reales (start/end)
+class _ShiftWindow {
+  final turno_model.Turno raw;
+  final DateTime start;
+  final DateTime end;
+
+  _ShiftWindow({
+    required this.raw,
+    required this.start,
+    required this.end,
+  });
+
+  bool contains(DateTime t) =>
+      (t.isAtSameMomentAs(start) || t.isAfter(start)) && t.isBefore(end);
+  bool isEndedBefore(DateTime t) => end.isBefore(t) || end.isAtSameMomentAs(t);
+  bool startsAfter(DateTime t) => start.isAfter(t) || start.isAtSameMomentAs(t);
+}
 
 /// Proveedor para gestionar turnos (dinámico, N turnos) por escuela.
 class TurnoProvider extends ChangeNotifier {
@@ -68,19 +114,7 @@ class TurnoProvider extends ChangeNotifier {
     }
   }
 
-  // ---------------- API pública ----------------
-
-  void clearError() => _setError(null);
-
-  /// Limpia todo y cierra realtime.
-  void clearAllData() {
-    _disposeRealtime();
-    _turnos.clear();
-    _isLoading = false;
-    _error = null;
-    _currentEscuelaId = null;
-    Future.microtask(notifyListeners);
-  }
+  // ---------------- Utilidades de tiempo ----------------
 
   /// Parsea time dinámico a TimeOfDay. Acepta:
   /// - HH:mm
@@ -100,7 +134,6 @@ class TurnoProvider extends ChangeNotifier {
       }
 
       // Quitar zona horaria (+00, Z) y fracciones (.ffffff)
-      // Orden: quita zona -> quita 'Z' -> quita fracciones
       if (s.contains('+')) s = s.split('+').first;
       if (s.endsWith('Z')) s = s.substring(0, s.length - 1);
       if (s.contains('.')) s = s.split('.').first;
@@ -125,6 +158,55 @@ class TurnoProvider extends ChangeNotifier {
     return '$h:$m';
   }
 
+  /// Crea un DateTime "hoy" con la hora/minuto de un TimeOfDay.
+  DateTime _buildToday(TimeOfDay tod, {DateTime? anchor}) {
+    final base = anchor ?? DateTime.now();
+    return DateTime(base.year, base.month, base.day, tod.hour, tod.minute);
+    // Nota: usaremos la zona del dispositivo. Si requieres TZ de la escuela,
+    // aquí podrías aplicar un offset/país según configuración de la escuela.
+  }
+
+  /// Construye ventanas de turno (start/end) para HOY.
+  /// Maneja turnos que cruzan medianoche (end < start => end + 1 día).
+  List<_ShiftWindow> _buildTodayWindows(List<turno_model.Turno> list,
+      {DateTime? now}) {
+    final anchor = now ?? DateTime.now();
+    final windows = <_ShiftWindow>[];
+
+    for (final t in list) {
+      final startTod = parseTimeString(t.horaInicio);
+      final endTod = parseTimeString(t.horaFin);
+      if (startTod == null || endTod == null) continue;
+
+      var start = _buildToday(startTod, anchor: anchor);
+      var end = _buildToday(endTod, anchor: anchor);
+
+      // Si el fin es "antes" que el inicio, asumimos turno nocturno que cruza medianoche.
+      if (!end.isAfter(start)) {
+        end = end.add(const Duration(days: 1));
+      }
+
+      windows.add(_ShiftWindow(raw: t, start: start, end: end));
+    }
+
+    windows.sort((a, b) => a.start.compareTo(b.start));
+    return windows;
+  }
+
+  // ---------------- API pública ----------------
+
+  void clearError() => _setError(null);
+
+  /// Limpia todo y cierra realtime.
+  void clearAllData() {
+    _disposeRealtime();
+    _turnos.clear();
+    _isLoading = false;
+    _error = null;
+    _currentEscuelaId = null;
+    Future.microtask(notifyListeners);
+  }
+
   /// Carga todos los turnos de una escuela ordenados por hora de inicio.
   Future<void> loadTurnos({
     required String escuelaId,
@@ -143,7 +225,6 @@ class TurnoProvider extends ChangeNotifier {
           .from('turnos')
           .select('id, turno, hora_inicio, hora_fin, tolerancia, id_escuela')
           .eq('id_escuela', escuelaId)
-          // ⚠️ clave: ordenar por hora_inicio para que la vista no tenga que reordenar
           .order('hora_inicio', ascending: true);
 
       _turnos
@@ -287,6 +368,131 @@ class TurnoProvider extends ChangeNotifier {
     } finally {
       _setLoading(false);
     }
+  }
+
+  // ----------------- RESOLUCIÓN DE FASE (Entrada/Salida) -----------------
+
+  /// Resuelve si el escáner debe tratarse como ENTRADA o SALIDA en el instante `now`.
+  ///
+  /// Reglas:
+  ///  - **Entrada**: mientras `now` esté entre [start, end) del turno activo.
+  ///    La **tolerancia** (minutos) SOLO aplica para calificar si el alumno va en tiempo
+  ///    o en retraso (no cambia que la fase sea entrada).
+  ///  - **Salida**: desde que `hora_fin` del turno activo llega/pasa y hasta que inicie
+  ///    el siguiente turno. Cuando otra `hora_inicio` llega, volvemos a **Entrada** con
+  ///    la tolerancia de ese nuevo turno.
+  ///
+  /// Si no hay turnos cargados, se devuelve `exit` sin turno (para bloquear).
+  AccessPhase resolveAccessPhase({DateTime? now}) {
+    final _now = now ?? DateTime.now();
+
+    if (_turnos.isEmpty) {
+      return const AccessPhase(
+        type: ScannerAccessType.exit,
+        turno: null,
+        windowStart: null,
+        windowEnd: null,
+        withinTolerance: false,
+        minutesLate: 0,
+        reason: 'No hay turnos configurados',
+      );
+    }
+
+    final windows = _buildTodayWindows(_turnos, now: _now);
+
+    // 1) ¿Estamos dentro de algún turno activo?
+    for (final w in windows) {
+      if (w.contains(_now)) {
+        // ENTRADA
+        final tol = (w.raw.tolerancia ?? 0).toInt();
+        final limitOnTime = w.start.add(
+            Duration(minutes: tol.clamp(0, 480))); // evitar valores absurdos
+
+        final withinTol = !_now.isAfter(limitOnTime);
+        final lateMinutes =
+            withinTol ? 0 : _now.difference(limitOnTime).inMinutes;
+
+        return AccessPhase(
+          type: ScannerAccessType.entry,
+          turno: w.raw,
+          windowStart: w.start,
+          windowEnd: w.end,
+          withinTolerance: withinTol,
+          minutesLate: lateMinutes,
+          reason: withinTol
+              ? 'Dentro de turno (en tiempo/tolerancia)'
+              : 'Dentro de turno (retraso ${lateMinutes}m > tolerancia ${tol}m)',
+        );
+      }
+    }
+
+    // 2) Si no estamos dentro de un turno, buscamos el último turno que ya terminó (para SALIDA)
+    //    y el próximo turno que aún no empieza.
+    _ShiftWindow? lastEnded;
+    _ShiftWindow? nextStarting;
+
+    for (final w in windows) {
+      if (w.isEndedBefore(_now)) {
+        lastEnded = w; // se quedará con el más reciente que ya terminó
+      } else if (w.startsAfter(_now) && nextStarting == null) {
+        nextStarting = w;
+      }
+    }
+
+    if (lastEnded != null &&
+        (nextStarting == null || nextStarting!.start.isAfter(_now))) {
+      // Estamos en una franja posterior a un turno, pero previa al siguiente → SALIDA del último turno.
+      return AccessPhase(
+        type: ScannerAccessType.exit,
+        turno: lastEnded!.raw,
+        windowStart: lastEnded!.end,
+        windowEnd: nextStarting?.start,
+        withinTolerance: false,
+        minutesLate: 0,
+        reason:
+            'Fuera de turno activo; aplica SALIDA del último turno que finalizó',
+      );
+    }
+
+    // 3) Si estamos antes del primer turno del día (no hay lastEnded), no es salida todavía:
+    //    bloqueamos como salida genérica (o podrías devolver un estado “idle” si lo prefieres).
+    if (lastEnded == null &&
+        nextStarting != null &&
+        _now.isBefore(nextStarting!.start)) {
+      return AccessPhase(
+        type: ScannerAccessType.exit,
+        turno: null,
+        windowStart: null,
+        windowEnd: nextStarting!.start,
+        withinTolerance: false,
+        minutesLate: 0,
+        reason: 'Antes del primer turno del día; aún no es ENTRADA',
+      );
+    }
+
+    // 4) Caso borde: no hay siguiente turno (estamos después del último) → SALIDA genérica del último si existiera.
+    if (lastEnded != null && nextStarting == null) {
+      return AccessPhase(
+        type: ScannerAccessType.exit,
+        turno: lastEnded!.raw,
+        windowStart: lastEnded!.end,
+        windowEnd: null,
+        withinTolerance: false,
+        minutesLate: 0,
+        reason: 'Después del último turno del día; SALIDA',
+      );
+    }
+
+    // 5) Devolver salida por defecto (fallback seguro).
+    return const AccessPhase(
+      type: ScannerAccessType.exit,
+      turno: null,
+      windowStart: null,
+      windowEnd: null,
+      withinTolerance: false,
+      minutesLate: 0,
+      reason: 'No se pudo determinar fase; fallback SALIDA',
+    );
   }
 
   @override

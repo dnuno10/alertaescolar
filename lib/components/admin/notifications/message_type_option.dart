@@ -40,13 +40,13 @@ class MessageTypeOption extends StatelessWidget {
         padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
         decoration: BoxDecoration(
           color: isSelected
-              ? color.withOpacity(0.1)
+              ? color.withOpacity(0.0)
               : AppTheme.getBackgroundColor(context),
           borderRadius:
               BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
           border: Border.all(
             color: isSelected ? color : AppTheme.getBorderColor(context),
-            width: isSelected ? 2 : 1,
+            width: 1,
           ),
         ),
         child: Row(

@@ -1,3 +1,7 @@
+// lib/components/scanner/processing_view.dart
+// Versión minimalista, SIN SOMBRAS, centrada, limpia y profesional.
+// Mantiene lógica original, headless/full UI y retorno detallado.
+
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -30,12 +34,8 @@ class ProcessingView extends StatefulWidget {
   final String escuelaId;
   final ScannerAccessType accessType;
   final bool isDefaultEntryConfig;
-  final bool isExtracurricular; // Nuevo parámetro
-
-  /// Nuevo: modo de visualización. En headless no se muestran pantallas de resultado.
+  final bool isExtracurricular;
   final ProcessingDisplayMode displayMode;
-
-  /// Nuevo: si true, hace Navigator.pop con ProcessingOutcome (detallado); si false, pop(bool).
   final bool returnDetailedResult;
 
   const ProcessingView({
@@ -45,7 +45,7 @@ class ProcessingView extends StatefulWidget {
     required this.escuelaId,
     required this.accessType,
     required this.isDefaultEntryConfig,
-    this.isExtracurricular = false, // Por defecto falso
+    this.isExtracurricular = false,
     this.displayMode = ProcessingDisplayMode.full,
     this.returnDetailedResult = false,
   });
@@ -66,27 +66,17 @@ class _ProcessingViewState extends State<ProcessingView>
   String? _errorMessage;
 
   bool _processingStarted = false;
-
-  // Anti double-pop & timers cancelables
   bool _hasPopped = false;
-  bool _disposed = false; // ⚡ OPTIMIZACIÓN: Prevenir múltiples dispose
+  bool _disposed = false;
   Timer? _autoPopTimer;
 
-  void _startProcessingOnce() {
-    if (_processingStarted) return;
-    _processingStarted = true;
-    _startProcessing();
-  }
-
   // Animations
-  late AnimationController _processingAnimationController;
-  late AnimationController _resultAnimationController;
-  late AnimationController _slideInAnimationController;
-  late Animation<double> _processingFadeAnimation;
-  late Animation<double> _processingRotationAnimation;
-  late Animation<double> _resultScaleAnimation;
-  late Animation<Offset> _slideInAnimation;
-  late Animation<double> _overlayOpacityAnimation;
+  late final AnimationController _processingAnimationController;
+  late final AnimationController _resultAnimationController;
+  late final AnimationController _slideInAnimationController;
+  late final Animation<double> _processingRotationAnimation;
+  late final Animation<double> _resultScaleAnimation;
+  late final Animation<Offset> _slideInAnimation;
 
   @override
   void initState() {
@@ -97,64 +87,46 @@ class _ProcessingViewState extends State<ProcessingView>
 
   void _initAnimations() {
     _processingAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
+        duration: const Duration(milliseconds: 1400), vsync: this)
+      ..repeat();
 
     _resultAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
+        duration: const Duration(milliseconds: 420), vsync: this);
 
     _slideInAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
+        duration: const Duration(milliseconds: 360), vsync: this);
 
-    _processingFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    _processingRotationAnimation = Tween<double>(begin: 0.0, end: 2.0).animate(
       CurvedAnimation(
-        parent: _processingAnimationController,
-        curve: const Interval(0.0, 0.4, curve: Curves.easeInOut),
-      ),
+          parent: _processingAnimationController, curve: Curves.linear),
     );
 
-    _processingRotationAnimation =
-        Tween<double>(begin: 0.0, end: 2.0).animate(CurvedAnimation(
-      parent: _processingAnimationController,
-      curve: Curves.linear,
-    ));
-
-    _resultScaleAnimation =
-        Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
-      parent: _resultAnimationController,
-      curve: Curves.easeOutBack,
-    ));
-
-    _slideInAnimation =
-        Tween<Offset>(begin: const Offset(0.0, 0.1), end: Offset.zero).animate(
+    _resultScaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
       CurvedAnimation(
-          parent: _slideInAnimationController, curve: Curves.easeOutQuart),
+          parent: _resultAnimationController, curve: Curves.easeOutCubic),
     );
 
-    _overlayOpacityAnimation =
-        Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
-      parent: _slideInAnimationController,
-      curve: Curves.easeOut,
-    ));
-
-    _processingAnimationController.repeat();
+    _slideInAnimation = Tween<Offset>(
+      begin: const Offset(0.0, 0.08),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+        parent: _slideInAnimationController, curve: Curves.easeOutQuart));
   }
 
-  /// Busca recursivamente un mensaje de error en cualquier estructura (Map/List/String)
+  void _startProcessingOnce() {
+    if (_processingStarted) return;
+    _processingStarted = true;
+    _startProcessing();
+  }
+
   String? _digForError(dynamic data) {
     if (data == null) return null;
     if (data is String) {
       final s = data.trim();
-      if (s.isNotEmpty) return s;
-      return null;
+      return s.isEmpty ? null : s;
     }
     if (data is Map) {
-      const candidates = [
+      const fields = [
         'error',
         'message',
         'mensaje',
@@ -163,22 +135,22 @@ class _ProcessingViewState extends State<ProcessingView>
         'razon',
         'reason'
       ];
-      for (final key in candidates) {
-        if (data.containsKey(key)) {
-          final val = _digForError(data[key]);
-          if (val != null && val.isNotEmpty) return val;
+      for (final k in fields) {
+        if (data.containsKey(k)) {
+          final found = _digForError(data[k]);
+          if (found != null && found.isNotEmpty) return found;
         }
       }
       for (final v in data.values) {
-        final val = _digForError(v);
-        if (val != null && val.isNotEmpty) return val;
+        final found = _digForError(v);
+        if (found != null && found.isNotEmpty) return found;
       }
       return null;
     }
     if (data is List) {
       for (final v in data) {
-        final val = _digForError(v);
-        if (val != null && val.isNotEmpty) return val;
+        final found = _digForError(v);
+        if (found != null && found.isNotEmpty) return found;
       }
     }
     return null;
@@ -187,11 +159,8 @@ class _ProcessingViewState extends State<ProcessingView>
   Future<void> _startProcessing() async {
     if (!mounted) return;
 
-    final l10n = AppLocalizations.of(context);
-
     try {
       final turnoProvider = Provider.of<TurnoProvider>(context, listen: false);
-
       if (turnoProvider.currentEscuelaId != widget.escuelaId) {
         await turnoProvider.loadTurnos(escuelaId: widget.escuelaId);
       }
@@ -202,15 +171,14 @@ class _ProcessingViewState extends State<ProcessingView>
         escuelaIdFromContext: widget.escuelaId,
         accessType: widget.accessType,
         isDefaultEntryConfig: widget.isDefaultEntryConfig,
-        isExtracurricular: widget.isExtracurricular, // Nuevo parámetro
+        isExtracurricular: widget.isExtracurricular,
         turnoProvider: turnoProvider,
       );
 
       if (!mounted) return;
       _processingAnimationController.stop();
 
-      // Construimos outcome detallado desde el resultado
-      bool success = result['success'] == true;
+      final success = result['success'] == true;
       String? message;
 
       if (success) {
@@ -255,12 +223,10 @@ class _ProcessingViewState extends State<ProcessingView>
       );
 
       if (widget.displayMode == ProcessingDisplayMode.headless) {
-        // HEADLESS: no UI de resultado; regresar inmediato.
         _return(outcome);
         return;
       }
 
-      // FULL UI:
       if (!mounted) return;
       setState(() {
         _isProcessing = false;
@@ -272,48 +238,44 @@ class _ProcessingViewState extends State<ProcessingView>
       _resultAnimationController.forward();
       _slideInAnimationController.forward();
 
-      // ⚡ OPTIMIZACIÓN: Auto-pop más rápido para mejorar la experiencia
       _autoPopTimer?.cancel();
-      _autoPopTimer = Timer(Duration(milliseconds: success ? 800 : 1200), () {
+      _autoPopTimer = Timer(Duration(milliseconds: success ? 2000 : 2000), () {
         if (mounted) _return(outcome);
       });
     } catch (e) {
       if (!mounted) return;
-
       _processingAnimationController.stop();
 
-      final errorString = e.toString();
+      String errorString = e.toString();
       String? clean = _digForError(errorString);
-
       if (clean == null || clean.isEmpty) {
         if (errorString.contains('scanner_service') ||
             errorString.contains('ScannerService')) {
           clean =
-              'Error en el servicio de escáner: ${errorString.replaceAll(RegExp(r'^(Exception:|Error:)\s*'), '')}';
+              'Error en el servicio de escáner: ${errorString.replaceAll(RegExp(r'^(Exception:|Error:)\\s*'), '')}';
         } else if (errorString.contains('supabase') ||
             errorString.contains('database') ||
             errorString.contains('PostgrestException')) {
           clean =
-              'Error de conexión con la base de datos: ${errorString.replaceAll(RegExp(r'^(Exception:|Error:)\s*'), '')}';
+              'Error de conexión con la base de datos: ${errorString.replaceAll(RegExp(r'^(Exception:|Error:)\\s*'), '')}';
         } else if (errorString.contains('network') ||
             errorString.contains('connection') ||
             errorString.contains('timeout')) {
           clean =
-              'Error de conexión de red: ${errorString.replaceAll(RegExp(r'^(Exception:|Error:)\s*'), '')}';
+              'Error de conexión de red: ${errorString.replaceAll(RegExp(r'^(Exception:|Error:)\\s*'), '')}';
         } else {
           clean = errorString
               .replaceAll(
                   RegExp(
-                      r'^(Exception:|Error:|FormatException:|StateError:)\s*'),
+                      r'^(Exception:|Error:|FormatException:|StateError:)\\s*'),
                   '')
               .trim();
         }
       }
 
       final outcome = ProcessingOutcome(
-        success: false,
-        message: clean ?? AppLocalizations.of(context).errorProcessingCode,
-      );
+          success: false,
+          message: clean ?? AppLocalizations.of(context).errorProcessingCode);
 
       if (widget.displayMode == ProcessingDisplayMode.headless) {
         _return(outcome);
@@ -335,7 +297,7 @@ class _ProcessingViewState extends State<ProcessingView>
       _slideInAnimationController.forward();
 
       _autoPopTimer?.cancel();
-      _autoPopTimer = Timer(const Duration(milliseconds: 1800), () {
+      _autoPopTimer = Timer(const Duration(milliseconds: 1600), () {
         if (mounted) _return(outcome);
       });
     }
@@ -348,474 +310,362 @@ class _ProcessingViewState extends State<ProcessingView>
     final Object navResult =
         widget.returnDetailedResult ? outcome : outcome.success;
 
-    // ⚡ OPTIMIZACIÓN: Detener animaciones de forma más suave para evitar conflictos con UiKitView
     _autoPopTimer?.cancel();
+    _autoPopTimer = null;
 
     try {
-      if (_processingAnimationController.isAnimating) {
-        _processingAnimationController.stop();
-      }
-      if (_resultAnimationController.isAnimating) {
-        _resultAnimationController.stop();
-      }
-      if (_slideInAnimationController.isAnimating) {
-        _slideInAnimationController.stop();
-      }
-    } catch (e) {
-      debugPrint('ProcessingView: Animation stop error (ignored): $e');
-    }
+      _processingAnimationController.stop();
+    } catch (_) {}
+    try {
+      _resultAnimationController.stop();
+    } catch (_) {}
+    try {
+      _slideInAnimationController.stop();
+    } catch (_) {}
 
-    // ⚡ OPTIMIZACIÓN: Delay mínimo para permitir que iOS libere recursos nativos
-    Future.delayed(const Duration(milliseconds: 50), () {
+    Future.delayed(const Duration(milliseconds: 40), () {
       if (!mounted) return;
-
       if (Navigator.of(context).canPop()) {
         Navigator.of(context).pop(navResult);
-      } else {
-        debugPrint('ProcessingView: No route to pop, returning silently.');
       }
     });
   }
 
   @override
   void dispose() {
-    if (_disposed) return; // ⚡ OPTIMIZACIÓN: Prevenir múltiples dispose
+    if (_disposed) return;
     _disposed = true;
-
-    // ⚡ OPTIMIZACIÓN: Cancelar timers y detener animaciones de forma más robusta
     _autoPopTimer?.cancel();
-    _autoPopTimer = null;
 
-    // Detener animaciones de forma segura
-    try {
-      if (_processingAnimationController.isAnimating) {
-        _processingAnimationController.stop();
-      }
-    } catch (e) {
-      debugPrint('ProcessingView: Error stopping processing animation: $e');
-    }
-
-    try {
-      if (_resultAnimationController.isAnimating) {
-        _resultAnimationController.stop();
-      }
-    } catch (e) {
-      debugPrint('ProcessingView: Error stopping result animation: $e');
-    }
-
-    try {
-      if (_slideInAnimationController.isAnimating) {
-        _slideInAnimationController.stop();
-      }
-    } catch (e) {
-      debugPrint('ProcessingView: Error stopping slide animation: $e');
-    }
-
-    // Dispose controllers de forma segura
     try {
       _processingAnimationController.dispose();
-    } catch (e) {
-      debugPrint('ProcessingView: Error disposing processing controller: $e');
-    }
-
+    } catch (_) {}
     try {
       _resultAnimationController.dispose();
-    } catch (e) {
-      debugPrint('ProcessingView: Error disposing result controller: $e');
-    }
-
+    } catch (_) {}
     try {
       _slideInAnimationController.dispose();
-    } catch (e) {
-      debugPrint('ProcessingView: Error disposing slide controller: $e');
-    }
+    } catch (_) {}
 
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
     if (widget.displayMode == ProcessingDisplayMode.headless) {
-      // ➜ Usamos la misma vista de "Procesando" que ya incluye el
-      //    recuadro "Código Escaneado", para que SIEMPRE se vea el código.
-      final screenSize = MediaQuery.of(context).size;
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: _buildProcessingView(screenSize),
+        body: _ProcessingBody(
+          size: size,
+          child: _buildProcessingContent(size),
+        ),
       );
     }
 
-    final screenSize = MediaQuery.of(context).size;
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       body: Stack(
         children: [
-          if (_isProcessing) _buildProcessingView(screenSize),
-          if (_showResult) _buildResultView(screenSize),
+          if (_isProcessing)
+            _ProcessingBody(size: size, child: _buildProcessingContent(size)),
+          if (_showResult)
+            _ProcessingBody(size: size, child: _buildResultContent(size)),
         ],
       ),
     );
   }
 
-  Widget _buildProcessingView(Size screenSize) {
-    return AnimatedBuilder(
-      animation: _processingFadeAnimation,
-      builder: (context, child) {
-        return Container(
-          width: screenSize.width,
-          height: screenSize.height,
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-          ),
-          child: SafeArea(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 80,
-                  height: 80,
-                  child: AnimatedBuilder(
-                    animation: _processingRotationAnimation,
-                    builder: (context, child) {
-                      return Transform.rotate(
-                        angle: _processingRotationAnimation.value * 2 * math.pi,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppTheme.accentOrange,
-                              width: 3,
-                            ),
-                          ),
-                          child: CustomPaint(
-                            painter: _ArcPainter(
-                              color: AppTheme.accentOrange,
-                              strokeWidth: 3,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                SizedBox(height: AppTheme.getLargePadding(screenSize) * 2),
-                Text(
-                  'Procesando',
-                  style: AppTheme.getH1(screenSize).copyWith(
-                    color: AppTheme.getTextPrimaryColor(context),
-                    fontWeight: FontWeight.w300,
-                    letterSpacing: 2.0,
-                  ),
-                ),
-                SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppTheme.getLargePadding(screenSize),
-                    vertical: AppTheme.getMediumPadding(screenSize),
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentOrange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppTheme.accentOrange.withOpacity(0.2),
-                      width: 1,
+  // ========================= UI MINIMAL =========================
+
+  Widget _buildProcessingContent(Size size) {
+    final padL = AppTheme.getLargePadding(size);
+    final padM = AppTheme.getMediumPadding(size);
+
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Loader circular minimal
+          SizedBox(
+            width: size.shortestSide * 0.18,
+            height: size.shortestSide * 0.18,
+            child: AnimatedBuilder(
+              animation: _processingRotationAnimation,
+              builder: (_, __) {
+                return Transform.rotate(
+                  angle: _processingRotationAnimation.value * 2 * math.pi,
+                  child: CustomPaint(
+                    painter: _RingPainter(
+                      color: AppTheme.accentOrange,
+                      strokeWidth: 3.0,
                     ),
                   ),
-                  child: Column(
-                    children: [
-                      Text(
-                        "Código Escaneado",
-                        style: AppTheme.getBodyMedium(screenSize).copyWith(
-                          color: AppTheme.accentOrange.withOpacity(0.6),
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'monospace',
-                          letterSpacing: 1.5,
-                        ),
+                );
+              },
+            ),
+          ),
+          SizedBox(height: padL),
+          Text(
+            'Procesando',
+            style: AppTheme.getH1(size).copyWith(
+              color: AppTheme.getTextPrimaryColor(context),
+              fontWeight: FontWeight.w400,
+              letterSpacing: 0.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: padM),
+          // Display del código (flat, sin sombras, un solo nivel)
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: padL),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: AppTheme.accentOrange.withOpacity(0.08),
+                borderRadius:
+                    BorderRadius.circular(AppTheme.getLargeRadius(size)),
+                border: Border.all(
+                    color: AppTheme.accentOrange.withOpacity(0.36), width: 1),
+              ),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: padL, vertical: padM),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Código escaneado',
+                      style: AppTheme.getCaption(size).copyWith(
+                        color: AppTheme.accentOrange.withOpacity(0.8),
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.6,
                       ),
-                      Text(
-                        widget.scannedCode,
-                        style: AppTheme.getH2(screenSize).copyWith(
-                          color: AppTheme.accentOrange,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'monospace',
-                          letterSpacing: 1.5,
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: AppTheme.getSmallPadding(size)),
+                    SelectableText(
+                      widget.scannedCode,
+                      style: AppTheme.getH2(size).copyWith(
+                        color: AppTheme.accentOrange,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.1,
+                        fontFamily: 'monospace',
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResultContent(Size size) {
+    return _isSuccess && _studentData != null
+        ? _buildSuccessContent(size)
+        : _buildErrorContent(size);
+  }
+
+  Widget _buildSuccessContent(Size size) {
+    final padL = AppTheme.getLargePadding(size);
+    final padM = AppTheme.getMediumPadding(size);
+    final padS = AppTheme.getSmallPadding(size);
+
+    final cardRadius = BorderRadius.circular(AppTheme.getLargeRadius(size));
+
+    final timeText = _accessData != null
+        ? _formatTime12h(DateTime.parse(_accessData!['time']).toLocal())
+        : 'N/A';
+
+    return FadeTransition(
+      opacity: _resultAnimationController,
+      child: SlideTransition(
+        position: _slideInAnimation,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: padL),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Ícono de éxito (sin sombras, sin contenedor adicional)
+              Icon(Icons.check_circle_rounded,
+                  size: size.shortestSide * 0.22, color: Colors.green.shade600),
+              SizedBox(height: padL),
+              Text(
+                'Escaneo exitoso',
+                style: AppTheme.getH1(size).copyWith(
+                  color: AppTheme.getTextPrimaryColor(context),
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: padL),
+
+              // Tarjeta plana con datos del alumno y registro
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppTheme.getBackgroundColor(context),
+                  border: Border.all(color: AppTheme.getBorderColor(context)),
+                  borderRadius: cardRadius,
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(padM),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _LabelValue(
+                        label: 'Estudiante',
+                        value: _studentData!['name'] ?? 'N/A',
+                        size: size,
+                        alignCenter: true,
+                      ),
+                      SizedBox(height: padS),
+                      const _DividerThin(),
+                      SizedBox(height: padS),
+                      _TwoCols(
+                        left: _InfoPill(
+                          icon: Icons.badge_outlined,
+                          label: 'Matrícula',
+                          value: _studentData!['matricula'] ?? 'N/A',
+                          size: size,
+                          monospace: true,
                         ),
+                        right: _InfoPill(
+                          icon: Icons.school_outlined,
+                          label: 'Grado/Grupo',
+                          value: _studentData!['grupo'] ?? 'N/A',
+                          size: size,
+                        ),
+                        size: size,
+                      ),
+                      SizedBox(height: padS),
+                      _TwoCols(
+                        left: _InfoPill(
+                          icon: Icons.layers_outlined,
+                          label: 'Nivel',
+                          value: _studentData!['nivel'] ?? 'N/A',
+                          size: size,
+                        ),
+                        right: _InfoPill(
+                          icon: Icons.schedule_outlined,
+                          label: 'Turno',
+                          value: _studentData!['turno'] ?? 'N/A',
+                          size: size,
+                        ),
+                        size: size,
+                      ),
+                      SizedBox(height: padS),
+                      _InfoPill(
+                        icon: Icons.access_time_filled,
+                        label: 'Hora de registro',
+                        value: timeText,
+                        size: size,
+                        monospace: true,
+                        wide: true,
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
-  Widget _buildResultView(Size screenSize) {
-    if (_isSuccess && _studentData != null) {
-      return _buildSuccessView(screenSize);
-    } else {
-      return _buildErrorView(screenSize);
-    }
-  }
+  Widget _buildErrorContent(Size size) {
+    final padL = AppTheme.getLargePadding(size);
+    final padM = AppTheme.getMediumPadding(size);
 
-  Widget _buildSuccessView(Size screenSize) {
-    return AnimatedBuilder(
-      animation: _overlayOpacityAnimation,
-      builder: (context, child) {
-        return Container(
-          width: screenSize.width,
-          height: screenSize.height,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.green.withOpacity(_overlayOpacityAnimation.value),
-                Colors.green.shade700
-                    .withOpacity(_overlayOpacityAnimation.value),
-              ],
-            ),
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppTheme.getLargePadding(screenSize),
-                vertical: AppTheme.getMediumPadding(screenSize),
+    return FadeTransition(
+      opacity: _resultAnimationController,
+      child: SlideTransition(
+        position: _slideInAnimation,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: padL),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline_rounded,
+                  size: size.shortestSide * 0.22, color: Colors.red.shade600),
+              SizedBox(height: padL),
+              Text(
+                'Error de escaneo',
+                style: AppTheme.getH1(size).copyWith(
+                  color: AppTheme.getTextPrimaryColor(context),
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.5,
+                ),
+                textAlign: TextAlign.center,
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SlideTransition(
-                    position: _slideInAnimation,
-                    child: AnimatedBuilder(
-                      animation: _resultScaleAnimation,
-                      builder: (context, child) {
-                        return Transform.scale(
-                          scale: _resultScaleAnimation.value,
-                          child: Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.4),
-                                width: 3,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 20,
-                                  spreadRadius: 2,
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.check_rounded,
-                              color: Colors.white,
-                              size: 50,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  SizedBox(height: AppTheme.getLargePadding(screenSize)),
-                  SlideTransition(
-                    position: _slideInAnimation,
-                    child: Text(
-                      'Escaneo Exitoso',
-                      style: AppTheme.getH1(screenSize).copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w300,
-                        letterSpacing: 2.0,
-                        fontSize: 28,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  SizedBox(height: AppTheme.getLargePadding(screenSize)),
-                  SlideTransition(
-                    position: _slideInAnimation,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppTheme.getLargePadding(screenSize),
-                        vertical: AppTheme.getMediumPadding(screenSize),
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Column(
+              SizedBox(height: padM),
+              // Mensaje de error (plano)
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppTheme.getCardColor(context),
+                  border: Border.all(color: AppTheme.getBorderColor(context)),
+                  borderRadius:
+                      BorderRadius.circular(AppTheme.getLargeRadius(size)),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(padM),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            'Estudiante',
-                            style: AppTheme.getCaption(screenSize).copyWith(
-                              color: Colors.white.withOpacity(0.8),
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 1.5,
-                              fontSize: 12,
-                            ),
-                          ),
-                          SizedBox(
-                              height: AppTheme.getSmallPadding(screenSize)),
-                          Text(
-                            _studentData!['name'] ?? 'N/A',
-                            style: AppTheme.getH1(screenSize).copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 22,
-                              height: 1.2,
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: AppTheme.getLargePadding(screenSize)),
-                  SlideTransition(
-                    position: _slideInAnimation,
-                    child: Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 20,
-                            spreadRadius: 2,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          Container(
-                            width: double.infinity,
-                            padding: EdgeInsets.all(
-                                AppTheme.getMediumPadding(screenSize)),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.1),
-                              borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(24)),
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: Colors.white.withOpacity(0.2),
-                                  width: 1,
-                                ),
+                          Icon(Icons.info_outline_rounded,
+                              size: 18,
+                              color: AppTheme.getTextSecondaryColor(context)),
+                          SizedBox(width: AppTheme.getSmallPadding(size)),
+                          Flexible(
+                            child: Text(
+                              _errorMessage ?? 'Error desconocido',
+                              style: AppTheme.getBodyMedium(size).copyWith(
+                                color: AppTheme.getTextPrimaryColor(context),
+                                height: 1.35,
                               ),
-                            ),
-                            child: Column(
-                              children: [
-                                Text(
-                                  'MATRÍCULA',
-                                  style:
-                                      AppTheme.getCaption(screenSize).copyWith(
-                                    color: Colors.white.withOpacity(0.7),
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 2.0,
-                                    fontSize: 10,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                SizedBox(
-                                    height:
-                                        AppTheme.getSmallPadding(screenSize) /
-                                            2),
-                                Text(
-                                  _studentData!['matricula'] ?? 'N/A',
-                                  style: AppTheme.getH1(screenSize).copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 24,
-                                    letterSpacing: 2.0,
-                                    fontFamily: 'monospace',
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.all(
-                                AppTheme.getMediumPadding(screenSize)),
-                            child: Column(
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildModernInfoCard(
-                                        'Grado',
-                                        _studentData!['grupo'] ?? 'N/A',
-                                        Icons.school_outlined,
-                                        screenSize,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                        width: AppTheme.getSmallPadding(
-                                            screenSize)),
-                                    Expanded(
-                                      child: _buildModernInfoCard(
-                                        'Nivel',
-                                        _studentData!['nivel'] ?? 'N/A',
-                                        Icons.stairs_outlined,
-                                        screenSize,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(
-                                    height:
-                                        AppTheme.getSmallPadding(screenSize)),
-                                _buildModernInfoCard(
-                                  'Turno',
-                                  _studentData!['turno'] ?? 'N/A',
-                                  Icons.schedule_outlined,
-                                  screenSize,
-                                  isFullWidth: true,
-                                ),
-                                SizedBox(
-                                    height:
-                                        AppTheme.getSmallPadding(screenSize)),
-                                _buildModernInfoCard(
-                                  'Hora de Registro',
-                                  _accessData != null
-                                      ? _formatTime12h(
-                                          DateTime.parse(_accessData!['time'])
-                                              .toLocal())
-                                      : 'N/A',
-                                  Icons.access_time_filled,
-                                  screenSize,
-                                  isFullWidth: true,
-                                  isHighlighted: true,
-                                ),
-                              ],
+                              textAlign: TextAlign.center,
                             ),
                           ),
                         ],
                       ),
-                    ),
+                      SizedBox(height: AppTheme.getSmallPadding(size)),
+                      const _DividerThin(),
+                      SizedBox(height: AppTheme.getSmallPadding(size)),
+                      Text(
+                        'Código escaneado',
+                        style: AppTheme.getCaption(size).copyWith(
+                          color: AppTheme.getTextSecondaryColor(context),
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.3,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: AppTheme.getSmallPadding(size)),
+                      SelectableText(
+                        widget.scannedCode,
+                        style: AppTheme.getBodyMedium(size).copyWith(
+                          color: AppTheme.getTextPrimaryColor(context),
+                          fontFamily: 'monospace',
+                          letterSpacing: 0.6,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -831,263 +681,210 @@ class _ProcessingViewState extends State<ProcessingView>
     }
     return '$hour:$minute $period';
   }
+}
 
-  Widget _buildErrorView(Size screenSize) {
-    return AnimatedBuilder(
-      animation: _overlayOpacityAnimation,
-      builder: (context, child) {
-        return Container(
-          width: screenSize.width,
-          height: screenSize.height,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.red.withOpacity(_overlayOpacityAnimation.value),
-                Colors.red.shade700.withOpacity(_overlayOpacityAnimation.value),
-              ],
-            ),
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppTheme.getLargePadding(screenSize),
-                vertical: AppTheme.getMediumPadding(screenSize),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SlideTransition(
-                    position: _slideInAnimation,
-                    child: AnimatedBuilder(
-                      animation: _resultScaleAnimation,
-                      builder: (context, child) {
-                        return Transform.scale(
-                          scale: _resultScaleAnimation.value,
-                          child: Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.4),
-                                width: 3,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.error_outline_rounded,
-                              color: Colors.white,
-                              size: 50,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  SizedBox(height: AppTheme.getLargePadding(screenSize)),
-                  SlideTransition(
-                    position: _slideInAnimation,
-                    child: Text(
-                      'Error de Escaneo',
-                      style: AppTheme.getH1(screenSize).copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w300,
-                        letterSpacing: 2.0,
-                        fontSize: 28,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  SizedBox(height: AppTheme.getLargePadding(screenSize)),
-                  SlideTransition(
-                    position: _slideInAnimation,
-                    child: Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppTheme.getLargePadding(screenSize),
-                        vertical: AppTheme.getMediumPadding(screenSize),
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.info_outline_rounded,
-                            color: Colors.white.withOpacity(0.8),
-                            size: 24,
-                          ),
-                          SizedBox(
-                              height: AppTheme.getSmallPadding(screenSize)),
-                          Text(
-                            _errorMessage ?? 'Error desconocido',
-                            style: AppTheme.getH2(screenSize).copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 18,
-                              height: 1.4,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: AppTheme.getLargePadding(screenSize)),
-                  SlideTransition(
-                    position: _slideInAnimation,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppTheme.getMediumPadding(screenSize),
-                        vertical: AppTheme.getSmallPadding(screenSize),
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
-                          width: 1,
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Text(
-                            'Código Escaneado',
-                            style: AppTheme.getCaption(screenSize).copyWith(
-                              color: Colors.white.withOpacity(0.7),
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 1.0,
-                            ),
-                          ),
-                          SizedBox(
-                              height: AppTheme.getSmallPadding(screenSize) / 2),
-                          Text(
-                            widget.scannedCode,
-                            style: AppTheme.getBodyMedium(screenSize).copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'monospace',
-                              letterSpacing: 1.2,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
+// ========================= WIDGETS DE SOPORTE (planos, sin sombras) =========================
 
-  Widget _buildModernInfoCard(
-    String label,
-    String value,
-    IconData icon,
-    Size screenSize, {
-    bool isFullWidth = false,
-    bool isHighlighted = false,
-  }) {
-    return Container(
-      width: isFullWidth ? double.infinity : null,
-      padding: EdgeInsets.symmetric(
-        horizontal: AppTheme.getMediumPadding(screenSize),
-        vertical: AppTheme.getSmallPadding(screenSize) * 1.2,
-      ),
-      decoration: BoxDecoration(
-        color: isHighlighted
-            ? Colors.white.withOpacity(0.15)
-            : Colors.white.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isHighlighted
-              ? Colors.white.withOpacity(0.4)
-              : Colors.white.withOpacity(0.15),
-          width: 1,
+class _ProcessingBody extends StatelessWidget {
+  final Size size;
+  final Widget child;
+  const _ProcessingBody({required this.size, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final padV = AppTheme.getLargePadding(size);
+    return SafeArea(
+      child: Align(
+        alignment: Alignment.center,
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: padV),
+          child: child,
         ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: Colors.white.withOpacity(0.8), size: 16),
-              SizedBox(width: AppTheme.getSmallPadding(screenSize) / 2),
-              Flexible(
-                child: Text(
-                  label,
-                  style: AppTheme.getCaption(screenSize).copyWith(
-                    color: Colors.white.withOpacity(0.8),
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.5,
-                    fontSize: 11,
-                  ),
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize) / 2),
-          Text(
-            value,
-            style: AppTheme.getH2(screenSize).copyWith(
-              color: Colors.white,
-              fontWeight: isHighlighted ? FontWeight.w700 : FontWeight.w600,
-              fontSize: isHighlighted ? 18 : 16,
-              letterSpacing: isHighlighted ? 1.0 : 0.3,
-              fontFamily: isHighlighted ? 'monospace' : null,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
       ),
     );
   }
 }
 
-class _ArcPainter extends CustomPainter {
+class _LabelValue extends StatelessWidget {
+  final String label;
+  final String value;
+  final Size size;
+  final bool alignCenter;
+  const _LabelValue({
+    required this.label,
+    required this.value,
+    required this.size,
+    this.alignCenter = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment:
+          alignCenter ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: AppTheme.getCaption(size).copyWith(
+            color: AppTheme.getTextSecondaryColor(context),
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.1,
+          ),
+          textAlign: alignCenter ? TextAlign.center : TextAlign.start,
+        ),
+        SizedBox(height: AppTheme.getSmallPadding(size) * 0.5),
+        Text(
+          value,
+          style: AppTheme.getH2(size).copyWith(
+            color: AppTheme.getTextPrimaryColor(context),
+            fontWeight: FontWeight.w700,
+            height: 1.15,
+          ),
+          textAlign: alignCenter ? TextAlign.center : TextAlign.start,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
+}
+
+class _TwoCols extends StatelessWidget {
+  final Widget left;
+  final Widget right;
+  final Size size;
+  const _TwoCols({required this.left, required this.right, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    final gap = AppTheme.getSmallPadding(size);
+    return Row(
+      children: [
+        Expanded(child: left),
+        SizedBox(width: gap),
+        Expanded(child: right),
+      ],
+    );
+  }
+}
+
+class _InfoPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Size size;
+  final bool monospace;
+  final bool wide;
+  const _InfoPill({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.size,
+    this.monospace = false,
+    this.wide = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final padM = AppTheme.getMediumPadding(size);
+    final padS = AppTheme.getSmallPadding(size);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(AppTheme.getLargeRadius(size)),
+        border: Border.all(color: AppTheme.getBorderColor(context)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: padM, vertical: padS * 1.1),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon,
+                    size: 16, color: AppTheme.getTextSecondaryColor(context)),
+                SizedBox(width: padS * 0.6),
+                Flexible(
+                  child: Text(
+                    label,
+                    style: AppTheme.getCaption(size).copyWith(
+                      color: AppTheme.getTextSecondaryColor(context),
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.4,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: padS * 0.6),
+            Text(
+              value,
+              style: AppTheme.getBodyMedium(size).copyWith(
+                color: AppTheme.getTextPrimaryColor(context),
+                fontWeight: FontWeight.w700,
+                letterSpacing: monospace ? 0.8 : 0.2,
+                fontFamily: monospace ? 'monospace' : null,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DividerThin extends StatelessWidget {
+  const _DividerThin();
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 1,
+      child: FractionallySizedBox(
+        widthFactor: 1,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(
+              bottom:
+                  BorderSide(color: Theme.of(context).dividerColor, width: 1),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RingPainter extends CustomPainter {
   final Color color;
   final double strokeWidth;
-
-  _ArcPainter({required this.color, required this.strokeWidth});
+  const _RingPainter({required this.color, required this.strokeWidth});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
+    final rect = Rect.fromLTWH(strokeWidth / 2, strokeWidth / 2,
+        size.width - strokeWidth, size.height - strokeWidth);
+
+    final base = Paint()
+      ..color = color.withOpacity(0.18)
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final arc = Paint()
       ..color = color
       ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    final rect = Rect.fromLTWH(
-      strokeWidth / 2,
-      strokeWidth / 2,
-      size.width - strokeWidth,
-      size.height - strokeWidth,
-    );
-
-    canvas.drawArc(
-      rect,
-      -1.57,
-      4.71,
-      false,
-      paint,
-    );
+    // Anillo base (completo)
+    canvas.drawArc(rect, 0, 2 * math.pi, false, base);
+    // Arco activo (40% del círculo)
+    canvas.drawArc(rect, -math.pi / 2, 0.8 * math.pi, false, arc);
   }
 
   @override

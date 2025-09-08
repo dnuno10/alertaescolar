@@ -238,6 +238,93 @@ class StudentProvider with ChangeNotifier {
         .toList();
   }
 
+  // ===== Etiquetas legibles (id -> nombre) =====
+
+  String grupoLabelById(String? id) {
+    if (id == null || id.isEmpty) return 'Sin grupo';
+    final g = _availableGrupos.firstWhere(
+      (x) => x.id == id,
+      orElse: () => Grupo(
+          id: '',
+          idEscuela: '',
+          grupo: 'Sin grupo',
+          nivelEducativo: 'Sin nivel',
+          fechaRegistro: DateTime.now()),
+    );
+    if (g.id.isEmpty) return 'Sin grupo';
+    // Ej: "Primaria - 3°B"
+    return '${g.nivelEducativo} - ${g.grupo}';
+  }
+
+  String turnoLabelById(String? id) {
+    if (id == null || id.isEmpty) return 'Sin turno';
+    final t = _availableTurnos.firstWhere(
+      (x) => x.id == id,
+      orElse: () => turno_model.Turno(
+          id: '',
+          turno: 'Sin turno',
+          horaInicio: '',
+          horaFin: '',
+          fechaRegistro: DateTime.now(),
+          idEscuela: '',
+          tolerancia: 15),
+    );
+    return t.turno;
+  }
+
+  String alumnoLabelById(String? id) {
+    if (id == null || id.isEmpty) return 'Sin estudiante';
+    final s = _students.firstWhere(
+      (x) => x.id == id,
+      orElse: () => StudentDetails(
+        id: '',
+        nombre: 'Sin estudiante',
+        matricula: '',
+        escuelaId: '',
+        grupoId: '',
+        grupo: 'Sin grupo',
+        nivelEducativo: 'Sin nivel',
+        llaveActiva: false,
+        fechaRegistro: DateTime.now(),
+        tutores: const [],
+      ),
+    );
+    // Ej: "María López (AE1234)"
+    return s.matricula.isNotEmpty ? '${s.nombre} (${s.matricula})' : s.nombre;
+  }
+
+// ===== Ítems listos para DropdownButtonFormField =====
+
+  List<DropdownMenuItem<String>> gruposDropdownItems() {
+    return _availableGrupos
+        .map((g) => DropdownMenuItem<String>(
+              value: g.id,
+              child: Text('${g.nivelEducativo} - ${g.grupo}'),
+            ))
+        .toList();
+  }
+
+  List<DropdownMenuItem<String>> turnosDropdownItems() {
+    return _availableTurnos
+        .map((t) => DropdownMenuItem<String>(
+              value: t.id,
+              child: Text(t.turno),
+            ))
+        .toList();
+  }
+
+  List<DropdownMenuItem<String>> alumnosDropdownItems() {
+    // Usa _filteredStudents para respetar búsqueda/filtros activos
+    return _filteredStudents
+        .map((s) => DropdownMenuItem<String>(
+              value: s.id,
+              child: Text(s.matricula.isNotEmpty
+                  ? '${s.nombre} (${s.matricula})'
+                  : s.nombre),
+            ))
+        .toList();
+  }
+
   // NUEVO: nombres de grupo por nivel educativo
   List<String> getGrupoNamesByNivelEducativo(String nivelEducativo) {
     final names = getGruposByNivelEducativo(nivelEducativo)

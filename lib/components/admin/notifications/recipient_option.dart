@@ -34,7 +34,7 @@ class RecipientOption extends StatelessWidget {
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
       decoration: BoxDecoration(
         color: isSelected
-            ? AppTheme.accentOrange.withOpacity(0.1)
+            ? AppTheme.accentOrange.withOpacity(0.0)
             : AppTheme.getBackgroundColor(context),
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),

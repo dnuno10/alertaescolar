@@ -49,8 +49,6 @@ class MessageContentForm extends StatelessWidget {
             color: AppTheme.getBackgroundColor(context),
             borderRadius:
                 BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-            border: Border.all(
-                color: AppTheme.getBorderColor(context).withOpacity(0.3)),
           ),
           child: Stack(
             children: [
@@ -71,6 +69,7 @@ class MessageContentForm extends StatelessWidget {
                 ),
                 onChanged: onTitleChanged,
                 decoration: InputDecoration(
+                  fillColor: AppTheme.getBackgroundColor(context),
                   labelText: l10n.messageTitle,
                   labelStyle: AppTheme.getBodyMedium(screenSize).copyWith(
                     color: AppTheme.getTextSecondaryColor(context),
@@ -89,20 +88,21 @@ class MessageContentForm extends StatelessWidget {
                     padding: EdgeInsets.all(
                         AppTheme.getSmallPadding(screenSize) * 0.6),
                     decoration: BoxDecoration(
-                      color: AppTheme.accentOrange.withOpacity(0.1),
+                      color: AppTheme.accentBlue.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(
                           AppTheme.getSmallRadius(screenSize)),
                     ),
                     child: Icon(Icons.title_rounded,
-                        color: AppTheme.accentOrange,
+                        color: AppTheme.accentBlue,
                         size: screenSize.height * 0.022),
                   ),
                   border: InputBorder.none,
+
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(
                         AppTheme.getMediumRadius(screenSize)),
                     borderSide:
-                        BorderSide(color: AppTheme.accentOrange, width: 2),
+                        BorderSide(color: AppTheme.accentBlue, width: 2),
                   ),
                   // padding normal + reserva del contador + un pequeño gap
                   contentPadding: EdgeInsets.fromLTRB(
@@ -137,8 +137,6 @@ class MessageContentForm extends StatelessWidget {
             color: AppTheme.getBackgroundColor(context),
             borderRadius:
                 BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-            border: Border.all(
-                color: AppTheme.getBorderColor(context).withOpacity(0.3)),
           ),
           child: Stack(
             children: [
@@ -160,6 +158,7 @@ class MessageContentForm extends StatelessWidget {
                 onChanged: onMessageChanged,
                 decoration: InputDecoration(
                   labelText: l10n.message,
+                  fillColor: AppTheme.getBackgroundColor(context),
                   labelStyle: AppTheme.getBodyMedium(screenSize).copyWith(
                     color: AppTheme.getTextSecondaryColor(context),
                   ),
@@ -178,7 +177,7 @@ class MessageContentForm extends StatelessWidget {
                     borderRadius: BorderRadius.circular(
                         AppTheme.getMediumRadius(screenSize)),
                     borderSide:
-                        BorderSide(color: AppTheme.accentOrange, width: 2),
+                        BorderSide(color: AppTheme.accentBlue, width: 2),
                   ),
                   // padding normal + reserva del contador + gap
                   contentPadding: EdgeInsets.fromLTRB(

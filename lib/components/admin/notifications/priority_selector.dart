@@ -64,7 +64,7 @@ class PrioritySelector extends StatelessWidget {
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 1.8,
+            childAspectRatio: 2.4,
             crossAxisSpacing: AppTheme.getSmallPadding(screenSize),
             mainAxisSpacing: AppTheme.getSmallPadding(screenSize),
           ),
@@ -78,7 +78,7 @@ class PrioritySelector extends StatelessWidget {
             final Color borderColor =
                 isSelected ? color : AppTheme.getBorderColor(context);
             final Color fillColor = isSelected
-                ? color.withOpacity(0.1)
+                ? color.withOpacity(0.0)
                 : AppTheme.getBackgroundColor(context);
 
             void handleTap() {
@@ -101,7 +101,8 @@ class PrioritySelector extends StatelessWidget {
                 onTap: handleTap,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
+                  padding: EdgeInsets.all(
+                      AppTheme.getSmallPadding(screenSize) * 0.7),
                   decoration: BoxDecoration(
                     color: fillColor,
                     borderRadius: BorderRadius.circular(
@@ -110,7 +111,7 @@ class PrioritySelector extends StatelessWidget {
                       color: enabled
                           ? borderColor
                           : AppTheme.getBorderColor(context).withOpacity(0.6),
-                      width: isSelected ? 2 : 1,
+                      width: 1,
                     ),
                   ),
                   child: Row(

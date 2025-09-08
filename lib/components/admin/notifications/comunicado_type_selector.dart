@@ -113,7 +113,7 @@ class ComunicadoTypeSelector extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? AppTheme.warningColor.withOpacity(0.1)
+                        ? AppTheme.warningColor.withOpacity(0.0)
                         : AppTheme.getBackgroundColor(context),
                     borderRadius: BorderRadius.circular(
                         AppTheme.getMediumRadius(screenSize)),
@@ -121,7 +121,7 @@ class ComunicadoTypeSelector extends StatelessWidget {
                       color: isSelected
                           ? AppTheme.warningColor
                           : AppTheme.getBorderColor(context),
-                      width: isSelected ? 2 : 1,
+                      width: 1,
                     ),
                   ),
                   child: Row(

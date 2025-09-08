@@ -19,8 +19,7 @@ import 'package:alertaescolar/views/user/profile/personal_data_navigation_view.d
 import 'package:alertaescolar/views/user/profile/personal_info/contact_information_view.dart';
 import 'package:alertaescolar/views/user/profile/personal_info/personal_information_view_new.dart'
     as personal_info;
-import 'package:alertaescolar/views/user/profile/notification_settings_view_new.dart'
-    as notification_settings;
+
 import 'package:alertaescolar/views/user/profile/family_information_view.dart';
 
 // Admin
@@ -229,12 +228,7 @@ class AppRoutes {
           builder: (context) => const personal_info.PersonalInformationView(),
           settings: const RouteSettings(name: personalInformation),
         );
-      case notificationSettings:
-        return MaterialPageRoute(
-          builder: (context) =>
-              const notification_settings.NotificationSettingsView(),
-          settings: const RouteSettings(name: notificationSettings),
-        );
+
       case familyInformation:
         return MaterialPageRoute(
           builder: (context) => const FamilyInformationView(),
