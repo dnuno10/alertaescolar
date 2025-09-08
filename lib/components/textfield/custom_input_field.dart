@@ -108,6 +108,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
               FocusScope.of(context).nextFocus();
             }
           },
+          cursorColor: AppTheme.accentBlue,
           decoration: InputDecoration(
             hintText: null, // evita duplicar label
             hintStyle: AppTheme.getBodyMedium(widget.screenSize).copyWith(
@@ -116,7 +117,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
             prefixIcon: widget.icon != null
                 ? Icon(
                     widget.icon,
-                    color: theme.colorScheme.primary,
+                    color: AppTheme.accentBlue,
                     size: widget.screenSize.width * 0.05,
                   )
                 : null,
@@ -129,7 +130,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
               borderSide: BorderSide(
                 // Nota: withOpacity puede mostrar warning en SDKs muy recientes.
                 // Lo mantenemos por compatibilidad con versiones estables.
-                color: theme.colorScheme.primary.withOpacity(0.25),
+                color: AppTheme.accentBlue.withOpacity(0.25),
                 width: 1,
               ),
             ),
@@ -138,7 +139,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
                 AppTheme.getSmallRadius(widget.screenSize),
               ),
               borderSide: BorderSide(
-                color: theme.colorScheme.primary.withOpacity(0.25),
+                color: AppTheme.accentBlue.withOpacity(0.25),
                 width: 1,
               ),
             ),
@@ -147,7 +148,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
                 AppTheme.getSmallRadius(widget.screenSize),
               ),
               borderSide: BorderSide(
-                color: theme.colorScheme.primary,
+                color: AppTheme.accentBlue,
                 width: 2,
               ),
             ),

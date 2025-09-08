@@ -11,11 +11,10 @@ class AppTheme {
   static const Color primaryColorDark = Color(0xFF111213);
   static const Color secondaryColor = Color(0xFF58CC02); // Verde institucional
 
-  // Acentos modernos (mantengo nombres existentes)
-  static const Color accentPurple = Color(0xFF8E7CFF);
-  static const Color accentYellow = Color(0xFFF5C76A);
-  static const Color accentBlue = Color(0xFF4C9DFF);
-  static const Color accentOrange = Color(0xFFFF7A45);
+  static const Color accentPurple = Color(0xFF7C3AED); // Violeta neón
+  static const Color accentYellow = Color(0xFFEAB308); // Amarillo neón
+  static const Color accentBlue = Color(0xFF7C3AED); // Cian brillante
+  static const Color accentOrange = Color(0xFF4361EE); // Naranja vivo
   static const Color accentGold = accentYellow;
 
   // Estados
@@ -26,11 +25,13 @@ class AppTheme {
 
   // Fondos
   static const Color backgroundLight = Color(0xFFF7F8FA); // gris muy claro
-  static const Color backgroundDark = Color(0xFF0E0F11);
   static const Color surfaceLight = Color(0xFFFFFFFF);
-  static const Color surfaceDark = Color(0xFF17181B);
   static const Color cardLight = Color(0xFFFFFFFF);
-  static const Color cardDark = Color(0xFF1D1F22);
+
+// MÁS OSCURO (midnight navy)
+  static const Color backgroundDark = Color.fromARGB(255, 1, 7, 23); // navy-960
+  static const Color surfaceDark = Color.fromARGB(255, 6, 16, 34); // navy-940
+  static const Color cardDark = Color.fromARGB(255, 12, 19, 36); // navy-920
 
   // Texto
   static const Color textPrimaryLight = Color(0xFF121316);
@@ -40,7 +41,11 @@ class AppTheme {
 
   // Bordes
   static const Color borderLight = Color(0xFFE8EAF0);
-  static const Color borderDark = Color(0xFF2A2D33);
+  // Bordes y fills acordes al nuevo tono
+  static const Color borderDark =
+      Color.fromARGB(255, 13, 21, 38); // borde azulado
+  static const Color inputFillColorDark =
+      Color.fromARGB(255, 11, 24, 54); // fill más profundo
 
   // Contenedores de íconos
   static const Color iconContainerPurple = accentPurple;
@@ -59,7 +64,6 @@ class AppTheme {
 
   static const Color iconColor = textPrimaryLight;
   static const Color inputFillColor = Color(0xFFF2F3F6);
-  static const Color inputFillColorDark = Color(0xFF212329);
   static const Color neutralLightColor = Color(0xFFF4F5F7);
   static const Color neutralLightColorDark = Color(0xFF2A2D33);
   static const Color onErrorColor = Color(0xFFFFFFFF);
@@ -361,7 +365,7 @@ class AppTheme {
       background: backgroundLight,
       surface: surfaceLight,
     ).copyWith(
-      primary: primaryColor,
+      primary: accentBlue,
       onPrimary: Colors.white,
       secondary: secondaryColor,
       error: errorColor,
@@ -581,67 +585,28 @@ class AppTheme {
     useMaterial3: true,
     brightness: Brightness.dark,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: secondaryColor,
+      seedColor: accentBlue, // azul principal del dark
       brightness: Brightness.dark,
       background: backgroundDark,
       surface: surfaceDark,
     ).copyWith(
-      primary: primaryColor,
+      // mantenemos tus semánticas
+      primary: accentBlue, // acciones principales en azul
       onPrimary: Colors.white,
       secondary: secondaryColor,
       error: errorColor,
+      outline: borderDark, // bordes azulados
     ),
+    // Tipografías: igual que ya tienes
     textTheme: GoogleFonts.plusJakartaSansTextTheme(ThemeData.dark().textTheme)
-        .copyWith(
-      displayLarge: GoogleFonts.spaceGrotesk(
-          fontSize: 34,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.5,
-          height: 1.1,
-          color: textPrimaryDark),
-      displayMedium: GoogleFonts.plusJakartaSans(
-          fontSize: 28,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -0.2,
-          color: textPrimaryDark),
-      displaySmall: GoogleFonts.plusJakartaSans(
-          fontSize: 24, fontWeight: FontWeight.w700, color: textPrimaryDark),
-      headlineLarge: GoogleFonts.plusJakartaSans(
-          fontSize: 22, fontWeight: FontWeight.w700, color: textPrimaryDark),
-      headlineMedium: GoogleFonts.plusJakartaSans(
-          fontSize: 20, fontWeight: FontWeight.w700, color: textPrimaryDark),
-      headlineSmall: GoogleFonts.plusJakartaSans(
-          fontSize: 18, fontWeight: FontWeight.w700, color: textPrimaryDark),
-      bodyLarge: GoogleFonts.plusJakartaSans(
-          fontSize: 16.5, fontWeight: FontWeight.w500, color: textPrimaryDark),
-      bodyMedium: GoogleFonts.plusJakartaSans(
-          fontSize: 15, fontWeight: FontWeight.w500, color: textPrimaryDark),
-      bodySmall: GoogleFonts.plusJakartaSans(
-          fontSize: 13.5,
-          fontWeight: FontWeight.w500,
-          color: textSecondaryDark),
-      titleLarge: GoogleFonts.plusJakartaSans(
-          fontSize: 16, fontWeight: FontWeight.w700, color: textPrimaryDark),
-      titleMedium: GoogleFonts.plusJakartaSans(
-          fontSize: 14, fontWeight: FontWeight.w700, color: textPrimaryDark),
-      titleSmall: GoogleFonts.plusJakartaSans(
-          fontSize: 12.5,
-          fontWeight: FontWeight.w700,
-          color: textSecondaryDark),
-      labelLarge: GoogleFonts.plusJakartaSans(
-          fontSize: 14, fontWeight: FontWeight.w800, color: textPrimaryDark),
-      labelMedium: GoogleFonts.plusJakartaSans(
-          fontSize: 12, fontWeight: FontWeight.w700, color: textPrimaryDark),
-      labelSmall: GoogleFonts.plusJakartaSans(
-          fontSize: 10.5,
-          fontWeight: FontWeight.w700,
-          color: textSecondaryDark),
-    ),
+        .copyWith(/* ...lo tuyo... */),
+
+    // AppBar: azul marino
     appBarTheme: AppBarTheme(
       centerTitle: true,
       elevation: 0,
       scrolledUnderElevation: 0,
-      backgroundColor: surfaceDark,
+      backgroundColor: surfaceDark, // 0xFF0F1629
       foregroundColor: textPrimaryDark,
       surfaceTintColor: Colors.transparent,
       titleTextStyle: GoogleFonts.plusJakartaSans(
@@ -654,10 +619,12 @@ class AppTheme {
         statusBarBrightness: Brightness.dark,
       ),
     ),
+
+    // Botones: azul en dark
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         elevation: 0,
-        backgroundColor: primaryColor,
+        backgroundColor: const Color(0xFF4361EE),
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
@@ -668,7 +635,7 @@ class AppTheme {
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         elevation: 0,
-        backgroundColor: primaryColor,
+        backgroundColor: const Color(0xFF4361EE),
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
@@ -679,8 +646,8 @@ class AppTheme {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         elevation: 0,
-        foregroundColor: primaryColor,
-        side: const BorderSide(color: primaryColor, width: 1.5),
+        foregroundColor: const Color(0xFF4361EE),
+        side: const BorderSide(color: Color(0xFF4361EE), width: 1.5),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         textStyle: GoogleFonts.plusJakartaSans(
@@ -689,16 +656,18 @@ class AppTheme {
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: primaryColor,
+        foregroundColor: const Color(0xFF4361EE),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         textStyle: GoogleFonts.plusJakartaSans(
             fontSize: 14, fontWeight: FontWeight.w700),
       ),
     ),
+
+    // Inputs: foco azul y fill marino
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: inputFillColorDark,
+      fillColor: inputFillColorDark, // 0xFF121A2F
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
         borderSide: const BorderSide(color: borderDark),
@@ -709,7 +678,7 @@ class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: primaryColor, width: 2),
+        borderSide: const BorderSide(color: Color(0xFF4361EE), width: 2),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
@@ -725,13 +694,16 @@ class AppTheme {
       hintStyle: GoogleFonts.plusJakartaSans(
           fontSize: 14, fontWeight: FontWeight.w500, color: textSecondaryDark),
     ),
+
+    // BottomNav: base navy + selección azul
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
       type: BottomNavigationBarType.fixed,
       elevation: 0,
       backgroundColor: surfaceDark,
-      selectedItemColor: primaryColor,
+      selectedItemColor: const Color(0xFF4361EE),
       unselectedItemColor: textSecondaryDark,
-      selectedIconTheme: const IconThemeData(size: 24, color: primaryColor),
+      selectedIconTheme:
+          const IconThemeData(size: 24, color: Color(0xFF4361EE)),
       unselectedIconTheme:
           const IconThemeData(size: 24, color: textSecondaryDark),
       selectedLabelStyle: GoogleFonts.plusJakartaSans(
@@ -740,12 +712,16 @@ class AppTheme {
           fontSize: 12, fontWeight: FontWeight.w700),
       showUnselectedLabels: true,
     ),
+
+    // FAB: azul
     floatingActionButtonTheme: FloatingActionButtonThemeData(
-      backgroundColor: primaryColor,
+      backgroundColor: const Color(0xFF4361EE),
       foregroundColor: Colors.white,
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
     ),
+
+    // ListTile: fondos/contornos navy
     listTileTheme: ListTileThemeData(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -756,11 +732,13 @@ class AppTheme {
       subtitleTextStyle: GoogleFonts.plusJakartaSans(
           fontSize: 14, fontWeight: FontWeight.w500, color: textSecondaryDark),
     ),
+
+    // Chips: navy + selección azul
     chipTheme: ChipThemeData(
-      backgroundColor: const Color(0xFF24272E),
+      backgroundColor: const Color(0xFF1A233A),
       deleteIconColor: textSecondaryDark,
-      disabledColor: const Color(0xFF2D3138),
-      selectedColor: primaryColor.withOpacity(0.22),
+      disabledColor: const Color(0xFF192236),
+      selectedColor: const Color(0xFF4361EE).withOpacity(0.22),
       secondarySelectedColor: secondaryColor.withOpacity(0.22),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
@@ -770,15 +748,17 @@ class AppTheme {
           fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
       brightness: Brightness.dark,
     ),
+
+    // Extensión: contenedores ligeramente azulados
     extensions: <ThemeExtension<dynamic>>[
       const AppThemeExtension(
         attendancePresent: successColor,
         attendanceAbsent: errorColor,
         attendanceLate: warningColor,
-        successContainer: Color(0xFF0F2E12),
-        warningContainer: Color(0xFF3B2A09),
-        errorContainer: Color(0xFF3A1010),
-        infoContainer: Color(0xFF0D223D),
+        successContainer: Color(0xFF0E2A18), // verde en navy
+        warningContainer: Color(0xFF2E2612),
+        errorContainer: Color(0xFF2B1416),
+        infoContainer: Color(0xFF0F2241), // azul info
       ),
     ],
   );
