@@ -82,7 +82,7 @@ class _ModernDropdownState<T> extends State<ModernDropdown<T>>
       _overlayEntry?.remove();
       _overlayEntry = null;
       if (ModernDropdown._openedInstance == this) {
-        ModernDropdown._openedInstance = null; // 👈 libera el lock
+        ModernDropdown._openedInstance = null;
       }
       if (mounted) setState(() => _isDropdownOpen = false);
     }
@@ -117,16 +117,8 @@ class _ModernDropdownState<T> extends State<ModernDropdown<T>>
                   color: AppTheme.getCardColor(context),
                   borderRadius: BorderRadius.circular(
                       AppTheme.getSmallRadius(widget.screenSize)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.getShadowColor(context).withOpacity(0.15),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
                   border: Border.all(
-                    color: AppTheme.accentPurple.withOpacity(0.15),
-                  ),
+                      color: AppTheme.accentPurple.withOpacity(0.25), width: 1),
                 ),
                 child: ListView(
                   padding: EdgeInsets.zero,
@@ -147,7 +139,7 @@ class _ModernDropdownState<T> extends State<ModernDropdown<T>>
                         ),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? AppTheme.accentPurple.withOpacity(0.08)
+                              ? AppTheme.accentPurple.withOpacity(0.25)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(
                               AppTheme.getSmallRadius(widget.screenSize)),
@@ -225,7 +217,7 @@ class _ModernDropdownState<T> extends State<ModernDropdown<T>>
                 border: Border.all(
                   color: _isDropdownOpen
                       ? AppTheme.accentPurple
-                      : AppTheme.accentPurple.withOpacity(0.12),
+                      : AppTheme.accentPurple.withOpacity(0.25),
                   width: 1.2,
                 ),
               ),

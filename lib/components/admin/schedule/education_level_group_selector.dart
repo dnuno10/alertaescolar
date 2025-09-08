@@ -97,13 +97,6 @@ class EducationLevelGroupSelector extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(
-                          Icons.grade_rounded,
-                          size: screenSize.height * 0.022,
-                          color: AppTheme.accentBlue,
-                        ),
-                        SizedBox(
-                            width: AppTheme.getSmallPadding(screenSize) * 0.5),
                         Text(
                           'Nivel Educativo',
                           style: AppTheme.getBodyMedium(screenSize).copyWith(
@@ -130,8 +123,6 @@ class EducationLevelGroupSelector extends StatelessWidget {
                             },
                             getLabel: (String value) => value,
                             screenSize: screenSize,
-                            backgroundColor:
-                                AppTheme.accentBlue.withOpacity(0.05),
                           ),
                   ],
                 ),
@@ -146,13 +137,6 @@ class EducationLevelGroupSelector extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(
-                          Icons.school_rounded,
-                          size: screenSize.height * 0.022,
-                          color: AppTheme.accentPurple,
-                        ),
-                        SizedBox(
-                            width: AppTheme.getSmallPadding(screenSize) * 0.5),
                         Text(
                           l10n.group,
                           style: AppTheme.getBodyMedium(screenSize).copyWith(
@@ -183,8 +167,6 @@ class EducationLevelGroupSelector extends StatelessWidget {
                                 : (String? value) {},
                             getLabel: (String value) => value,
                             screenSize: screenSize,
-                            backgroundColor:
-                                AppTheme.accentPurple.withOpacity(0.05),
                           ),
                   ],
                 ),

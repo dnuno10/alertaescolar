@@ -1,5 +1,5 @@
-import 'package:alertaescolar/components/admin/scanner_config/tolerance_display_card.dart';
-import 'package:alertaescolar/components/admin/scanner_config/tolerance_slider_control.dart';
+import 'package:alertaescolar/components/admin/scanner_config/tolerance_control.dart';
+
 import 'package:alertaescolar/components/buttons/custom_outline_button.dart';
 import 'package:alertaescolar/components/buttons/solid_button.dart';
 import 'package:alertaescolar/managers/user_provider.dart';
@@ -217,13 +217,12 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
                 padding: EdgeInsets.all(AppTheme.getMediumPadding(size)),
                 decoration: BoxDecoration(
                   color: AppTheme.getCardColor(context),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.getShadowColor(context),
-                      blurRadius: 12,
-                      offset: const Offset(0, -4),
+                  border: Border(
+                    top: BorderSide(
+                      color: AppTheme.getBorderColor(context),
+                      width: 1,
                     ),
-                  ],
+                  ),
                 ),
                 child: SafeArea(
                   child: Row(
@@ -243,24 +242,19 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
                         SizedBox(width: AppTheme.getMediumPadding(size)),
                       Expanded(
                         child: _isSaving
-                            ? Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  SolidButton(
-                                    onPressed: null,
-                                    label: l10n.saving,
-                                    icon: _currentStep == 0
-                                        ? Icons.arrow_forward_rounded
-                                        : Icons.save_rounded,
-                                    backgroundColor: AppTheme.accentBlue,
-                                    screenSize: size,
-                                    isLoading: _isSaving,
-                                    showLoaderInIconSlot: true,
-                                    loadingIndicatorSize: 20,
-                                    enableHaptics: true,
-                                    semanticsLabel: l10n.saveConfiguration,
-                                  ),
-                                ],
+                            ? SolidButton(
+                                onPressed: null,
+                                label: l10n.saving,
+                                icon: _currentStep == 0
+                                    ? Icons.arrow_forward_rounded
+                                    : Icons.save_rounded,
+                                backgroundColor: AppTheme.accentBlue,
+                                screenSize: size,
+                                isLoading: _isSaving,
+                                showLoaderInIconSlot: true,
+                                loadingIndicatorSize: 20,
+                                enableHaptics: true,
+                                semanticsLabel: l10n.saveConfiguration,
                               )
                             : SolidButton(
                                 onPressed:
@@ -294,8 +288,13 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
           children: [
             CircularProgressIndicator(color: AppTheme.accentBlue),
             SizedBox(height: AppTheme.getMediumPadding(size)),
-            Text('Cargando configuración...',
-                style: AppTheme.getBodyMedium(size)),
+            Text(
+              'Cargando configuración...',
+              style: GoogleFonts.poppins(
+                fontSize: MediaQuery.of(context).size.height * 0.02,
+                color: AppTheme.getTextPrimaryColor(context),
+              ),
+            ),
           ],
         ),
       );
@@ -369,7 +368,9 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
         ..._forms.map((f) {
           return Container(
             margin: EdgeInsets.only(bottom: AppTheme.getMediumPadding(size)),
-            padding: EdgeInsets.all(AppTheme.getMediumPadding(size)),
+            padding: EdgeInsets.symmetric(
+                vertical: AppTheme.getMediumPadding(size),
+                horizontal: AppTheme.getSmallPadding(size)),
             decoration: BoxDecoration(
               color: AppTheme.getCardColor(context),
               borderRadius:
@@ -397,7 +398,7 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
                         onTap: () => pickStart(f),
                       ),
                     ),
-                    SizedBox(width: AppTheme.getMediumPadding(size)),
+                    SizedBox(width: AppTheme.getSmallPadding(size)),
                     Expanded(
                       child: _TimeBox(
                         label: 'Fin',
@@ -412,13 +413,12 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
                 SizedBox(height: AppTheme.getMediumPadding(size)),
 
                 // Tolerancia por turno
-                ToleranceDisplayCard(tolerance: f.tolerancia, screenSize: size),
-                SizedBox(height: AppTheme.getSmallPadding(size)),
-                ToleranceSliderControl(
+                ToleranceControl(
                   tolerance: f.tolerancia,
-                  onToleranceChanged: (val) =>
-                      setState(() => f.tolerancia = val),
+                  onChanged: (val) => setState(() => f.tolerancia = val),
                   screenSize: size,
+                  title:
+                      AppLocalizations.of(context).adjustTolerance, // opcional
                 ),
               ],
             ),
@@ -551,16 +551,14 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
     final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
 
-    // Convertir inicial a 12h
     int hour12 = initial.hour % 12;
     if (hour12 == 0) hour12 = 12;
-    int selectedHourIndex = hour12 - 1; // 0..11
-    int selectedMinuteIndex = initial.minute; // 0..59
-    int selectedPeriodIndex = initial.hour >= 12 ? 1 : 0; // 0=AM, 1=PM
+    int selectedHourIndex = hour12 - 1;
+    int selectedMinuteIndex = initial.minute;
+    int selectedPeriodIndex = initial.hour >= 12 ? 1 : 0;
 
     final hours = List.generate(12, (i) => (i + 1).toString().padLeft(2, '0'));
-    final minutes =
-        List.generate(60, (i) => i.toString().padLeft(2, '0')); // 00..59
+    final minutes = List.generate(60, (i) => i.toString().padLeft(2, '0'));
     final periods = const ['AM', 'PM'];
 
     final hourController =
@@ -571,15 +569,10 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
         FixedExtentScrollController(initialItem: selectedPeriodIndex);
 
     TimeOfDay buildTime() {
-      final h12 = (selectedHourIndex + 1); // 1..12
-      int h24;
-      if (selectedPeriodIndex == 0) {
-        // AM
-        h24 = (h12 == 12) ? 0 : h12;
-      } else {
-        // PM
-        h24 = (h12 == 12) ? 12 : h12 + 12;
-      }
+      final h12 = (selectedHourIndex + 1);
+      int h24 = (selectedPeriodIndex == 0)
+          ? (h12 == 12 ? 0 : h12)
+          : (h12 == 12 ? 12 : h12 + 12);
       return TimeOfDay(hour: h24, minute: selectedMinuteIndex);
     }
 
@@ -600,22 +593,22 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
             height: size.height * 0.38,
             decoration: BoxDecoration(
               color: AppTheme.getCardColor(context),
+              // ❌ Sin sombras
               borderRadius: BorderRadius.vertical(
                 top: Radius.circular(AppTheme.getLargeRadius(size)),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.getShadowColor(context),
-                  blurRadius: 12,
-                  offset: const Offset(0, -4),
+              border: Border(
+                top: BorderSide(
+                  color: AppTheme.getBorderColor(context),
+                  width: 1,
                 ),
-              ],
+              ),
             ),
             child: StatefulBuilder(
               builder: (ctx, setStateSB) {
                 return Column(
                   children: [
-                    // Header con diseño consistente: Cancelar (izq), título (centro), Listo (der)
+                    // Header sin sombra, con separador inferior
                     Container(
                       height: 48,
                       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -641,7 +634,8 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
                               ),
                               child: Text('Cancelar',
                                   style: GoogleFonts.poppins(
-                                      fontSize: size.height * 0.018)),
+                                    fontSize: size.height * 0.018,
+                                  )),
                             ),
                           ),
                           Center(
@@ -667,13 +661,14 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
                               ),
                               child: Text('Listo',
                                   style: GoogleFonts.poppins(
-                                      fontSize: size.height * 0.018)),
+                                    fontSize: size.height * 0.018,
+                                  )),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    // Picker 12h con AM/PM
+                    // Pickers
                     Expanded(
                       child: Padding(
                         padding: EdgeInsets.symmetric(
@@ -681,7 +676,6 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
                         ),
                         child: Row(
                           children: [
-                            // Horas
                             Expanded(
                               flex: 4,
                               child: CupertinoPicker(
@@ -690,9 +684,8 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
                                 magnification: 1.1,
                                 useMagnifier: true,
                                 squeeze: 1.2,
-                                onSelectedItemChanged: (i) {
-                                  setStateSB(() => selectedHourIndex = i);
-                                },
+                                onSelectedItemChanged: (i) =>
+                                    setStateSB(() => selectedHourIndex = i),
                                 selectionOverlay:
                                     const CupertinoPickerDefaultSelectionOverlay(),
                                 children: List.generate(12, (i) {
@@ -713,7 +706,6 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
                               ),
                             ),
                             SizedBox(width: AppTheme.getSmallPadding(size)),
-                            // Minutos
                             Expanded(
                               flex: 4,
                               child: CupertinoPicker(
@@ -722,9 +714,8 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
                                 magnification: 1.1,
                                 useMagnifier: true,
                                 squeeze: 1.2,
-                                onSelectedItemChanged: (i) {
-                                  setStateSB(() => selectedMinuteIndex = i);
-                                },
+                                onSelectedItemChanged: (i) =>
+                                    setStateSB(() => selectedMinuteIndex = i),
                                 selectionOverlay:
                                     const CupertinoPickerDefaultSelectionOverlay(),
                                 children: List.generate(60, (i) {
@@ -745,7 +736,6 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
                               ),
                             ),
                             SizedBox(width: AppTheme.getSmallPadding(size)),
-                            // AM/PM
                             Expanded(
                               flex: 3,
                               child: CupertinoPicker(
@@ -754,9 +744,8 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
                                 magnification: 1.1,
                                 useMagnifier: true,
                                 squeeze: 1.2,
-                                onSelectedItemChanged: (i) {
-                                  setStateSB(() => selectedPeriodIndex = i);
-                                },
+                                onSelectedItemChanged: (i) =>
+                                    setStateSB(() => selectedPeriodIndex = i),
                                 selectionOverlay:
                                     const CupertinoPickerDefaultSelectionOverlay(),
                                 children: List.generate(periods.length, (i) {

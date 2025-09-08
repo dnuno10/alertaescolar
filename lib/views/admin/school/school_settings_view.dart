@@ -307,7 +307,7 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
                     right: AppTheme.getMediumPadding(screenSize),
                     bottom: AppTheme.getLargePadding(screenSize),
                   ),
-                  color: AppTheme.getCardColor(context),
+                  color: AppTheme.getBackgroundColor(context),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

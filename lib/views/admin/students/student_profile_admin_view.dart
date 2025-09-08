@@ -25,123 +25,319 @@ class StudentProfileAdminView extends StatefulWidget {
 
 class _StudentProfileAdminViewState extends State<StudentProfileAdminView> {
   bool _isLoading = true;
+  bool _hasError = false;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    // Usar addPostFrameCallback para evitar mostrar el dialog durante build
+    // Evita mostrar el dialog durante build
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadStudentData();
+      _loadStudentData(showDialog: true);
     });
   }
 
-  Future<void> _loadStudentData() async {
+  Future<void> _loadStudentData({bool showDialog = false}) async {
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
 
     try {
+      setState(() {
+        _isLoading = true;
+        _hasError = false;
+        _errorMessage = null;
+      });
+
+      if (showDialog) {
+        LoadingDialog.show(
+          context,
+          message: l10n?.loading ?? 'Cargando…',
+        );
+      }
+
       final sp = context.read<StudentProvider>();
       sp.setSelectedStudent(widget.student);
 
-      // Cargar los datos completos del estudiante
+      // Cargar datos completos del estudiante
       await sp.loadStudentById(studentId: widget.student.id);
 
-      // Esperar un momento adicional para asegurar que los datos se carguen
-      await Future.delayed(const Duration(milliseconds: 300));
+      // Pequeño colchón para transiciones suaves
+      await Future.delayed(const Duration(milliseconds: 200));
     } catch (e) {
-      debugPrint('Error loading student data: $e');
-    } finally {
-      // Ocultar loading dialog
+      _hasError = true;
+      _errorMessage = e.toString();
+      // Aviso sutil (sin sombras)
       if (mounted) {
-        LoadingDialog.hide(context);
-        setState(() {
-          _isLoading = false;
-        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppTheme.errorColor.withOpacity(0.95),
+            content: Text(
+              (l10n?.unexpectedError ?? 'Ocurrió un error') +
+                  ('\n$_errorMessage'),
+              style: AppTheme.getCaptionSmall(MediaQuery.of(context).size)
+                  .copyWith(color: Colors.white),
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
+    } finally {
+      if (!mounted) return;
+      if (showDialog) LoadingDialog.hide(context);
+      setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _onRefresh() async {
+    await _loadStudentData(showDialog: false);
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final screenSize = MediaQuery.of(context).size;
+    final padM = AppTheme.getMediumPadding(screenSize);
 
     return Consumer2<ThemeProvider, StudentProvider>(
       builder: (context, themeProvider, sp, child) {
-        // Si está cargando, mostrar un scaffold básico
-        if (_isLoading) {
-          return Scaffold(
-            backgroundColor: AppTheme.getBackgroundColor(context),
-            body: CustomScrollView(
-              slivers: [
-                NavHeader(
-                  title: (widget.student.nombre.trim().isNotEmpty)
-                      ? widget.student.nombre.trim()
-                      : l10n?.studentProfile ?? 'Perfil del Estudiante',
-                ),
-                const SliverToBoxAdapter(
-                  child: SizedBox.shrink(), // Contenido vacío mientras carga
-                ),
-              ],
-            ),
-          );
-        }
-
         // Usa el del provider si ya llegó; si no, el pasado por parámetro
         final effective = (sp.selectedStudent?.id == widget.student.id)
             ? sp.selectedStudent!
             : widget.student;
+
+        final titleText = (effective.nombre.trim().isNotEmpty)
+            ? effective.nombre.trim()
+            : l10n?.studentProfile ?? 'Perfil del Estudiante';
+
+        // ESTADO: Cargando (esqueleto + encabezado)
+        if (_isLoading && !_hasError) {
+          return Scaffold(
+            backgroundColor: AppTheme.getBackgroundColor(context),
+            body: RefreshIndicator(
+              onRefresh: _onRefresh,
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  NavHeader(title: titleText),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.all(padM),
+                      child: _LoadingSkeleton(screenSize: screenSize),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // ESTADO: Error (mensaje + reintentar)
+        if (_hasError) {
+          return Scaffold(
+            backgroundColor: AppTheme.getBackgroundColor(context),
+            body: RefreshIndicator(
+              onRefresh: _onRefresh,
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  NavHeader(title: titleText),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.all(padM),
+                      child: _ErrorBlock(
+                        message: l10n?.unexpectedError ??
+                            'Ocurrió un error al cargar el perfil.',
+                        onRetry: () => _loadStudentData(showDialog: true),
+                        screenSize: screenSize,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
         final color = StudentColorSelector.getStudentColor(effective);
 
+        // ESTADO: Contenido cargado
         return Scaffold(
           backgroundColor: AppTheme.getBackgroundColor(context),
-          body: CustomScrollView(
-            slivers: [
-              NavHeader(
-                title: (effective.nombre.trim().isNotEmpty)
-                    ? effective.nombre.trim()
-                    : l10n?.studentProfile ?? 'Perfil del Estudiante',
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding:
-                      EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      StudentProfileCard(
-                        student: effective,
-                        color: color,
-                        screenSize: screenSize,
-                      ),
-                      SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                      StudentAcademicInfoCard(
-                        student: effective,
-                        screenSize: screenSize,
-                      ),
-                      SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                      StudentKeyInfoCard(
-                        student: effective,
-                        screenSize: screenSize,
-                      ),
-                      SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                      StudentFamilyInfoCard(
-                        student: effective,
-                        screenSize: screenSize,
-                      ),
-                      SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                      StudentAttendanceHistoryCard(
-                        student: effective,
-                        screenSize: screenSize,
-                      ),
-                      SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                    ],
+          body: RefreshIndicator(
+            onRefresh: _onRefresh,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                NavHeader(title: titleText),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(padM),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        StudentProfileCard(
+                          student: effective,
+                          color: color,
+                          screenSize: screenSize,
+                        ),
+                        SizedBox(height: padM),
+                        StudentAcademicInfoCard(
+                          student: effective,
+                          screenSize: screenSize,
+                        ),
+                        SizedBox(height: padM),
+                        StudentKeyInfoCard(
+                          student: effective,
+                          screenSize: screenSize,
+                        ),
+                        SizedBox(height: padM),
+                        StudentFamilyInfoCard(
+                          student: effective,
+                          screenSize: screenSize,
+                        ),
+                        SizedBox(height: padM),
+                        StudentAttendanceHistoryCard(
+                          student: effective,
+                          screenSize: screenSize,
+                        ),
+                        SizedBox(height: padM),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
+    );
+  }
+}
+
+/// ===========================
+/// Bloques de carga (skeleton)
+/// ===========================
+class _LoadingSkeleton extends StatelessWidget {
+  final Size screenSize;
+  const _LoadingSkeleton({required this.screenSize});
+
+  @override
+  Widget build(BuildContext context) {
+    final padS = AppTheme.getSmallPadding(screenSize);
+
+    Widget box(double h) => Container(
+          height: h,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: AppTheme.getCardColor(context).withOpacity(0.6),
+            borderRadius:
+                BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
+            border: Border.all(
+              color: AppTheme.getBorderColor(context),
+              width: 1,
+            ),
+            // 🚫 sin sombras
+          ),
+        );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        box(screenSize.height * 0.16), // perfil
+        SizedBox(height: padS),
+        box(screenSize.height * 0.12), // académico
+        SizedBox(height: padS),
+        box(screenSize.height * 0.12), // llaves
+        SizedBox(height: padS),
+        box(screenSize.height * 0.14), // familia
+        SizedBox(height: padS),
+        box(screenSize.height * 0.18), // historial asistencia
+      ],
+    );
+  }
+}
+
+/// ===========================
+/// Bloque de error + reintento
+/// ===========================
+class _ErrorBlock extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+  final Size screenSize;
+
+  const _ErrorBlock({
+    required this.message,
+    required this.onRetry,
+    required this.screenSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final padM = AppTheme.getMediumPadding(screenSize);
+    final padS = AppTheme.getSmallPadding(screenSize);
+    final radL = AppTheme.getLargeRadius(screenSize);
+
+    return Container(
+      padding: EdgeInsets.all(padM),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius: BorderRadius.circular(radL),
+        border: Border.all(color: AppTheme.getBorderColor(context), width: 1),
+        // 🚫 sin sombras
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.warning_amber_rounded,
+              size: screenSize.height * 0.03,
+              color: AppTheme.errorColor.withOpacity(0.9)),
+          SizedBox(height: padS),
+          Text(
+            message,
+            style: AppTheme.getBodyMedium(screenSize).copyWith(
+              color: AppTheme.getTextPrimaryColor(context),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: padM),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              style: ButtonStyle(
+                overlayColor: WidgetStateProperty.all(
+                  AppTheme.getBorderColor(context).withOpacity(0.25),
+                ),
+                foregroundColor: WidgetStateProperty.all(
+                  AppTheme.primaryColor,
+                ),
+                shape: WidgetStateProperty.all(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(radL),
+                    side: BorderSide(
+                      color: AppTheme.getBorderColor(context),
+                      width: 1,
+                    ),
+                  ),
+                ),
+                padding: WidgetStateProperty.all(
+                  EdgeInsets.symmetric(
+                    horizontal: padM,
+                    vertical: padS,
+                  ),
+                ),
+              ),
+              onPressed: onRetry,
+              child: Text(
+                'Reintentar',
+                style: AppTheme.getCaptionSmall(screenSize).copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

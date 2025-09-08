@@ -211,10 +211,6 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
         color: AppTheme.getCardColor(context),
         borderRadius:
             BorderRadius.circular(AppTheme.getLargeRadius(widget.screenSize)),
-        border: Border.all(
-          color: AppTheme.getTextSecondaryColor(context).withOpacity(0.08),
-          width: 1,
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

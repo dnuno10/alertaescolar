@@ -92,7 +92,7 @@ class StudentDetailRow extends StatelessWidget {
     final base = Container(
       padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
       decoration: BoxDecoration(
-        color: AppTheme.getContainerBackgroundColor(context),
+        color: AppTheme.getBackgroundColor(context),
         borderRadius: radius,
       ),
       child: content,

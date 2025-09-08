@@ -89,7 +89,7 @@ class InformationTab extends StatelessWidget {
                       value != null ? onTipoChanged(value) : null,
                   getLabel: getTipoLabel,
                   screenSize: screenSize,
-                  backgroundColor: AppTheme.getInputFillColor(context),
+                  backgroundColor: Colors.transparent,
                 ),
 
                 SizedBox(height: AppTheme.getMediumPadding(screenSize)),

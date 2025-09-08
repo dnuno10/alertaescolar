@@ -1,3 +1,4 @@
+// action_button.dart
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 
@@ -19,38 +20,51 @@ class ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final padS = AppTheme.getSmallPadding(screenSize);
+    final padM = AppTheme.getMediumPadding(screenSize);
+    final radiusM = AppTheme.getMediumRadius(screenSize);
+
+    // Botón cápsula sin sombras, con borde y relleno muy sutil
     return Container(
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(radiusM),
         border: Border.all(
-          color: color.withOpacity(0.3),
+          color: color.withOpacity(0.35),
+          width: 1,
         ),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
+          // ❌ Sin splash agresivo; mantén el estilo sobrio
           onTap: onTap,
-          borderRadius:
-              BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+          borderRadius: BorderRadius.circular(radiusM),
           child: Padding(
-            padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
+            padding: EdgeInsets.symmetric(
+              horizontal: padM,
+              vertical: padS * 0.9,
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   icon,
                   color: color,
-                  size: screenSize.height * 0.025,
+                  size: screenSize.shortestSide * 0.055,
                 ),
-                if (label != null) ...[
-                  SizedBox(width: AppTheme.getSmallPadding(screenSize) * 0.5),
-                  Text(
-                    label!,
-                    style: AppTheme.getBodyMedium(screenSize).copyWith(
-                      color: color,
-                      height: 1.3,
+                if (label != null && label!.trim().isNotEmpty) ...[
+                  SizedBox(width: padS),
+                  Flexible(
+                    child: Text(
+                      label!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTheme.getBodyMedium(screenSize).copyWith(
+                        color: color,
+                        height: 1.1,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],

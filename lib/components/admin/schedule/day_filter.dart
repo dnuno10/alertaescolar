@@ -53,7 +53,9 @@ class DayFilter extends StatelessWidget {
               DayChip(
                 label: l10n.all,
                 dayKey: 'all',
+                // ⬇️ Pasamos la clave normalizada para que 'all' quede seleccionado cuando selectedDayKey == null
                 selectedDayKey: normalizedSelectedKey,
+                // Seguimos reportando null hacia arriba para mantener el contrato de "Todos"
                 onSelected: (d) => onDaySelected(null),
                 screenSize: screenSize,
               ),
@@ -67,6 +69,7 @@ class DayFilter extends StatelessWidget {
                   child: DayChip(
                     label: entry.value,
                     dayKey: entry.key,
+                    // ⬇️ Usamos también la clave normalizada para que el estado visual sea consistente
                     selectedDayKey: normalizedSelectedKey,
                     onSelected: onDaySelected,
                     screenSize: screenSize,

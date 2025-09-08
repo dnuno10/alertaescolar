@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/models.dart';
-import 'class_card.dart';
 import 'empty_schedule.dart';
 
+/// Presentación minimalista, sin sombras.
+/// - Día seleccionado: lista simple de clases (tipo transacciones).
+/// - Semana completa: secciones por día con header sobrio.
+/// - Todo a prueba de overflow y en 12h AM/PM.
 class ScheduleDisplay extends StatelessWidget {
   final String selectedGradeGroup;
-  final String? selectedDayKey; // ej. "lunes" | "martes" | null (todos)
+  final String? selectedDayKey; // "lunes" | "martes" | null (todos)
   final List<ClaseHorario> schedules;
   final List<Materia> subjects;
   final Size screenSize;
@@ -21,246 +24,19 @@ class ScheduleDisplay extends StatelessWidget {
     required this.screenSize,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
-    if (schedules.isEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.scheduleOf(selectedGradeGroup),
-            style: AppTheme.getSubtitle1(screenSize).copyWith(
-              color: AppTheme.getTextPrimaryColor(context),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-          EmptySchedule(
-            selectedDayKey: selectedDayKey,
-            screenSize: screenSize,
-          ),
-        ],
-      );
-    }
-
-    // Filtro por día específico (usa flags lunes..domingo del modelo)
-    if (selectedDayKey != null) {
-      final daySchedules = schedules
-          .where((s) => _isOnDay(s, selectedDayKey!))
-          .toList()
-        ..sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (daySchedules.isEmpty)
-            EmptySchedule(
-              selectedDayKey: selectedDayKey,
-              screenSize: screenSize,
-            )
-          else
-            ...daySchedules.asMap().entries.map((entry) => Padding(
-                  padding: EdgeInsets.only(
-                    bottom: AppTheme.getSmallPadding(screenSize),
-                  ),
-                  child: ClassCard(
-                    clase: entry.value,
-                    index: entry.key,
-                    screenSize: screenSize,
-                    subject: _getSubjectById(entry.value.idMateria),
-                    showDay: false, // ya está filtrado por día
-                  ),
-                )),
-        ],
-      );
-    }
-
-    // Vista semanal completa
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildWeeklyScheduleHeader(context, selectedGradeGroup),
-        SizedBox(height: AppTheme.getLargePadding(screenSize)),
-        _buildCompleteWeeklySchedule(context),
-      ],
-    );
+  // ====== Utils ======
+  String _format12(String hhmm) {
+    // Soporta "HH:mm" o "HH:mm:ss"
+    final parts = hhmm.split(':');
+    if (parts.length < 2) return hhmm;
+    final h24 = int.tryParse(parts[0]) ?? 0;
+    final m = parts[1].padLeft(2, '0');
+    final period = (h24 >= 12) ? 'PM' : 'AM';
+    final h12 = h24 % 12 == 0 ? 12 : h24 % 12;
+    final h = h12.toString().padLeft(2, '0');
+    return '$h:$m $period';
   }
 
-  // ---------- Weekly sections ----------
-  Widget _buildWeeklyScheduleHeader(BuildContext context, String group) {
-    return Container(
-      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppTheme.accentBlue.withOpacity(0.1),
-            AppTheme.accentPurple.withOpacity(0.1),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
-        border: Border.all(color: AppTheme.accentBlue.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
-            decoration: BoxDecoration(
-              color: AppTheme.accentPurple,
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-            ),
-            child: Icon(Icons.view_week_rounded,
-                color: Colors.white, size: screenSize.width * 0.05),
-          ),
-          SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Horario Semanal',
-                    style: AppTheme.getH2(screenSize).copyWith(
-                      color: AppTheme.getTextPrimaryColor(context),
-                      fontWeight: FontWeight.w700,
-                    )),
-                Text('Grupo $group - Todas las materias',
-                    style: AppTheme.getBodyMedium(screenSize).copyWith(
-                      color: AppTheme.getTextSecondaryColor(context),
-                      fontWeight: FontWeight.w500,
-                    )),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCompleteWeeklySchedule(BuildContext context) {
-    // Definir orden de días
-    final orderedDays = const [
-      'lunes',
-      'martes',
-      'miercoles',
-      'jueves',
-      'viernes',
-      'sabado',
-      'domingo',
-    ];
-
-    // Agrupar por día usando flags del modelo
-    final Map<String, List<ClaseHorario>> byDay = {
-      for (final d in orderedDays) d: <ClaseHorario>[],
-    };
-    for (final s in schedules) {
-      for (final d in orderedDays) {
-        if (_isOnDay(s, d)) byDay[d]!.add(s);
-      }
-    }
-    // Ordenar cada día por hora de inicio (HH:MM[:SS])
-    for (final d in orderedDays) {
-      byDay[d]!.sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
-    }
-
-    return Column(
-      children: orderedDays.map((dayKey) {
-        final daySchedules = byDay[dayKey]!;
-        final color = _getDayColor(dayKey);
-
-        return Container(
-          margin:
-              EdgeInsets.only(bottom: AppTheme.getMediumPadding(screenSize)),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header del día
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppTheme.getMediumPadding(screenSize),
-                  vertical: AppTheme.getSmallPadding(screenSize),
-                ),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getSmallRadius(screenSize)),
-                  border: Border.all(color: color.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(_getDayIcon(dayKey),
-                        color: color, size: screenSize.width * 0.045),
-                    SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-                    Text(
-                      _getDayName(context, dayKey),
-                      style: AppTheme.getSubtitle1(screenSize).copyWith(
-                        color: color,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      '${daySchedules.length} ${daySchedules.length == 1 ? 'clase' : 'clases'}',
-                      style: AppTheme.getCaption(screenSize).copyWith(
-                        color: color,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-              // Clases del día
-              if (daySchedules.isEmpty)
-                Container(
-                  width: double.infinity,
-                  padding:
-                      EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-                  decoration: BoxDecoration(
-                    color: AppTheme.getTextSecondaryColor(context)
-                        .withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(
-                        AppTheme.getSmallRadius(screenSize)),
-                    border: Border.all(
-                      color: AppTheme.getTextSecondaryColor(context)
-                          .withOpacity(0.1),
-                    ),
-                  ),
-                  child: Text(
-                    'No hay clases programadas',
-                    style: AppTheme.getCaption(screenSize).copyWith(
-                      color: AppTheme.getTextSecondaryColor(context),
-                      fontStyle: FontStyle.italic,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                )
-              else
-                ...daySchedules.asMap().entries.map(
-                      (entry) => Padding(
-                        padding: EdgeInsets.only(
-                            bottom: AppTheme.getSmallPadding(screenSize) * 0.5),
-                        child: ClassCard(
-                          clase: entry.value,
-                          index: entry.key,
-                          screenSize: screenSize,
-                          subject: _getSubjectById(entry.value.idMateria),
-                          showDay: false,
-                        ),
-                      ),
-                    ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  // ---------- Helpers ----------
   bool _isOnDay(ClaseHorario s, String dayKey) {
     switch (dayKey.toLowerCase()) {
       case 'lunes':
@@ -282,8 +58,30 @@ class ScheduleDisplay extends StatelessWidget {
     }
   }
 
-  Color _getDayColor(String dayKey) {
-    switch (dayKey) {
+  String _dayName(BuildContext context, String d) {
+    final l = AppLocalizations.of(context);
+    switch (d) {
+      case 'lunes':
+        return l.monday;
+      case 'martes':
+        return l.tuesday;
+      case 'miercoles':
+        return l.wednesday;
+      case 'jueves':
+        return l.thursday;
+      case 'viernes':
+        return l.friday;
+      case 'sabado':
+        return l.saturday;
+      case 'domingo':
+        return l.sunday;
+      default:
+        return l.unknown;
+    }
+  }
+
+  Color _dayAccent(String d) {
+    switch (d) {
       case 'lunes':
         return AppTheme.accentBlue;
       case 'martes':
@@ -303,8 +101,8 @@ class ScheduleDisplay extends StatelessWidget {
     }
   }
 
-  IconData _getDayIcon(String dayKey) {
-    switch (dayKey) {
+  IconData _dayIcon(String d) {
+    switch (d) {
       case 'lunes':
         return Icons.looks_one_rounded;
       case 'martes':
@@ -324,33 +122,456 @@ class ScheduleDisplay extends StatelessWidget {
     }
   }
 
-  String _getDayName(BuildContext context, String dayKey) {
-    final l10n = AppLocalizations.of(context);
-    switch (dayKey) {
-      case 'lunes':
-        return l10n.monday;
-      case 'martes':
-        return l10n.tuesday;
-      case 'miercoles':
-        return l10n.wednesday;
-      case 'jueves':
-        return l10n.thursday;
-      case 'viernes':
-        return l10n.friday;
-      case 'sabado':
-        return l10n.saturday;
-      case 'domingo':
-        return l10n.sunday;
-      default:
-        return l10n.unknown;
-    }
-  }
-
-  Materia? _getSubjectById(String materiaId) {
+  Materia? _getSubjectById(String id) {
     try {
-      return subjects.firstWhere((s) => s.id == materiaId);
+      return subjects.firstWhere((m) => m.id == id);
     } catch (_) {
       return null;
     }
+  }
+
+  String _subjectName(Materia? m) => (m == null)
+      ? 'Materia'
+      : (m.nombre.toString().trim().isNotEmpty == true ? m.nombre : 'Materia');
+
+  String _getTeacherName(ClaseHorario clase) {
+    // Get teacher name from the subject/materia
+    final materia = _getSubjectById(clase.idMateria);
+    return materia?.profesor ?? 'Sin profesor';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final padS = AppTheme.getSmallPadding(screenSize);
+    final padM = AppTheme.getMediumPadding(screenSize);
+
+    if (schedules.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _HeaderMinimal(
+            title: l10n.scheduleOf(selectedGradeGroup),
+            subtitle: 'Semana completa',
+            screenSize: screenSize,
+          ),
+          SizedBox(height: padM),
+          EmptySchedule(selectedDayKey: selectedDayKey, screenSize: screenSize),
+        ],
+      );
+    }
+
+    // ====== Vista: Día seleccionado ======
+    if (selectedDayKey != null) {
+      final dayKey = selectedDayKey!;
+      final list = schedules.where((s) => _isOnDay(s, dayKey)).toList()
+        ..sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _HeaderMinimal(
+            title: _dayName(context, dayKey),
+            subtitle:
+                'Grupo $selectedGradeGroup · ${list.length} ${list.length == 1 ? "clase" : "clases"}',
+            color: _dayAccent(dayKey),
+            icon: _dayIcon(dayKey),
+            screenSize: screenSize,
+          ),
+          SizedBox(height: padS),
+          if (list.isEmpty)
+            EmptySchedule(
+                selectedDayKey: selectedDayKey, screenSize: screenSize)
+          else
+            ...list.map((c) => Padding(
+                  padding: EdgeInsets.only(bottom: padS),
+                  child: _MinimalClassRow(
+                    start: _format12(c.horaInicio),
+                    end: _format12(c.horaFin),
+                    title: _subjectName(_getSubjectById(c.idMateria)),
+                    classroom: c.aula,
+                    teacher: _getTeacherName(c),
+                    screenSize: screenSize,
+                  ),
+                )),
+        ],
+      );
+    }
+
+    // ====== Vista: Semana completa ======
+    const days = [
+      'lunes',
+      'martes',
+      'miercoles',
+      'jueves',
+      'viernes',
+      'sabado',
+      'domingo'
+    ];
+    final byDay = {for (final d in days) d: <ClaseHorario>[]};
+    for (final s in schedules) {
+      for (final d in days) {
+        if (_isOnDay(s, d)) byDay[d]!.add(s);
+      }
+    }
+    for (final d in days) {
+      byDay[d]!.sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _HeaderMinimal(
+          title: 'Semana de $selectedGradeGroup',
+          subtitle: 'Resumen por día',
+          screenSize: screenSize,
+        ),
+        SizedBox(height: padM),
+        ...days.map((d) {
+          final color = _dayAccent(d);
+          final list = byDay[d]!;
+          return Container(
+            margin: EdgeInsets.only(bottom: padM),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _DayStrip(
+                  color: color,
+                  icon: _dayIcon(d),
+                  label: _dayName(context, d),
+                  trailing:
+                      '${list.length} ${list.length == 1 ? "clase" : "clases"}',
+                  screenSize: screenSize,
+                ),
+                SizedBox(height: padS),
+                if (list.isEmpty)
+                  _EmptyStrip(screenSize: screenSize)
+                else
+                  ...list.map((c) => Padding(
+                        padding: EdgeInsets.only(bottom: padS * 0.75),
+                        child: _MinimalClassRow(
+                          start: _format12(c.horaInicio),
+                          end: _format12(c.horaFin),
+                          title: _subjectName(_getSubjectById(c.idMateria)),
+                          classroom: c.aula,
+                          teacher: _getTeacherName(c),
+                          screenSize: screenSize,
+                        ),
+                      )),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+}
+
+/// Encabezado simple (sin sombras), estilo “finance card” plana
+class _HeaderMinimal extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final Size screenSize;
+  final Color? color;
+  final IconData? icon;
+
+  const _HeaderMinimal({
+    required this.title,
+    required this.subtitle,
+    required this.screenSize,
+    this.color,
+    this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final pad = AppTheme.getMediumPadding(screenSize);
+    final rad = AppTheme.getLargeRadius(screenSize);
+
+    return Container(
+      padding: EdgeInsets.all(pad),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius: BorderRadius.circular(rad),
+        border: Border.all(color: AppTheme.getBorderColor(context), width: 1),
+      ),
+      child: Row(
+        children: [
+          if (icon != null) ...[
+            Container(
+              padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
+              decoration: BoxDecoration(
+                color: (color ?? AppTheme.accentBlue).withOpacity(0.10),
+                borderRadius:
+                    BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
+                border: Border.all(
+                    color: (color ?? AppTheme.accentBlue).withOpacity(0.28),
+                    width: 1),
+              ),
+              child: Icon(icon,
+                  color: color ?? AppTheme.accentBlue,
+                  size: screenSize.width * 0.05),
+            ),
+            SizedBox(width: AppTheme.getMediumPadding(screenSize)),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTheme.getH2(screenSize).copyWith(
+                    color: AppTheme.getTextPrimaryColor(context),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.25),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTheme.getBodyMedium(screenSize).copyWith(
+                    color: AppTheme.getTextSecondaryColor(context),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Tira de día: color sutil, sin sombras, con contador a la derecha
+class _DayStrip extends StatelessWidget {
+  final Color color;
+  final IconData icon;
+  final String label;
+  final String trailing;
+  final Size screenSize;
+
+  const _DayStrip({
+    required this.color,
+    required this.icon,
+    required this.label,
+    required this.trailing,
+    required this.screenSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final rad = AppTheme.getSmallRadius(screenSize);
+    final padH = AppTheme.getMediumPadding(screenSize);
+    final padV = AppTheme.getSmallPadding(screenSize);
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: padH, vertical: padV),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(rad),
+        border: Border.all(color: color.withOpacity(0.30), width: 1),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: screenSize.width * 0.045),
+          SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTheme.getSubtitle1(screenSize).copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+          Text(
+            trailing,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTheme.getCaption(screenSize).copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Fila de clase: tiempo + título (tipo transacción), sin sombras
+class _MinimalClassRow extends StatelessWidget {
+  final String start;
+  final String? end;
+  final String title;
+  final String? classroom;
+  final String? teacher;
+  final Size screenSize;
+
+  const _MinimalClassRow({
+    required this.start,
+    required this.title,
+    required this.screenSize,
+    this.end,
+    this.classroom,
+    this.teacher,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final padS = AppTheme.getSmallPadding(screenSize);
+    final rad = AppTheme.getSmallRadius(screenSize);
+    final border = AppTheme.getBorderColor(context);
+
+    return Container(
+      padding: EdgeInsets.all(padS),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius: BorderRadius.circular(rad),
+        border: Border.all(color: border, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Primera fila: Título y horario
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTheme.getBodyMedium(screenSize).copyWith(
+                    color: AppTheme.getTextPrimaryColor(context),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              SizedBox(width: padS),
+              Container(
+                padding: EdgeInsets.symmetric(
+                    horizontal: padS * 0.8, vertical: padS * 0.4),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentBlue.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(rad),
+                  border: Border.all(
+                      color: AppTheme.accentBlue.withOpacity(0.28), width: 1),
+                ),
+                child: Text(
+                  end == null ? start : '$start - $end',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTheme.getCaption(screenSize).copyWith(
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                    color: AppTheme.accentBlue,
+                    fontWeight: FontWeight.w700,
+                    fontSize: AppTheme.getCaption(screenSize).fontSize! * 0.9,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          SizedBox(height: padS * 0.75),
+
+          // Segunda fila: Detalles (aula y profesor)
+          Row(
+            children: [
+              if (classroom != null && classroom!.trim().isNotEmpty) ...[
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: screenSize.width * 0.035,
+                        color: AppTheme.getTextSecondaryColor(context),
+                      ),
+                      SizedBox(width: padS * 0.5),
+                      Expanded(
+                        child: Text(
+                          'Aula $classroom',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTheme.getCaption(screenSize).copyWith(
+                            color: AppTheme.getTextSecondaryColor(context),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (classroom != null &&
+                  classroom!.trim().isNotEmpty &&
+                  teacher != null &&
+                  teacher!.trim().isNotEmpty)
+                SizedBox(width: padS),
+              if (teacher != null && teacher!.trim().isNotEmpty) ...[
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.person_outline,
+                        size: screenSize.width * 0.035,
+                        color: AppTheme.getTextSecondaryColor(context),
+                      ),
+                      SizedBox(width: padS * 0.5),
+                      Expanded(
+                        child: Text(
+                          teacher!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTheme.getCaption(screenSize).copyWith(
+                            color: AppTheme.getTextSecondaryColor(context),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Estado vacío sobrio (coincide con el estilo)
+class _EmptyStrip extends StatelessWidget {
+  final Size screenSize;
+  const _EmptyStrip({required this.screenSize});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+      decoration: BoxDecoration(
+        color: AppTheme.getTextSecondaryColor(context).withOpacity(0.06),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
+        border: Border.all(
+          color: AppTheme.getTextSecondaryColor(context).withOpacity(0.12),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        'No hay clases programadas',
+        textAlign: TextAlign.center,
+        style: AppTheme.getCaption(screenSize).copyWith(
+          color: AppTheme.getTextSecondaryColor(context),
+          fontStyle: FontStyle.italic,
+        ),
+      ),
+    );
   }
 }

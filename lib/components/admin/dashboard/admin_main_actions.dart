@@ -22,10 +22,6 @@ class AdminMainActions extends StatelessWidget {
         color: AppTheme.getCardColor(context),
         borderRadius:
             BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
-        border: Border.all(
-          color: AppTheme.getTextSecondaryColor(context).withOpacity(0.1),
-          width: 1,
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

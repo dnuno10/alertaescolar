@@ -51,7 +51,8 @@ class _AdminProfileViewState extends State<AdminProfileView> {
             ProfileHeader(screenSize: screenSize),
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+                padding: EdgeInsets.symmetric(
+                    horizontal: AppTheme.getMediumPadding(screenSize)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -79,7 +80,7 @@ class _AdminProfileViewState extends State<AdminProfileView> {
                       ],
                     ),
 
-                    SizedBox(height: AppTheme.getLargePadding(screenSize)),
+                    SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
                     // Preferences Section
                     SettingsSectionTitle(
@@ -106,7 +107,7 @@ class _AdminProfileViewState extends State<AdminProfileView> {
                       ],
                     ),
 
-                    SizedBox(height: AppTheme.getLargePadding(screenSize)),
+                    SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
                     // Help Section
                     SettingsSectionTitle(

@@ -1,3 +1,4 @@
+// attendance_control_header.dart
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
@@ -36,61 +37,61 @@ class AttendanceControlHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final padS = AppTheme.getSmallPadding(screenSize);
+    final padM = AppTheme.getMediumPadding(screenSize);
+    final padL = AppTheme.getLargePadding(screenSize);
+    final radiusM = AppTheme.getMediumRadius(screenSize);
 
     return Container(
       width: double.infinity,
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top +
-            AppTheme.getMediumPadding(screenSize),
-        left: AppTheme.getMediumPadding(screenSize),
-        right: AppTheme.getMediumPadding(screenSize),
-        bottom: AppTheme.getLargePadding(screenSize),
+        top: MediaQuery.of(context).padding.top + padM,
+        left: padM,
+        right: padM,
+        bottom: padL,
       ),
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
+        // ❌ Sin sombras
+        // ❌ Sin degradados intensos
+        border: Border(
+          bottom: BorderSide(
+            color: AppTheme.getBorderColor(context),
+            width: 1,
+          ),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title Section
+          // Encabezado
           Text(
             l10n.attendanceControl,
             style: AppTheme.getH1(screenSize).copyWith(
               color: AppTheme.getTextPrimaryColor(context),
               fontWeight: FontWeight.w700,
+              height: 1.1,
             ),
           ),
+          SizedBox(height: padS),
 
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-
-          // Simple Description
+          // Descripción
           Text(
             l10n.scanQRToRegisterAttendance,
             style: AppTheme.getBodyMedium(screenSize).copyWith(
               color: AppTheme.getTextSecondaryColor(context),
-              height: 1.3,
+              height: 1.35,
             ),
           ),
 
-          SizedBox(height: AppTheme.getLargePadding(screenSize)),
+          SizedBox(height: padL),
 
-          // Mode Selection Label
-          Text(
-            'Selecciona el modo de registro',
-            style: AppTheme.getBodyMedium(screenSize).copyWith(
-              color: AppTheme.getTextSecondaryColor(context),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+          // Dropdown (sin elevación y con items estilizados)
+          _buildAccessTypeDropdown(context, l10n, radiusM, padM, padS),
 
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+          SizedBox(height: padM),
 
-          // Dropdown
-          _buildAccessTypeDropdown(context, l10n),
-
-          SizedBox(height: AppTheme.getLargePadding(screenSize)),
-
-          // Action Buttons
+          // Acciones
           Row(
             children: [
               ActionButton(
@@ -99,7 +100,7 @@ class AttendanceControlHeader extends StatelessWidget {
                 onTap: onConfigurationTap,
                 screenSize: screenSize,
               ),
-              SizedBox(width: AppTheme.getMediumPadding(screenSize)),
+              SizedBox(width: padM),
               Expanded(
                 child: ActionButton(
                   color: AppTheme.accentOrange,
@@ -116,48 +117,50 @@ class AttendanceControlHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildAccessTypeDropdown(BuildContext context, AppLocalizations l10n) {
+  Widget _buildAccessTypeDropdown(
+    BuildContext context,
+    AppLocalizations l10n,
+    double radiusM,
+    double padM,
+    double padS,
+  ) {
+    final width = MediaQuery.of(context).size.width;
+    final surface = AppTheme.getSurfaceColor(context);
+
     return PopupMenuButton<AccessType>(
-      onSelected: isScanning ? null : onAccessTypeChanged,
-      offset: const Offset(0, 60), // Fuerza que aparezca debajo
-      elevation: 12,
+      enabled: !isScanning,
+      onSelected: (v) {
+        if (!isScanning) onAccessTypeChanged(v);
+      },
+      // ❌ Sin sombras
+      elevation: 0,
+      // Menú con bordes suaves, sin sombras, full width “cardless”
+      position: PopupMenuPosition.under,
+      offset: Offset(0, AppTheme.getMediumPadding(screenSize)),
+      color: surface,
       shape: RoundedRectangleBorder(
-        borderRadius:
-            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+        borderRadius: BorderRadius.circular(radiusM),
+        side: BorderSide(color: AppTheme.getBorderColor(context), width: 1),
       ),
-      color: AppTheme.getSurfaceColor(context),
       constraints: BoxConstraints(
-        minWidth: MediaQuery.of(context).size.width -
-            (AppTheme.getMediumPadding(screenSize) * 2),
-        maxWidth: MediaQuery.of(context).size.width -
-            (AppTheme.getMediumPadding(screenSize) * 2),
-        maxHeight: 320,
+        minWidth: width - (padM * 2),
+        maxWidth: width - (padM * 2),
+        maxHeight: screenSize.height * 0.42,
       ),
       itemBuilder: (BuildContext context) {
-        return AccessType.values.map((AccessType value) {
+        return AccessType.values.map((value) {
           final bool isSelected = value == selectedAccessType;
           return PopupMenuItem<AccessType>(
             value: value,
-            height: 60,
-            child: Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(
-                horizontal: AppTheme.getSmallPadding(screenSize),
-                vertical: AppTheme.getSmallPadding(screenSize),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _getDropdownDisplayWidget(value, context),
-                  ),
-                  if (isSelected)
-                    Icon(
-                      Icons.check_rounded,
-                      color: AppTheme.accentBlue,
-                      size: 20,
-                    ),
-                ],
-              ),
+            padding: EdgeInsets.symmetric(horizontal: padM, vertical: padS),
+            height: 56,
+            child: _AccessOptionTile(
+              screenSize: screenSize,
+              title: _titleFor(value),
+              subtitle: _subtitleFor(value),
+              leading: _iconFor(value, context),
+              selected: isSelected,
+              context: context,
             ),
           );
         }).toList();
@@ -165,27 +168,27 @@ class AttendanceControlHeader extends StatelessWidget {
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          color: AppTheme.getSurfaceColor(context),
-          borderRadius:
-              BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-          border: Border.all(
-            color: AppTheme.getBorderColor(context),
-            width: 1.0,
-          ),
+          color: surface,
+          borderRadius: BorderRadius.circular(radiusM),
+          border: Border.all(color: AppTheme.getBorderColor(context), width: 1),
         ),
         padding: EdgeInsets.symmetric(
-          horizontal: AppTheme.getMediumPadding(screenSize),
-          vertical: AppTheme.getMediumPadding(screenSize) * 0.8,
+          horizontal: padM,
+          vertical: padM * 0.8,
         ),
         child: Row(
           children: [
             Expanded(
-              child: _getDropdownDisplayWidget(selectedAccessType, context),
+              child: _AccessCurrentChip(
+                screenSize: screenSize,
+                title: _currentTitle(),
+                leading: _currentIcon(context),
+              ),
             ),
             Icon(
               Icons.keyboard_arrow_down_rounded,
               color: AppTheme.getTextSecondaryColor(context),
-              size: 24,
+              size: screenSize.shortestSide * 0.035,
             ),
           ],
         ),
@@ -193,125 +196,264 @@ class AttendanceControlHeader extends StatelessWidget {
     );
   }
 
-  Widget _getDropdownDisplayWidget(AccessType value, BuildContext context) {
-    switch (value) {
+  // ——— Helpers para presentar texto/iconos coherentes y minimalistas ———
+
+  String _currentTitle() {
+    switch (selectedAccessType) {
       case AccessType.default_config:
-        final String defaultText =
-            isDefaultEntryConfig ? 'Auto - Entrada' : 'Auto - Salida';
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.smart_toy,
-              color: isDefaultEntryConfig ? Colors.green : Colors.red,
-              size: 18,
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                defaultText,
-                style: AppTheme.getBodyMedium(screenSize).copyWith(
-                  color: AppTheme.getTextPrimaryColor(context),
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
+        return isDefaultEntryConfig ? 'Auto • Entrada' : 'Auto • Salida';
+      case AccessType.fixed_entry:
+        return 'Entrada fija';
+      case AccessType.fixed_exit:
+        return 'Salida fija';
+      case AccessType.extracurricular_entry:
+        return 'Entrada extracurricular';
+      case AccessType.extracurricular_exit:
+        return 'Salida extracurricular';
+    }
+  }
+
+  Widget _currentIcon(BuildContext context) {
+    switch (selectedAccessType) {
+      case AccessType.default_config:
+        return Icon(
+          Icons.smart_toy_outlined,
+          size: screenSize.shortestSide * 0.045,
+          color: AppTheme.accentBlue,
         );
       case AccessType.fixed_entry:
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.login,
-              color: Colors.green,
-              size: 18,
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                'Entrada fija',
-                style: AppTheme.getBodyMedium(screenSize).copyWith(
-                  color: AppTheme.getTextPrimaryColor(context),
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
+        return Icon(
+          Icons.login_rounded,
+          size: screenSize.shortestSide * 0.045,
+          color: AppTheme.accentBlue,
         );
       case AccessType.fixed_exit:
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.logout,
-              color: Colors.red,
-              size: 18,
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                'Salida fija',
-                style: AppTheme.getBodyMedium(screenSize).copyWith(
-                  color: AppTheme.getTextPrimaryColor(context),
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
+        return Icon(
+          Icons.logout_rounded,
+          size: screenSize.shortestSide * 0.045,
+          color: AppTheme.accentYellow,
         );
       case AccessType.extracurricular_entry:
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.login,
-              color: Colors.green,
-              size: 18,
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                'Entrada extracurricular',
-                style: AppTheme.getBodyMedium(screenSize).copyWith(
-                  color: AppTheme.getTextPrimaryColor(context),
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
+        return Icon(
+          Icons.login_rounded,
+          size: screenSize.shortestSide * 0.045,
+          color: AppTheme.accentOrange,
         );
       case AccessType.extracurricular_exit:
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.logout,
-              color: Colors.red,
-              size: 18,
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                'Salida extracurricular',
-                style: AppTheme.getBodyMedium(screenSize).copyWith(
-                  color: AppTheme.getTextPrimaryColor(context),
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
+        return Icon(
+          Icons.logout_rounded,
+          size: screenSize.shortestSide * 0.045,
+          color: AppTheme.accentPurple,
         );
     }
+  }
+
+  String _titleFor(AccessType v) {
+    switch (v) {
+      case AccessType.default_config:
+        return isDefaultEntryConfig
+            ? 'Automático • Entrada'
+            : 'Automático • Salida';
+      case AccessType.fixed_entry:
+        return 'Entrada fija';
+      case AccessType.fixed_exit:
+        return 'Salida fija';
+      case AccessType.extracurricular_entry:
+        return 'Entrada extracurricular';
+      case AccessType.extracurricular_exit:
+        return 'Salida extracurricular';
+    }
+  }
+
+  String _subtitleFor(AccessType v) {
+    switch (v) {
+      case AccessType.default_config:
+        return 'Se ajusta al horario activo del plantel';
+      case AccessType.fixed_entry:
+        return 'Forzar registro de ENTRADA';
+      case AccessType.fixed_exit:
+        return 'Forzar registro de SALIDA';
+      case AccessType.extracurricular_entry:
+        return 'Registro de entrada en actividades';
+      case AccessType.extracurricular_exit:
+        return 'Registro de salida en actividades';
+    }
+  }
+
+  Widget _iconFor(AccessType v, BuildContext context) {
+    final size = screenSize.shortestSide * 0.04;
+    switch (v) {
+      case AccessType.default_config:
+        return Icon(Icons.smart_toy_outlined,
+            size: size, color: AppTheme.accentBlue);
+      case AccessType.fixed_entry:
+        return Icon(Icons.login_rounded,
+            size: size, color: AppTheme.accentBlue);
+      case AccessType.fixed_exit:
+        return Icon(Icons.logout_rounded,
+            size: size, color: AppTheme.accentYellow);
+      case AccessType.extracurricular_entry:
+        return Icon(Icons.login_rounded,
+            size: size, color: AppTheme.accentOrange);
+      case AccessType.extracurricular_exit:
+        return Icon(Icons.logout_rounded,
+            size: size, color: AppTheme.accentPurple);
+    }
+  }
+}
+
+// ——— Widgets de apoyo ———
+
+class _Dot extends StatelessWidget {
+  final Color color;
+  final double size;
+  const _Dot({required this.color, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+      ),
+    );
+  }
+}
+
+class _AccessCurrentChip extends StatelessWidget {
+  final Size screenSize;
+  final String title;
+  final Widget leading;
+
+  const _AccessCurrentChip({
+    required this.screenSize,
+    required this.title,
+    required this.leading,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final padS = AppTheme.getSmallPadding(screenSize);
+    return Row(
+      children: [
+        leading,
+        SizedBox(width: padS),
+        Flexible(
+          child: Text(
+            title,
+            style: AppTheme.getBodyMedium(screenSize).copyWith(
+              color: AppTheme.getTextPrimaryColor(context),
+              fontWeight: FontWeight.w600,
+              height: 1.1,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AccessOptionTile extends StatelessWidget {
+  final Size screenSize;
+  final String title;
+  final String subtitle;
+  final Widget leading;
+  final bool selected;
+  final BuildContext context;
+
+  const _AccessOptionTile({
+    required this.screenSize,
+    required this.title,
+    required this.subtitle,
+    required this.leading,
+    required this.selected,
+    required this.context,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final padS = AppTheme.getSmallPadding(screenSize);
+    final padM = AppTheme.getMediumPadding(screenSize);
+    final radiusM = AppTheme.getMediumRadius(screenSize);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: selected
+            ? AppTheme.getCardColor(context).withOpacity(0.6)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(radiusM),
+        border: Border.all(
+          color: selected
+              ? AppTheme.accentBlue.withOpacity(0.45)
+              : AppTheme.getBorderColor(context),
+          width: 1,
+        ),
+      ),
+      padding: EdgeInsets.symmetric(horizontal: padM, vertical: padS),
+      child: Row(
+        children: [
+          leading,
+          SizedBox(width: padS),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Título + badge “Activo”
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: AppTheme.getBodyMedium(screenSize).copyWith(
+                          color: AppTheme.getTextPrimaryColor(context),
+                          fontWeight: FontWeight.w600,
+                          height: 1.1,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (selected)
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: padS * 0.8,
+                          vertical: padS * 0.4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentBlue.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(padS),
+                          border: Border.all(
+                            color: AppTheme.accentBlue.withOpacity(0.5),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          'Activo',
+                          style: AppTheme.getCaption(screenSize).copyWith(
+                            color: AppTheme.accentBlue,
+                            fontWeight: FontWeight.w600,
+                            height: 1.0,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                SizedBox(height: padS * 0.5),
+                Text(
+                  subtitle,
+                  style: AppTheme.getCaption(screenSize).copyWith(
+                    color: AppTheme.getTextSecondaryColor(context),
+                    height: 1.2,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:ui' show FontFeature;
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 
@@ -19,34 +20,72 @@ class StatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: screenSize.height * 0.02),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.3),
-          Text(
-            title,
-            style: AppTheme.getCaptionSmall(screenSize).copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
+    final padXS = AppTheme.getSmallPadding(screenSize) * 0.7;
+    final padS = AppTheme.getSmallPadding(screenSize);
+    final radL = AppTheme.getLargeRadius(screenSize);
+
+    return Semantics(
+      label: '$title: $time',
+      child: Container(
+        width: double.infinity, // <- ocupa todo el ancho disponible
+        padding: EdgeInsets.all(padS),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(
+              screenSize.height * 0.02), // “curva” más marcada
+          border: Border.all(color: color.withOpacity(0.28), width: 1),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Ícono en “pill” sutil (sin sombra)
+            Container(
+              padding: EdgeInsets.all(padXS),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(radL),
+                border: Border.all(color: color.withOpacity(0.25), width: 1),
+              ),
+              child: Icon(
+                icon,
+                color: color,
+                size: screenSize.height * 0.022,
+              ),
             ),
-          ),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.2),
-          Text(
-            time,
-            style: AppTheme.getCaptionSmall(screenSize).copyWith(
-              color: AppTheme.getTextSecondaryColor(context),
+            SizedBox(width: padS),
+
+            // Texto
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Título
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTheme.getSubtitle2(screenSize).copyWith(
+                      color: AppTheme.getTextPrimaryColor(context),
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  SizedBox(height: padXS * 0.7),
+                  // Hora (monoespaciada para alineación limpia)
+                  Text(
+                    time,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.start,
+                    style: AppTheme.getBodyMedium(screenSize).copyWith(
+                      color: AppTheme.getTextSecondaryColor(context),
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
