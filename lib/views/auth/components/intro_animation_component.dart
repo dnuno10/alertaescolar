@@ -96,12 +96,15 @@ class _IntroAnimationComponentState extends State<IntroAnimationComponent>
           // App name
           Text(
             'Alerta Escolar',
-            style: AppTheme.getH1(screenSize).copyWith(),
+            style: TextStyle(
+              fontSize: screenSize.height * 0.035,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.getTextPrimaryColor(context),
+            ),
           ),
 
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-          // Animated text
           Container(
             height: screenSize.height * 0.12,
             alignment: Alignment.topCenter,

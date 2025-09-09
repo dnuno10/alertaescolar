@@ -187,7 +187,7 @@ class _LanguageOption extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected
                 ? accentColor.withOpacity(0.1)
-                : AppTheme.getContainerBackgroundColor(context),
+                : AppTheme.getBackgroundColor(context),
             borderRadius: BorderRadius.circular(
               AppTheme.getMediumRadius(screenSize),
             ),

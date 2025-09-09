@@ -21,7 +21,10 @@ class VerifyMagicLinkView extends StatefulWidget {
 
 class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
     with TickerProviderStateMixin {
-  late TextEditingController _pinController;
+  // ✅ Eliminamos TextEditingController para evitar el error al disponerlo
+  // El PinCodeTextField manejará su estado interno.
+  String _currentPin = '';
+  bool _isVerifying = false;
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -29,7 +32,6 @@ class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
   @override
   void initState() {
     super.initState();
-    _pinController = TextEditingController();
 
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -49,16 +51,20 @@ class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
 
   @override
   void dispose() {
-    _pinController.dispose();
+    // ❌ _pinController.dispose();  // Eliminado
     _fadeController.dispose();
     super.dispose();
   }
 
   Future<void> _verifyCode(String code) async {
+    if (_isVerifying) return; // evita dobles toques/llamadas
+    _isVerifying = true;
+
     final l10n = AppLocalizations.of(context);
 
     if (code.isEmpty || code.length != 6) {
       _showErrorSnackBar(l10n.enterCompleteCode);
+      _isVerifying = false;
       return;
     }
 
@@ -109,12 +115,12 @@ class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
       if (!mounted) return;
       CustomSnackBar.show(
         context: context,
-        message: l10n
-            .invalidVerificationCode, // mensaje correcto para error de verificación
+        message: l10n.invalidVerificationCode,
         isError: true,
       );
     } finally {
       if (mounted) LoadingDialog.hide(context);
+      _isVerifying = false;
     }
   }
 
@@ -128,9 +134,7 @@ class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
         email: widget.email,
       );
 
-      // Si conservaste los helpers:
-      // final res = await sendingManager.resendMagicLink();
-      // O usando el método unificado:
+      // Unificado:
       final res = await sendingManager.requestMagicLink(isResend: true);
 
       if (!mounted) return;
@@ -360,7 +364,7 @@ class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
         appContext: context,
         backgroundColor: Colors.transparent,
         length: 6,
-        controller: _pinController,
+        // ✅ Sin controller externo: evitamos el error de "used after being disposed"
         keyboardType: TextInputType.number,
         textStyle: AppTheme.getH2(size).copyWith(
           color: AppTheme.getTextPrimaryColor(context),
@@ -371,23 +375,23 @@ class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
           borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
           fieldHeight: size.width * 0.14,
           fieldWidth: size.width * 0.12,
-          activeFillColor: AppTheme.getCardColor(context),
-          inactiveFillColor: AppTheme.getCardColor(context),
-          selectedFillColor: AppTheme.getCardColor(context),
+          activeFillColor: AppTheme.accentPurple.withOpacity(0.2),
+          inactiveFillColor: AppTheme.accentPurple.withOpacity(0.05),
+          selectedFillColor: AppTheme.accentPurple.withOpacity(0.2),
           activeColor: AppTheme.accentPurple,
-          inactiveColor: AppTheme.getBorderColor(context),
+          inactiveColor: AppTheme.accentPurple.withOpacity(0.2),
           selectedColor: AppTheme.accentPurple,
           borderWidth: 2,
         ),
         enableActiveFill: true,
-        onCompleted: (pin) {
-          _verifyCode(pin);
-        },
+        onChanged: (v) => _currentPin = v,
+        onCompleted: (pin) => _verifyCode(pin),
         animationType: AnimationType.fade,
         animationDuration: const Duration(milliseconds: 300),
         animationCurve: Curves.easeInOut,
         autoFocus: true,
         useHapticFeedback: true,
+        beforeTextPaste: (text) => true, // permitir pegar
       ),
     );
   }

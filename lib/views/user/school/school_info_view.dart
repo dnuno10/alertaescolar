@@ -1,10 +1,8 @@
-// lib/views/school/school_info_view.dart
 import 'package:alertaescolar/components/headers/nav_header.dart';
 import 'package:alertaescolar/components/school/school_header_card.dart';
 import 'package:alertaescolar/components/school/quick_stats_section.dart';
 import 'package:alertaescolar/components/school/info_section.dart';
 import 'package:alertaescolar/components/school/info_row.dart';
-// import 'package:alertaescolar/components/school/education_level_chips.dart'; // ← ya no se usa
 import 'package:alertaescolar/components/school/contact_card.dart';
 import 'package:alertaescolar/components/school/description_section.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
@@ -19,9 +17,7 @@ import '../../../managers/user_provider.dart';
 import '../../../managers/school_provider.dart';
 
 class SchoolInfoView extends StatefulWidget {
-  /// Si viene por props, se usará su id para la carga inicial.
   final Escuela? school;
-
   const SchoolInfoView({super.key, this.school});
 
   @override
@@ -32,22 +28,17 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
     with TickerProviderStateMixin {
   late AnimationController _fadeCtrl;
   late Animation<double> _fade;
-
-  /// Error local para excepciones fuera del provider (p.ej. falta de id_escuela).
   String? _localError;
 
   @override
   void initState() {
     super.initState();
     _fadeCtrl = AnimationController(
-      duration: const Duration(milliseconds: 320),
+      duration: const Duration(milliseconds: 280),
       vsync: this,
     );
     _fade = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeInOut);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadSchoolData(forceRefresh: false);
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadSchoolData());
   }
 
   @override
@@ -58,17 +49,14 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
 
   Future<void> _loadSchoolData({bool forceRefresh = false}) async {
     setState(() => _localError = null);
-
     try {
       final userProvider = context.read<UserProvider>();
       final schoolProvider = context.read<SchoolProvider>();
 
-      // Asegura que exista usuario si lo necesitas como fallback
       if (userProvider.currentUser == null) {
         await userProvider.loadCurrentUser(context, showDialog: false);
       }
 
-      // Orden de precedencia: prop -> usuario -> cache del provider
       final escuelaId = widget.school?.id ??
           userProvider.currentUser?.escuelaId ??
           schoolProvider.currentSchool?.id;
@@ -89,33 +77,26 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
     }
   }
 
-  Future<void> _onRefresh() async {
-    await _loadSchoolData(forceRefresh: true);
-  }
+  Future<void> _onRefresh() => _loadSchoolData(forceRefresh: true);
 
-  // ---------- Launchers: Maps (Google), Phone, Email ----------
   Future<void> _openMap(String address) async {
     final query = Uri.encodeComponent(address);
-    // Prefer Google Maps app (iOS/Android) if installed
     final gmapsApp = Uri.parse('comgooglemaps://?q=$query');
     if (await canLaunchUrl(gmapsApp)) {
       await launchUrl(gmapsApp, mode: LaunchMode.externalApplication);
       return;
     }
-    // Web fallback that also works on Android/iOS
     final gmaps =
         Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
     if (await canLaunchUrl(gmaps)) {
       await launchUrl(gmaps, mode: LaunchMode.externalApplication);
       return;
     }
-    // Fallback to geo: (Android) or universal maps URL
     final geo = Uri.parse('geo:0,0?q=$query');
     if (await canLaunchUrl(geo)) {
       await launchUrl(geo, mode: LaunchMode.externalApplication);
       return;
     }
-    // Last resort try universal map URL in browser
     await launchUrl(gmaps, mode: LaunchMode.platformDefault);
   }
 
@@ -128,11 +109,7 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
   }
 
   Future<void> _sendEmail(String email) async {
-    final mailto = Uri(
-      scheme: 'mailto',
-      path: email,
-      // You can add subject/body defaults if desired via queryParameters
-    );
+    final mailto = Uri(scheme: 'mailto', path: email);
     if (await canLaunchUrl(mailto)) {
       await launchUrl(mailto, mode: LaunchMode.externalApplication);
     }
@@ -143,7 +120,6 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
     final l10n = AppLocalizations.of(context);
     final size = MediaQuery.of(context).size;
 
-    // Leemos el estado directamente del provider (única fuente de verdad).
     final sp = context.watch<SchoolProvider>();
     final isLoading = sp.isLoading;
     final providerError = sp.error;
@@ -190,21 +166,39 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
     required Escuela? school,
   }) {
     if (isLoading) return _buildSkeleton(size);
-    if (errorText != null) return _buildError(l10n, size, errorText);
-    if (school == null) return _buildEmpty(l10n, size);
+    if (errorText != null) {
+      return _StatusBox(
+        icon: Icons.error_outline_rounded,
+        title: l10n.errorLoadingSchoolInfo,
+        subtitle: errorText,
+        size: size,
+        primary: AppTheme.errorColor,
+        actionLabel: l10n.retry,
+        onAction: () => _loadSchoolData(forceRefresh: true),
+      );
+    }
+    if (school == null) {
+      return _StatusBox(
+        icon: Icons.school_outlined,
+        title: l10n.schoolInfo,
+        subtitle: l10n.notAvailable,
+        size: size,
+        primary: AppTheme.accentBlue,
+        actionLabel: l10n.refresh,
+        onAction: () => _loadSchoolData(forceRefresh: true),
+      );
+    }
     return FadeTransition(
         opacity: _fade, child: _buildContent(l10n, size, school));
   }
 
-  // ---------- Skeleton / Loading ----------
   Widget _buildSkeleton(Size size) {
     final base = AppTheme.getCardColor(context);
-    Widget shimmer({required double h, double? w, double r = 12}) => Container(
+    Widget block(double h) => Container(
           height: h,
-          width: w,
           decoration: BoxDecoration(
             color: base,
-            borderRadius: BorderRadius.circular(r),
+            borderRadius: BorderRadius.circular(AppTheme.getLargeRadius(size)),
             border: Border.all(color: AppTheme.getBorderColor(context)),
           ),
         );
@@ -212,54 +206,27 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
     return Column(
       children: [
         SizedBox(height: AppTheme.getSmallPadding(size)),
-        shimmer(h: size.height * 0.18, r: AppTheme.getLargeRadius(size)),
+        block(size.height * 0.16),
         SizedBox(height: AppTheme.getLargePadding(size)),
-        shimmer(h: 100, r: AppTheme.getLargeRadius(size)),
+        block(90),
         SizedBox(height: AppTheme.getLargePadding(size)),
-        shimmer(h: 180, r: AppTheme.getLargeRadius(size)),
+        block(160),
         SizedBox(height: AppTheme.getLargePadding(size)),
-        shimmer(h: 160, r: AppTheme.getLargeRadius(size)),
+        block(160),
         SizedBox(height: AppTheme.getLargePadding(size)),
-        shimmer(h: 180, r: AppTheme.getLargeRadius(size)),
+        block(160),
         SizedBox(height: AppTheme.getLargePadding(size) * 2),
       ],
     );
   }
 
-  // ---------- Error / Empty ----------
-  Widget _buildError(AppLocalizations l10n, Size size, String message) {
-    return _StatusBox(
-      icon: Icons.error_outline,
-      title: l10n.errorLoadingSchoolInfo,
-      subtitle: message,
-      size: size,
-      primary: AppTheme.errorColor,
-      actionLabel: l10n.retry,
-      onAction: () => _loadSchoolData(forceRefresh: true),
-    );
-  }
-
-  Widget _buildEmpty(AppLocalizations l10n, Size size) {
-    return _StatusBox(
-      icon: Icons.school_outlined,
-      title: l10n.schoolInfo,
-      subtitle: l10n.notAvailable,
-      size: size,
-      primary: AppTheme.accentBlue,
-      actionLabel: l10n.refresh,
-      onAction: () => _loadSchoolData(forceRefresh: true),
-    );
-  }
-
-  // ---------- Content ----------
   Widget _buildContent(AppLocalizations l10n, Size size, Escuela s) {
     final tipoStr = _getSchoolType(s.tipo, l10n);
 
-    // Quick stats: solo datos existentes en la tabla `escuelas`
     final stats = [
       {
         'title': tipoStr,
-        'subtitle': l10n.institution, // tipo de institución
+        'subtitle': l10n.institution,
         'icon': Icons.apartment_rounded,
         'color': AppTheme.warningColor,
       },
@@ -273,16 +240,15 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
     ];
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(height: AppTheme.getSmallPadding(size)),
-
-        // Header + acciones
         SchoolHeaderCard(
           schoolName: s.nombre,
           subtitle: l10n.educationalExcellenceInstitution,
           screenSize: size,
         ),
-        SizedBox(height: AppTheme.getSmallPadding(size)),
+        SizedBox(height: AppTheme.getMediumPadding(size)),
         _QuickActionsBar(
           size: size,
           addressEnabled: s.direccion.isNotEmpty,
@@ -293,15 +259,9 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
           onCall: s.telefono.isNotEmpty ? () => _callPhone(s.telefono) : null,
           onEmail: s.email.isNotEmpty ? () => _sendEmail(s.email) : null,
         ),
-
         SizedBox(height: AppTheme.getLargePadding(size)),
-
-        // Quick stats
         QuickStatsSection(screenSize: size, stats: stats),
-
         SizedBox(height: AppTheme.getLargePadding(size)),
-
-        // Basic info
         InfoSection(
           title: l10n.basicInformation,
           icon: Icons.info_outline_rounded,
@@ -324,10 +284,7 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
             ),
           ],
         ),
-
         SizedBox(height: AppTheme.getLargePadding(size)),
-
-        // Contact info
         InfoSection(
           title: l10n.contactInfo,
           icon: Icons.contact_phone_rounded,
@@ -376,23 +333,18 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
               ),
           ],
         ),
-
         SizedBox(height: AppTheme.getLargePadding(size)),
-
-        // Description
         DescriptionSection(
           description: (s.descripcion ?? '').isNotEmpty
               ? s.descripcion!
               : l10n.schoolDescription,
           screenSize: size,
         ),
-
         SizedBox(height: AppTheme.getLargePadding(size) * 2),
       ],
     );
   }
 
-  // ---------- Helpers de mapeo ----------
   String _getSchoolType(TipoEscuela? tipo, AppLocalizations l10n) {
     if (tipo == null) return l10n.public;
     switch (tipo) {
@@ -405,8 +357,6 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
     }
   }
 }
-
-// ---------- Widgets auxiliares ----------
 
 class _StatusBox extends StatelessWidget {
   final IconData icon;
@@ -429,16 +379,22 @@ class _StatusBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    final rad = AppTheme.getLargeRadius(size);
+    return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(size)),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius: BorderRadius.circular(rad),
+        border: Border.all(color: AppTheme.getBorderColor(context)),
+      ),
       child: Column(
         children: [
-          SizedBox(height: AppTheme.getLargePadding(size) * 1.5),
-          Icon(icon, size: 64, color: primary),
+          SizedBox(height: AppTheme.getLargePadding(size)),
+          Icon(icon, size: 56, color: primary),
           SizedBox(height: AppTheme.getMediumPadding(size)),
           Text(
             title,
-            style: AppTheme.getBodyMedium(size).copyWith(
+            style: AppTheme.getSubtitle1(size).copyWith(
               color: primary,
               fontWeight: FontWeight.w700,
             ),
@@ -447,24 +403,32 @@ class _StatusBox extends StatelessWidget {
           SizedBox(height: AppTheme.getSmallPadding(size)),
           Text(
             subtitle,
-            style: AppTheme.getBodyLarge(size).copyWith(
+            style: AppTheme.getBodyMedium(size).copyWith(
               color: AppTheme.getTextSecondaryColor(context),
             ),
             textAlign: TextAlign.center,
           ),
           if (actionLabel != null && onAction != null) ...[
             SizedBox(height: AppTheme.getMediumPadding(size)),
-            ElevatedButton.icon(
+            TextButton.icon(
               onPressed: onAction,
-              icon: const Icon(Icons.refresh_rounded),
-              label: Text(actionLabel!),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primary,
-                foregroundColor: Colors.white,
+              icon: Icon(Icons.refresh_rounded, color: primary),
+              label: Text(
+                actionLabel!,
+                style: AppTheme.getBodyMedium(size).copyWith(color: primary),
+              ),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppTheme.getMediumPadding(size),
+                  vertical: AppTheme.getSmallPadding(size) * 0.8,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(rad),
+                  side: BorderSide(color: primary.withOpacity(0.3)),
+                ),
               ),
             ),
           ],
-          SizedBox(height: AppTheme.getLargePadding(size) * 2),
         ],
       ),
     );
@@ -498,20 +462,20 @@ class _QuickActionsBar extends StatelessWidget {
       required bool enabled,
       required VoidCallback? onTap,
     }) {
+      final rad = AppTheme.getMediumRadius(size);
       return Expanded(
         child: Opacity(
           opacity: enabled ? 1 : 0.5,
           child: InkWell(
             onTap: enabled ? onTap : null,
-            borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
+            borderRadius: BorderRadius.circular(rad),
             child: Container(
               padding: EdgeInsets.symmetric(
                 vertical: AppTheme.getSmallPadding(size) * 0.9,
               ),
               decoration: BoxDecoration(
                 color: AppTheme.getCardColor(context),
-                borderRadius:
-                    BorderRadius.circular(AppTheme.getMediumRadius(size)),
+                borderRadius: BorderRadius.circular(rad),
                 border: Border.all(color: AppTheme.getBorderColor(context)),
               ),
               child: Row(
@@ -539,25 +503,22 @@ class _QuickActionsBar extends StatelessWidget {
     return Row(
       children: [
         btn(
-          icon: Icons.map_rounded,
-          label: 'Mapa',
-          enabled: addressEnabled,
-          onTap: onOpenMap,
-        ),
+            icon: Icons.map_rounded,
+            label: 'Mapa',
+            enabled: addressEnabled,
+            onTap: onOpenMap),
         SizedBox(width: AppTheme.getSmallPadding(size)),
         btn(
-          icon: Icons.call_rounded,
-          label: 'Llamar',
-          enabled: phoneEnabled,
-          onTap: onCall,
-        ),
+            icon: Icons.call_rounded,
+            label: 'Llamar',
+            enabled: phoneEnabled,
+            onTap: onCall),
         SizedBox(width: AppTheme.getSmallPadding(size)),
         btn(
-          icon: Icons.email_rounded,
-          label: 'Email',
-          enabled: emailEnabled,
-          onTap: onEmail,
-        ),
+            icon: Icons.email_rounded,
+            label: 'Email',
+            enabled: emailEnabled,
+            onTap: onEmail),
       ],
     );
   }

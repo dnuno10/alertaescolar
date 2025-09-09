@@ -15,276 +15,228 @@ class DigitalCredentialCard extends StatelessWidget {
     this.schoolName = '-',
   });
 
-  String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+'));
-    final first = parts.isNotEmpty ? parts.first.characters.first : 'A';
-    final second = parts.length > 1 ? parts[1].characters.first : '';
-    return (first + second).toUpperCase();
-  }
+  String get _name =>
+      (student.nombre).trim().isEmpty ? '-' : student.nombre.trim();
+  String get _matricula =>
+      (student.matricula).trim().isEmpty ? '-' : student.matricula.trim();
+  String get _grupo =>
+      (student.grupo).trim().isEmpty ? 'Sin asignar' : student.grupo.trim();
+  String get _turno => ((student.turno) ?? '').trim().isEmpty
+      ? 'Sin asignar'
+      : student.turno!.trim();
+  String get _school => schoolName.trim().isEmpty ? '-' : schoolName.trim();
 
   @override
   Widget build(BuildContext context) {
-    // Dimensiones de credencial vertical optimizadas
-    final width = 400.0;
-    final height = 700.0;
-
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Colores profesionales
+    const primaryColor = AppTheme.accentBlue; // Azul institucional
+    const accentColor = Color(0xFF059669); // Verde para validación
+    const textDark = Color(0xFF0F172A);
+    const textLight = Color(0xFF475569);
+    const bgCard = Color(0xFFFAFAFA);
 
     return Container(
-      width: MediaQuery.of(context).size.width,
-      height: MediaQuery.of(context).size.height,
+      width: screenSize.width,
+      height: screenSize.height,
       color: Colors.white,
       child: Center(
         child: Container(
-          width: width,
-          height: height,
-          clipBehavior: Clip.antiAlias,
+          width: 380,
+          height: 750,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.15),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 40,
-                offset: const Offset(0, 20),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
           ),
-          child: Stack(
+          child: Column(
             children: [
-              // Decoración de fondo con patrón geométrico
-              Positioned(
-                top: -50,
-                right: -50,
-                child: Container(
-                  width: 200,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        AppTheme.accentBlue.withOpacity(0.1),
-                        AppTheme.accentBlue.withOpacity(0.05),
-                        Colors.transparent,
-                      ],
+              // Header Simple
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: const BoxDecoration(
+                  color: primaryColor,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(32),
+                    topRight: Radius.circular(32),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Image.asset(
+                      'images/alertaescolar_logo.png',
+                      width: 140,
+                      height: 60,
+                      fit: BoxFit.contain,
+                      color: Colors.white,
                     ),
+                    const SizedBox(height: 12),
+                    Text(
+                      _school.toUpperCase(),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'CREDENCIAL ESTUDIANTIL',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Contenido Principal
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Nombre del estudiante
+                      Text(
+                        'ESTUDIANTE',
+                        style: TextStyle(
+                          color: textLight,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _name.toUpperCase(),
+                        style: const TextStyle(
+                          color: textDark,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.3,
+                          height: 1.1,
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Información académica en grid
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildInfoCard(
+                              'MATRÍCULA',
+                              _matricula,
+                              Icons.badge_outlined,
+                              textDark,
+                              textLight,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildInfoCard(
+                              'GRUPO',
+                              _grupo,
+                              Icons.groups_outlined,
+                              textDark,
+                              textLight,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      _buildInfoCard(
+                        'TURNO',
+                        _turno,
+                        Icons.schedule_outlined,
+                        textDark,
+                        textLight,
+                        fullWidth: true,
+                      ),
+
+                      SizedBox(height: 32),
+
+                      // QR Code centrado
+                      Center(
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: bgCard,
+                                borderRadius: BorderRadius.circular(32),
+                                border:
+                                    Border.all(color: const Color(0xFFE2E8F0)),
+                              ),
+                              child: QrImageView(
+                                data: _matricula,
+                                version: QrVersions.auto,
+                                size: 170,
+                                gapless: true,
+                                eyeStyle: const QrEyeStyle(
+                                  eyeShape: QrEyeShape.square,
+                                  color: textDark,
+                                ),
+                                dataModuleStyle: const QrDataModuleStyle(
+                                  dataModuleShape: QrDataModuleShape.square,
+                                  color: textDark,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Código de acceso',
+                              style: TextStyle(
+                                color: textLight,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
 
-              Column(
-                children: [
-                  // Header con nombre de la institución
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 24, horizontal: 20),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppTheme.accentBlue,
-                          AppTheme.accentBlue,
-                        ],
-                      ),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.school,
-                            color: Colors.white,
-                            size: 36,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          (schoolName.isEmpty ? '-' : schoolName).toUpperCase(),
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            'Ciclo 2025-2026',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.95),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+              // Footer minimal
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: bgCard,
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(32),
+                    bottomRight: Radius.circular(32),
                   ),
-
-                  const SizedBox(height: 24),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      children: [
-                        Text(
-                          student.nombre.toUpperCase(),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color:
-                                isDark ? Colors.white : const Color(0xFF2D3748),
-                            letterSpacing: 0.5,
-                            height: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          height: 2,
-                          width: 120,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.transparent,
-                                AppTheme.accentBlue,
-                                Colors.transparent,
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Información del estudiante
-                  const SizedBox(height: 24),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Column(
-                      children: [
-                        _buildInfoRow(
-                          'MATRÍCULA',
-                          student.matricula,
-                          isDark,
-                          Icons.badge,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildInfoRow(
-                          'GRUPO',
-                          student.grupo.isEmpty ? 'Sin asignar' : student.grupo,
-                          isDark,
-                          Icons.groups,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildInfoRow(
-                          'TURNO',
-                          (student.turno ?? '').isEmpty
-                              ? 'Sin asignar'
-                              : student.turno!,
-                          isDark,
-                          Icons.schedule,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // QR Code
-                  const Spacer(),
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 20),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: QrImageView(
-                      data: student.matricula,
-                      version: QrVersions.auto,
-                      size: 150,
-                      gapless: true,
-                      eyeStyle: const QrEyeStyle(
-                        eyeShape: QrEyeShape.square,
-                        color: Color(0xFF2D3748),
-                      ),
-                      dataModuleStyle: const QrDataModuleStyle(
-                        dataModuleShape: QrDataModuleShape.square,
-                        color: Color(0xFF2D3748),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.verified_rounded, size: 14, color: accentColor),
+                    const SizedBox(width: 6),
+                    Text(
+                      'VÁLIDA • CICLO 2025-2026',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.8,
+                        color: accentColor,
                       ),
                     ),
-                  ),
-
-                  // Footer
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: isDark
-                            ? [
-                                Colors.black.withOpacity(0.3),
-                                Colors.black.withOpacity(0.5),
-                              ]
-                            : [
-                                const Color(0xFFE2E8F0),
-                                const Color(0xFFCBD5E0),
-                              ],
-                      ),
-                      borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(20),
-                        bottomRight: Radius.circular(20),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.verified,
-                          size: 14,
-                          color: isDark ? Colors.grey[400] : Colors.grey[700],
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'CREDENCIAL VÁLIDA - CICLO ACTUAL',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.8,
-                            color: isDark ? Colors.grey[400] : Colors.grey[700],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
@@ -293,54 +245,48 @@ class DigitalCredentialCard extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(
+  Widget _buildInfoCard(
     String label,
     String value,
-    bool isDark,
     IconData icon,
-  ) {
+    Color textDark,
+    Color textLight, {
+    bool fullWidth = false,
+  }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      width: fullWidth ? double.infinity : null,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
+        color: const Color(0xFFFAFAFA),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icon,
-            size: 18,
-            color: AppTheme.accentBlue,
-          ),
-          const SizedBox(width: 12),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: isDark ? Colors.grey[400] : Colors.grey[600],
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(width: 8),
-          const Text(
-            ':',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: isDark ? Colors.white : const Color(0xFF2D3748),
+          Row(
+            children: [
+              Icon(icon, size: 14, color: const Color(0xFF1E40AF)),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: textLight,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value.isEmpty ? '-' : value,
+            style: TextStyle(
+              color: textDark,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
             ),
           ),
         ],

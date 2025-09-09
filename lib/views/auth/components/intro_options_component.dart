@@ -105,8 +105,9 @@ class IntroOptionsComponent extends StatelessWidget {
             child: SolidButton(
               label: l10n.login,
               // Evita Colors.black “crudo”; usa el tema
-              backgroundColor: AppTheme.getTextPrimaryColor(context),
+              backgroundColor: AppTheme.getBackgroundColor(context),
               screenSize: size,
+              foregroundColor: AppTheme.getTextPrimaryColor(context),
               width: size.width * 0.9,
               onPressed: () {
                 HapticFeedback.mediumImpact();
@@ -155,7 +156,7 @@ class _GoogleSignInButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final radius = AppTheme.getSmallRadius(size);
-
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: size.width * 0.9),
       child: ClipRRect(
@@ -193,7 +194,9 @@ class _GoogleSignInButton extends StatelessWidget {
                   Text(
                     l10n.continueWithGoogle,
                     style: AppTheme.getBodyMedium(size).copyWith(
-                      color: const Color(0xFF3C4043),
+                      color: isDark
+                          ? AppTheme.getBackgroundColor(context)
+                          : AppTheme.getTextPrimaryColor(context),
                       fontWeight: FontWeight.w500,
                     ),
                   ),

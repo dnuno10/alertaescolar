@@ -15,60 +15,43 @@ class SchoolHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pad = AppTheme.getMediumPadding(screenSize);
+    final rad = AppTheme.getLargeRadius(screenSize);
+
     return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
+      padding: EdgeInsets.all(pad),
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
-        border: Border.all(color: AppTheme.getBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: screenSize.height * 0.02,
-            offset: Offset(0, screenSize.height * 0.01),
-            spreadRadius: 1,
-          ),
-        ],
+        borderRadius: BorderRadius.circular(rad),
+        border: Border.all(color: AppTheme.getBorderColor(context), width: 1),
       ),
-      child: Column(
+      child: Row(
         children: [
-          // Title with enhanced typography
-          Text(
-            schoolName,
-            style: AppTheme.getH1(screenSize).copyWith(
-              color: AppTheme.getTextPrimaryColor(context),
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-
-          // Subtitle with modern badge
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppTheme.getMediumPadding(screenSize),
-              vertical: AppTheme.getSmallPadding(screenSize),
-            ),
-            decoration: BoxDecoration(
-              color: AppTheme.accentBlue.withOpacity(0.1),
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
-              border: Border.all(
-                color: AppTheme.accentBlue.withOpacity(0.2),
-                width: 1,
-              ),
-            ),
-            child: Text(
-              subtitle,
-              style: AppTheme.getBodyMedium(screenSize).copyWith(
-                color: AppTheme.accentBlue,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.2,
-              ),
-              textAlign: TextAlign.center,
+          // Títulos
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  schoolName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTheme.getH2(screenSize).copyWith(
+                    color: AppTheme.getTextPrimaryColor(context),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.25),
+                Text(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTheme.getBodyMedium(screenSize).copyWith(
+                    color: AppTheme.getTextSecondaryColor(context),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

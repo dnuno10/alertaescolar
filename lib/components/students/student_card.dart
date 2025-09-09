@@ -53,35 +53,6 @@ class StudentCard extends StatelessWidget {
             padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
             child: Row(
               children: [
-                Container(
-                  width: screenSize.width * 0.14,
-                  height: screenSize.width * 0.14,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(
-                        AppTheme.getSmallRadius(screenSize)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withOpacity(0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      student.nombre.isNotEmpty
-                          ? student.nombre[0].toUpperCase()
-                          : 'A',
-                      style: AppTheme.getBodyMedium(screenSize).copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.onPrimaryColor,
-                        letterSpacing: 0.1,
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: AppTheme.getSmallPadding(screenSize)),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

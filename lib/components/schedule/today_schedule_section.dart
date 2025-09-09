@@ -32,7 +32,7 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
   VoidCallback? _studentListener;
   VoidCallback? _scheduleListener;
 
-  // 🔒 Referencias seguras a los providers (no usar context en dispose)
+  // Referencias seguras a providers
   StudentProvider? _sp;
   ScheduleProvider? _sch;
 
@@ -42,30 +42,21 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
   static const _minReloadGap = Duration(milliseconds: 300);
 
   @override
-  void initState() {
-    super.initState();
-    // ❌ Ya no adjuntamos listeners aquí para no depender de context en initState
-    // y para poder reacoplar si los providers cambian.
-  }
-
-  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    // Obtiene instancias actuales de los providers SIN registrar dependencias reactivas.
     final sp = Provider.of<StudentProvider>(context, listen: false);
     final sch = Provider.of<ScheduleProvider>(context, listen: false);
 
-    // Si las referencias cambiaron (o es la primera vez), desacopla antiguos y acopla nuevos
     final spChanged = _sp != sp;
     final schChanged = _sch != sch;
 
     if (spChanged || schChanged) {
-      _detachProviderListeners(); // por si ya había
+      _detachProviderListeners();
       _sp = sp;
       _sch = sch;
       _attachProviderListeners();
-      _initializeStudentSelection(); // asegura selección inicial y primer load
+      _initializeStudentSelection();
     }
   }
 
@@ -73,7 +64,6 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
     if (_sp == null || _sch == null) return;
 
     _studentListener = () {
-      // Si cambia la lista de alumnos o su info, revalida selección y recarga
       if (_selectedStudentId == null && _sp!.students.isNotEmpty) {
         setState(() => _selectedStudentId = _sp!.students.first.id);
       }
@@ -82,7 +72,6 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
     _sp!.addListener(_studentListener!);
 
     _scheduleListener = () {
-      // Cuando el provider de horarios cambie (por realtime o manual), recarga
       _loadTodaySchedule();
     };
     _sch!.addListener(_scheduleListener!);
@@ -108,14 +97,12 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
 
   @override
   void dispose() {
-    // ✅ Usa referencias guardadas, NO uses context aquí
     _detachProviderListeners();
     _sp = null;
     _sch = null;
     super.dispose();
   }
 
-  // Selecciona automáticamente el primer estudiante disponible
   void _initializeStudentSelection() {
     final sp = _sp;
     if (sp == null) return;
@@ -135,7 +122,6 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
 
       if (sp.students.isEmpty) {
         setState(() => _isLoading = true);
-        // si hay otra carga en curso, esto evita parpadeo
         await Future.delayed(const Duration(milliseconds: 300));
         if (!mounted) return;
 
@@ -229,9 +215,7 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
 
   Future<void> _loadTodaySchedule() async {
     final now = DateTime.now();
-    if (now.difference(_lastLoad) < _minReloadGap) {
-      return;
-    }
+    if (now.difference(_lastLoad) < _minReloadGap) return;
     _lastLoad = now;
 
     if (_selectedStudentId == null) {
@@ -271,7 +255,6 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
         return;
       }
 
-      // Cargas base (si ya están cacheadas, Supabase no penaliza mucho)
       await scheduleProvider.loadMaterias(
         escuelaId: student.escuelaId,
         context: null,
@@ -291,6 +274,7 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
           .toList()
         ..sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
 
+      // Elimina duplicados por materia+inicio+fin
       final map = <String, ClaseHorario>{};
       for (final c in todayClasses) {
         map['${c.idMateria}_${c.horaInicio}_${c.horaFin}'] = c;
@@ -326,6 +310,9 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
     );
   }
 
+  // =======================
+  // Encabezado minimalista
+  // =======================
   Widget _buildSectionHeader(BuildContext context, AppLocalizations l10n) {
     final today = DateTime.now();
     const dayNames = [
@@ -352,72 +339,54 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
       'Diciembre'
     ];
 
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.todaysSchedule,
-                style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.getTextPrimaryColor(context),
-                ),
-              ),
-              Text(
-                '${dayNames[today.weekday - 1]}, ${today.day} de ${monthNames[today.month - 1]}',
-                style: AppTheme.getCaption(widget.screenSize).copyWith(
-                  color: AppTheme.getTextSecondaryColor(context),
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (_selectedStudentId != null)
-          Container(
-            margin: EdgeInsets.only(
-                left: AppTheme.getSmallPadding(widget.screenSize)),
-            child: ElevatedButton.icon(
+    return _HeaderMinimal(
+      title: l10n.todaysSchedule,
+      subtitle:
+          '${dayNames[today.weekday - 1]}, ${today.day} de ${monthNames[today.month - 1]}',
+      screenSize: widget.screenSize,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_selectedStudentId != null)
+            TextButton.icon(
               onPressed: () {
                 HapticFeedback.mediumImpact();
                 _navigateToFullSchedule(context);
               },
-              icon: const Icon(Icons.calendar_view_week_rounded,
-                  color: Colors.white, size: 18),
+              icon: const Icon(Icons.calendar_view_week_rounded, size: 18),
               label: Text(
                 'Ver completo',
-                style: AppTheme.getButton(widget.screenSize)
-                    .copyWith(color: Colors.white),
+                style: AppTheme.getCaption(widget.screenSize),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.accentBlue,
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppTheme.getSmallPadding(widget.screenSize),
+                  vertical: AppTheme.getSmallPadding(widget.screenSize) * 0.6,
+                ),
+                foregroundColor: AppTheme.accentBlue,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(
-                      AppTheme.getMediumRadius(widget.screenSize)),
+                      AppTheme.getLargeRadius(widget.screenSize)),
+                  side: BorderSide(
+                    color: AppTheme.accentBlue.withOpacity(0.45),
+                    width: 1,
+                  ),
                 ),
-                elevation: 0,
               ),
             ),
-          ),
-        Container(
-          margin: EdgeInsets.only(
-              left: AppTheme.getSmallPadding(widget.screenSize)),
-          child: Icon(
+          SizedBox(width: AppTheme.getSmallPadding(widget.screenSize)),
+          Icon(
             Icons.schedule_rounded,
             color: AppTheme.primaryColor,
-            size: 24,
+            size: 22,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   void _navigateToFullSchedule(BuildContext context) {
-    final sp = _sp; // ✅ usa referencia guardada
+    final sp = _sp;
     final student =
         _findStudentById(sp?.students ?? const [], _selectedStudentId);
 
@@ -472,34 +441,17 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
     return TurnoEnum.desconocido;
   }
 
+  // =======================
+  // Selectores y contenido
+  // =======================
   Widget _buildStudentSelector() {
     return Consumer<StudentProvider>(
       builder: (context, sp, child) {
         if (sp.students.isEmpty) {
-          return Container(
-            padding:
-                EdgeInsets.all(AppTheme.getMediumPadding(widget.screenSize)),
-            decoration: BoxDecoration(
-              color: AppTheme.getCardColor(context),
-              borderRadius: BorderRadius.circular(
-                  AppTheme.getMediumRadius(widget.screenSize)),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  color: AppTheme.getTextSecondaryColor(context),
-                  size: 20,
-                ),
-                SizedBox(width: AppTheme.getSmallPadding(widget.screenSize)),
-                Text(
-                  'No hay estudiantes disponibles',
-                  style: AppTheme.getCaption(widget.screenSize).copyWith(
-                    color: AppTheme.getTextSecondaryColor(context),
-                  ),
-                ),
-              ],
-            ),
+          return _InfoStrip(
+            icon: Icons.info_outline,
+            message: 'No hay estudiantes disponibles',
+            screenSize: widget.screenSize,
           );
         }
 
@@ -517,370 +469,541 @@ class _TodayScheduleSectionState extends State<TodayScheduleSection> {
             return s?.nombre ?? '';
           },
           screenSize: widget.screenSize,
-          backgroundColor: AppTheme.getSecondaryBackgroundColor(context)
-              .withOpacity(0.9), // was withValues
+          backgroundColor:
+              AppTheme.getSecondaryBackgroundColor(context).withOpacity(0.9),
         );
       },
     );
   }
 
   Widget _buildScheduleContent(BuildContext context, AppLocalizations l10n) {
-    if (_isLoading) return _buildLoadingState();
-    if (_error != null) return _buildErrorState();
-    if (_selectedStudentId == null) return _buildSelectStudentState();
-    if (_todayClasses.isEmpty) return _buildEmptyState();
-    return _buildClassesList();
-  }
+    if (_isLoading) {
+      return _LoadingPlaceholder(screenSize: widget.screenSize);
+    }
+    if (_error != null) {
+      return _ErrorBlock(
+        message: _error!,
+        onRetry: () {
+          HapticFeedback.mediumImpact();
+          setState(() => _error = null);
+          _loadTodaySchedule();
+        },
+        screenSize: widget.screenSize,
+      );
+    }
+    if (_selectedStudentId == null) {
+      return _InfoStrip(
+        icon: Icons.person_search_rounded,
+        message: 'Selecciona un estudiante para ver su horario de hoy',
+        screenSize: widget.screenSize,
+      );
+    }
+    if (_todayClasses.isEmpty) {
+      final weekday = DateTime.now().weekday;
+      const dayNames = {
+        DateTime.monday: 'Lunes',
+        DateTime.tuesday: 'Martes',
+        DateTime.wednesday: 'Miércoles',
+        DateTime.thursday: 'Jueves',
+        DateTime.friday: 'Viernes',
+        DateTime.saturday: 'Sábado',
+        DateTime.sunday: 'Domingo',
+      };
+      return _EmptyStrip(
+        screenSize: widget.screenSize,
+        text: 'No hay clases programadas para hoy (${dayNames[weekday]})',
+        subtext: '¡Disfruta tu día libre!',
+      );
+    }
 
-  Widget _buildLoadingState() {
-    return Container(
-      height: 200,
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius: BorderRadius.circular(
-          AppTheme.getLargeRadius(widget.screenSize),
-        ),
-      ),
-      child: const Center(child: CircularProgressIndicator()),
-    );
-  }
-
-  Widget _buildErrorState() {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(AppTheme.getLargePadding(widget.screenSize)),
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getLargeRadius(widget.screenSize)),
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.error_outline, size: 48, color: AppTheme.errorColor),
-          SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
-          Text(
-            _error ?? 'Error desconocido',
-            style: AppTheme.getSubtitle2(widget.screenSize)
-                .copyWith(color: AppTheme.errorColor),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
-          ElevatedButton(
-            onPressed: () {
-              HapticFeedback.mediumImpact();
-              setState(() => _error = null);
-              _loadTodaySchedule();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
-              foregroundColor: AppTheme.onPrimaryColor,
-            ),
-            child: const Text('Reintentar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSelectStudentState() {
-    return Container(
-      padding: EdgeInsets.all(AppTheme.getLargePadding(widget.screenSize)),
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getLargeRadius(widget.screenSize)),
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.person_search_rounded,
-              size: 48, color: AppTheme.getTextSecondaryColor(context)),
-          SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
-          Text(
-            'Selecciona un estudiante para ver su horario de hoy',
-            style: AppTheme.getSubtitle2(widget.screenSize).copyWith(
-              color: AppTheme.getTextSecondaryColor(context),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    final weekday = DateTime.now().weekday;
-    const dayNames = {
-      DateTime.monday: 'Lunes',
-      DateTime.tuesday: 'Martes',
-      DateTime.wednesday: 'Miércoles',
-      DateTime.thursday: 'Jueves',
-      DateTime.friday: 'Viernes',
-      DateTime.saturday: 'Sábado',
-      DateTime.sunday: 'Domingo',
-    };
-
-    return Container(
-      padding: EdgeInsets.all(AppTheme.getLargePadding(widget.screenSize)),
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getLargeRadius(widget.screenSize)),
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.event_busy_rounded,
-              size: 48, color: AppTheme.getTextSecondaryColor(context)),
-          SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
-          Text(
-            'No hay clases programadas para hoy (${dayNames[weekday]})',
-            style: AppTheme.getSubtitle2(widget.screenSize).copyWith(
-              color: AppTheme.getTextSecondaryColor(context),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: AppTheme.getSmallPadding(widget.screenSize)),
-          Text(
-            '¡Disfruta tu día libre!',
-            style: AppTheme.getCaption(widget.screenSize).copyWith(
-              color: AppTheme.getTextSecondaryColor(context),
-              fontStyle: FontStyle.italic,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildClassesList() {
+    // Lista de clases de hoy con el mismo estilo minimalista
     return Column(
       children: _todayClasses.asMap().entries.map((entry) {
         final index = entry.key;
         final clase = entry.value;
-        return _TodayClassCard(
-          clase: clase,
-          screenSize: widget.screenSize,
-          status: _getClassStatus(clase),
-          isLast: index == _todayClasses.length - 1,
+        final status = _getClassStatus(clase);
+
+        return Consumer<ScheduleProvider>(
+          key: ValueKey('today_row_$index'),
+          builder: (context, scheduleProvider, child) {
+            final materia = scheduleProvider.getMateriaById(clase.idMateria);
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: AppTheme.getSmallPadding(widget.screenSize),
+              ),
+              child: _ClassRowToday(
+                title: (materia?.nombre ?? 'Materia').trim().isEmpty
+                    ? 'Materia'
+                    : (materia!.nombre),
+                teacher: (materia?.profesor ?? '').trim(),
+                classroom: clase.aula.trim(),
+                start: TimeFormat.format24to12(clase.horaInicio),
+                end: TimeFormat.format24to12(clase.horaFin),
+                status: status,
+                screenSize: widget.screenSize,
+              ),
+            );
+          },
         );
       }).toList(),
     );
   }
 }
 
+// =========================
+// Tipos y widgets internos
+// =========================
+
 enum ClaseStatus { upcoming, inProgress, completed }
 
-class _TodayClassCard extends StatelessWidget {
-  final ClaseHorario clase;
+class _HeaderMinimal extends StatelessWidget {
+  final String title;
+  final String subtitle;
   final Size screenSize;
-  final ClaseStatus status;
-  final bool isLast;
+  final Widget? trailing;
 
-  const _TodayClassCard({
-    required this.clase,
+  const _HeaderMinimal({
+    required this.title,
+    required this.subtitle,
     required this.screenSize,
-    required this.status,
-    required this.isLast,
+    this.trailing,
   });
-
-  String _getStatusText() {
-    switch (status) {
-      case ClaseStatus.upcoming:
-        return 'Próxima';
-      case ClaseStatus.inProgress:
-        return 'En progreso';
-      case ClaseStatus.completed:
-        return 'Completada';
-    }
-  }
-
-  IconData _getStatusIcon() {
-    switch (status) {
-      case ClaseStatus.upcoming:
-        return Icons.schedule_rounded;
-      case ClaseStatus.inProgress:
-        return Icons.play_circle_filled_rounded;
-      case ClaseStatus.completed:
-        return Icons.check_circle_rounded;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ScheduleProvider>(
-      builder: (context, scheduleProvider, child) {
-        final materia = scheduleProvider.getMateriaById(clase.idMateria);
-        final cardColor = materia != null
-            ? AppTheme.hexToColor(materia.color)
-            : AppTheme.accentPurple;
+    final pad = AppTheme.getMediumPadding(screenSize);
+    final rad = AppTheme.getLargeRadius(screenSize);
 
-        return TweenAnimationBuilder<double>(
-          duration: const Duration(milliseconds: 350),
-          tween: Tween(begin: 0.0, end: 1.0),
-          builder: (context, value, child) {
-            return Transform.translate(
-              offset: Offset(0, 30 * (1 - value)),
-              child: Opacity(
-                opacity: value,
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  decoration: BoxDecoration(
-                    color: AppTheme.getSecondaryBackgroundColor(context),
-                    borderRadius: BorderRadius.circular(
-                        AppTheme.getMediumRadius(screenSize)),
-                    border: Border.all(
-                      color: cardColor.withOpacity(0.18),
-                      width: 1.2,
-                    ),
+    return Container(
+      padding: EdgeInsets.all(pad),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius: BorderRadius.circular(rad),
+        border: Border.all(color: AppTheme.getBorderColor(context), width: 1),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTheme.getH2(screenSize).copyWith(
+                    color: AppTheme.getTextPrimaryColor(context),
+                    fontWeight: FontWeight.w700,
                   ),
-                  child: Padding(
-                    padding:
-                        EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: cardColor.withOpacity(0.13),
-                            borderRadius: BorderRadius.circular(12),
-                            border: status == ClaseStatus.inProgress
-                                ? Border.all(color: cardColor, width: 2)
-                                : null,
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                TimeFormat.format24to12(clase.horaInicio),
-                                style: AppTheme.getCaption(screenSize).copyWith(
-                                  color: cardColor,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 11,
-                                ),
-                              ),
-                              Container(
-                                width: 15,
-                                height: 1,
-                                color: cardColor.withOpacity(0.5),
-                                margin: const EdgeInsets.symmetric(vertical: 1),
-                              ),
-                              Text(
-                                TimeFormat.format24to12(clase.horaFin),
-                                style: AppTheme.getCaption(screenSize).copyWith(
-                                  color: cardColor.withOpacity(0.8),
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(
-                          height: AppTheme.getMediumPadding(screenSize),
-                          width: AppTheme.getMediumPadding(screenSize),
-                        ),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      materia?.nombre ?? 'Materia',
-                                      style: AppTheme.getSubtitle2(screenSize)
-                                          .copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: AppTheme.getTextPrimaryColor(
-                                            context),
-                                      ),
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: cardColor.withOpacity(0.13),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(_getStatusIcon(),
-                                            size: 12, color: cardColor),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          _getStatusText(),
-                                          style: AppTheme.getCaption(screenSize)
-                                              .copyWith(
-                                            color: cardColor,
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 10,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if (materia?.profesor.isNotEmpty == true) ...[
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.person_outline_rounded,
-                                      size: 14,
-                                      color: AppTheme.getTextSecondaryColor(
-                                          context),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      materia!.profesor,
-                                      style: AppTheme.getCaption(screenSize)
-                                          .copyWith(
-                                        color: AppTheme.getTextSecondaryColor(
-                                            context),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                              if (clase.aula.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.room_outlined,
-                                      size: 14,
-                                      color: AppTheme.getTextSecondaryColor(
-                                          context),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Aula ${clase.aula}',
-                                      style: AppTheme.getCaption(screenSize)
-                                          .copyWith(
-                                        color: AppTheme.getTextSecondaryColor(
-                                            context),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                ),
+                SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.25),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTheme.getBodyMedium(screenSize).copyWith(
+                    color: AppTheme.getTextSecondaryColor(context),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (trailing != null) ...[
+            SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+            trailing!,
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Fila minimalista para “hoy”, consistente con ScheduleManagement:
+/// - Sin sombras, borde sutil
+/// - Chip horario (AM/PM) a la derecha
+/// - Etiqueta de estado pequeña (Próxima/En progreso/Completada)
+class _ClassRowToday extends StatelessWidget {
+  final String title;
+  final String teacher;
+  final String classroom;
+  final String start;
+  final String end;
+  final ClaseStatus status;
+  final Size screenSize;
+
+  const _ClassRowToday({
+    required this.title,
+    required this.teacher,
+    required this.classroom,
+    required this.start,
+    required this.end,
+    required this.status,
+    required this.screenSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final padS = AppTheme.getSmallPadding(screenSize);
+    final rad = AppTheme.getSmallRadius(screenSize);
+    final border = AppTheme.getBorderColor(context);
+
+    final statusData = _statusStyle(context, status);
+
+    return Container(
+      padding: EdgeInsets.all(padS),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius: BorderRadius.circular(rad),
+        border: Border.all(color: border, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Primera línea: título + chips (estado y horario)
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title.isEmpty ? 'Materia' : title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTheme.getBodyMedium(screenSize).copyWith(
+                    color: AppTheme.getTextPrimaryColor(context),
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-            );
-          },
+              SizedBox(width: padS * 0.5),
+              // Estado
+              Container(
+                padding:
+                    EdgeInsets.symmetric(horizontal: padS * 0.7, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusData.color.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(rad),
+                  border: Border.all(
+                    color: statusData.color.withOpacity(0.28),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(statusData.icon, size: 12, color: statusData.color),
+                    SizedBox(width: 4),
+                    Text(
+                      statusData.text,
+                      style: AppTheme.getCaption(screenSize).copyWith(
+                        color: statusData.color,
+                        fontWeight: FontWeight.w700,
+                        fontSize:
+                            AppTheme.getCaption(screenSize).fontSize! * 0.9,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: padS * 0.5),
+              // Horario
+              Container(
+                padding:
+                    EdgeInsets.symmetric(horizontal: padS * 0.8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentBlue.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(rad),
+                  border: Border.all(
+                    color: AppTheme.accentBlue.withOpacity(0.28),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  '$start - $end',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTheme.getCaption(screenSize).copyWith(
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                    color: AppTheme.accentBlue,
+                    fontWeight: FontWeight.w700,
+                    fontSize: AppTheme.getCaption(screenSize).fontSize! * 0.9,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          SizedBox(height: padS * 0.75),
+
+          // Segunda línea: aula / profesor (opcionales)
+          Row(
+            children: [
+              if (classroom.isNotEmpty) ...[
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: screenSize.width * 0.035,
+                        color: AppTheme.getTextSecondaryColor(context),
+                      ),
+                      SizedBox(width: padS * 0.5),
+                      Expanded(
+                        child: Text(
+                          'Aula $classroom',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTheme.getCaption(screenSize).copyWith(
+                            color: AppTheme.getTextSecondaryColor(context),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (classroom.isNotEmpty && teacher.isNotEmpty)
+                SizedBox(width: padS),
+              if (teacher.isNotEmpty) ...[
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.person_outline,
+                        size: screenSize.width * 0.035,
+                        color: AppTheme.getTextSecondaryColor(context),
+                      ),
+                      SizedBox(width: padS * 0.5),
+                      Expanded(
+                        child: Text(
+                          teacher,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTheme.getCaption(screenSize).copyWith(
+                            color: AppTheme.getTextSecondaryColor(context),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  _StatusView _statusStyle(BuildContext context, ClaseStatus s) {
+    switch (s) {
+      case ClaseStatus.inProgress:
+        return _StatusView(
+          text: 'En progreso',
+          icon: Icons.play_circle_fill_rounded,
+          color: AppTheme.successColor,
         );
-      },
+      case ClaseStatus.completed:
+        return _StatusView(
+          text: 'Completada',
+          icon: Icons.check_circle_rounded,
+          color: AppTheme.getTextSecondaryColor(context),
+        );
+      case ClaseStatus.upcoming:
+      default:
+        return _StatusView(
+          text: 'Próxima',
+          icon: Icons.schedule_rounded,
+          color: AppTheme.accentBlue,
+        );
+    }
+  }
+}
+
+class _StatusView {
+  final String text;
+  final IconData icon;
+  final Color color;
+  _StatusView({required this.text, required this.icon, required this.color});
+}
+
+/// Estado vacío sobrio y consistente
+class _EmptyStrip extends StatelessWidget {
+  final Size screenSize;
+  final String text;
+  final String? subtext;
+
+  const _EmptyStrip({
+    super.key,
+    required this.screenSize,
+    required this.text,
+    this.subtext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+      decoration: BoxDecoration(
+        color: AppTheme.getTextSecondaryColor(context).withOpacity(0.06),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
+        border: Border.all(
+          color: AppTheme.getTextSecondaryColor(context).withOpacity(0.12),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            text,
+            textAlign: TextAlign.center,
+            style: AppTheme.getCaption(screenSize).copyWith(
+              color: AppTheme.getTextSecondaryColor(context),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (subtext != null) ...[
+            SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.5),
+            Text(
+              subtext!,
+              textAlign: TextAlign.center,
+              style: AppTheme.getCaption(screenSize).copyWith(
+                color: AppTheme.getTextSecondaryColor(context),
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Info strip reutilizable (sin sombras)
+class _InfoStrip extends StatelessWidget {
+  final IconData icon;
+  final String message;
+  final Size screenSize;
+
+  const _InfoStrip({
+    super.key,
+    required this.icon,
+    required this.message,
+    required this.screenSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final pad = AppTheme.getMediumPadding(screenSize);
+    final rad = AppTheme.getMediumRadius(screenSize);
+    return Container(
+      padding: EdgeInsets.all(pad),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius: BorderRadius.circular(rad),
+        border: Border.all(color: AppTheme.getBorderColor(context), width: 1),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: AppTheme.getTextSecondaryColor(context)),
+          SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+          Expanded(
+            child: Text(
+              message,
+              style: AppTheme.getCaption(screenSize).copyWith(
+                color: AppTheme.getTextSecondaryColor(context),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Placeholder de carga sobrio (sin sombras ni diálogos)
+class _LoadingPlaceholder extends StatelessWidget {
+  final Size screenSize;
+  const _LoadingPlaceholder({required this.screenSize});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: screenSize.height * 0.22,
+      child: Center(
+        child: CircularProgressIndicator(
+          strokeWidth: 2.2,
+          color: AppTheme.getTextPrimaryColor(context),
+        ),
+      ),
+    );
+  }
+}
+
+/// Bloque de error con botón de reintento (coherente con estilo)
+class _ErrorBlock extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+  final Size screenSize;
+
+  const _ErrorBlock({
+    super.key,
+    required this.message,
+    required this.onRetry,
+    required this.screenSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+        border: Border.all(color: AppTheme.getBorderColor(context), width: 1),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.error_outline_rounded,
+              size: screenSize.width * 0.12, color: AppTheme.errorColor),
+          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+          Text(
+            'No se pudo cargar el horario',
+            style: AppTheme.getSubtitle1(screenSize).copyWith(
+              color: AppTheme.getTextPrimaryColor(context),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.5),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: AppTheme.getCaption(screenSize).copyWith(
+              color: AppTheme.getTextSecondaryColor(context),
+            ),
+          ),
+          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+          TextButton(
+            onPressed: onRetry,
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppTheme.getMediumPadding(screenSize),
+                vertical: AppTheme.getSmallPadding(screenSize) * 0.8,
+              ),
+              foregroundColor: AppTheme.accentBlue,
+              shape: RoundedRectangleBorder(
+                borderRadius:
+                    BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
+                side: BorderSide(
+                    color: AppTheme.accentBlue.withOpacity(0.5), width: 1),
+              ),
+            ),
+            child: const Text('Reintentar'),
+          ),
+        ],
+      ),
     );
   }
 }

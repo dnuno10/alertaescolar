@@ -180,10 +180,7 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
                     icon: Icons.email_outlined,
                     keyboardType: TextInputType.emailAddress,
                     focusNode: _emailNode,
-                    textInputAction:
-                        TextInputAction.done, // enter/done coherente
-                    // Si tu CustomInputField expone onFieldSubmitted, puedes usar:
-                    // onFieldSubmitted: (_) => _handleLogin(),
+                    textInputAction: TextInputAction.done,
                   ),
 
                   SizedBox(height: AppTheme.getMediumPadding(size)),
@@ -284,7 +281,7 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
                     ),
                   ),
 
-                  // Social login (deshabilitados si _isSubmitting)
+                  // Social login (se deshabilitan si _isSubmitting, SIN loader)
                   LoginOptionsComponent(
                     size: size,
                     isBusy: _isSubmitting,
@@ -296,8 +293,9 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
                               HapticFeedback.mediumImpact();
                               await Google().signInWithGoogle(context);
                             } finally {
-                              if (mounted)
+                              if (mounted) {
                                 setState(() => _isSubmitting = false);
+                              }
                             }
                           },
                     onApple: _isSubmitting
@@ -308,8 +306,9 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
                             try {
                               await Apple().signInWithApple(context);
                             } finally {
-                              if (mounted)
+                              if (mounted) {
                                 setState(() => _isSubmitting = false);
+                              }
                             }
                           },
                   ),
@@ -492,14 +491,7 @@ class _GoogleSignInButton extends StatelessWidget {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    if (isBusy) ...[
-                      SizedBox(width: AppTheme.getSmallPadding(size)),
-                      const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ],
+                    // 🔕 Sin loader aquí
                   ],
                 ),
               ),
@@ -571,17 +563,7 @@ class _AppleSignInButton extends StatelessWidget {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    if (isBusy) ...[
-                      SizedBox(width: AppTheme.getSmallPadding(size)),
-                      const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
+                    // 🔕 Sin loader aquí
                   ],
                 ),
               ),

@@ -18,8 +18,7 @@ class InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(bottom: AppTheme.getMediumPadding(screenSize)),
-      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+      padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
       decoration: BoxDecoration(
         color: AppTheme.getBackgroundColor(context),
         borderRadius:

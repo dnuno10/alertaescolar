@@ -1,6 +1,7 @@
+// lib/components/school/description_section.dart
+import 'package:alertaescolar/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import '../../app/app_theme.dart';
-import '../../l10n/app_localizations.dart';
 
 class DescriptionSection extends StatelessWidget {
   final String description;
@@ -15,79 +16,69 @@ class DescriptionSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final rad = AppTheme.getLargeRadius(screenSize);
+    final padM = AppTheme.getMediumPadding(screenSize);
 
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
-        border: Border.all(color: AppTheme.getBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-            spreadRadius: 1,
-          ),
-        ],
+        borderRadius: BorderRadius.circular(rad),
+        border: Border.all(
+          color: AppTheme.getBorderColor(context),
+          width: 1,
+        ),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Modern Header
+          // Header minimal (estilo consistente con InfoSection/QuickStats)
           Container(
             width: double.infinity,
-            padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+            padding: EdgeInsets.all(padM),
             decoration: BoxDecoration(
-              color: AppTheme.warningColor.withOpacity(0.05),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(AppTheme.getLargeRadius(screenSize)),
-                topRight: Radius.circular(AppTheme.getLargeRadius(screenSize)),
-              ),
+              color: Colors.transparent,
               border: Border(
                 bottom: BorderSide(
-                  color: AppTheme.warningColor.withOpacity(0.1),
+                  color: AppTheme.getBorderColor(context),
                   width: 1,
                 ),
+              ),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(rad),
+                topRight: Radius.circular(rad),
               ),
             ),
             child: Row(
               children: [
-                Container(
-                  padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
-                  decoration: BoxDecoration(
-                    color: AppTheme.warningColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(
-                        AppTheme.getSmallRadius(screenSize)),
-                  ),
-                  child: Icon(
-                    Icons.auto_stories_rounded,
-                    color: AppTheme.warningColor,
-                    size: screenSize.height * 0.025,
-                  ),
-                ),
-                SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-                Text(
-                  l10n.aboutSchool,
-                  style: AppTheme.getSubtitle1(screenSize).copyWith(
-                    color: AppTheme.getTextPrimaryColor(context),
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.2,
+                Expanded(
+                  child: Text(
+                    l10n.aboutSchool,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTheme.getSubtitle1(screenSize).copyWith(
+                      color: AppTheme.getTextPrimaryColor(context),
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          // Content
+
+          // Cuerpo de texto (limpio, legible)
           Padding(
-            padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
+            padding: EdgeInsets.only(left: padM, right: padM, bottom: padM),
             child: Text(
-              description,
+              (description.trim().isEmpty)
+                  ? l10n.schoolDescription
+                  : description.trim(),
+              textAlign: TextAlign.justify,
               style: AppTheme.getBodyMedium(screenSize).copyWith(
                 color: AppTheme.getTextPrimaryColor(context),
-                height: 1.6,
+                height: 1.55,
                 fontWeight: FontWeight.w500,
               ),
-              textAlign: TextAlign.justify,
             ),
           ),
         ],

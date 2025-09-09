@@ -176,13 +176,11 @@ class _SignUpBodyComponentState extends State<SignUpBodyComponent>
                     keyboardType: TextInputType.emailAddress,
                     focusNode: _emailNode,
                     textInputAction: TextInputAction.done,
-                    // Si tu CustomInputField expone onFieldSubmitted:
-                    // onFieldSubmitted: (_) => _handleRegister(),
                   ),
 
                   SizedBox(height: AppTheme.getLargePadding(size)),
 
-                  // Botón continuar
+                  // Botón continuar (sin loader visual; solo cambia el label)
                   SolidButton(
                     label: _isSubmitting ? l10n.sending : l10n.continue_,
                     backgroundColor: AppTheme.accentPurple,
@@ -249,7 +247,7 @@ class _SignUpBodyComponentState extends State<SignUpBodyComponent>
                     ),
                   ),
 
-                  // Social signup
+                  // Social signup (deshabilitados si _isSubmitting, SIN loader)
                   SignUpOptionsComponent(
                     size: size,
                     isBusy: _isSubmitting,
@@ -261,8 +259,9 @@ class _SignUpBodyComponentState extends State<SignUpBodyComponent>
                               HapticFeedback.mediumImpact();
                               await Google().signInWithGoogle(context);
                             } finally {
-                              if (mounted)
+                              if (mounted) {
                                 setState(() => _isSubmitting = false);
+                              }
                             }
                           },
                     onApple: _isSubmitting
@@ -273,8 +272,9 @@ class _SignUpBodyComponentState extends State<SignUpBodyComponent>
                             try {
                               await Apple().signInWithApple(context);
                             } finally {
-                              if (mounted)
+                              if (mounted) {
                                 setState(() => _isSubmitting = false);
+                              }
                             }
                           },
                   ),
@@ -435,13 +435,11 @@ class _GoogleSignUpButton extends StatelessWidget {
                     Container(
                       width: size.height * 0.025,
                       height: size.height * 0.025,
-                      decoration: BoxDecoration(
-                        image: const DecorationImage(
+                      decoration: const BoxDecoration(
+                        image: DecorationImage(
                           image: AssetImage('images/google_logo.png'),
                           fit: BoxFit.contain,
                         ),
-                        borderRadius:
-                            BorderRadius.circular(size.height * 0.025 / 2),
                       ),
                     ),
                     SizedBox(width: AppTheme.getSmallPadding(size)),
@@ -452,14 +450,7 @@ class _GoogleSignUpButton extends StatelessWidget {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    if (isBusy) ...[
-                      SizedBox(width: AppTheme.getSmallPadding(size)),
-                      const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ],
+                    // 🔕 Sin loader aquí
                   ],
                 ),
               ),
@@ -527,17 +518,7 @@ class _AppleSignUpButton extends StatelessWidget {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    if (isBusy) ...[
-                      SizedBox(width: AppTheme.getSmallPadding(size)),
-                      const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
+                    // 🔕 Sin loader aquí
                   ],
                 ),
               ),

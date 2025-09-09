@@ -88,8 +88,8 @@ class RecentNotificationsSection extends StatelessWidget {
                               Container(
                                 width: screenSize.height * 0.008,
                                 height: screenSize.height * 0.008,
-                                decoration: const BoxDecoration(
-                                  color: Colors.white,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.getBackgroundColor(context),
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -99,8 +99,8 @@ class RecentNotificationsSection extends StatelessWidget {
                               Text(
                                 '$unreadCount ${l10n.newNotifications}',
                                 style: AppTheme.getCaption(screenSize).copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.getBackgroundColor(context),
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ],
