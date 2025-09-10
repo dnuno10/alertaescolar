@@ -38,10 +38,12 @@ class AdminActionCard extends StatelessWidget {
           width: double.infinity,
           padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
           decoration: BoxDecoration(
+            // ignore: deprecated_member_use
             color: color.withOpacity(0.05),
             borderRadius:
                 BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
             border: Border.all(
+              // ignore: deprecated_member_use
               color: color.withOpacity(0.2),
               width: 1,
             ),
@@ -56,6 +58,7 @@ class AdminActionCard extends StatelessWidget {
                     padding: EdgeInsets.all(
                         AppTheme.getMediumPadding(screenSize) * 0.8),
                     decoration: BoxDecoration(
+                      // ignore: deprecated_member_use
                       color: color.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(
                           AppTheme.getMediumRadius(screenSize)),
@@ -71,6 +74,7 @@ class AdminActionCard extends StatelessWidget {
                     padding: EdgeInsets.all(
                         AppTheme.getSmallPadding(screenSize) * 0.6),
                     decoration: BoxDecoration(
+                      // ignore: deprecated_member_use
                       color: color.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(
                           AppTheme.getSmallRadius(screenSize)),
@@ -112,6 +116,7 @@ class AdminActionCard extends StatelessWidget {
                   vertical: AppTheme.getSmallPadding(screenSize),
                 ),
                 decoration: BoxDecoration(
+                  // ignore: deprecated_member_use
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(
                       AppTheme.getSmallRadius(screenSize)),

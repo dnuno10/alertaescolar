@@ -117,6 +117,7 @@ class NotificationSendService {
   }
 
   /// Compatibilidad con firmas antiguas. Construye un Draft y delega a sendDraft.
+  // ignore: provide_deprecation_message
   @deprecated
   Future<Map<String, dynamic>> sendNotification({
     required String adminId,

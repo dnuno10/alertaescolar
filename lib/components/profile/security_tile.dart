@@ -27,6 +27,7 @@ class SecurityTile extends StatelessWidget {
             width: screenSize.width * 0.1,
             height: screenSize.width * 0.1,
             decoration: BoxDecoration(
+              // ignore: deprecated_member_use
               color: color.withOpacity(0.1),
               borderRadius:
                   BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),

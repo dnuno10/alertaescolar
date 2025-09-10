@@ -222,6 +222,7 @@ class ProfileHeader extends StatelessWidget {
                                   ),
                                   decoration: BoxDecoration(
                                     color:
+                                        // ignore: deprecated_member_use
                                         AppTheme.accentPurple.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(
                                       AppTheme.getSmallRadius(screenSize) * 0.5,

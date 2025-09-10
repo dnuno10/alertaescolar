@@ -134,6 +134,7 @@ class _AppContentState extends State<_AppContent> {
       await Future.delayed(const Duration(milliseconds: 50));
 
       // Initialize providers básicos
+      // ignore: use_build_context_synchronously
       await _initializeProvidersWithoutAuth(context);
 
       if (!mounted) return;

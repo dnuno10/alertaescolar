@@ -57,6 +57,5 @@ class _IntroContent extends StatelessWidget {
         const IntroOptionsComponent(),
       ],
     );
-    ;
   }
 }

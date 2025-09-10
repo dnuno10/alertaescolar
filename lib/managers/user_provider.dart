@@ -70,7 +70,7 @@ class UserProvider extends ChangeNotifier {
     final u = _currentUser;
     if (u == null) return '';
     // nombreCompleto si tu modelo lo expone, sino "Nombre Apellido"
-    final byModel = (u.nombreCompleto ?? '').trim();
+    final byModel = (u.nombreCompleto).trim();
     if (byModel.isNotEmpty) return byModel;
     final full = '${u.nombre} ${u.apellido}'.trim();
     if (full.isNotEmpty) return full;
@@ -357,19 +357,70 @@ class UserProvider extends ChangeNotifier {
   }
 
   /// Devuelve escuelaId si está en memoria o intenta resolverlo; lanza si no puede.
-  Future<String> ensureEscuelaIdOrThrow() async {
-    final u = _currentUser;
-    if (u == null) {
-      throw StateError('No hay sesión activa.');
+// managers/user_provider.dart (dentro de la clase UserProvider)
+  Future<String> ensureEscuelaIdOrThrow({bool forceRefresh = false}) async {
+    final supabase = Supabase.instance.client;
+    final authUser = supabase.auth.currentUser;
+
+    if (authUser == null) {
+      throw Exception('Sesión inválida. Inicia sesión de nuevo.');
     }
-    if (u.escuelaId != null && u.escuelaId!.isNotEmpty) {
-      return u.escuelaId!;
+
+    // Si ya está en memoria y no forzamos, úsalo.
+    if (!forceRefresh && (currentUser?.escuelaId?.isNotEmpty ?? false)) {
+      return currentUser!.escuelaId!;
     }
-    final resolved = await ensureEscuelaIdLoaded();
-    if (resolved == null || resolved.isEmpty) {
-      throw StateError('No se pudo determinar la escuela del usuario.');
+
+    // 1) Camino admins: admin_access_list por email (primer login típico).
+    final email = (authUser.email ?? '').trim().toLowerCase();
+    if (email.isNotEmpty) {
+      try {
+        final adminRow = await supabase
+            .from('admin_access_list')
+            .select('id_escuela, activo')
+            .eq('email', email)
+            .order('created_at', ascending: false)
+            .limit(1)
+            .maybeSingle();
+
+        final idEscuela = adminRow?['id_escuela']?.toString();
+        final activo = (adminRow?['activo'] as bool?) ?? true;
+
+        if (idEscuela != null && idEscuela.isNotEmpty && activo) {
+          if (_currentUser != null) {
+            _currentUser = _currentUser!.copyWith(escuelaId: idEscuela);
+            notifyListeners();
+          }
+          return idEscuela;
+        }
+      } catch (e) {
+        debugPrint(
+            'ensureEscuelaIdOrThrow: lookup admin_access_list falló: $e');
+      }
     }
-    return resolved;
+
+    // 2) Fallback: derivar escuela desde relaciones tutor/alumno (si aplica).
+    try {
+      final rel = await supabase
+          .from('alumno_tutores')
+          .select('alumnos ( id_escuela )')
+          .eq('id_tutor', authUser.id)
+          .limit(1)
+          .maybeSingle();
+
+      final idEscuela = rel?['alumnos']?['id_escuela']?.toString();
+      if (idEscuela != null && idEscuela.isNotEmpty) {
+        if (currentUser != null) {
+          _currentUser = currentUser!.copyWith(escuelaId: idEscuela);
+          notifyListeners();
+        }
+        return idEscuela;
+      }
+    } catch (e) {
+      debugPrint('ensureEscuelaIdOrThrow: lookup alumno_tutores falló: $e');
+    }
+
+    throw Exception('No hay una escuela asociada a esta cuenta.');
   }
 
   /// Versión sincrónica que lanza si no hay escuela cargada.

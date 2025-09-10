@@ -51,6 +51,7 @@ class LanguageSelectionDialog extends StatelessWidget {
                         height: screenSize.width * 0.12,
                         decoration: BoxDecoration(
                           color: AppTheme.getTextPrimaryColor(context)
+                              // ignore: deprecated_member_use
                               .withOpacity(0.1),
                           borderRadius: BorderRadius.circular(
                             AppTheme.getSmallRadius(screenSize),
@@ -186,6 +187,7 @@ class _LanguageOption extends StatelessWidget {
           padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
           decoration: BoxDecoration(
             color: isSelected
+                // ignore: deprecated_member_use
                 ? accentColor.withOpacity(0.1)
                 : AppTheme.getBackgroundColor(context),
             borderRadius: BorderRadius.circular(

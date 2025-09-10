@@ -24,6 +24,7 @@ class TermsPrivacyFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final dividerColor =
+        // ignore: deprecated_member_use
         AppTheme.getTextSecondaryColor(context).withOpacity(0.3);
     final accent = accentColor ?? AppTheme.accentPurple;
 
@@ -34,6 +35,7 @@ class TermsPrivacyFooter extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(
           top: BorderSide(
+            // ignore: deprecated_member_use
             color: AppTheme.getBorderColor(context).withOpacity(0.3),
             width: 1,
           ),

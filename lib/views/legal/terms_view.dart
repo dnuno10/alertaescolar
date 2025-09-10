@@ -137,6 +137,7 @@ class TermsView extends StatelessWidget {
               Divider(
                 height: 32,
                 thickness: 1,
+                // ignore: deprecated_member_use
                 color: AppTheme.getBorderColor(context).withOpacity(0.6),
               ),
 
@@ -151,6 +152,7 @@ class TermsView extends StatelessWidget {
               Divider(
                 height: 32,
                 thickness: 1,
+                // ignore: deprecated_member_use
                 color: AppTheme.getBorderColor(context).withOpacity(0.6),
               ),
 
@@ -169,6 +171,7 @@ class TermsView extends StatelessWidget {
               Divider(
                 height: 32,
                 thickness: 1,
+                // ignore: deprecated_member_use
                 color: AppTheme.getBorderColor(context).withOpacity(0.6),
               ),
 
@@ -182,6 +185,7 @@ class TermsView extends StatelessWidget {
               Divider(
                 height: 32,
                 thickness: 1,
+                // ignore: deprecated_member_use
                 color: AppTheme.getBorderColor(context).withOpacity(0.6),
               ),
 
@@ -195,6 +199,7 @@ class TermsView extends StatelessWidget {
               Divider(
                 height: 32,
                 thickness: 1,
+                // ignore: deprecated_member_use
                 color: AppTheme.getBorderColor(context).withOpacity(0.6),
               ),
 
@@ -208,6 +213,7 @@ class TermsView extends StatelessWidget {
               Divider(
                 height: 32,
                 thickness: 1,
+                // ignore: deprecated_member_use
                 color: AppTheme.getBorderColor(context).withOpacity(0.6),
               ),
 

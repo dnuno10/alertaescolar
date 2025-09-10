@@ -103,8 +103,9 @@ class NewContactForm extends StatelessWidget {
               validator: (value) {
                 final v = (value ?? '').trim();
                 if (v.isEmpty) return l10n.phoneRequired;
-                if (v.length < 7)
+                if (v.length < 7) {
                   return "Escibe un número válido"; // regla simple
+                }
                 return null;
               },
             ),

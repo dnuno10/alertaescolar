@@ -34,7 +34,6 @@ class ThemeSettingsTile extends StatelessWidget {
         case ThemeMode.dark:
           return l10n.darkMode;
         case ThemeMode.system:
-        default:
           return l10n.systemTheme;
       }
     }

@@ -150,15 +150,18 @@ class _FamilyInformationViewState extends State<FamilyInformationView> {
     try {
       await context.read<FamilyProvider>().loadFamilyContacts();
 
+      // ignore: use_build_context_synchronously
       final error = context.read<FamilyProvider>().error;
       if (error != null && error.isNotEmpty) {
         _showMessage(error, isError: true);
+        // ignore: use_build_context_synchronously
         context.read<FamilyProvider>().clearError();
       }
     } catch (e) {
       _showMessage("Error: ${e.toString()}", isError: true);
     } finally {
       // 2) Ocultar SIEMPRE, sin depender de `mounted`
+      // ignore: use_build_context_synchronously
       LoadingDialog.hide(context);
       if (mounted) {
         setState(() => _isLoading = false);

@@ -30,6 +30,7 @@ class LegalCenterView extends StatelessWidget {
           bottom: TabBar(
             labelColor: AppTheme.getTextPrimaryColor(context),
             unselectedLabelColor:
+                // ignore: deprecated_member_use
                 AppTheme.getTextSecondaryColor(context).withOpacity(0.9),
             indicatorColor: AppTheme.accentPurple,
             tabs: const [
@@ -169,6 +170,7 @@ class _PrivacyContent extends StatelessWidget {
           Divider(
             height: 32,
             thickness: 1,
+            // ignore: deprecated_member_use
             color: AppTheme.getBorderColor(context).withOpacity(0.6),
           ),
 
@@ -188,6 +190,7 @@ class _PrivacyContent extends StatelessWidget {
           Divider(
             height: 32,
             thickness: 1,
+            // ignore: deprecated_member_use
             color: AppTheme.getBorderColor(context).withOpacity(0.6),
           ),
 
@@ -201,6 +204,7 @@ class _PrivacyContent extends StatelessWidget {
           Divider(
             height: 32,
             thickness: 1,
+            // ignore: deprecated_member_use
             color: AppTheme.getBorderColor(context).withOpacity(0.6),
           ),
 
@@ -214,6 +218,7 @@ class _PrivacyContent extends StatelessWidget {
           Divider(
             height: 32,
             thickness: 1,
+            // ignore: deprecated_member_use
             color: AppTheme.getBorderColor(context).withOpacity(0.6),
           ),
 
@@ -227,6 +232,7 @@ class _PrivacyContent extends StatelessWidget {
           Divider(
             height: 32,
             thickness: 1,
+            // ignore: deprecated_member_use
             color: AppTheme.getBorderColor(context).withOpacity(0.6),
           ),
 
@@ -240,6 +246,7 @@ class _PrivacyContent extends StatelessWidget {
           Divider(
             height: 32,
             thickness: 1,
+            // ignore: deprecated_member_use
             color: AppTheme.getBorderColor(context).withOpacity(0.6),
           ),
 
@@ -410,6 +417,7 @@ class _TermsContent extends StatelessWidget {
           Divider(
             height: 32,
             thickness: 1,
+            // ignore: deprecated_member_use
             color: AppTheme.getBorderColor(context).withOpacity(0.6),
           ),
 
@@ -424,6 +432,7 @@ class _TermsContent extends StatelessWidget {
           Divider(
             height: 32,
             thickness: 1,
+            // ignore: deprecated_member_use
             color: AppTheme.getBorderColor(context).withOpacity(0.6),
           ),
 
@@ -442,6 +451,7 @@ class _TermsContent extends StatelessWidget {
           Divider(
             height: 32,
             thickness: 1,
+            // ignore: deprecated_member_use
             color: AppTheme.getBorderColor(context).withOpacity(0.6),
           ),
 
@@ -455,6 +465,7 @@ class _TermsContent extends StatelessWidget {
           Divider(
             height: 32,
             thickness: 1,
+            // ignore: deprecated_member_use
             color: AppTheme.getBorderColor(context).withOpacity(0.6),
           ),
 
@@ -468,6 +479,7 @@ class _TermsContent extends StatelessWidget {
           Divider(
             height: 32,
             thickness: 1,
+            // ignore: deprecated_member_use
             color: AppTheme.getBorderColor(context).withOpacity(0.6),
           ),
 
@@ -481,6 +493,7 @@ class _TermsContent extends StatelessWidget {
           Divider(
             height: 32,
             thickness: 1,
+            // ignore: deprecated_member_use
             color: AppTheme.getBorderColor(context).withOpacity(0.6),
           ),
 

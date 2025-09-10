@@ -47,6 +47,7 @@ class FamilyContactTile extends StatelessWidget {
               width: screenSize.width * 0.12,
               height: screenSize.width * 0.12,
               decoration: BoxDecoration(
+                // ignore: deprecated_member_use
                 color: AppTheme.accentPurple.withOpacity(0.1),
                 borderRadius:
                     BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
@@ -80,6 +81,7 @@ class FamilyContactTile extends StatelessWidget {
                           vertical: screenSize.height * 0.005,
                         ),
                         decoration: BoxDecoration(
+                          // ignore: deprecated_member_use
                           color: AppTheme.accentPurple.withOpacity(0.1),
                           borderRadius:
                               BorderRadius.circular(screenSize.width * 0.02),

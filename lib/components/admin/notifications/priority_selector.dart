@@ -78,6 +78,7 @@ class PrioritySelector extends StatelessWidget {
             final Color borderColor =
                 isSelected ? color : AppTheme.getBorderColor(context);
             final Color fillColor = isSelected
+                // ignore: deprecated_member_use
                 ? color.withOpacity(0.0)
                 : AppTheme.getBackgroundColor(context);
 
@@ -110,6 +111,7 @@ class PrioritySelector extends StatelessWidget {
                     border: Border.all(
                       color: enabled
                           ? borderColor
+                          // ignore: deprecated_member_use
                           : AppTheme.getBorderColor(context).withOpacity(0.6),
                       width: 1,
                     ),
@@ -126,6 +128,7 @@ class PrioritySelector extends StatelessWidget {
                           maxHeight: 40,
                         ),
                         decoration: BoxDecoration(
+                          // ignore: deprecated_member_use
                           color: color.withOpacity(isSelected ? 0.2 : 0.1),
                           shape: BoxShape.circle,
                         ),

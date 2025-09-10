@@ -6038,7 +6038,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get notificationDeleted => 'Notificación eliminada';
 
   @override
-  String get allNotifications => 'Todas las notificaciones';
+  String get allNotifications => 'Todas';
 
   @override
   String get academic => 'Académico';
@@ -7222,7 +7222,7 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get categories => 'Categorías';
   @override
-  String get accessAlerts => 'Acceder a Alertas';
+  String get accessAlerts => 'Acceso';
   @override
   String get fourteenDays => '14 días';
   @override

@@ -29,10 +29,12 @@ class StudentSelector extends StatelessWidget {
           width: double.infinity,
           padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
           decoration: BoxDecoration(
+            // ignore: deprecated_member_use
             color: AppTheme.accentOrange.withOpacity(0.0),
             borderRadius:
                 BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
             border: Border.all(
+              // ignore: deprecated_member_use
               color: AppTheme.accentOrange.withOpacity(0.2),
             ),
           ),
@@ -67,6 +69,7 @@ class StudentSelector extends StatelessWidget {
             padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
             decoration: BoxDecoration(
               color: selectedStudent != null
+                  // ignore: deprecated_member_use
                   ? AppTheme.accentOrange.withOpacity(0.0)
                   : AppTheme.getCardColor(context),
               borderRadius:
@@ -93,6 +96,7 @@ class StudentSelector extends StatelessWidget {
                     color: (selectedStudent != null
                             ? AppTheme.accentOrange
                             : AppTheme.getBorderColor(context))
+                        // ignore: deprecated_member_use
                         .withOpacity(0.15),
                     borderRadius: BorderRadius.circular(
                         AppTheme.getSmallRadius(screenSize)),
@@ -176,7 +180,9 @@ class StudentSelector extends StatelessWidget {
                       AppTheme.getSmallPadding(screenSize) * 0.6),
                   decoration: BoxDecoration(
                     color: selectedStudent != null
+                        // ignore: deprecated_member_use
                         ? AppTheme.accentOrange.withOpacity(0.15)
+                        // ignore: deprecated_member_use
                         : AppTheme.getBorderColor(context).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(
                         AppTheme.getSmallRadius(screenSize)),
@@ -206,6 +212,7 @@ class StudentSelector extends StatelessWidget {
         vertical: AppTheme.getSmallPadding(screenSize) * 0.2,
       ),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: color.withOpacity(0.1),
         borderRadius:
             BorderRadius.circular(AppTheme.getSmallRadius(screenSize) * 0.6),

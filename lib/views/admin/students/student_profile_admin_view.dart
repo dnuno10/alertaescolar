@@ -1,5 +1,6 @@
 import 'package:alertaescolar/components/loading_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:provider/provider.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
@@ -51,7 +52,7 @@ class _StudentProfileAdminViewState extends State<StudentProfileAdminView> {
       if (showDialog) {
         LoadingDialog.show(
           context,
-          message: l10n?.loading ?? 'Cargando…',
+          message: l10n.loading,
         );
       }
 
@@ -71,10 +72,10 @@ class _StudentProfileAdminViewState extends State<StudentProfileAdminView> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             behavior: SnackBarBehavior.floating,
+            // ignore: deprecated_member_use
             backgroundColor: AppTheme.errorColor.withOpacity(0.95),
             content: Text(
-              (l10n?.unexpectedError ?? 'Ocurrió un error') +
-                  ('\n$_errorMessage'),
+              (l10n.unexpectedError) + ('\n$_errorMessage'),
               style: AppTheme.getCaptionSmall(MediaQuery.of(context).size)
                   .copyWith(color: Colors.white),
             ),
@@ -83,6 +84,7 @@ class _StudentProfileAdminViewState extends State<StudentProfileAdminView> {
         );
       }
     } finally {
+      // ignore: control_flow_in_finally
       if (!mounted) return;
       if (showDialog) LoadingDialog.hide(context);
       setState(() => _isLoading = false);
@@ -108,14 +110,19 @@ class _StudentProfileAdminViewState extends State<StudentProfileAdminView> {
 
         final titleText = (effective.nombre.trim().isNotEmpty)
             ? effective.nombre.trim()
-            : l10n?.studentProfile ?? 'Perfil del Estudiante';
+            : l10n.studentProfile;
 
         // ESTADO: Cargando (esqueleto + encabezado)
         if (_isLoading && !_hasError) {
           return Scaffold(
             backgroundColor: AppTheme.getBackgroundColor(context),
-            body: RefreshIndicator(
+            body: LiquidPullToRefresh(
               onRefresh: _onRefresh,
+              color: AppTheme.accentPurple,
+              backgroundColor: AppTheme.getBackgroundColor(context),
+              height: 120,
+              animSpeedFactor: 9.0,
+              showChildOpacityTransition: false,
               child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
@@ -146,8 +153,7 @@ class _StudentProfileAdminViewState extends State<StudentProfileAdminView> {
                     child: Padding(
                       padding: EdgeInsets.all(padM),
                       child: _ErrorBlock(
-                        message: l10n?.unexpectedError ??
-                            'Ocurrió un error al cargar el perfil.',
+                        message: l10n.unexpectedError,
                         onRetry: () => _loadStudentData(showDialog: true),
                         screenSize: screenSize,
                       ),
@@ -164,8 +170,13 @@ class _StudentProfileAdminViewState extends State<StudentProfileAdminView> {
         // ESTADO: Contenido cargado
         return Scaffold(
           backgroundColor: AppTheme.getBackgroundColor(context),
-          body: RefreshIndicator(
+          body: LiquidPullToRefresh(
             onRefresh: _onRefresh,
+            color: AppTheme.accentPurple,
+            backgroundColor: AppTheme.getBackgroundColor(context),
+            height: 120,
+            animSpeedFactor: 9.0,
+            showChildOpacityTransition: false,
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
@@ -230,6 +241,7 @@ class _LoadingSkeleton extends StatelessWidget {
           height: h,
           width: double.infinity,
           decoration: BoxDecoration(
+            // ignore: deprecated_member_use
             color: AppTheme.getCardColor(context).withOpacity(0.6),
             borderRadius:
                 BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
@@ -291,6 +303,7 @@ class _ErrorBlock extends StatelessWidget {
         children: [
           Icon(Icons.warning_amber_rounded,
               size: screenSize.height * 0.03,
+              // ignore: deprecated_member_use
               color: AppTheme.errorColor.withOpacity(0.9)),
           SizedBox(height: padS),
           Text(
@@ -306,6 +319,7 @@ class _ErrorBlock extends StatelessWidget {
             child: TextButton(
               style: ButtonStyle(
                 overlayColor: WidgetStateProperty.all(
+                  // ignore: deprecated_member_use
                   AppTheme.getBorderColor(context).withOpacity(0.25),
                 ),
                 foregroundColor: WidgetStateProperty.all(

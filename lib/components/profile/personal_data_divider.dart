@@ -10,7 +10,9 @@ class PersonalDataDivider extends StatelessWidget {
       height: 1,
       thickness: 1,
       color: AppTheme.getBorderColor(context),
+      // ignore: deprecated_member_use_from_same_package
       indent: AppTheme.paddingMedium,
+      // ignore: deprecated_member_use_from_same_package
       endIndent: AppTheme.paddingMedium,
     );
   }

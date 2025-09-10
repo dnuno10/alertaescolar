@@ -48,7 +48,6 @@ class ThemeProvider extends ChangeNotifier {
         themeModeString = 'dark';
         break;
       case ThemeMode.system:
-      default:
         themeModeString = 'system';
         break;
     }

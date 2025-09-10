@@ -39,6 +39,7 @@ class AttendanceRecordItem extends StatelessWidget {
         color: AppTheme.getBackgroundColor(context),
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+        // ignore: deprecated_member_use
         border: Border.all(color: statusColor.withOpacity(0.2)),
       ),
       child: Column(
@@ -122,9 +123,11 @@ class AttendanceRecordItem extends StatelessWidget {
               padding:
                   EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.75),
               decoration: BoxDecoration(
+                // ignore: deprecated_member_use
                 color: statusColor.withOpacity(0.1),
                 borderRadius:
                     BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
+                // ignore: deprecated_member_use
                 border: Border.all(color: statusColor.withOpacity(0.2)),
               ),
               child: Row(

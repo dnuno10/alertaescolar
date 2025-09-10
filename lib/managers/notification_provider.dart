@@ -1,3 +1,4 @@
+// lib/managers/notification_provider.dart
 import 'dart:collection';
 import 'package:alertaescolar/services/notification_send_service.dart';
 import 'package:flutter/material.dart';
@@ -154,7 +155,7 @@ class NotificationProvider extends ChangeNotifier {
             value: childId,
           ),
           callback: (payload) {
-            final rec = payload.newRecord ?? {};
+            final rec = payload.newRecord;
             _upsertFromRealtime(rec);
           },
         );
@@ -169,7 +170,7 @@ class NotificationProvider extends ChangeNotifier {
             value: childId,
           ),
           callback: (payload) {
-            final rec = payload.newRecord ?? {};
+            final rec = payload.newRecord;
             _upsertFromRealtime(rec);
           },
         );
@@ -184,7 +185,7 @@ class NotificationProvider extends ChangeNotifier {
             value: childId,
           ),
           callback: (payload) {
-            final oldRec = payload.oldRecord ?? {};
+            final oldRec = payload.oldRecord;
             final id = (oldRec['id'] ?? '').toString();
             if (id.isNotEmpty) {
               _notifications.removeWhere((n) => n.id == id);
@@ -243,7 +244,7 @@ class NotificationProvider extends ChangeNotifier {
   )
 ''').eq('id', id).limit(1);
 
-      if (rows is List && rows.isNotEmpty) {
+      if (rows.isNotEmpty) {
         final mapped = _mapNotificationsFromDb(rows).first;
         final i = _notifications.indexWhere((n) => n.id == mapped.id);
         if (i == -1) {
@@ -321,26 +322,40 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
+  // ---------- Optimistic update instantáneo ----------
+  void markLocalAsRead(String notificationId) {
+    final i = _notifications.indexWhere((n) => n.id == notificationId);
+    if (i == -1) return;
+    if (_notifications[i].estado == EstadoNotificacion.leida) return;
+
+    _notifications[i] =
+        _notifications[i].copyWith(estado: EstadoNotificacion.leida);
+    notifyListeners();
+  }
+
+  void markLocalAsUnread(String notificationId) {
+    final i = _notifications.indexWhere((n) => n.id == notificationId);
+    if (i == -1) return;
+    if (_notifications[i].estado == EstadoNotificacion.nueva) return;
+
+    _notifications[i] =
+        _notifications[i].copyWith(estado: EstadoNotificacion.nueva);
+    notifyListeners();
+  }
+
   Future<void> markAsRead(String notificationId) async {
     try {
       await _supabase.from('notificaciones').update(
           {'estado': EstadoNotificacion.leida.name}).eq('id', notificationId);
 
-      final i = _notifications.indexWhere((n) => n.id == notificationId);
-      if (i != -1) {
-        _notifications[i] =
-            _notifications[i].copyWith(estado: EstadoNotificacion.leida);
-        notifyListeners();
-      }
+      // Refuerza estado local
+      markLocalAsRead(notificationId);
     } catch (e) {
       debugPrint('Error marking notification as read: $e');
       _error = e.toString();
-      final i = _notifications.indexWhere((n) => n.id == notificationId);
-      if (i != -1) {
-        _notifications[i] =
-            _notifications[i].copyWith(estado: EstadoNotificacion.leida);
-        notifyListeners();
-      }
+      // En errores, mantenemos la UI como leída para no "parpadear".
+      // Si prefieres revertir, descomenta:
+      // markLocalAsUnread(notificationId);
     }
   }
 

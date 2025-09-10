@@ -50,6 +50,7 @@ class SwitchOptionCard extends StatelessWidget {
           padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
           decoration: BoxDecoration(
             color: value
+                // ignore: deprecated_member_use
                 ? color.withOpacity(0.05)
                 : AppTheme.getBackgroundColor(context),
             borderRadius: RoundedRectangleBorder(
@@ -59,6 +60,7 @@ class SwitchOptionCard extends StatelessWidget {
             ).borderRadius,
             border: Border.all(
               color: value
+                  // ignore: deprecated_member_use
                   ? color.withOpacity(0.3)
                   : AppTheme.getBorderColor(context),
             ),
@@ -70,7 +72,9 @@ class SwitchOptionCard extends StatelessWidget {
                     EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.8),
                 decoration: BoxDecoration(
                   color: value
+                      // ignore: deprecated_member_use
                       ? color.withOpacity(0.1)
+                      // ignore: deprecated_member_use
                       : AppTheme.getBorderColor(context).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(
                     AppTheme.getSmallRadius(screenSize),
@@ -132,6 +136,7 @@ class SwitchOptionCard extends StatelessWidget {
                     onChanged(v);
                   },
                   activeColor: color,
+                  // ignore: deprecated_member_use
                   activeTrackColor: color.withOpacity(0.3),
                 ),
               ),

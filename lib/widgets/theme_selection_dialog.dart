@@ -50,6 +50,7 @@ class ThemeSelectionDialog extends StatelessWidget {
                           AppTheme.getSmallPadding(screenSize) * 0.8,
                         ),
                         decoration: BoxDecoration(
+                          // ignore: deprecated_member_use
                           color: AppTheme.accentPurple.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(
                             AppTheme.getSmallRadius(screenSize),
@@ -181,6 +182,7 @@ class _ThemeOption extends StatelessWidget {
           padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
           decoration: BoxDecoration(
             color: isSelected
+                // ignore: deprecated_member_use
                 ? AppTheme.accentPurple.withOpacity(0.1)
                 : AppTheme.getBackgroundColor(context),
             borderRadius: BorderRadius.circular(
@@ -201,8 +203,10 @@ class _ThemeOption extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: isSelected
+                      // ignore: deprecated_member_use
                       ? AppTheme.accentPurple.withOpacity(0.15)
                       : AppTheme.getTextSecondaryColor(context)
+                          // ignore: deprecated_member_use
                           .withOpacity(0.1),
                   borderRadius: BorderRadius.circular(
                     AppTheme.getSmallRadius(screenSize),

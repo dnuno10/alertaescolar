@@ -62,6 +62,7 @@ class PersonalInfoFormCard extends StatelessWidget {
                         minHeight: 2,
                         color: AppTheme.accentPurple,
                         backgroundColor:
+                            // ignore: deprecated_member_use
                             AppTheme.getBorderColor(context).withOpacity(0.4),
                       ),
                       SizedBox(height: AppTheme.getSmallPadding(screenSize)),

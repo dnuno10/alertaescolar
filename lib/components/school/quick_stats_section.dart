@@ -60,10 +60,12 @@ class QuickStatsSection extends StatelessWidget {
           Container(
             padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
             decoration: BoxDecoration(
+              // ignore: deprecated_member_use
               color: c.withOpacity(0.12),
               borderRadius: BorderRadius.circular(
                 AppTheme.getSmallRadius(screenSize),
               ),
+              // ignore: deprecated_member_use
               border: Border.all(color: c.withOpacity(0.25), width: 1),
             ),
             child: Icon(

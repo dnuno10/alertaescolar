@@ -27,6 +27,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
             top: Radius.circular(AppTheme.getLargeRadius(screenSize))),
         boxShadow: [
           BoxShadow(
+            // ignore: deprecated_member_use
             color: AppTheme.getShadowColor(context).withOpacity(0.06),
             blurRadius: screenSize.height * 0.02,
             offset: Offset(0, -screenSize.height * 0.008),

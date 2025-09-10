@@ -218,16 +218,6 @@ class StudentProvider with ChangeNotifier {
     return s.isEmpty ? null : s;
   }
 
-  Map<String, dynamic>? _findActiveLlave(List? llavesRaw) {
-    if (llavesRaw == null) return null;
-    for (final item in llavesRaw) {
-      if (item is Map && (item['activo'] == true)) {
-        return Map<String, dynamic>.from(item);
-      }
-    }
-    return null;
-  }
-
   final Map<String, String> _adminEscuelaCacheByUserId = {};
 
   // NUEVO: grupos por nivel educativo
@@ -920,7 +910,7 @@ class StudentProvider with ChangeNotifier {
           if (latestKey == null) {
             latestKey = m;
           } else {
-            final a = _parseDate(latestKey!['fecha_registro']) ??
+            final a = _parseDate(latestKey['fecha_registro']) ??
                 DateTime.fromMillisecondsSinceEpoch(0);
             final b = _parseDate(m['fecha_registro']) ??
                 DateTime.fromMillisecondsSinceEpoch(0);
@@ -990,8 +980,8 @@ class StudentProvider with ChangeNotifier {
 
     final now = DateTime.now();
     final hasKey = latestKey != null;
-    final fRegL = hasKey ? _parseDate(latestKey!['fecha_registro']) : null;
-    final fDesL = hasKey ? _parseDate(latestKey!['fecha_desactivacion']) : null;
+    final fRegL = hasKey ? _parseDate(latestKey['fecha_registro']) : null;
+    final fDesL = hasKey ? _parseDate(latestKey['fecha_desactivacion']) : null;
 
     final vigente = hasKey &&
         fRegL != null &&
@@ -1038,7 +1028,7 @@ class StudentProvider with ChangeNotifier {
           if (latestKey == null) {
             latestKey = m;
           } else {
-            final a = _parseDate(latestKey!['fecha_registro']) ??
+            final a = _parseDate(latestKey['fecha_registro']) ??
                 DateTime.fromMillisecondsSinceEpoch(0);
             final b = _parseDate(m['fecha_registro']) ??
                 DateTime.fromMillisecondsSinceEpoch(0);
@@ -1087,8 +1077,8 @@ class StudentProvider with ChangeNotifier {
 
     final now = DateTime.now();
     final hasKey = latestKey != null;
-    final fRegL = hasKey ? _parseDate(latestKey!['fecha_registro']) : null;
-    final fDesL = hasKey ? _parseDate(latestKey!['fecha_desactivacion']) : null;
+    final fRegL = hasKey ? _parseDate(latestKey['fecha_registro']) : null;
+    final fDesL = hasKey ? _parseDate(latestKey['fecha_desactivacion']) : null;
 
     final vigente = hasKey &&
         fRegL != null &&
@@ -1577,7 +1567,7 @@ class StudentProvider with ChangeNotifier {
         return null;
       }
 
-      DateTime? _pDate(dynamic v) {
+      DateTime? pDate(dynamic v) {
         if (v == null) return null;
         try {
           return DateTime.parse(v.toString());
@@ -1586,11 +1576,11 @@ class StudentProvider with ChangeNotifier {
         }
       }
 
-      String _fmtIso(dynamic ts) =>
-          _pDate(ts)?.toIso8601String() ?? ts?.toString() ?? '';
+      String fmtIso(dynamic ts) =>
+          pDate(ts)?.toIso8601String() ?? ts?.toString() ?? '';
 
-      final fRegistro = _pDate(keyData['fecha_registro']) ?? now;
-      final fDesact = _pDate(keyData['fecha_desactivacion']);
+      final fRegistro = pDate(keyData['fecha_registro']) ?? now;
+      final fDesact = pDate(keyData['fecha_desactivacion']);
 
       if (now.isBefore(fRegistro)) {
         _setError('Este código aún no está activo');
@@ -1613,7 +1603,7 @@ class StudentProvider with ChangeNotifier {
         return null;
       }
 
-      String? _fmtHoraLocal(dynamic v) {
+      String? fmtHoraLocal(dynamic v) {
         if (v == null) return null;
         final s = v.toString();
         if (RegExp(r'^\d{2}:\d{2}$').hasMatch(s)) return s;
@@ -1640,10 +1630,10 @@ class StudentProvider with ChangeNotifier {
           'nivelEducativo':
               (grupoData?['nivel_educativo'] ?? 'Sin nivel').toString(),
           'turno': (turnoData?['turno'] ?? 'Sin turno').toString(),
-          'horaInicioTurno': _fmtHoraLocal(turnoData?['hora_inicio']),
-          'horaFinTurno': _fmtHoraLocal(turnoData?['hora_fin']),
+          'horaInicioTurno': fmtHoraLocal(turnoData?['hora_inicio']),
+          'horaFinTurno': fmtHoraLocal(turnoData?['hora_fin']),
           'escuelaId': alumnoData['id_escuela'].toString(),
-          'fechaRegistroAlumno': _fmtIso(alumnoData['fecha_registro']),
+          'fechaRegistroAlumno': fmtIso(alumnoData['fecha_registro']),
         },
         'school': {
           'id': escuelaData['id'].toString(),
@@ -1665,9 +1655,9 @@ class StudentProvider with ChangeNotifier {
         'key': {
           'id': keyData['id'].toString(),
           'codigo': keyData['codigo'],
-          'fechaRegistro': _fmtIso(keyData['fecha_registro']),
+          'fechaRegistro': fmtIso(keyData['fecha_registro']),
           'fechaDesactivacion': keyData['fecha_desactivacion'] != null
-              ? _fmtIso(keyData['fecha_desactivacion'])
+              ? fmtIso(keyData['fecha_desactivacion'])
               : null,
           'limiteVinculacion': limiteV,
           'remainingDays': remainingDays,

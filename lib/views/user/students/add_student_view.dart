@@ -134,7 +134,9 @@ class _AddStudentViewState extends State<AddStudentView> {
           onCodeScanned: (code) async {
             if (!mounted ||
                 context.read<StudentProvider>().isLoading ||
-                _handledScan) return;
+                _handledScan) {
+              return;
+            }
             _handledScan = true;
             Navigator.of(context).pop();
             _keyController.text = code;
@@ -178,11 +180,13 @@ class _AddStudentViewState extends State<AddStudentView> {
             tutorId: currentUser.id,
           );
         } catch (e) {
+          // ignore: use_build_context_synchronously
           LoadingDialog.hide(context);
           _showErrorSnackBar('${l10n.errorValidatingCode}: $e');
           return;
         }
 
+        // ignore: use_build_context_synchronously
         LoadingDialog.hide(context);
 
         if (alreadyHasStudent) {

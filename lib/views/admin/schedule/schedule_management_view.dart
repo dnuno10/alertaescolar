@@ -250,6 +250,7 @@ class _ScheduleManagementViewState extends State<ScheduleManagementView> {
         await scheduleProvider.loadHorarios(
           escuelaId: escuelaId,
           grupoId: sortedGrupos.first.id,
+          // ignore: use_build_context_synchronously
           context: context,
         );
       } else {
@@ -349,6 +350,7 @@ class _ScheduleManagementViewState extends State<ScheduleManagementView> {
                                   await scheduleProvider.loadHorarios(
                                     escuelaId: escuelaId,
                                     grupoId: selectedGrupoData.id,
+                                    // ignore: use_build_context_synchronously
                                     context: context,
                                   );
                                 } else {
@@ -466,6 +468,7 @@ class _ScheduleManagementViewState extends State<ScheduleManagementView> {
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
         border: Border.all(
+          // ignore: deprecated_member_use
           color: AppTheme.accentPurple.withOpacity(0.2),
         ),
       ),

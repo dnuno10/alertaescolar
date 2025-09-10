@@ -43,146 +43,127 @@ class _AdminProfileViewState extends State<AdminProfileView> {
 
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
-      body: RefreshIndicator(
-        onRefresh: () => context.read<UserProvider>().reloadSilently(context),
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            ProfileHeader(screenSize: screenSize),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                    horizontal: AppTheme.getMediumPadding(screenSize)),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Account Section
-                    SettingsSectionTitle(
-                      title: l10n.account,
-                      screenSize: screenSize,
-                    ),
-                    SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-                    SettingsCard(
-                      screenSize: screenSize,
-                      children: [
-                        SettingsTile(
-                          icon: Icons.person_outline,
-                          title: l10n.personalData,
-                          subtitle: l10n.editProfileAndContactData,
-                          onTap: () => Navigator.pushNamed(
-                            context,
-                            AppRoutes.personalDataNavigation,
-                          ),
-                          screenSize: screenSize,
-                          isFirst: true,
-                          isLast: true,
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          ProfileHeader(screenSize: screenSize),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                  horizontal: AppTheme.getMediumPadding(screenSize)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SettingsSectionTitle(
+                    title: l10n.account,
+                    screenSize: screenSize,
+                  ),
+                  SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+                  SettingsCard(
+                    screenSize: screenSize,
+                    children: [
+                      SettingsTile(
+                        icon: Icons.person_outline,
+                        title: l10n.personalData,
+                        subtitle: l10n.editProfileAndContactData,
+                        onTap: () => Navigator.pushNamed(
+                          context,
+                          AppRoutes.personalDataNavigation,
                         ),
-                      ],
-                    ),
-
-                    SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-                    // Preferences Section
-                    SettingsSectionTitle(
-                      title: l10n.preferences,
-                      screenSize: screenSize,
-                    ),
-                    SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-                    SettingsCard(
-                      screenSize: screenSize,
-                      children: [
-                        ThemeSettingsTile(
-                          screenSize: screenSize,
-                          onTap: () =>
-                              ThemeDialogHandler.showThemeDialog(context),
-                          isFirst: true,
+                        screenSize: screenSize,
+                        isFirst: true,
+                        isLast: true,
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+                  SettingsSectionTitle(
+                    title: l10n.preferences,
+                    screenSize: screenSize,
+                  ),
+                  SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+                  SettingsCard(
+                    screenSize: screenSize,
+                    children: [
+                      ThemeSettingsTile(
+                        screenSize: screenSize,
+                        onTap: () =>
+                            ThemeDialogHandler.showThemeDialog(context),
+                        isFirst: true,
+                      ),
+                      const Divider(height: 1),
+                      LanguageSettingsTile(
+                        screenSize: screenSize,
+                        onTap: () =>
+                            LanguageDialogHandler.showLanguageDialog(context),
+                        isLast: true,
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+                  SettingsSectionTitle(
+                    title: l10n.helpCenter,
+                    screenSize: screenSize,
+                  ),
+                  SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+                  SettingsCard(
+                    screenSize: screenSize,
+                    children: [
+                      SettingsTile(
+                        icon: Icons.help_outline,
+                        title: l10n.helpCenter,
+                        subtitle: l10n.faqAndGuides,
+                        onTap: () => Navigator.pushNamed(
+                          context,
+                          AppRoutes.helpCenterNavigation,
                         ),
-                        const Divider(height: 1),
-                        LanguageSettingsTile(
-                          screenSize: screenSize,
-                          onTap: () =>
-                              LanguageDialogHandler.showLanguageDialog(context),
-                          isLast: true,
+                        screenSize: screenSize,
+                        isFirst: true,
+                      ),
+                      const Divider(height: 1),
+                      SettingsTile(
+                        icon: Icons.support_agent_outlined,
+                        title: 'Contacto y soporte',
+                        subtitle: 'Instagram, WhatsApp, correo',
+                        onTap: () => Navigator.pushNamed(
+                          context,
+                          AppRoutes.contactSupport,
                         ),
-                      ],
-                    ),
-
-                    SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-                    // Help Section
-                    SettingsSectionTitle(
-                      title: l10n.helpCenter,
-                      screenSize: screenSize,
-                    ),
-                    SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-                    SettingsCard(
-                      screenSize: screenSize,
-                      children: [
-                        // Centro de ayuda (FAQ & Guías)
-                        SettingsTile(
-                          icon: Icons.help_outline,
-                          title: l10n.helpCenter,
-                          subtitle: l10n.faqAndGuides,
-                          onTap: () => Navigator.pushNamed(
-                            context,
-                            AppRoutes.helpCenterNavigation, // si ya la tienes
-                          ),
-                          screenSize: screenSize,
-                          isFirst: true,
+                        screenSize: screenSize,
+                      ),
+                      const Divider(height: 1),
+                      SettingsTile(
+                        icon: Icons.info_outline,
+                        title: l10n.aboutAlertaEscolar,
+                        subtitle: l10n.versionTermsAndPrivacy,
+                        onTap: () => Navigator.pushNamed(
+                          context,
+                          AppRoutes.legalCenter,
                         ),
-                        const Divider(height: 1),
-
-                        // NUEVO: Contacto y Soporte
-                        SettingsTile(
-                          icon: Icons.support_agent_outlined,
-                          title: 'Contacto y soporte',
-                          subtitle: 'Instagram, WhatsApp, correo',
-                          onTap: () => Navigator.pushNamed(
-                            context,
-                            AppRoutes.contactSupport,
-                          ),
-                          screenSize: screenSize,
-                        ),
-                        const Divider(height: 1),
-
-                        // About
-                        SettingsTile(
-                          icon: Icons.info_outline,
-                          title: l10n.aboutAlertaEscolar,
-                          subtitle: l10n.versionTermsAndPrivacy,
-                          onTap: () => Navigator.pushNamed(
-                            context,
-                            AppRoutes.legalCenter, // ← ruta nueva
-                          ),
-                          screenSize: screenSize,
-                          isLast: true,
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: AppTheme.getLargePadding(screenSize)),
-
-                    // Logout Button
-                    LogoutButton(
-                      screenSize: screenSize,
-                      onTap: () async {
-                        if (_isLogoutDialogOpen) return;
-                        _isLogoutDialogOpen = true;
-                        try {
-                          LogoutDialog.show(context);
-                        } finally {
-                          _isLogoutDialogOpen = false;
-                        }
-                      },
-                    ),
-
-                    SizedBox(height: AppTheme.getLargePadding(screenSize) * 2),
-                  ],
-                ),
+                        screenSize: screenSize,
+                        isLast: true,
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: AppTheme.getLargePadding(screenSize)),
+                  LogoutButton(
+                    screenSize: screenSize,
+                    onTap: () async {
+                      if (_isLogoutDialogOpen) return;
+                      _isLogoutDialogOpen = true;
+                      try {
+                        LogoutDialog.show(context);
+                      } finally {
+                        _isLogoutDialogOpen = false;
+                      }
+                    },
+                  ),
+                  SizedBox(height: AppTheme.getLargePadding(screenSize) * 2),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

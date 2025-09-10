@@ -355,6 +355,7 @@ class _AttendanceItem extends StatelessWidget {
             width: screenSize.width * 0.12,
             height: screenSize.width * 0.12,
             decoration: BoxDecoration(
+              // ignore: deprecated_member_use
               color: statusColor.withOpacity(0.14),
               borderRadius: BorderRadius.circular(
                 AppTheme.getSmallRadius(screenSize),
@@ -419,6 +420,7 @@ class _AttendanceItem extends StatelessWidget {
                         vertical: rowPad * 0.25,
                       ),
                       decoration: BoxDecoration(
+                        // ignore: deprecated_member_use
                         color: AppTheme.accentBlue.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(badgeRad),
                       ),

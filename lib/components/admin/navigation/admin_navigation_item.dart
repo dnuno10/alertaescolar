@@ -36,6 +36,7 @@ class AdminNavigationItem extends StatelessWidget {
               vertical: screenSize.height * 0.01),
           decoration: BoxDecoration(
             color: isSelected
+                // ignore: deprecated_member_use
                 ? AppTheme.accentPurple.withOpacity(0.1)
                 : Colors.transparent,
             borderRadius:

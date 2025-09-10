@@ -24,13 +24,15 @@ class StudentProfileCard extends StatelessWidget {
     final consideredActive = student.hasTutores && student.llaveActiva;
 
     final bgColor = consideredActive
+        // ignore: deprecated_member_use
         ? AppTheme.successColor.withOpacity(0.1)
+        // ignore: deprecated_member_use
         : AppTheme.errorColor.withOpacity(0.1);
     final fgColor =
         consideredActive ? AppTheme.successColor : AppTheme.errorColor;
 
     return Center(
-      child: Container(
+      child: SizedBox(
         width: MediaQuery.of(context).size.width,
         child: Column(
           children: [

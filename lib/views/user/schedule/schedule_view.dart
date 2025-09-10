@@ -126,7 +126,7 @@ class _ScheduleViewState extends State<ScheduleView>
   }
 
   Map<String, List<ClaseHorario>> _organizeByDay(List<ClaseHorario> horarios) {
-    bool _isOnDay(ClaseHorario s, String key) {
+    bool isOnDay(ClaseHorario s, String key) {
       switch (key) {
         case 'lunes':
           return s.lunes;
@@ -150,7 +150,7 @@ class _ScheduleViewState extends State<ScheduleView>
     final map = {for (final d in _orderedDays) d: <ClaseHorario>[]};
     for (final s in horarios) {
       for (final d in _orderedDays) {
-        if (_isOnDay(s, d)) map[d]!.add(s);
+        if (isOnDay(s, d)) map[d]!.add(s);
       }
     }
     for (final d in _orderedDays) {
@@ -314,7 +314,7 @@ class _ScheduleViewState extends State<ScheduleView>
               ],
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -452,8 +452,10 @@ class _StudentHeader extends StatelessWidget {
             width: screenSize.width * 0.16,
             height: screenSize.width * 0.16,
             decoration: BoxDecoration(
+              // ignore: deprecated_member_use
               color: accent.withOpacity(0.15),
               borderRadius: BorderRadius.circular(rad),
+              // ignore: deprecated_member_use
               border: Border.all(color: accent.withOpacity(0.30), width: 1),
             ),
             alignment: Alignment.center,
@@ -526,8 +528,10 @@ class _ChipTiny extends StatelessWidget {
       padding:
           EdgeInsets.symmetric(horizontal: pad * 0.75, vertical: pad * 0.25),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: color.withOpacity(0.10),
         borderRadius: BorderRadius.circular(rad),
+        // ignore: deprecated_member_use
         border: Border.all(color: color.withOpacity(0.28), width: 1),
       ),
       child: Text(
@@ -576,10 +580,12 @@ class _HeaderMinimal extends StatelessWidget {
             Container(
               padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
               decoration: BoxDecoration(
+                // ignore: deprecated_member_use
                 color: (color ?? AppTheme.accentBlue).withOpacity(0.10),
                 borderRadius:
                     BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
                 border: Border.all(
+                  // ignore: deprecated_member_use
                   color: (color ?? AppTheme.accentBlue).withOpacity(0.28),
                   width: 1,
                 ),
@@ -649,8 +655,10 @@ class _DayStrip extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: padH, vertical: padV),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: color.withOpacity(0.10),
         borderRadius: BorderRadius.circular(rad),
+        // ignore: deprecated_member_use
         border: Border.all(color: color.withOpacity(0.30), width: 1),
       ),
       child: Row(
@@ -737,9 +745,11 @@ class _MinimalClassRow extends StatelessWidget {
                 padding: EdgeInsets.symmetric(
                     horizontal: padS * 0.8, vertical: padS * 0.4),
                 decoration: BoxDecoration(
+                  // ignore: deprecated_member_use
                   color: AppTheme.accentBlue.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(rad),
                   border: Border.all(
+                    // ignore: deprecated_member_use
                     color: AppTheme.accentBlue.withOpacity(0.28),
                     width: 1,
                   ),
@@ -836,10 +846,12 @@ class _EmptyStrip extends StatelessWidget {
       width: double.infinity,
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: AppTheme.getTextSecondaryColor(context).withOpacity(0.06),
         borderRadius:
             BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
         border: Border.all(
+          // ignore: deprecated_member_use
           color: AppTheme.getTextSecondaryColor(context).withOpacity(0.12),
           width: 1,
         ),
@@ -933,7 +945,9 @@ class _ErrorBlock extends StatelessWidget {
                 borderRadius:
                     BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
                 side: BorderSide(
-                    color: AppTheme.accentBlue.withOpacity(0.5), width: 1),
+                    // ignore: deprecated_member_use
+                    color: AppTheme.accentBlue.withOpacity(0.5),
+                    width: 1),
               ),
             ),
             child: const Text('Reintentar'),

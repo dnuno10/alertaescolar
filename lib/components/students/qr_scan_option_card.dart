@@ -27,6 +27,7 @@ class QRScanOptionCard extends StatelessWidget {
             width: size.width * 0.2,
             height: size.width * 0.2,
             decoration: BoxDecoration(
+              // ignore: deprecated_member_use
               color: AppTheme.accentPurple.withOpacity(0.1),
               borderRadius:
                   BorderRadius.circular(AppTheme.getMediumRadius(size)),
@@ -59,6 +60,7 @@ class QRScanOptionCard extends StatelessWidget {
               vertical: AppTheme.getSmallPadding(size) * 0.5,
             ),
             decoration: BoxDecoration(
+              // ignore: deprecated_member_use
               color: AppTheme.accentPurple.withOpacity(0.1),
               borderRadius: BorderRadius.circular(
                 AppTheme.getSmallRadius(size),

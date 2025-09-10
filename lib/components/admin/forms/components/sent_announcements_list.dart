@@ -65,6 +65,7 @@ class SentAnnouncementsList extends StatelessWidget {
           Container(
             padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
             decoration: BoxDecoration(
+              // ignore: deprecated_member_use
               color: AppTheme.accentBlue.withOpacity(0.1),
               borderRadius:
                   BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
@@ -169,6 +170,7 @@ class _AnnouncementItem extends StatelessWidget {
                   vertical: screenSize.height * 0.003,
                 ),
                 decoration: BoxDecoration(
+                  // ignore: deprecated_member_use
                   color: priorityColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(
                       AppTheme.getSmallRadius(screenSize) * 0.5),

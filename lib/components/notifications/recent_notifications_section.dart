@@ -65,6 +65,7 @@ class RecentNotificationsSection extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: showBadge
                           ? AppTheme.warningColor
+                          // ignore: deprecated_member_use
                           : AppTheme.accentPurple.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(
                         showBadge
@@ -74,6 +75,7 @@ class RecentNotificationsSection extends StatelessWidget {
                       boxShadow: showBadge
                           ? [
                               BoxShadow(
+                                // ignore: deprecated_member_use
                                 color: AppTheme.warningColor.withOpacity(0.25),
                                 blurRadius: screenSize.height * 0.008,
                                 offset: Offset(0, screenSize.height * 0.003),
@@ -94,8 +96,9 @@ class RecentNotificationsSection extends StatelessWidget {
                                 ),
                               ),
                               SizedBox(
-                                  width: AppTheme.getSmallPadding(screenSize) *
-                                      0.5),
+                                width:
+                                    AppTheme.getSmallPadding(screenSize) * 0.5,
+                              ),
                               Text(
                                 '$unreadCount ${l10n.newNotifications}',
                                 style: AppTheme.getCaption(screenSize).copyWith(
@@ -127,11 +130,17 @@ class RecentNotificationsSection extends StatelessWidget {
               ({bool loading, List notifications})>(
             selector: (_, p) => (
               loading: p.isLoading,
-              notifications: p.getRecentNotifications(limit: 5)
+              notifications: p.getRecentNotifications(limit: 5),
             ),
             builder: (context, data, _) {
+              // ⬇️ Mostrar CircularProgressIndicator mientras no hayan cargado
               if (data.loading) {
-                return _SkeletonNotificationsRow(screenSize: screenSize);
+                return Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: AppTheme.getTextPrimaryColor(context),
+                  ),
+                );
               }
 
               final recentNotifications = data.notifications;
@@ -178,63 +187,6 @@ class RecentNotificationsSection extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// Skeleton muy ligero para el top-5 horizontal
-class _SkeletonNotificationsRow extends StatelessWidget {
-  final Size screenSize;
-  const _SkeletonNotificationsRow({required this.screenSize});
-
-  @override
-  Widget build(BuildContext context) {
-    final itemWidth = screenSize.width * 0.7;
-    final itemHeight = screenSize.height * 0.18;
-
-    return ListView.separated(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      itemCount: 3,
-      separatorBuilder: (_, __) =>
-          SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-      itemBuilder: (context, index) {
-        return Container(
-          width: itemWidth,
-          height: itemHeight,
-          decoration: BoxDecoration(
-            color: AppTheme.getCardColor(context),
-            borderRadius:
-                BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
-            border: Border.all(color: AppTheme.getBorderColor(context)),
-          ),
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: AnimatedOpacity(
-                  opacity: 0.5,
-                  duration: const Duration(milliseconds: 400),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment(-1, -0.2),
-                        end: Alignment(1, 0.2),
-                        colors: [
-                          AppTheme.getBorderColor(context).withOpacity(0.35),
-                          AppTheme.getBorderColor(context).withOpacity(0.15),
-                          AppTheme.getBorderColor(context).withOpacity(0.35),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(
-                          AppTheme.getLargeRadius(screenSize)),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

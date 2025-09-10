@@ -6,10 +6,15 @@ import 'action_button.dart';
 
 // Define enum for access types
 enum AccessType {
+  // ignore: constant_identifier_names
   default_config, // Automático inteligente (basado en horarios)
+  // ignore: constant_identifier_names
   fixed_entry, // Entrada fija
+  // ignore: constant_identifier_names
   fixed_exit, // Salida fija
+  // ignore: constant_identifier_names
   extracurricular_entry, // Entrada extracurricular
+  // ignore: constant_identifier_names
   extracurricular_exit, // Salida extracurricular
 }
 
@@ -302,26 +307,6 @@ class AttendanceControlHeader extends StatelessWidget {
   }
 }
 
-// ——— Widgets de apoyo ———
-
-class _Dot extends StatelessWidget {
-  final Color color;
-  final double size;
-  const _Dot({required this.color, required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
-    );
-  }
-}
-
 class _AccessCurrentChip extends StatelessWidget {
   final Size screenSize;
   final String title;
@@ -382,11 +367,13 @@ class _AccessOptionTile extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: selected
+            // ignore: deprecated_member_use
             ? AppTheme.getCardColor(context).withOpacity(0.6)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(radiusM),
         border: Border.all(
           color: selected
+              // ignore: deprecated_member_use
               ? AppTheme.accentBlue.withOpacity(0.45)
               : AppTheme.getBorderColor(context),
           width: 1,
@@ -422,9 +409,11 @@ class _AccessOptionTile extends StatelessWidget {
                           vertical: padS * 0.4,
                         ),
                         decoration: BoxDecoration(
+                          // ignore: deprecated_member_use
                           color: AppTheme.accentBlue.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(padS),
                           border: Border.all(
+                            // ignore: deprecated_member_use
                             color: AppTheme.accentBlue.withOpacity(0.5),
                             width: 1,
                           ),

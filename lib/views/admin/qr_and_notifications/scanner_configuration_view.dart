@@ -234,6 +234,7 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
                             label: l10n.previous,
                             icon: Icons.arrow_back_rounded,
                             color: AppTheme.getTextPrimaryColor(context)
+                                // ignore: deprecated_member_use
                                 .withOpacity(0.5),
                             screenSize: size,
                           ),
@@ -356,7 +357,7 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
     }
 
     // Formateo 12h para las cajas clickeables (Inicio/Fin)
-    String _formatTimeOfDay12(TimeOfDay t) {
+    String formatTimeOfDay12(TimeOfDay t) {
       final h12 = t.hour % 12 == 0 ? 12 : t.hour % 12;
       final mm = t.minute.toString().padLeft(2, '0');
       final period = t.hour >= 12 ? 'PM' : 'AM';
@@ -394,7 +395,7 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
                       child: _TimeBox(
                         label: 'Inicio',
                         // Antes: turnoProvider.formatTimeOfDay(f.start)
-                        value: _formatTimeOfDay12(f.start),
+                        value: formatTimeOfDay12(f.start),
                         onTap: () => pickStart(f),
                       ),
                     ),
@@ -403,7 +404,7 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
                       child: _TimeBox(
                         label: 'Fin',
                         // Antes: turnoProvider.formatTimeOfDay(f.end)
-                        value: _formatTimeOfDay12(f.end),
+                        value: formatTimeOfDay12(f.end),
                         onTap: () => pickEnd(f),
                       ),
                     ),
@@ -423,7 +424,7 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
               ],
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -519,13 +520,16 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
         );
 
         CustomSnackBar.show(
+          // ignore: use_build_context_synchronously
           context: context,
+          // ignore: use_build_context_synchronously
           message: AppLocalizations.of(context).configurationSavedSuccessfully,
           isError: false,
         );
         if (mounted) Navigator.pop(context);
       } else {
         CustomSnackBar.show(
+          // ignore: use_build_context_synchronously
           context: context,
           message: turnoProvider.error ?? 'Error al guardar la configuración.',
           isError: true,
@@ -533,6 +537,7 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
       }
     } catch (e) {
       CustomSnackBar.show(
+        // ignore: use_build_context_synchronously
         context: context,
         message: 'Error al guardar la configuración: $e',
         isError: true,

@@ -44,6 +44,7 @@ class NotificationHeader extends StatelessWidget {
                       padding:
                           EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
                       decoration: BoxDecoration(
+                        // ignore: deprecated_member_use
                         color: AppTheme.accentPurple.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(
                             AppTheme.getMediumRadius(screenSize)),

@@ -37,6 +37,7 @@ class EducationLevelChips extends StatelessWidget {
                 padding:
                     EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.7),
                 decoration: BoxDecoration(
+                  // ignore: deprecated_member_use
                   color: AppTheme.accentPurple.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(
                       AppTheme.getSmallRadius(screenSize)),
@@ -73,6 +74,7 @@ class EducationLevelChips extends StatelessWidget {
                       AppTheme.getLargeRadius(screenSize)),
                   boxShadow: [
                     BoxShadow(
+                      // ignore: deprecated_member_use
                       color: AppTheme.accentPurple.withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 2),

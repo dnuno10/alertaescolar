@@ -63,12 +63,15 @@ class CustomTextAreaField extends StatelessWidget {
               borderRadius:
                   BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
               borderSide: BorderSide(
-                  color: AppTheme.accentPurple.withOpacity(0.4), width: 1),
+                  // ignore: deprecated_member_use
+                  color: AppTheme.accentPurple.withOpacity(0.4),
+                  width: 1),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius:
                   BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
               borderSide: BorderSide(
+                // ignore: deprecated_member_use
                 color: AppTheme.accentPurple.withOpacity(0.25),
                 width: 1,
               ),

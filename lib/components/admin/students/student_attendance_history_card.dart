@@ -106,6 +106,7 @@ class _StudentAttendanceHistoryCardState
         border: Border.all(color: AppTheme.getBorderColor(context)),
         boxShadow: [
           BoxShadow(
+            // ignore: deprecated_member_use
             color: AppTheme.getShadowColor(context).withOpacity(0.1),
             blurRadius: widget.screenSize.height * 0.02,
             offset: Offset(0, widget.screenSize.height * 0.008),
@@ -124,7 +125,9 @@ class _StudentAttendanceHistoryCardState
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
+                      // ignore: deprecated_member_use
                       AppTheme.successColor.withOpacity(0.1),
+                      // ignore: deprecated_member_use
                       AppTheme.successColor.withOpacity(0.05),
                     ],
                   ),
@@ -167,6 +170,7 @@ class _StudentAttendanceHistoryCardState
                   vertical: AppTheme.getSmallPadding(widget.screenSize) * 0.4,
                 ),
                 decoration: BoxDecoration(
+                  // ignore: deprecated_member_use
                   color: AppTheme.successColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(
                       AppTheme.getSmallRadius(widget.screenSize)),
@@ -249,12 +253,14 @@ class _StudentAttendanceHistoryCardState
                   end: Alignment.bottomRight,
                   colors: [
                     AppTheme.getBackgroundColor(context),
+                    // ignore: deprecated_member_use
                     AppTheme.getBackgroundColor(context).withOpacity(0.5),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(
                     AppTheme.getMediumRadius(widget.screenSize)),
                 border: Border.all(
+                  // ignore: deprecated_member_use
                   color: AppTheme.getBorderColor(context).withOpacity(0.5),
                 ),
               ),
@@ -272,6 +278,7 @@ class _StudentAttendanceHistoryCardState
                   Container(
                     width: 1,
                     height: widget.screenSize.height * 0.04,
+                    // ignore: deprecated_member_use
                     color: AppTheme.getBorderColor(context).withOpacity(0.3),
                   ),
                   Expanded(
@@ -286,6 +293,7 @@ class _StudentAttendanceHistoryCardState
                   Container(
                     width: 1,
                     height: widget.screenSize.height * 0.04,
+                    // ignore: deprecated_member_use
                     color: AppTheme.getBorderColor(context).withOpacity(0.3),
                   ),
                   Expanded(
@@ -383,10 +391,12 @@ class _StudentAttendanceHistoryCardState
           EdgeInsets.only(bottom: AppTheme.getSmallPadding(widget.screenSize)),
       padding: EdgeInsets.all(AppTheme.getMediumPadding(widget.screenSize)),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: typeColor.withOpacity(0.05),
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(widget.screenSize)),
         border: Border.all(
+          // ignore: deprecated_member_use
           color: typeColor.withOpacity(0.2),
         ),
       ),
@@ -397,6 +407,7 @@ class _StudentAttendanceHistoryCardState
             padding: EdgeInsets.all(
                 AppTheme.getSmallPadding(widget.screenSize) * 0.6),
             decoration: BoxDecoration(
+              // ignore: deprecated_member_use
               color: typeColor.withOpacity(0.15),
               borderRadius: BorderRadius.circular(
                   AppTheme.getSmallRadius(widget.screenSize)),

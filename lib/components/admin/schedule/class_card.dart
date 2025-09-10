@@ -42,6 +42,7 @@ class ClassCard extends StatelessWidget {
                 borderRadius:
                     BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
                 border: Border.all(
+                  // ignore: deprecated_member_use
                   color: cardColor.withOpacity(0.2),
                   width: 1.5,
                 ),
@@ -53,7 +54,6 @@ class ClassCard extends StatelessWidget {
                       AppTheme.getLargeRadius(screenSize)),
                   onTap: () {
                     HapticFeedback.mediumImpact();
-                    // TODO: ver/editar detalles de la clase
                   },
                   child: Padding(
                     padding:
@@ -72,7 +72,9 @@ class ClassCard extends StatelessWidget {
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
+                                    // ignore: deprecated_member_use
                                     cardColor.withOpacity(0.8),
+                                    // ignore: deprecated_member_use
                                     cardColor.withOpacity(0.6),
                                   ],
                                   begin: Alignment.topLeft,
@@ -83,6 +85,7 @@ class ClassCard extends StatelessWidget {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
+                                    // ignore: deprecated_member_use
                                     color: cardColor.withOpacity(0.3),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
@@ -169,11 +172,13 @@ class ClassCard extends StatelessWidget {
                           padding: EdgeInsets.all(
                               AppTheme.getSmallPadding(screenSize)),
                           decoration: BoxDecoration(
+                            // ignore: deprecated_member_use
                             color: cardColor.withOpacity(0.05),
                             borderRadius: BorderRadius.circular(
                               AppTheme.getSmallRadius(screenSize),
                             ),
                             border: Border.all(
+                              // ignore: deprecated_member_use
                               color: cardColor.withOpacity(0.1),
                             ),
                           ),
@@ -221,6 +226,7 @@ class ClassCard extends StatelessWidget {
                                   AppTheme.getSmallPadding(screenSize) * 0.5,
                             ),
                             decoration: BoxDecoration(
+                              // ignore: deprecated_member_use
                               color: AppTheme.accentPurple.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(
                                 AppTheme.getSmallRadius(screenSize),

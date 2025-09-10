@@ -40,6 +40,7 @@ class SoundSelector extends StatelessWidget {
             borderRadius:
                 BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
             border: Border.all(
+              // ignore: deprecated_member_use
               color: AppTheme.accentPurple.withOpacity(0.2),
             ),
           ),

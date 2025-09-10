@@ -19,10 +19,12 @@ class InfoNoticeCardAction extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: AppTheme.accentPurple.withOpacity(0.05),
         borderRadius:
             BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
         border: Border.all(
+          // ignore: deprecated_member_use
           color: AppTheme.accentPurple.withOpacity(0.2),
           width: 1,
         ),

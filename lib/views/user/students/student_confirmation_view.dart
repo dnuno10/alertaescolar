@@ -5,7 +5,7 @@ import 'package:alertaescolar/managers/user_provider.dart';
 import 'package:alertaescolar/managers/student_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart'; // <-- NUEVO
+import 'package:url_launcher/url_launcher.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../app/app_theme.dart';
 
@@ -48,137 +48,79 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
           backgroundColor: AppTheme.getBackgroundColor(context),
           body: Stack(
             children: [
-              // Main content with scroll
               CustomScrollView(
                 slivers: [
                   NavHeader(title: l10n.confirmStudentRegistration),
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.only(
-                        left: AppTheme.getMediumPadding(screenSize),
-                        right: AppTheme.getMediumPadding(screenSize),
-                        bottom: screenSize.height * 0.16, // espacio para footer
+                        left: AppTheme.getLargePadding(screenSize),
+                        right: AppTheme.getLargePadding(screenSize),
+                        bottom: screenSize.height * 0.16, // espacio footer fijo
                       ),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           SizedBox(
                               height: AppTheme.getMediumPadding(screenSize)),
-
-                          // Title
                           Row(
                             children: [
-                              // Success Icon
-                              Container(
-                                width: screenSize.width * 0.10,
-                                height: screenSize.width * 0.10,
-                                decoration: BoxDecoration(
-                                  color: AppTheme.successColor.withOpacity(0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.check_circle_rounded,
-                                  color: AppTheme.successColor,
-                                  size: screenSize.width * 0.07,
-                                ),
-                              ),
-                              SizedBox(width: AppTheme.paddingSmall),
+                              Icon(Icons.check_circle_rounded,
+                                  size: screenSize.width * 0.11,
+                                  color: AppTheme.successColor),
+                              SizedBox(
+                                  width: AppTheme.getSmallPadding(screenSize)),
                               Text(
-                                l10n.studentToRegister,
+                                "Verificar datos",
                                 style: AppTheme.getH2(screenSize).copyWith(
                                   color: AppTheme.getTextPrimaryColor(context),
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.2,
                                 ),
-                                textAlign: TextAlign.center,
-                              ),
+                              )
                             ],
                           ),
-
-                          SizedBox(
-                              height: AppTheme.getMediumPadding(screenSize)),
-
-                          // Student Information Card
-                          _buildStudentInfoCard(
-                              studentData, screenSize, l10n, context),
-
-                          SizedBox(
-                              height: AppTheme.getMediumPadding(screenSize)),
-
-                          // School Information Card
-                          _buildSchoolInfoCard(
-                              schoolData, screenSize, l10n, context),
-
-                          SizedBox(
-                              height: AppTheme.getMediumPadding(screenSize)),
-
-                          // Key Information Card
-                          _buildKeyInfoCard(keyData, screenSize, l10n, context),
-
-                          SizedBox(
-                              height: AppTheme.getMediumPadding(screenSize)),
-
-                          // ----------- NUEVO: Aviso y botón para enviar correo -----------
-                          Container(
-                            padding: EdgeInsets.all(
-                                AppTheme.getMediumPadding(screenSize)),
-                            decoration: BoxDecoration(
-                              color: AppTheme.warningColor.withOpacity(0.08),
-                              borderRadius: BorderRadius.circular(
-                                AppTheme.getMediumRadius(screenSize),
-                              ),
-                              border: Border.all(
-                                color: AppTheme.warningColor.withOpacity(0.25),
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Icon(
-                                      Icons.info_outline_rounded,
-                                      color: AppTheme.warningColor,
-                                      size: screenSize.height * 0.025,
-                                    ),
-                                    SizedBox(
-                                        width: AppTheme.getSmallPadding(
-                                            screenSize)),
-                                    Expanded(
-                                      child: Text(
-                                        'Si ves que algún dato no coincide con el alumno, '
-                                        'por favor contacta al equipo de Alerta Escolar por correo.',
-                                        style:
-                                            AppTheme.getBodyMedium(screenSize)
-                                                .copyWith(
-                                          color: AppTheme.getTextPrimaryColor(
-                                              context),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(
-                                    height:
-                                        AppTheme.getSmallPadding(screenSize)),
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: ElevatedButton.icon(
-                                    onPressed: _emailSupport,
-                                    icon: const Icon(
-                                      Icons.email_rounded,
-                                      color: Colors.white,
-                                    ),
-                                    label: const Text('Enviar correo'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.amber,
-                                      foregroundColor: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                          Text(
+                            "Confirma los datos del estudiante para registrar y activar su credencial.",
+                            style: AppTheme.getBodyMedium(screenSize).copyWith(
+                              color: AppTheme.getTextSecondaryColor(context),
+                              height: 1.4,
                             ),
                           ),
-                          // ----------------------------------------------------------------
+                          SizedBox(
+                              height: AppTheme.getMediumPadding(screenSize)),
+
+                          // Estudiante (ligeramente ajustado)
+                          _StudentSection(
+                            screenSize: screenSize,
+                            studentData: studentData,
+                          ),
+
+                          SizedBox(
+                              height: AppTheme.getMediumPadding(screenSize)),
+
+                          // Escuela (tarjeta horizontal, densa)
+                          _SchoolSectionCompact(
+                            screenSize: screenSize,
+                            schoolData: schoolData,
+                          ),
+
+                          SizedBox(
+                              height: AppTheme.getMediumPadding(screenSize)),
+
+                          // Llave (tarjeta horizontal, densa)
+                          _KeySectionCompact(
+                            screenSize: screenSize,
+                            keyData: keyData,
+                          ),
+
+                          SizedBox(
+                              height: AppTheme.getMediumPadding(screenSize)),
+
+                          _SupportNotice(
+                            screenSize: screenSize,
+                            onTap: _emailSupport,
+                          ),
                         ],
                       ),
                     ),
@@ -186,15 +128,15 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
                 ],
               ),
 
-              // Fixed action buttons at bottom
+              // Acción inferior fija
               Positioned(
                 bottom: 0,
                 left: 0,
                 right: 0,
                 child: Container(
                   padding: EdgeInsets.only(
-                    left: AppTheme.getMediumPadding(screenSize),
-                    right: AppTheme.getMediumPadding(screenSize),
+                    left: AppTheme.getLargePadding(screenSize),
+                    right: AppTheme.getLargePadding(screenSize),
                     top: AppTheme.getMediumPadding(screenSize),
                     bottom: MediaQuery.of(context).padding.bottom +
                         AppTheme.getMediumPadding(screenSize),
@@ -207,18 +149,10 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
                         width: 1,
                       ),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.getShadowColor(context),
-                        blurRadius: 10,
-                        offset: const Offset(0, -2),
-                      ),
-                    ],
                   ),
                   child: Row(
                     children: [
                       Expanded(
-                        flex: 2,
                         child: SolidButton(
                           onPressed: _isLoading ? null : _confirmRegistration,
                           label: l10n.confirmRegistration,
@@ -241,403 +175,7 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
     );
   }
 
-  // ----------------- Helpers UI existentes -----------------
-
-  Widget _buildStudentInfoCard(Map<String, dynamic> studentData,
-      Size screenSize, AppLocalizations l10n, BuildContext context) {
-    final nombre = (studentData['nombre'] ?? '').toString().trim();
-    final inicial = nombre.isNotEmpty ? nombre[0].toUpperCase() : '?';
-
-    final nivelEducativo =
-        (studentData['nivelEducativo'] ?? 'N/A').toString().trim();
-    final grupo = (studentData['grupo'] ?? 'N/A').toString().trim();
-    final turno = (studentData['turno'] ?? 'N/A').toString().trim();
-    final horaInicioTurno = studentData['horaInicioTurno']?.toString();
-    final horaFinTurno = studentData['horaFinTurno']?.toString();
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
-        border: Border.all(color: AppTheme.getBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: screenSize.height * 0.015,
-            offset: Offset(0, screenSize.height * 0.005),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            children: [
-              Icon(
-                Icons.person_rounded,
-                color: AppTheme.accentBlue,
-                size: screenSize.height * 0.025,
-              ),
-              SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-              Text(
-                'Información del Estudiante',
-                style: AppTheme.getSubtitle1(screenSize).copyWith(
-                  color: AppTheme.getTextPrimaryColor(context),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-
-          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-          // Student Avatar and Name
-          Row(
-            children: [
-              Container(
-                width: screenSize.width * 0.15,
-                height: screenSize.width * 0.15,
-                decoration: BoxDecoration(
-                  color: AppTheme.accentBlue,
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getMediumRadius(screenSize)),
-                ),
-                child: Center(
-                  child: Text(
-                    inicial,
-                    style: AppTheme.getH2(screenSize).copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      nombre.isNotEmpty ? nombre : '—',
-                      style: AppTheme.getH2(screenSize).copyWith(
-                        color: AppTheme.getTextPrimaryColor(context),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (studentData['matricula'] != null)
-                      Text(
-                        'Matrícula: ${studentData['matricula']}',
-                        style: AppTheme.getCaption(screenSize).copyWith(
-                          color: AppTheme.getTextSecondaryColor(context),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-          // Academic Information
-          _buildInfoRow('Nivel Educativo:', nivelEducativo,
-              Icons.school_rounded, AppTheme.accentPurple, screenSize, context),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-          _buildInfoRow('Grupo:', grupo, Icons.class_rounded,
-              AppTheme.accentBlue, screenSize, context),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-          _buildInfoRow('Turno:', turno, Icons.schedule_rounded,
-              AppTheme.successColor, screenSize, context),
-          if (horaInicioTurno != null && horaFinTurno != null) ...[
-            SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-            _buildInfoRow(
-              'Horario:',
-              '${_formatTime(horaInicioTurno)} - ${_formatTime(horaFinTurno)}',
-              Icons.access_time_rounded,
-              AppTheme.warningColor,
-              screenSize,
-              context,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSchoolInfoCard(Map<String, dynamic> schoolData, Size screenSize,
-      AppLocalizations l10n, BuildContext context) {
-    final nivelesEducativos =
-        (schoolData['nivelesEducativos'] as Map?)?.cast<String, dynamic>() ??
-            <String, dynamic>{};
-    final nivelesActivos = <String>[];
-
-    if (nivelesEducativos['preescolar'] == true)
-      nivelesActivos.add('Preescolar');
-    if (nivelesEducativos['primaria'] == true) nivelesActivos.add('Primaria');
-    if (nivelesEducativos['secundaria'] == true)
-      nivelesActivos.add('Secundaria');
-    if (nivelesEducativos['preparatoria'] == true)
-      nivelesActivos.add('Preparatoria');
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
-        border: Border.all(color: AppTheme.getBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: screenSize.height * 0.015,
-            offset: Offset(0, screenSize.height * 0.005),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            children: [
-              Icon(
-                Icons.business_rounded,
-                color: AppTheme.successColor,
-                size: screenSize.height * 0.025,
-              ),
-              SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-              Text(
-                'Información de la Escuela',
-                style: AppTheme.getSubtitle1(screenSize).copyWith(
-                  color: AppTheme.getTextPrimaryColor(context),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-
-          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-          _buildInfoRow('Nombre:', (schoolData['nombre'] ?? '—').toString(),
-              Icons.school_rounded, AppTheme.successColor, screenSize, context),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-          _buildInfoRow('Código:', (schoolData['codigo'] ?? '—').toString(),
-              Icons.tag_rounded, AppTheme.accentBlue, screenSize, context),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-          _buildInfoRow(
-              'Tipo:',
-              _capitalizeFirst((schoolData['tipo'] ?? '—').toString()),
-              Icons.category_rounded,
-              AppTheme.accentPurple,
-              screenSize,
-              context),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-          _buildInfoRow(
-              'Dirección:',
-              (schoolData['direccion'] ?? '—').toString(),
-              Icons.location_on_rounded,
-              AppTheme.warningColor,
-              screenSize,
-              context),
-          if (nivelesActivos.isNotEmpty) ...[
-            SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-            _buildInfoRow(
-                'Niveles Educativos:',
-                nivelesActivos.join(', '),
-                Icons.layers_rounded,
-                AppTheme.accentPurple,
-                screenSize,
-                context),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildKeyInfoCard(Map<String, dynamic> keyData, Size screenSize,
-      AppLocalizations l10n, BuildContext context) {
-    final fechaRegistro = _parseTimestamptz(keyData['fechaRegistro']);
-    final DateTime? fechaDesactivacion = keyData['fechaDesactivacion'] != null
-        ? _parseTimestamptz(keyData['fechaDesactivacion'])
-        : null;
-
-    // Si el back no manda remainingDays, lo calculamos local:
-    final int? remainingDaysFromApi = keyData['remainingDays'] is int
-        ? keyData['remainingDays'] as int
-        : null;
-    final int? remainingDaysFallback = (fechaDesactivacion != null)
-        ? fechaDesactivacion.difference(DateTime.now()).inDays
-        : null;
-    final int? remainingDays = remainingDaysFromApi ?? remainingDaysFallback;
-
-    final limiteVinculacion =
-        (keyData['limiteVinculacion'] ?? keyData['limite_vinculacion'])
-            ?.toString();
-
-    final codigo = (keyData['codigo'] ?? '—').toString();
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
-        border: Border.all(color: AppTheme.getBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: screenSize.height * 0.015,
-            offset: Offset(0, screenSize.height * 0.005),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            children: [
-              Icon(
-                Icons.key_rounded,
-                color: AppTheme.warningColor,
-                size: screenSize.height * 0.025,
-              ),
-              SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-              Text(
-                'Información de la Llave',
-                style: AppTheme.getSubtitle1(screenSize).copyWith(
-                  color: AppTheme.getTextPrimaryColor(context),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-
-          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-          _buildInfoRow('Código:', codigo, Icons.qr_code_rounded,
-              AppTheme.warningColor, screenSize, context),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-          _buildInfoRow('Registros Restantes:', limiteVinculacion ?? '—',
-              Icons.people_rounded, AppTheme.accentBlue, screenSize, context),
-          SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-          _buildInfoRow(
-              'Fecha de Registro:',
-              _formatDate(fechaRegistro),
-              Icons.calendar_today_rounded,
-              AppTheme.successColor,
-              screenSize,
-              context),
-          if (fechaDesactivacion != null) ...[
-            SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-            _buildInfoRow(
-                'Fecha de Expiración:',
-                _formatDate(fechaDesactivacion),
-                Icons.event_busy_rounded,
-                AppTheme.errorColor,
-                screenSize,
-                context),
-          ],
-          if (remainingDays != null) ...[
-            SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-            _buildInfoRow(
-              'Días Restantes:',
-              remainingDays > 0 ? '$remainingDays días' : 'Expirado',
-              Icons.timelapse_rounded,
-              remainingDays > 0 ? AppTheme.successColor : AppTheme.errorColor,
-              screenSize,
-              context,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value, IconData icon, Color color,
-      Size screenSize, BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(
-          icon,
-          color: color,
-          size: screenSize.height * 0.02,
-        ),
-        SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-        Expanded(
-          child: RichText(
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: label,
-                  style: AppTheme.getCaption(screenSize).copyWith(
-                    color: AppTheme.getTextSecondaryColor(context),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                TextSpan(
-                  text: ' $value',
-                  style: AppTheme.getBodyMedium(screenSize).copyWith(
-                    color: AppTheme.getTextPrimaryColor(context),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _formatTime(String? timeString) {
-    if (timeString == null) return 'N/A';
-    try {
-      DateTime time;
-      if (timeString.contains('T') || timeString.contains(' ')) {
-        time = DateTime.parse(timeString);
-      } else {
-        time = DateTime.parse('2023-01-01T$timeString');
-      }
-      final hh = time.hour.toString().padLeft(2, '0');
-      final mm = time.minute.toString().padLeft(2, '0');
-      return '$hh:$mm';
-    } catch (e) {
-      debugPrint('_formatTime: Error formatting time: $e');
-      return timeString;
-    }
-  }
-
-  DateTime _parseTimestamptz(dynamic timestampField) {
-    try {
-      if (timestampField == null) return DateTime.now();
-      if (timestampField is DateTime) return timestampField;
-      return DateTime.parse(timestampField.toString());
-    } catch (e) {
-      debugPrint('_parseTimestamptz: Error parsing timestamp: $e');
-      return DateTime.now();
-    }
-  }
-
-  String _formatDate(DateTime date) {
-    final dd = date.day.toString().padLeft(2, '0');
-    final mm = date.month.toString().padLeft(2, '0');
-    final yyyy = date.year.toString();
-    return '$dd/$mm/$yyyy';
-  }
-
-  String _capitalizeFirst(String text) {
-    if (text.isEmpty) return text;
-    return text[0].toUpperCase() + text.substring(1).toLowerCase();
-  }
+  // =================== LÓGICA ===================
 
   Future<void> _confirmRegistration() async {
     final l10n = AppLocalizations.of(context);
@@ -659,7 +197,6 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
           widget.validationResult['keyId'];
       final studentId = widget.validationResult['student']?['id'];
 
-      // Registro con revalidación interna (el provider revalida la llave justo antes)
       final ok = await studentProvider.registerStudentWithKey(
         keyId: keyId.toString(),
         studentId: studentId.toString(),
@@ -678,13 +215,14 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
       }
     } catch (e) {
       if (!mounted) return;
-      _showErrorSnackBar('${l10n.errorRegisteringStudent}: $e');
+      _showErrorSnackBar(
+        '${AppLocalizations.of(context).errorRegisteringStudent}: $e',
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // ---------- NUEVO: abrir mailto ----------
   Future<void> _emailSupport() async {
     final uri = Uri(
       scheme: 'mailto',
@@ -702,50 +240,934 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
       if (!ok && mounted) {
         _showErrorSnackBar('No se pudo abrir el cliente de correo.');
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         _showErrorSnackBar('No se pudo abrir el cliente de correo.');
       }
     }
   }
 
+  // =================== HELPERS UI ===================
+
   void _showSuccessSnackBar(String message) {
+    final size = MediaQuery.of(context).size;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           message,
-          style: AppTheme.getCaption(MediaQuery.of(context).size).copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
+          style: AppTheme.getCaption(size)
+              .copyWith(color: Colors.white, fontWeight: FontWeight.w600),
         ),
         backgroundColor: AppTheme.successColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-            AppTheme.getSmallRadius(MediaQuery.of(context).size),
-          ),
+          borderRadius: BorderRadius.circular(AppTheme.getSmallRadius(size)),
         ),
       ),
     );
   }
 
   void _showErrorSnackBar(String message) {
+    final size = MediaQuery.of(context).size;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           message,
-          style: AppTheme.getCaption(MediaQuery.of(context).size).copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
+          style: AppTheme.getCaption(size)
+              .copyWith(color: Colors.white, fontWeight: FontWeight.w600),
         ),
         backgroundColor: AppTheme.errorColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-            AppTheme.getSmallRadius(MediaQuery.of(context).size),
+          borderRadius: BorderRadius.circular(AppTheme.getSmallRadius(size)),
+        ),
+      ),
+    );
+  }
+}
+
+// =================== SECCIONES (UI) ===================
+
+class _GroupedContainer extends StatelessWidget {
+  const _GroupedContainer({required this.screenSize, required this.child});
+
+  final Size screenSize;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = AppTheme.getLargeRadius(screenSize);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: AppTheme.getCardColor(context),
+          borderRadius: BorderRadius.circular(radius),
+          border: Border.all(color: AppTheme.getBorderColor(context), width: 1),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _StudentSection extends StatelessWidget {
+  const _StudentSection({required this.screenSize, required this.studentData});
+  final Size screenSize;
+  final Map<String, dynamic> studentData;
+
+  @override
+  Widget build(BuildContext context) {
+    final nombre = (studentData['nombre'] ?? '').toString().trim();
+    final matricula = (studentData['matricula'] ?? '—').toString().trim();
+    final nivelEducativo =
+        (studentData['nivelEducativo'] ?? '—').toString().trim();
+    final grupo = (studentData['grupo'] ?? '—').toString().trim();
+    final turno = (studentData['turno'] ?? '—').toString().trim();
+    final horaInicioTurno = studentData['horaInicioTurno']?.toString();
+    final horaFinTurno = studentData['horaFinTurno']?.toString();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
+        border: Border.all(color: AppTheme.getBorderColor(context), width: 1),
+      ),
+      child: Column(
+        children: [
+          // Header con avatar y nombre
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.only(
+                left: AppTheme.getMediumPadding(screenSize),
+                right: AppTheme.getMediumPadding(screenSize),
+                top: AppTheme.getMediumPadding(screenSize),
+                bottom: 0),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(AppTheme.getLargeRadius(screenSize)),
+                topRight: Radius.circular(AppTheme.getLargeRadius(screenSize)),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        nombre.isNotEmpty ? nombre : '—',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTheme.getH2(screenSize).copyWith(
+                          color: AppTheme.getTextPrimaryColor(context),
+                          fontWeight: FontWeight.w700,
+                          height: 1.15,
+                        ),
+                      ),
+                      if (matricula.isNotEmpty && matricula != '—')
+                        Text(
+                          'Matrícula: $matricula',
+                          style: AppTheme.getCaption(screenSize).copyWith(
+                            color: AppTheme.getTextSecondaryColor(context),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                // Ícono decorativo
+                Container(
+                  padding: EdgeInsets.all(
+                      AppTheme.getSmallPadding(screenSize) * 0.8),
+                  decoration: BoxDecoration(
+                    // ignore: deprecated_member_use
+                    color: AppTheme.accentBlue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.person_rounded,
+                    color: AppTheme.accentBlue,
+                    size: screenSize.width * 0.06,
+                  ),
+                ),
+              ],
+            ),
           ),
+
+          // Contenido principal con iconos
+          Padding(
+            padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _StudentInfoRow(
+                  icon: Icons.school_rounded,
+                  label: 'Nivel',
+                  value: nivelEducativo,
+                ),
+                if (grupo.isNotEmpty && grupo != '—') ...[
+                  _StudentInfoRow(
+                    icon: Icons.groups_rounded,
+                    label: 'Grupo',
+                    value: grupo,
+                  ),
+                ],
+
+                SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+
+                // Turno
+                if (turno.isNotEmpty && turno != '—')
+                  _StudentInfoRow(
+                    icon: Icons.schedule_rounded,
+                    label: 'Turno',
+                    value: turno,
+                  ),
+
+                // Horario si está disponible
+                if (horaInicioTurno != null && horaFinTurno != null)
+                  _StudentInfoRow(
+                    icon: Icons.access_time_rounded,
+                    label: 'Horario de clases',
+                    value:
+                        '${_formatTime(horaInicioTurno)} - ${_formatTime(horaFinTurno)}',
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatTime(String? timeString) {
+    if (timeString == null) return '—';
+    try {
+      DateTime time;
+      if (timeString.contains('T') || timeString.contains(' ')) {
+        time = DateTime.parse(timeString);
+      } else {
+        time = DateTime.parse('2023-01-01T$timeString');
+      }
+      final hh = time.hour.toString().padLeft(2, '0');
+      final mm = time.minute.toString().padLeft(2, '0');
+      return '$hh:$mm';
+    } catch (_) {
+      return timeString;
+    }
+  }
+}
+
+// Componente para información en fila (estilo Settings de iOS)
+class _StudentInfoRow extends StatelessWidget {
+  const _StudentInfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        vertical: AppTheme.getSmallPadding(size) * 0.8,
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              // ignore: deprecated_member_use
+              color: AppTheme.getTextSecondaryColor(context).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              size: 18,
+              color: AppTheme.getTextSecondaryColor(context),
+            ),
+          ),
+          SizedBox(width: AppTheme.getMediumPadding(size)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: AppTheme.getCaption(size).copyWith(
+                    color: AppTheme.getTextSecondaryColor(context),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  value.isEmpty || value == '—' ? 'No especificado' : value,
+                  style: AppTheme.getBodyMedium(size).copyWith(
+                    color: AppTheme.getTextPrimaryColor(context),
+                    fontWeight: FontWeight.w700,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// -------- Sección Escuela (compacta y en fila) --------
+class _SchoolSectionCompact extends StatelessWidget {
+  const _SchoolSectionCompact({
+    required this.screenSize,
+    required this.schoolData,
+  });
+
+  final Size screenSize;
+  final Map<String, dynamic> schoolData;
+
+  @override
+  Widget build(BuildContext context) {
+    final nombre = (schoolData['nombre'] ?? '—').toString().trim();
+    final codigo = (schoolData['codigo'] ?? '—').toString().trim();
+    final tipoRaw = (schoolData['tipo'] ?? '—').toString().trim();
+    final tipo = _capitalizeFirst(tipoRaw);
+    final direccion = (schoolData['direccion'] ?? '').toString().trim();
+    final telefono = (schoolData['telefono'] ?? '').toString().trim();
+    final email = (schoolData['email'] ?? '').toString().trim();
+    final sitioWeb = (schoolData['sitio_web'] ?? '').toString().trim();
+    final descripcion = (schoolData['descripcion'] ?? '').toString().trim();
+
+    final niveles =
+        (schoolData['nivelesEducativos'] as Map?)?.cast<String, dynamic>() ??
+            <String, dynamic>{};
+
+    final nivelesActivos = <String>[
+      if (niveles['preescolar'] == true) 'Preescolar',
+      if (niveles['primaria'] == true) 'Primaria',
+      if (niveles['secundaria'] == true) 'Secundaria',
+      if (niveles['preparatoria'] == true) 'Preparatoria',
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
+        border: Border.all(color: AppTheme.getBorderColor(context), width: 1),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Contenido
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Nombre de la institución (hasta 3 líneas, con fade)
+                  Text(
+                    nombre,
+                    maxLines: 3,
+                    overflow: TextOverflow.fade,
+                    softWrap: true,
+                    style: AppTheme.getH2(screenSize).copyWith(
+                      color: AppTheme.getTextPrimaryColor(context),
+                      fontWeight: FontWeight.w700,
+                      height: 1.15,
+                    ),
+                  ),
+
+                  SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.8),
+
+                  // Badges: Código (neutro), Tipo (color), Niveles (badges individuales)
+                  Wrap(
+                    spacing: AppTheme.getSmallPadding(screenSize) * 0.6,
+                    runSpacing: AppTheme.getSmallPadding(screenSize) * 0.6,
+                    children: [
+                      _SoftBadge(text: codigo.isEmpty ? '—' : codigo),
+                      if (tipo.isNotEmpty && tipo != '—')
+                        _Pill(text: tipo, color: AppTheme.successColor),
+                      ...nivelesActivos.map((n) => _SoftBadge(text: n)),
+                    ],
+                  ),
+
+                  // Contacto: chips clickables (sin iconos, minimal)
+                  if (telefono.isNotEmpty ||
+                      email.isNotEmpty ||
+                      sitioWeb.isNotEmpty) ...[
+                    SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+                    Wrap(
+                      spacing: AppTheme.getSmallPadding(screenSize) * 0.6,
+                      runSpacing: AppTheme.getSmallPadding(screenSize) * 0.6,
+                      children: [
+                        if (telefono.isNotEmpty)
+                          _TapBadge(
+                            text: telefono,
+                            onTap: () async {
+                              final uri = Uri(scheme: 'tel', path: telefono);
+                              await launchUrl(uri,
+                                  mode: LaunchMode.externalApplication);
+                            },
+                          ),
+                        if (email.isNotEmpty)
+                          _TapBadge(
+                            text: email,
+                            onTap: () async {
+                              final uri = Uri(scheme: 'mailto', path: email);
+                              await launchUrl(uri,
+                                  mode: LaunchMode.externalApplication);
+                            },
+                          ),
+                        if (sitioWeb.isNotEmpty)
+                          _TapBadge(
+                            text: sitioWeb,
+                            onTap: () async {
+                              final url = _normalizeUrl(sitioWeb);
+                              final uri = Uri.parse(url);
+                              await launchUrl(uri,
+                                  mode: LaunchMode.externalApplication);
+                            },
+                          ),
+                      ],
+                    ),
+                  ],
+
+                  // Bloques expandibles para textos largos (sin truncar información)
+                  if (direccion.isNotEmpty) ...[
+                    SizedBox(
+                        height: AppTheme.getSmallPadding(screenSize) * 1.1),
+                    _ExpandableTextBlock(
+                      label: 'Dirección',
+                      text: direccion,
+                      collapsedLines: 2,
+                    ),
+                  ],
+                  if (descripcion.isNotEmpty) ...[
+                    SizedBox(
+                        height: AppTheme.getSmallPadding(screenSize) * 0.8),
+                    _ExpandableTextBlock(
+                      label: 'Descripción',
+                      text: descripcion,
+                      collapsedLines: 3,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _capitalizeFirst(String text) {
+    if (text.isEmpty) return text;
+    return text[0].toUpperCase() + text.substring(1).toLowerCase();
+  }
+}
+
+// ---------- ÁTOMOS NUEVOS PARA LA SECCIÓN ESCUELA ----------
+
+// Badge neutro (borde fino, sin color de fondo agresivo)
+class _SoftBadge extends StatelessWidget {
+  const _SoftBadge({required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppTheme.getSmallPadding(size) * 0.9,
+        vertical: AppTheme.getSmallPadding(size) * 0.45,
+      ),
+      decoration: BoxDecoration(
+        color: AppTheme.getBackgroundColor(context),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.getBorderColor(context), width: 1),
+      ),
+      child: Text(
+        text,
+        style: AppTheme.getCaption(size).copyWith(
+          color: AppTheme.getTextPrimaryColor(context),
+          fontWeight: FontWeight.w600,
+          height: 1.0,
+        ),
+      ),
+    );
+  }
+}
+
+// Badge clicable (para teléfono, email, web)
+class _TapBadge extends StatelessWidget {
+  const _TapBadge({required this.text, required this.onTap});
+  final String text;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: AppTheme.getSmallPadding(size) * 0.9,
+            vertical: AppTheme.getSmallPadding(size) * 0.45,
+          ),
+          decoration: BoxDecoration(
+            color: AppTheme.getBackgroundColor(context),
+            borderRadius: BorderRadius.circular(14),
+            border:
+                Border.all(color: AppTheme.getBorderColor(context), width: 1),
+          ),
+          child: Text(
+            text,
+            style: AppTheme.getCaption(size).copyWith(
+              color: AppTheme.getTextPrimaryColor(context),
+              fontWeight: FontWeight.w600,
+              height: 1.0,
+              decoration:
+                  TextDecoration.underline, // sutil indicación de enlace
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Bloque expandible para textos largos (dirección/descr.)
+class _ExpandableTextBlock extends StatefulWidget {
+  const _ExpandableTextBlock({
+    required this.label,
+    required this.text,
+    this.collapsedLines = 2,
+  });
+
+  final String label;
+  final String text;
+  final int collapsedLines;
+
+  @override
+  State<_ExpandableTextBlock> createState() => _ExpandableTextBlockState();
+}
+
+class _ExpandableTextBlockState extends State<_ExpandableTextBlock> {
+  bool _expanded = false;
+  bool _overflow = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Detecta si el texto desborda para decidir si mostramos "Ver más"
+    final size = MediaQuery.of(context).size;
+    final tp = TextPainter(
+      text: TextSpan(
+        text: widget.text,
+        style: AppTheme.getBodyMedium(size).copyWith(
+          color: AppTheme.getTextPrimaryColor(context),
+          fontWeight: FontWeight.w700,
+          height: 1.25,
+        ),
+      ),
+      maxLines: widget.collapsedLines,
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: MediaQuery.of(context).size.width);
+    _overflow = tp.didExceedMaxLines;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.label,
+          style: AppTheme.getCaption(size).copyWith(
+            color: AppTheme.getTextSecondaryColor(context),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        AnimatedCrossFade(
+          firstChild: Text(
+            widget.text,
+            maxLines: widget.collapsedLines,
+            overflow: TextOverflow.fade,
+            softWrap: true,
+            style: AppTheme.getBodyMedium(size).copyWith(
+              color: AppTheme.getTextPrimaryColor(context),
+              fontWeight: FontWeight.w700,
+              height: 1.25,
+            ),
+          ),
+          secondChild: Text(
+            widget.text,
+            style: AppTheme.getBodyMedium(size).copyWith(
+              color: AppTheme.getTextPrimaryColor(context),
+              fontWeight: FontWeight.w700,
+              height: 1.25,
+            ),
+          ),
+          crossFadeState:
+              _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 180),
+          sizeCurve: Curves.easeOutCubic,
+        ),
+        if (_overflow) ...[
+          const SizedBox(height: 6),
+          GestureDetector(
+            onTap: () => setState(() => _expanded = !_expanded),
+            behavior: HitTestBehavior.opaque,
+            child: Text(
+              _expanded ? 'Ver menos' : 'Ver más',
+              style: AppTheme.getCaption(size).copyWith(
+                color: AppTheme.accentBlue,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+// Normaliza URL para abrir con url_launcher
+String _normalizeUrl(String raw) {
+  final trimmed = raw.trim();
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+  return 'https://$trimmed';
+}
+
+// -------- Sección Llave (compacta y en fila) --------
+
+// === REEMPLAZA SOLO ESTA CLASE Y AGREGA LOS DOS ÁTOMOS DEBAJO ===
+
+class _KeySectionCompact extends StatelessWidget {
+  const _KeySectionCompact({
+    required this.screenSize,
+    required this.keyData,
+  });
+
+  final Size screenSize;
+  final Map<String, dynamic> keyData;
+
+  @override
+  Widget build(BuildContext context) {
+    // Fechas
+    final fechaRegistro = _parseTimestamptz(keyData['fechaRegistro']);
+    final DateTime? fechaDesactivacion = keyData['fechaDesactivacion'] != null
+        ? _parseTimestamptz(keyData['fechaDesactivacion'])
+        : null;
+
+    // Días restantes (si viene del API o calculado)
+    final int? remainingDaysFromApi = keyData['remainingDays'] is int
+        ? keyData['remainingDays'] as int
+        : null;
+    final int? remainingDaysFallback = (fechaDesactivacion != null)
+        ? fechaDesactivacion.difference(DateTime.now()).inDays
+        : null;
+    final int? remainingDaysRaw = remainingDaysFromApi ?? remainingDaysFallback;
+
+    // Siempre mostrarlos en verde (clamp a 0 para evitar negativos)
+    final int? remainingDays = remainingDaysRaw != null
+        ? (remainingDaysRaw < 0 ? 0 : remainingDaysRaw)
+        : null;
+
+    // Otros datos
+    final limiteVinculacion =
+        (keyData['limiteVinculacion'] ?? keyData['limite_vinculacion'])
+            ?.toString();
+    final codigo = (keyData['codigo'] ?? '—').toString();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
+        border: Border.all(color: AppTheme.getBorderColor(context), width: 1),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Label superior del código
+            Text(
+              'Código de la llave',
+              style: AppTheme.getCaption(screenSize).copyWith(
+                color: AppTheme.getTextSecondaryColor(context),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.4),
+
+            // Código destacado
+            _CodePill(
+              text: codigo,
+              screenSize: screenSize,
+              context: context,
+            ),
+
+            SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+
+            // Chips compactas (días restantes en verde + registros disponibles)
+            Wrap(
+              spacing: AppTheme.getSmallPadding(screenSize) * 0.6,
+              runSpacing: AppTheme.getSmallPadding(screenSize) * 0.6,
+              children: [
+                if (remainingDays != null)
+                  _Pill(
+                    text: '$remainingDays días',
+                    color: AppTheme.successColor, // siempre verde
+                  ),
+                if (limiteVinculacion != null)
+                  _Pill(
+                    text: 'Registros disponibles: $limiteVinculacion',
+                    color: AppTheme.accentBlue,
+                  ),
+              ],
+            ),
+
+            SizedBox(height: AppTheme.getSmallPadding(screenSize) * 1.2),
+
+            // Mini datos en malla 2xN
+            _TwoColWrap(
+              gap: AppTheme.getSmallPadding(screenSize),
+              children: [
+                _InfoBlock(
+                  label: 'Fecha de registro',
+                  value: _formatDate(fechaRegistro),
+                ),
+                if (fechaDesactivacion != null)
+                  _InfoBlock(
+                    label: 'Fecha de expiración',
+                    value: _formatDate(fechaDesactivacion),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  DateTime _parseTimestamptz(dynamic ts) {
+    try {
+      if (ts == null) return DateTime.now();
+      if (ts is DateTime) return ts;
+      return DateTime.parse(ts.toString());
+    } catch (_) {
+      return DateTime.now();
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    final dd = date.day.toString().padLeft(2, '0');
+    final mm = date.month.toString().padLeft(2, '0');
+    final yyyy = date.year.toString();
+    return '$dd/$mm/$yyyy';
+  }
+}
+
+class _CodePill extends StatelessWidget {
+  const _CodePill({
+    required this.text,
+    required this.screenSize,
+    required this.context,
+  });
+
+  final String text;
+  final Size screenSize;
+  final BuildContext context;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppTheme.getMediumPadding(screenSize),
+        vertical: AppTheme.getSmallPadding(screenSize) * 0.6,
+      ),
+      decoration: BoxDecoration(
+        color: AppTheme.getBackgroundColor(this.context),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.getBorderColor(this.context)),
+      ),
+      child: Text(
+        text.isEmpty ? '—' : text,
+        style: AppTheme.getH2(screenSize).copyWith(
+          color: AppTheme.getTextPrimaryColor(this.context),
+          fontWeight: FontWeight.w700,
+          height: 1.0,
+        ),
+      ),
+    );
+  }
+}
+
+class _Pill extends StatelessWidget {
+  const _Pill({required this.text, required this.color});
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        // ignore: deprecated_member_use
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(16),
+        // ignore: deprecated_member_use
+        border: Border.all(color: color.withOpacity(0.28), width: 1),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 13,
+          color: color,
+          height: 1.0,
+        ),
+      ),
+    );
+  }
+}
+
+class _TwoColWrap extends StatelessWidget {
+  const _TwoColWrap({required this.children, required this.gap});
+  final List<Widget> children;
+  final double gap;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (_, constraints) {
+        final tileW = (constraints.maxWidth - gap) / 2;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: children
+              .map((w) => SizedBox(width: tileW, child: w))
+              .toList(growable: false),
+        );
+      },
+    );
+  }
+}
+
+class _InfoBlock extends StatelessWidget {
+  const _InfoBlock({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final labelStyle = AppTheme.getCaption(size).copyWith(
+      color: AppTheme.getTextSecondaryColor(context),
+      fontWeight: FontWeight.w600,
+    );
+    final valueStyle = AppTheme.getBodyMedium(size).copyWith(
+      color: AppTheme.getTextPrimaryColor(context),
+      fontWeight: FontWeight.w700,
+      height: 1.25,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: labelStyle),
+        const SizedBox(height: 4),
+        Text(
+          value.isEmpty ? '—' : value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: valueStyle,
+        ),
+      ],
+    );
+  }
+}
+
+class _SupportNotice extends StatelessWidget {
+  const _SupportNotice({required this.screenSize, required this.onTap});
+  final Size screenSize;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return _GroupedContainer(
+      screenSize: screenSize,
+      child: Padding(
+        padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '¿Ves algún dato incorrecto?',
+              style: AppTheme.getSubtitle1(screenSize).copyWith(
+                color: AppTheme.getTextPrimaryColor(context),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.5),
+            Text(
+              'Por favor, contáctanos por correo para ayudarte a revisarlo.',
+              style: AppTheme.getBodyMedium(screenSize).copyWith(
+                color: AppTheme.getTextSecondaryColor(context),
+              ),
+            ),
+            SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: onTap,
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppTheme.getMediumPadding(screenSize),
+                    vertical: AppTheme.getSmallPadding(screenSize) * 0.6,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    side: BorderSide(
+                      color: AppTheme.getBorderColor(context),
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Text(
+                  'Enviar correo a soporte',
+                  style: AppTheme.getBodyMedium(screenSize).copyWith(
+                    color: AppTheme.getTextPrimaryColor(context),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

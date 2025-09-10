@@ -45,7 +45,6 @@ class _NotificationSendViewState extends State<NotificationSendView>
 
   String _selectedRecipient = _Recipient.none;
   TipoNotificacion _selectedType = TipoNotificacion.permisoEspecial;
-  bool _sendPushNotification = true;
 
   // Comunicado (enums en models.dart)
   TipoComunicacion _selectedComunicadoType = TipoComunicacion.informativo;
@@ -563,9 +562,11 @@ class _NotificationSendViewState extends State<NotificationSendView>
               width: double.infinity,
               padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
               decoration: BoxDecoration(
+                // ignore: deprecated_member_use
                 color: AppTheme.accentBlue.withOpacity(0.05),
                 borderRadius:
                     BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
+                // ignore: deprecated_member_use
                 border: Border.all(color: AppTheme.accentBlue.withOpacity(0.2)),
               ),
               child: Row(
@@ -605,6 +606,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                       EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
                   decoration: BoxDecoration(
                     color: _selectedGroups.isNotEmpty
+                        // ignore: deprecated_member_use
                         ? AppTheme.accentBlue.withOpacity(0.0)
                         : AppTheme.getCardColor(context),
                     borderRadius: BorderRadius.circular(
@@ -632,6 +634,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                           color: (_selectedGroups.isNotEmpty
                                   ? AppTheme.accentBlue
                                   : AppTheme.getBorderColor(context))
+                              // ignore: deprecated_member_use
                               .withOpacity(0.15),
                           borderRadius: BorderRadius.circular(
                               AppTheme.getSmallRadius(screenSize)),
@@ -687,8 +690,10 @@ class _NotificationSendViewState extends State<NotificationSendView>
                             AppTheme.getSmallPadding(screenSize) * 0.6),
                         decoration: BoxDecoration(
                           color: _selectedGroups.isNotEmpty
+                              // ignore: deprecated_member_use
                               ? AppTheme.accentBlue.withOpacity(0.15)
                               : AppTheme.getBorderColor(context)
+                                  // ignore: deprecated_member_use
                                   .withOpacity(0.1),
                           borderRadius: BorderRadius.circular(
                               AppTheme.getSmallRadius(screenSize)),
@@ -756,10 +761,12 @@ class _NotificationSendViewState extends State<NotificationSendView>
               width: double.infinity,
               padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
               decoration: BoxDecoration(
+                // ignore: deprecated_member_use
                 color: AppTheme.accentOrange.withOpacity(0.05),
                 borderRadius:
                     BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
                 border:
+                    // ignore: deprecated_member_use
                     Border.all(color: AppTheme.accentOrange.withOpacity(0.2)),
               ),
               child: Row(
@@ -799,6 +806,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                       EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
                   decoration: BoxDecoration(
                     color: _selectedShift != null
+                        // ignore: deprecated_member_use
                         ? AppTheme.accentOrange.withOpacity(0.0)
                         : AppTheme.getCardColor(context),
                     borderRadius: BorderRadius.circular(
@@ -826,6 +834,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                           color: (_selectedShift != null
                                   ? AppTheme.accentOrange
                                   : AppTheme.getBorderColor(context))
+                              // ignore: deprecated_member_use
                               .withOpacity(0.15),
                           borderRadius: BorderRadius.circular(
                               AppTheme.getSmallRadius(screenSize)),
@@ -875,8 +884,10 @@ class _NotificationSendViewState extends State<NotificationSendView>
                             AppTheme.getSmallPadding(screenSize) * 0.6),
                         decoration: BoxDecoration(
                           color: _selectedShift != null
+                              // ignore: deprecated_member_use
                               ? AppTheme.accentOrange.withOpacity(0.15)
                               : AppTheme.getBorderColor(context)
+                                  // ignore: deprecated_member_use
                                   .withOpacity(0.1),
                           borderRadius: BorderRadius.circular(
                               AppTheme.getSmallRadius(screenSize)),
@@ -980,6 +991,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                     EdgeInsets.symmetric(horizontal: pSm, vertical: pXs * 0.6),
                 decoration: BoxDecoration(
                   color: selected
+                      // ignore: deprecated_member_use
                       ? AppTheme.accentBlue.withOpacity(0.06)
                       : AppTheme.getCardColor(context),
                   borderRadius: BorderRadius.circular(rMed),
@@ -1030,8 +1042,10 @@ class _NotificationSendViewState extends State<NotificationSendView>
             return Container(
               padding: EdgeInsets.all(pSm),
               decoration: BoxDecoration(
+                // ignore: deprecated_member_use
                 color: accent.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(rMed),
+                // ignore: deprecated_member_use
                 border: Border.all(color: accent.withOpacity(0.2)),
               ),
               child: Row(
@@ -1113,6 +1127,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                     decoration: BoxDecoration(
                       border: Border(
                         left: BorderSide(
+                          // ignore: deprecated_member_use
                           color: accent.withOpacity(0.25),
                           width: 2,
                         ),
@@ -1176,6 +1191,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                       Container(
                         padding: EdgeInsets.all(pSm * 0.8),
                         decoration: BoxDecoration(
+                          // ignore: deprecated_member_use
                           color: AppTheme.accentBlue.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(rSmall),
                         ),
@@ -1316,6 +1332,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                 padding: EdgeInsets.all(pMd),
                 decoration: BoxDecoration(
                   color: selected
+                      // ignore: deprecated_member_use
                       ? accent.withOpacity(0.06)
                       : AppTheme.getCardColor(context),
                   borderRadius: BorderRadius.circular(rMed),
@@ -1329,6 +1346,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                     Container(
                       padding: EdgeInsets.all(pSm),
                       decoration: BoxDecoration(
+                        // ignore: deprecated_member_use
                         color: accent.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(rSmall),
                       ),
@@ -1408,6 +1426,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
                       Container(
                         padding: EdgeInsets.all(pSm * 0.8),
                         decoration: BoxDecoration(
+                          // ignore: deprecated_member_use
                           color: AppTheme.accentOrange.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(rSmall),
                         ),
@@ -1720,10 +1739,6 @@ class _NotificationSendViewState extends State<NotificationSendView>
       _selectedPriority = suggested;
     }
 
-    // En emergencias, asegurar push habilitado (forzar)
-    if (t == TipoComunicacion.emergencia) {
-      _sendPushNotification = true;
-    }
     setState(() {}); // refrescar UI si se llama desde onTypeSelected
   }
 
@@ -1734,11 +1749,13 @@ class _NotificationSendViewState extends State<NotificationSendView>
     if (!ok) return;
 
     setState(() => _isNavigating = true);
+    // ignore: use_build_context_synchronously
     FocusScope.of(context).unfocus();
 
     final draft = _buildDraft();
 
     Navigator.push(
+      // ignore: use_build_context_synchronously
       context,
       MaterialPageRoute(
         builder: (context) => NotificationReviewView(draft: draft),
@@ -1839,6 +1856,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
       if ((escuelaActual ?? '').isEmpty ||
           escuelaAlumno != (escuelaActual ?? '')) {
         CustomSnackBar.show(
+            // ignore: use_build_context_synchronously
             context: context,
             message: 'El alumno seleccionado no pertenece a tu escuela.',
             isError: true);
@@ -1890,9 +1908,11 @@ class _InlineLoader extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: color.withOpacity(0.06),
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+        // ignore: deprecated_member_use
         border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Row(
@@ -1937,9 +1957,11 @@ class _ErrorBanner extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: color.withOpacity(0.06),
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+        // ignore: deprecated_member_use
         border: Border.all(color: color.withOpacity(0.25)),
       ),
       child: Row(

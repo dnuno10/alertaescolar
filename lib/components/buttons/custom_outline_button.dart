@@ -50,41 +50,44 @@ class CustomOutlineButton extends StatelessWidget {
         BorderRadius.circular(AppTheme.getSmallRadius(screenSize));
 
     final Color effectiveTextColor =
+        // ignore: deprecated_member_use
         onPressed == null ? color.withOpacity(0.6) : color;
-    final Color effectiveBorderColor =
-        onPressed == null ? color.withOpacity(0.4) : color;
 
     final ButtonStyle style = ButtonStyle(
-      minimumSize: MaterialStateProperty.all(const Size(48, 48)),
-      padding: MaterialStateProperty.all(EdgeInsets.symmetric(
+      minimumSize: WidgetStateProperty.all(const Size(48, 48)),
+      padding: WidgetStateProperty.all(EdgeInsets.symmetric(
         vertical: AppTheme.getSmallPadding(screenSize),
         horizontal: AppTheme.getMediumPadding(screenSize),
       )),
-      shape: MaterialStateProperty.all(
+      shape: WidgetStateProperty.all(
         RoundedRectangleBorder(borderRadius: radius),
       ),
-      side: MaterialStateProperty.resolveWith((states) {
-        final disabled = states.contains(MaterialState.disabled);
+      side: WidgetStateProperty.resolveWith((states) {
+        final disabled = states.contains(WidgetState.disabled);
         return BorderSide(
+          // ignore: deprecated_member_use
           color: disabled ? color.withOpacity(0.4) : color,
           width: 1,
         );
       }),
-      foregroundColor: MaterialStateProperty.resolveWith((states) {
-        final disabled = states.contains(MaterialState.disabled);
+      foregroundColor: WidgetStateProperty.resolveWith((states) {
+        final disabled = states.contains(WidgetState.disabled);
+        // ignore: deprecated_member_use
         return disabled ? color.withOpacity(0.6) : color;
       }),
-      overlayColor: MaterialStateProperty.resolveWith((states) {
-        if (states.contains(MaterialState.pressed)) {
+      overlayColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.pressed)) {
+          // ignore: deprecated_member_use
           return color.withOpacity(0.10);
         }
-        if (states.contains(MaterialState.hovered) ||
-            states.contains(MaterialState.focused)) {
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.focused)) {
+          // ignore: deprecated_member_use
           return color.withOpacity(0.06);
         }
         return null;
       }),
-      elevation: MaterialStateProperty.all(0),
+      elevation: WidgetStateProperty.all(0),
     );
 
     final TextStyle textStyle = AppTheme.getBodyMedium(screenSize).copyWith(

@@ -128,8 +128,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
                 AppTheme.getSmallRadius(widget.screenSize),
               ),
               borderSide: BorderSide(
-                // Nota: withOpacity puede mostrar warning en SDKs muy recientes.
-                // Lo mantenemos por compatibilidad con versiones estables.
+                // ignore: deprecated_member_use
                 color: AppTheme.accentBlue.withOpacity(0.25),
                 width: 1,
               ),
@@ -139,6 +138,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
                 AppTheme.getSmallRadius(widget.screenSize),
               ),
               borderSide: BorderSide(
+                // ignore: deprecated_member_use
                 color: AppTheme.accentBlue.withOpacity(0.25),
                 width: 1,
               ),

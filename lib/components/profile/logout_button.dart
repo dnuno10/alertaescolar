@@ -21,6 +21,7 @@ class LogoutButton extends StatelessWidget {
     final radius = BorderRadius.circular(AppTheme.getMediumRadius(screenSize));
 
     final textColor =
+        // ignore: deprecated_member_use
         enabled ? AppTheme.errorColor : AppTheme.errorColor.withOpacity(0.6);
 
     return Semantics(
@@ -33,13 +34,16 @@ class LogoutButton extends StatelessWidget {
             borderRadius: radius,
             gradient: LinearGradient(
               colors: [
+                // ignore: deprecated_member_use
                 AppTheme.errorColor.withOpacity(0.05),
+                // ignore: deprecated_member_use
                 AppTheme.errorColor.withOpacity(0.02),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             border: Border.all(
+              // ignore: deprecated_member_use
               color: AppTheme.errorColor.withOpacity(0.15),
               width: 1.5,
             ),
@@ -55,7 +59,9 @@ class LogoutButton extends StatelessWidget {
                       onTap();
                     }
                   : null,
+              // ignore: deprecated_member_use
               splashColor: AppTheme.errorColor.withOpacity(0.1),
+              // ignore: deprecated_member_use
               highlightColor: AppTheme.errorColor.withOpacity(0.05),
               child: Padding(
                 padding: EdgeInsets.symmetric(
@@ -69,6 +75,7 @@ class LogoutButton extends StatelessWidget {
                       padding: EdgeInsets.all(
                           AppTheme.getSmallPadding(screenSize) * 0.5),
                       decoration: BoxDecoration(
+                        // ignore: deprecated_member_use
                         color: AppTheme.errorColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(
                           AppTheme.getSmallRadius(screenSize),

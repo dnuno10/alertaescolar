@@ -39,12 +39,14 @@ class EducationLevelGroupSelector extends StatelessWidget {
             BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
         boxShadow: [
           BoxShadow(
+            // ignore: deprecated_member_use
             color: AppTheme.getShadowColor(context).withOpacity(0.1),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
         border: Border.all(
+          // ignore: deprecated_member_use
           color: AppTheme.getBorderColor(context).withOpacity(0.1),
         ),
       ),
@@ -70,6 +72,7 @@ class EducationLevelGroupSelector extends StatelessWidget {
                   vertical: AppTheme.getSmallPadding(screenSize) * 0.5,
                 ),
                 decoration: BoxDecoration(
+                  // ignore: deprecated_member_use
                   color: AppTheme.accentBlue.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(
                       AppTheme.getSmallRadius(screenSize)),
@@ -187,10 +190,12 @@ class EducationLevelGroupSelector extends StatelessWidget {
         vertical: AppTheme.getSmallPadding(screenSize),
       ),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: AppTheme.getTextSecondaryColor(context).withOpacity(0.05),
         borderRadius:
             BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
         border: Border.all(
+          // ignore: deprecated_member_use
           color: AppTheme.getTextSecondaryColor(context).withOpacity(0.1),
         ),
       ),

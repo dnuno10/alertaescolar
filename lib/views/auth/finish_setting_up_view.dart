@@ -231,6 +231,7 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
                         label: l10n.continueText,
                         backgroundColor: _isFormValid
                             ? AppTheme.accentPurple
+                            // ignore: deprecated_member_use
                             : AppTheme.accentPurple.withOpacity(0.6),
                         screenSize: size,
                         width: size.width * 0.9,
@@ -261,9 +262,11 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(size)),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: AppTheme.accentPurple.withOpacity(0.03),
         borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
         border: Border.all(
+          // ignore: deprecated_member_use
           color: AppTheme.accentPurple.withOpacity(0.1),
           width: 1,
         ),
@@ -349,6 +352,7 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
         color: isSelected
+            // ignore: deprecated_member_use
             ? AppTheme.accentPurple.withOpacity(0.15)
             : AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
@@ -383,6 +387,7 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppTheme.accentPurple
+                        // ignore: deprecated_member_use
                         : AppTheme.accentPurple.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(18),
                   ),

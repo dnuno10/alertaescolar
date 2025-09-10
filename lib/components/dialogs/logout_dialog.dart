@@ -18,7 +18,6 @@ class LogoutDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final borderRadius = BorderRadius.circular(20);
     final logout = Logout();
 
     return CustomAlertDialog(
@@ -38,6 +37,7 @@ class LogoutDialog extends StatelessWidget {
               child: Icon(
                 Icons.warning_amber_rounded,
                 size: screenSize.height * 0.06,
+                // ignore: deprecated_member_use
                 color: AppTheme.errorColor.withOpacity(0.8),
               ),
             ),

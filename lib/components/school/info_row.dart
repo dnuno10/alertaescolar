@@ -33,6 +33,7 @@ class InfoRow extends StatelessWidget {
           Container(
             padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.7),
             decoration: BoxDecoration(
+              // ignore: deprecated_member_use
               color: AppTheme.accentPurple.withOpacity(0.1),
               borderRadius:
                   BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),

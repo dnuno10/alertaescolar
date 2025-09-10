@@ -34,9 +34,6 @@ class MessageContentForm extends StatelessWidget {
   double get _messageCounterReserve =>
       screenSize.width * 0.26; // ~26% (500/500)
 
-  // pequeño margen entre texto y contador
-  double get _counterGap => AppTheme.getSmallPadding(screenSize) * 0.6;
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -79,6 +76,7 @@ class MessageContentForm extends StatelessWidget {
                       : l10n.examplePermissionTitle,
                   hintStyle: AppTheme.getCaptionSmall(screenSize).copyWith(
                     color: AppTheme.getTextSecondaryColor(context)
+                        // ignore: deprecated_member_use
                         .withOpacity(0.7),
                   ),
                   errorText: errorTitleText,
@@ -88,6 +86,7 @@ class MessageContentForm extends StatelessWidget {
                     padding: EdgeInsets.all(
                         AppTheme.getSmallPadding(screenSize) * 0.6),
                     decoration: BoxDecoration(
+                      // ignore: deprecated_member_use
                       color: AppTheme.accentBlue.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(
                           AppTheme.getSmallRadius(screenSize)),
@@ -167,6 +166,7 @@ class MessageContentForm extends StatelessWidget {
                       : l10n.messageContentHint,
                   hintStyle: AppTheme.getCaptionSmall(screenSize).copyWith(
                     color: AppTheme.getTextSecondaryColor(context)
+                        // ignore: deprecated_member_use
                         .withOpacity(0.7),
                     height: 1.4,
                   ),
@@ -231,6 +231,7 @@ class _CounterPill extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             color: AppTheme.getSurfaceColor(context)
+                // ignore: deprecated_member_use
                 .withOpacity(0.65), // <- translúcido
             borderRadius: BorderRadius.circular(radius),
             boxShadow: [

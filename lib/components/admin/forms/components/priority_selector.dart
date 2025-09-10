@@ -83,10 +83,12 @@ class _PriorityChip extends StatelessWidget {
           vertical: AppTheme.getSmallPadding(screenSize) * 0.75,
         ),
         decoration: BoxDecoration(
+          // ignore: deprecated_member_use
           color: isSelected ? color : color.withOpacity(0.1),
           borderRadius:
               BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
           border: Border.all(
+            // ignore: deprecated_member_use
             color: color.withOpacity(isSelected ? 1.0 : 0.3),
             width: isSelected ? 2 : 1,
           ),

@@ -51,32 +51,35 @@ class SolidButton extends StatelessWidget {
         BorderRadius.circular(AppTheme.getSmallRadius(screenSize));
 
     final ButtonStyle style = ButtonStyle(
-      backgroundColor: MaterialStateProperty.resolveWith((states) {
-        if (states.contains(MaterialState.disabled)) {
+      backgroundColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.disabled)) {
+          // ignore: deprecated_member_use
           return bg.withOpacity(0.5);
         }
         return bg;
       }),
-      foregroundColor: MaterialStateProperty.all(onColor),
-      overlayColor: MaterialStateProperty.resolveWith((states) {
-        if (states.contains(MaterialState.pressed)) {
+      foregroundColor: WidgetStateProperty.all(onColor),
+      overlayColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.pressed)) {
+          // ignore: deprecated_member_use
           return onColor.withOpacity(0.12);
         }
-        if (states.contains(MaterialState.hovered) ||
-            states.contains(MaterialState.focused)) {
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.focused)) {
+          // ignore: deprecated_member_use
           return onColor.withOpacity(0.08);
         }
         return null;
       }),
-      minimumSize: MaterialStateProperty.all(Size(48, 48)),
-      padding: MaterialStateProperty.all(EdgeInsets.symmetric(
+      minimumSize: WidgetStateProperty.all(Size(48, 48)),
+      padding: WidgetStateProperty.all(EdgeInsets.symmetric(
         vertical: AppTheme.getSmallPadding(screenSize),
         horizontal: AppTheme.getMediumPadding(screenSize),
       )),
-      shape: MaterialStateProperty.all(
+      shape: WidgetStateProperty.all(
         RoundedRectangleBorder(borderRadius: radius),
       ),
-      elevation: MaterialStateProperty.all(0),
+      elevation: WidgetStateProperty.all(0),
     );
 
     // Label sin loader inline (el loader va en el slot del icono)
@@ -85,7 +88,7 @@ class SolidButton extends StatelessWidget {
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: AppTheme.getBodyMedium(screenSize).copyWith(
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w800,
         color: onColor,
         letterSpacing: 0.1,
       ),

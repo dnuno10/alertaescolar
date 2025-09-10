@@ -140,7 +140,6 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
     final gapM = size.height * 0.016;
     final gapL = size.height * 0.024;
 
-    final isPermiso = widget.draft.tipoMensaje == 'permiso';
     final isComunicado = widget.draft.tipoMensaje == 'comunicado';
 
     return Scaffold(
@@ -344,20 +343,25 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
         escuelaId: currentUser.escuelaId!,
       );
 
+      // ignore: use_build_context_synchronously
       LoadingDialog.hide(context);
 
       if (res['success'] == true) {
+        // ignore: use_build_context_synchronously
         _showSuccessDialog(context, res);
       } else {
         CustomSnackBar.show(
+          // ignore: use_build_context_synchronously
           context: context,
           message: (res['error'] ?? 'Error desconocido').toString(),
           isError: true,
         );
       }
     } catch (e) {
+      // ignore: use_build_context_synchronously
       LoadingDialog.hide(context);
       CustomSnackBar.show(
+        // ignore: use_build_context_synchronously
         context: context,
         message: 'Error al enviar notificación: $e',
         isError: true,
@@ -386,6 +390,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
             color: AppTheme.getCardColor(context),
             borderRadius: BorderRadius.circular(AppTheme.getLargeRadius(size)),
             border: Border.all(
+              // ignore: deprecated_member_use
               color: AppTheme.getBorderColor(context).withOpacity(0.4),
             ),
           ),
@@ -572,76 +577,6 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
   }
 }
 
-// =========================
-// Widgets minimalistas (sin íconos)
-// =========================
-
-class _HeaderSummary extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final double pad;
-  final double gapS;
-  final double gapM;
-  final Color accentColor;
-
-  const _HeaderSummary({
-    required this.title,
-    required this.subtitle,
-    required this.pad,
-    required this.gapS,
-    required this.gapM,
-    required this.accentColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final border = AppTheme.getBorderColor(context).withOpacity(0.35);
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(pad),
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius: BorderRadius.circular(AppTheme.getLargeRadius(size)),
-        border: Border.all(color: border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Barra sutil superior como acento
-          Container(
-            width: 42,
-            height: 4,
-            decoration: BoxDecoration(
-              color: accentColor,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          SizedBox(height: gapM),
-          Text(
-            title,
-            style: AppTheme.getH2(size).copyWith(
-              color: AppTheme.getTextPrimaryColor(context),
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.2,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: gapS),
-          Text(
-            subtitle,
-            style: AppTheme.getBodyMedium(size).copyWith(
-              color: AppTheme.getTextSecondaryColor(context),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _Section extends StatelessWidget {
   final String title;
   final Widget child;
@@ -658,6 +593,7 @@ class _Section extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    // ignore: deprecated_member_use
     final border = AppTheme.getBorderColor(context).withOpacity(0.35);
 
     return Container(
@@ -701,6 +637,7 @@ class _LabeledBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    // ignore: deprecated_member_use
     final border = AppTheme.getBorderColor(context).withOpacity(0.35);
 
     return Column(
@@ -746,6 +683,7 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    // ignore: deprecated_member_use
     final border = AppTheme.getBorderColor(context).withOpacity(0.35);
 
     return Column(
@@ -829,7 +767,9 @@ class _Pill extends StatelessWidget {
     final size = MediaQuery.of(context).size;
     final pad = size.width * 0.045;
     final base = AppTheme.getTextPrimaryColor(context);
+    // ignore: deprecated_member_use
     final bg = base.withOpacity(0.06);
+    // ignore: deprecated_member_use
     final border = base.withOpacity(0.18);
 
     return Container(
@@ -859,6 +799,7 @@ class _LoaderLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    // ignore: deprecated_member_use
     final base = AppTheme.getBorderColor(context).withOpacity(0.35);
 
     return ClipRRect(
@@ -892,6 +833,7 @@ class _BottomBar extends StatelessWidget {
         color: AppTheme.getCardColor(context),
         border: Border(
           top: BorderSide(
+            // ignore: deprecated_member_use
             color: AppTheme.getBorderColor(context).withOpacity(0.4),
           ),
         ),
@@ -907,11 +849,13 @@ class _BottomBar extends StatelessWidget {
               width: double.infinity,
               padding: EdgeInsets.all(pad * 0.55),
               decoration: BoxDecoration(
+                // ignore: deprecated_member_use
                 color: AppTheme.warningColor.withOpacity(0.06),
                 borderRadius: BorderRadius.circular(
                   AppTheme.getSmallRadius(size),
                 ),
                 border: Border.all(
+                  // ignore: deprecated_member_use
                   color: AppTheme.warningColor.withOpacity(0.25),
                 ),
               ),

@@ -1,4 +1,3 @@
-import 'dart:ui' show FontFeature;
 import 'package:flutter/material.dart';
 import '../../../app/app_theme.dart';
 
@@ -32,6 +31,7 @@ class StatusCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(
               screenSize.height * 0.02), // “curva” más marcada
+          // ignore: deprecated_member_use
           border: Border.all(color: color.withOpacity(0.28), width: 1),
         ),
         child: Row(
@@ -41,8 +41,10 @@ class StatusCard extends StatelessWidget {
             Container(
               padding: EdgeInsets.all(padXS),
               decoration: BoxDecoration(
+                // ignore: deprecated_member_use
                 color: color.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(radL),
+                // ignore: deprecated_member_use
                 border: Border.all(color: color.withOpacity(0.25), width: 1),
               ),
               child: Icon(

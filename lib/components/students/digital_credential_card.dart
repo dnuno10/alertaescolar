@@ -87,6 +87,7 @@ class DigitalCredentialCard extends StatelessWidget {
                     Text(
                       'CREDENCIAL ESTUDIANTIL',
                       style: TextStyle(
+                        // ignore: deprecated_member_use
                         color: Colors.white.withOpacity(0.9),
                         fontSize: 11,
                         fontWeight: FontWeight.w500,

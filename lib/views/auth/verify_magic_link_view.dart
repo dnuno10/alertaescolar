@@ -21,8 +21,7 @@ class VerifyMagicLinkView extends StatefulWidget {
 
 class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
     with TickerProviderStateMixin {
-  // ✅ Eliminamos TextEditingController para evitar el error al disponerlo
-  // El PinCodeTextField manejará su estado interno.
+  // ignore: unused_field
   String _currentPin = '';
   bool _isVerifying = false;
 
@@ -51,7 +50,6 @@ class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
 
   @override
   void dispose() {
-    // ❌ _pinController.dispose();  // Eliminado
     _fadeController.dispose();
     super.dispose();
   }
@@ -313,9 +311,11 @@ class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
         vertical: AppTheme.getMediumPadding(size),
       ),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: AppTheme.accentPurple.withOpacity(0.05),
         borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
         border: Border.all(
+          // ignore: deprecated_member_use
           color: AppTheme.accentPurple.withOpacity(0.1),
           width: 1,
         ),
@@ -375,10 +375,14 @@ class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
           borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
           fieldHeight: size.width * 0.14,
           fieldWidth: size.width * 0.12,
+          // ignore: deprecated_member_use
           activeFillColor: AppTheme.accentPurple.withOpacity(0.2),
+          // ignore: deprecated_member_use
           inactiveFillColor: AppTheme.accentPurple.withOpacity(0.05),
+          // ignore: deprecated_member_use
           selectedFillColor: AppTheme.accentPurple.withOpacity(0.2),
           activeColor: AppTheme.accentPurple,
+          // ignore: deprecated_member_use
           inactiveColor: AppTheme.accentPurple.withOpacity(0.2),
           selectedColor: AppTheme.accentPurple,
           borderWidth: 2,

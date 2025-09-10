@@ -384,7 +384,7 @@ class TurnoProvider extends ChangeNotifier {
   ///
   /// Si no hay turnos cargados, se devuelve `exit` sin turno (para bloquear).
   AccessPhase resolveAccessPhase({DateTime? now}) {
-    final _now = now ?? DateTime.now();
+    final now0 = now ?? DateTime.now();
 
     if (_turnos.isEmpty) {
       return const AccessPhase(
@@ -398,19 +398,17 @@ class TurnoProvider extends ChangeNotifier {
       );
     }
 
-    final windows = _buildTodayWindows(_turnos, now: _now);
+    final windows = _buildTodayWindows(_turnos, now: now0);
 
-    // 1) ¿Estamos dentro de algún turno activo?
     for (final w in windows) {
-      if (w.contains(_now)) {
+      if (w.contains(now0)) {
         // ENTRADA
-        final tol = (w.raw.tolerancia ?? 0).toInt();
-        final limitOnTime = w.start.add(
-            Duration(minutes: tol.clamp(0, 480))); // evitar valores absurdos
+        final tol = (w.raw.tolerancia).toInt();
+        final limitOnTime = w.start.add(Duration(minutes: tol.clamp(0, 480)));
 
-        final withinTol = !_now.isAfter(limitOnTime);
+        final withinTol = !now0.isAfter(limitOnTime);
         final lateMinutes =
-            withinTol ? 0 : _now.difference(limitOnTime).inMinutes;
+            withinTol ? 0 : now0.difference(limitOnTime).inMinutes;
 
         return AccessPhase(
           type: ScannerAccessType.entry,
@@ -426,26 +424,23 @@ class TurnoProvider extends ChangeNotifier {
       }
     }
 
-    // 2) Si no estamos dentro de un turno, buscamos el último turno que ya terminó (para SALIDA)
-    //    y el próximo turno que aún no empieza.
     _ShiftWindow? lastEnded;
     _ShiftWindow? nextStarting;
 
     for (final w in windows) {
-      if (w.isEndedBefore(_now)) {
-        lastEnded = w; // se quedará con el más reciente que ya terminó
-      } else if (w.startsAfter(_now) && nextStarting == null) {
+      if (w.isEndedBefore(now0)) {
+        lastEnded = w;
+      } else if (w.startsAfter(now0) && nextStarting == null) {
         nextStarting = w;
       }
     }
 
     if (lastEnded != null &&
-        (nextStarting == null || nextStarting!.start.isAfter(_now))) {
-      // Estamos en una franja posterior a un turno, pero previa al siguiente → SALIDA del último turno.
+        (nextStarting == null || nextStarting.start.isAfter(now0))) {
       return AccessPhase(
         type: ScannerAccessType.exit,
-        turno: lastEnded!.raw,
-        windowStart: lastEnded!.end,
+        turno: lastEnded.raw,
+        windowStart: lastEnded.end,
         windowEnd: nextStarting?.start,
         withinTolerance: false,
         minutesLate: 0,
@@ -454,16 +449,14 @@ class TurnoProvider extends ChangeNotifier {
       );
     }
 
-    // 3) Si estamos antes del primer turno del día (no hay lastEnded), no es salida todavía:
-    //    bloqueamos como salida genérica (o podrías devolver un estado “idle” si lo prefieres).
     if (lastEnded == null &&
         nextStarting != null &&
-        _now.isBefore(nextStarting!.start)) {
+        now0.isBefore(nextStarting.start)) {
       return AccessPhase(
         type: ScannerAccessType.exit,
         turno: null,
         windowStart: null,
-        windowEnd: nextStarting!.start,
+        windowEnd: nextStarting.start,
         withinTolerance: false,
         minutesLate: 0,
         reason: 'Antes del primer turno del día; aún no es ENTRADA',
@@ -474,8 +467,8 @@ class TurnoProvider extends ChangeNotifier {
     if (lastEnded != null && nextStarting == null) {
       return AccessPhase(
         type: ScannerAccessType.exit,
-        turno: lastEnded!.raw,
-        windowStart: lastEnded!.end,
+        turno: lastEnded.raw,
+        windowStart: lastEnded.end,
         windowEnd: null,
         withinTolerance: false,
         minutesLate: 0,

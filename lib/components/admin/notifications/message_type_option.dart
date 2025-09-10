@@ -40,6 +40,7 @@ class MessageTypeOption extends StatelessWidget {
         padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
         decoration: BoxDecoration(
           color: isSelected
+              // ignore: deprecated_member_use
               ? color.withOpacity(0.0)
               : AppTheme.getBackgroundColor(context),
           borderRadius:
@@ -56,7 +57,9 @@ class MessageTypeOption extends StatelessWidget {
                   EdgeInsets.all(AppTheme.getMediumPadding(screenSize) * 0.8),
               decoration: BoxDecoration(
                 color: isSelected
+                    // ignore: deprecated_member_use
                     ? color.withOpacity(0.15)
+                    // ignore: deprecated_member_use
                     : AppTheme.getBorderColor(context).withOpacity(0.1),
                 borderRadius:
                     BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),

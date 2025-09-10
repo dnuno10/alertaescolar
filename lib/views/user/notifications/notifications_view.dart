@@ -1,9 +1,13 @@
+// lib/views/notifications/notifications_view.dart
+import 'dart:async';
 import 'package:alertaescolar/components/headers/notification_header.dart';
 import 'package:alertaescolar/components/notifications/enhanced_filter_section.dart';
 import 'package:alertaescolar/components/notifications/notification_detail_modal.dart';
 import 'package:alertaescolar/components/notifications/notification_list_section.dart';
 import 'package:alertaescolar/components/notifications/time_filter_section.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:provider/provider.dart';
 import '../../../managers/notification_provider.dart';
 import '../../../app/app_theme.dart';
@@ -46,60 +50,99 @@ class _NotificationsViewViewState extends State<NotificationsView>
 
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
-      body: CustomScrollView(
-        slivers: [
-          // Notification Header
-          NotificationHeader(
-            screenSize: screenSize,
-            getFilteredCount: (notifications) =>
-                _getFilteredNotifications(notifications).length,
-            getFilterLabel: _getFilterLabel,
+      body: LiquidPullToRefresh(
+        onRefresh: _onPullToRefresh,
+        color: AppTheme.accentPurple,
+        backgroundColor: AppTheme.getBackgroundColor(context),
+        height: 120,
+        animSpeedFactor: 9.0,
+        showChildOpacityTransition: false,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
           ),
-
-          // Enhanced Filter Section
-          SliverToBoxAdapter(
-            child: EnhancedFilterSection(
+          slivers: [
+            NotificationHeader(
               screenSize: screenSize,
-              tabController: _tabController,
-              currentFilter: _currentFilter,
-              onFilterChanged: (filter) {
-                setState(() {
-                  _currentFilter = filter;
-                });
-              },
+              getFilteredCount: (notifications) =>
+                  _getFilteredNotifications(notifications).length,
+              getFilterLabel: _getFilterLabel,
             ),
-          ),
-
-          // Time Filter Section
-          SliverToBoxAdapter(
-            child: TimeFilterSection(
+            SliverToBoxAdapter(
+              child: EnhancedFilterSection(
+                screenSize: screenSize,
+                tabController: _tabController,
+                currentFilter: _currentFilter,
+                onFilterChanged: (filter) {
+                  setState(() {
+                    _currentFilter = filter;
+                  });
+                },
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: TimeFilterSection(
+                screenSize: screenSize,
+                currentFilter: _timeFilter,
+                onFilterChanged: (newFilter) {
+                  setState(() {
+                    _timeFilter = newFilter;
+                  });
+                },
+              ),
+            ),
+            NotificationsListSection(
               screenSize: screenSize,
-              currentFilter: _timeFilter,
-              onFilterChanged: (newFilter) {
-                setState(() {
-                  _timeFilter = newFilter;
-                });
-              },
+              getFilteredNotifications: _getFilteredNotifications,
+              groupNotifications: _groupNotificationsByDate,
+              formatDateHeader: _formatDateHeader,
+              formatDateTime: _formatDateTime,
+              getNotificationType: (n) => _getNotificationType(n),
+              onNotificationTap: _handleNotificationTap,
             ),
-          ),
-
-          // Notifications List
-          NotificationsListSection(
-            screenSize: screenSize,
-            getFilteredNotifications: _getFilteredNotifications,
-            groupNotifications: _groupNotificationsByDate,
-            formatDateHeader: _formatDateHeader,
-            formatDateTime: _formatDateTime,
-            // ahora pasamos la notificación completa
-            getNotificationType: (n) => _getNotificationType(n),
-            onNotificationTap: _handleNotificationTap,
-          )
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  // Helper methods
+  // ---------- Fast Sheet Route (transición ultra-rápida) ----------
+  // Esta ruta reemplaza al showModalBottomSheet para abrir "ya".
+  // Anima en 140ms con leve slide + fade (estilo iOS).
+  Route _fastSheetRoute(Widget child) {
+    return PageRouteBuilder(
+      opaque: false,
+      // ignore: deprecated_member_use
+      barrierColor: Colors.black.withOpacity(0.20),
+      barrierDismissible: true,
+      transitionDuration: const Duration(milliseconds: 140),
+      pageBuilder: (context, anim, secondary) {
+        final curved =
+            CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: FractionallySizedBox(
+            heightFactor: 0.85,
+            child: FadeTransition(
+              opacity: curved,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.08),
+                  end: Offset.zero,
+                ).animate(curved),
+                child: Material(
+                  color: Colors.transparent,
+                  child: child,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ---------- Helpers ----------
   String _getFilterLabel(AppLocalizations l10n) {
     switch (_currentFilter) {
       case 'access_alerts':
@@ -239,7 +282,8 @@ class _NotificationsViewViewState extends State<NotificationsView>
 
     if (difference.inDays == 0) {
       if (difference.inHours == 0) {
-        return '${difference.inMinutes}m';
+        final m = difference.inMinutes;
+        return m <= 0 ? 'Ahora' : '${m}m';
       }
       return '${difference.inHours}h';
     } else if (difference.inDays == 1) {
@@ -258,33 +302,28 @@ class _NotificationsViewViewState extends State<NotificationsView>
         date.day == now.day;
   }
 
-  void _handleNotificationTap(String notificationId) async {
+  // ---------- Tap sin delay: abre YA y marca en background ----------
+  void _handleNotificationTap(String notificationId) {
     final provider = Provider.of<NotificationProvider>(context, listen: false);
     final notification = provider.getNotificationById(notificationId);
+    if (notification == null) return;
 
-    if (notification != null) {
-      // Marcar como leída inmediatamente (optimista)
-      await provider.markAsRead(notificationId);
+    // Feedback instantáneo (opcional)
+    HapticFeedback.selectionClick();
 
-      // Mostrar modal de detalle
-      showModalBottomSheet(
-        context: context,
-        backgroundColor: Colors.transparent,
-        isScrollControlled: true,
-        builder: (context) => Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: FractionallySizedBox(
-            heightFactor: 0.85,
-            child: NotificationDetailModal(
-              notification: notification,
-              screenSize: screenSize,
-            ),
-          ),
-        ),
-      );
-    }
+    // 1) Optimistic update local (no bloquea la UI)
+    provider.markLocalAsRead(notificationId);
+
+    // 2) Abrir modal inmediato con ruta rápida (140ms)
+    Navigator.of(context).push(_fastSheetRoute(
+      NotificationDetailModal(
+        notification: notification,
+        screenSize: screenSize,
+      ),
+    ));
+
+    // 3) Persistir como leída en background (sin await)
+    Future.microtask(() => provider.markAsRead(notificationId));
   }
 
   // Mapea tipo → icono/color (entrada VERDE, salida ROJA)
@@ -303,10 +342,8 @@ class _NotificationsViewViewState extends State<NotificationsView>
 
     switch (cleanType) {
       case 'entrada':
-        // ✅ verde
         return {'icon': Icons.login_outlined, 'color': AppTheme.successColor};
       case 'salida':
-        // ✅ rojo
         return {'icon': Icons.logout_outlined, 'color': AppTheme.errorColor};
       case 'retraso':
         return {
@@ -337,5 +374,9 @@ class _NotificationsViewViewState extends State<NotificationsView>
       default:
         return {'icon': Icons.info_outline, 'color': AppTheme.accentBlue};
     }
+  }
+
+  Future<void> _onPullToRefresh() async {
+    await context.read<NotificationProvider>().reloadAndRefreshRealtime();
   }
 }

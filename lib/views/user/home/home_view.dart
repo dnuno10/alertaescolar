@@ -11,6 +11,7 @@ import 'package:alertaescolar/managers/student_provider.dart';
 import 'package:alertaescolar/models/usuario.dart';
 import 'package:alertaescolar/views/user/students/students_view.dart';
 import 'package:flutter/material.dart';
+import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:provider/provider.dart';
 import '../../../app/app_theme.dart';
 import '../../../managers/user_provider.dart';
@@ -35,6 +36,7 @@ class _HomeViewState extends State<HomeView> {
   bool _isInitLoading = false;
   UserProvider? _userProv; // para administrar el listener
 
+  // ignore: prefer_function_declarations_over_variables
   late final VoidCallback _userListener = () {
     final u = _userProv?.currentUser;
     final newId = u?.id;
@@ -146,12 +148,23 @@ class _HomeViewState extends State<HomeView> {
       body: IndexedStack(
         index: _selectedIndex,
         children: [
-          CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              HomeHeader(screenSize: screenSize),
-              SliverToBoxAdapter(child: _buildMainContent(context, screenSize)),
-            ],
+          LiquidPullToRefresh(
+            onRefresh: _onPullToRefresh,
+            color: AppTheme.accentPurple,
+            backgroundColor: AppTheme.getBackgroundColor(context),
+            height: 120,
+            animSpeedFactor: 9.0,
+            showChildOpacityTransition: false,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              slivers: [
+                HomeHeader(screenSize: screenSize),
+                SliverToBoxAdapter(
+                    child: _buildMainContent(context, screenSize)),
+              ],
+            ),
           ),
           const StudentsView(),
           const NotificationsView(),
@@ -232,9 +245,44 @@ class _HomeViewState extends State<HomeView> {
               setState(() => _selectedIndex = index);
             },
           ),
-          SizedBox(height: screenSize.height * 0.12),
+          SizedBox(height: screenSize.height * 0.02),
         ],
       ),
     );
+  }
+
+  // ▼ Dentro de _HomeViewState
+  Future<void> _onPullToRefresh() async {
+    final user = context.read<UserProvider>().currentUser;
+    if (user == null || user.tipo == TipoUsuario.administrador) return;
+
+    final students = context.read<StudentProvider>();
+    final notifs = context.read<NotificationProvider>();
+    final schedule = context.read<ScheduleProvider>();
+
+    await Future.wait([
+      // Alumnos
+      students.loadStudentsForUser(userId: user.id, forceReload: true),
+
+      // Notificaciones (si falla, cae a carga básica)
+      (() async {
+        try {
+          await notifs.reloadAndRefreshRealtime();
+        } catch (_) {
+          await notifs.loadNotifications();
+          await notifs.startRealtimeForCurrentUser();
+        }
+      })(),
+
+      // Horario (si tu proveedor expone reloadTodayForTutor, llámalo sin romper)
+      (() async {
+        try {
+          final dyn = schedule as dynamic;
+          if (dyn.reloadTodayForTutor != null) {
+            await dyn.reloadTodayForTutor(user.id);
+          }
+        } catch (_) {/* no-op */}
+      })(),
+    ]);
   }
 }

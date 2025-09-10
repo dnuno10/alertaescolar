@@ -37,6 +37,7 @@ class EmptySchedule extends StatelessWidget {
           Icon(
             Icons.schedule_rounded,
             size: screenSize.width * 0.15,
+            // ignore: deprecated_member_use
             color: AppTheme.getTextSecondaryColor(context).withOpacity(0.5),
           ),
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),

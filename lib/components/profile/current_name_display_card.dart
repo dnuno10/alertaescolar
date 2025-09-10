@@ -36,6 +36,7 @@ class CurrentNameDisplayCard extends StatelessWidget {
             width: screenSize.width * 0.1,
             height: screenSize.width * 0.1,
             decoration: BoxDecoration(
+              // ignore: deprecated_member_use
               color: AppTheme.accentBlue.withOpacity(0.1),
               borderRadius:
                   BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
@@ -69,6 +70,7 @@ class CurrentNameDisplayCard extends StatelessWidget {
                         vertical: AppTheme.getSmallPadding(screenSize) * 0.25,
                       ),
                       decoration: BoxDecoration(
+                        // ignore: deprecated_member_use
                         color: AppTheme.accentBlue.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(
                             AppTheme.getSmallRadius(screenSize) * 0.5),

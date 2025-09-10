@@ -1,4 +1,3 @@
-import 'package:alertaescolar/app/app_routes.dart';
 import 'package:alertaescolar/components/students/empty_students_card.dart';
 import 'package:alertaescolar/views/user/students/add_student_view.dart';
 import 'package:flutter/material.dart';
@@ -279,6 +278,7 @@ class StudentListItem extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
+                  // ignore: deprecated_member_use
                   color: color.withOpacity(0.2),
                   blurRadius: screenSize.height * 0.008,
                   offset: Offset(0, screenSize.height * 0.003),
@@ -319,6 +319,7 @@ class StudentListItem extends StatelessWidget {
                         vertical: screenSize.height * 0.003,
                       ),
                       decoration: BoxDecoration(
+                        // ignore: deprecated_member_use
                         color: color.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(
                           screenSize.height * 0.008,

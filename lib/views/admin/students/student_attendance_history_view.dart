@@ -1,5 +1,6 @@
 import 'package:alertaescolar/components/headers/nav_header.dart';
 import 'package:flutter/material.dart';
+import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
@@ -81,6 +82,10 @@ class _StudentAttendanceHistoryViewState
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _onRefresh() async {
+    await _loadAttendanceData();
   }
 
   void _filterRecords() {
@@ -224,12 +229,15 @@ class _StudentAttendanceHistoryViewState
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
+                  // ignore: deprecated_member_use
                   AppTheme.accentPurple.withOpacity(0.1),
+                  // ignore: deprecated_member_use
                   AppTheme.accentBlue.withOpacity(0.05),
                 ],
               ),
               borderRadius:
                   BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+              // ignore: deprecated_member_use
               border: Border.all(color: AppTheme.accentPurple.withOpacity(0.3)),
             ),
             child: Row(
@@ -243,6 +251,7 @@ class _StudentAttendanceHistoryViewState
                         padding: EdgeInsets.all(
                             AppTheme.getSmallPadding(screenSize) * 0.6),
                         decoration: BoxDecoration(
+                          // ignore: deprecated_member_use
                           color: AppTheme.accentPurple.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(
                               AppTheme.getSmallRadius(screenSize)),
@@ -282,8 +291,6 @@ class _StudentAttendanceHistoryViewState
   }
 
   Widget _buildStatusFilter(BuildContext context, Size screenSize) {
-    final l10n = AppLocalizations.of(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -300,6 +307,7 @@ class _StudentAttendanceHistoryViewState
             borderRadius:
                 BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
             border: Border.all(
+                // ignore: deprecated_member_use
                 color: AppTheme.getBorderColor(context).withOpacity(0.3)),
           ),
           child: ClipRRect(
@@ -360,6 +368,7 @@ class _StudentAttendanceHistoryViewState
             vertical: AppTheme.getSmallPadding(screenSize),
           ),
           decoration: BoxDecoration(
+            // ignore: deprecated_member_use
             color: isSelected ? color.withOpacity(0.1) : Colors.transparent,
             border: Border(
               bottom: BorderSide(
@@ -397,93 +406,103 @@ class _StudentAttendanceHistoryViewState
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      backgroundColor: AppTheme.getBackgroundColor(context),
-      body: CustomScrollView(
-        slivers: [
-          NavHeader(
-            title: l10n.attendanceHistory,
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-              child: Column(
-                children: [
-                  // Student Info Card
-                  StudentInfoCard(
-                    student: widget.student,
-                    screenSize: screenSize,
-                  ),
-
-                  SizedBox(height: AppTheme.getLargePadding(screenSize)),
-
-                  // Filters Section
-                  _buildFiltersSection(context, screenSize),
-
-                  SizedBox(height: AppTheme.getLargePadding(screenSize)),
-
-                  // Records List
-                  Container(
-                    padding:
-                        EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-                    decoration: BoxDecoration(
-                      color: AppTheme.getCardColor(context),
-                      borderRadius: BorderRadius.circular(
-                          AppTheme.getLargeRadius(screenSize)),
-                      border:
-                          Border.all(color: AppTheme.getBorderColor(context)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        RecordsHeader(
-                          recordCount: _filteredRecords.length,
-                          screenSize: screenSize,
-                        ),
-                        SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-                        if (_isLoading)
-                          const Center(child: CircularProgressIndicator())
-                        else if (_error != null)
-                          Center(
-                            child: Column(
-                              children: [
-                                Text(
-                                  'Error al cargar datos: $_error',
-                                  style: AppTheme.getBodyMedium(screenSize),
-                                ),
-                                ElevatedButton(
-                                  onPressed: _loadAttendanceData,
-                                  child: const Text('Reintentar'),
-                                ),
-                              ],
-                            ),
-                          )
-                        else if (_filteredRecords.isEmpty)
-                          EmptyRecordsState(screenSize: screenSize)
-                        else
-                          ListView.builder(
-                            shrinkWrap: true,
-                            padding: EdgeInsets.zero,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _filteredRecords.length,
-                            itemBuilder: (context, index) {
-                              return AttendanceRecordItem(
-                                record: _filteredRecords[index],
-                                screenSize: screenSize,
-                                isLast: index == _filteredRecords.length - 1,
-                              );
-                            },
-                          ),
-                      ],
-                    ),
-                  ),
-
-                  SizedBox(height: AppTheme.getLargePadding(screenSize)),
-                ],
+        backgroundColor: AppTheme.getBackgroundColor(context),
+        body: LiquidPullToRefresh(
+          onRefresh: _onRefresh,
+          color: AppTheme.accentPurple,
+          backgroundColor: AppTheme.getBackgroundColor(context),
+          height: 120,
+          animSpeedFactor: 9.0,
+          showChildOpacityTransition: false,
+          child: CustomScrollView(
+            slivers: [
+              NavHeader(
+                title: l10n.attendanceHistory,
               ),
-            ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding:
+                      EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+                  child: Column(
+                    children: [
+                      // Student Info Card
+                      StudentInfoCard(
+                        student: widget.student,
+                        screenSize: screenSize,
+                      ),
+
+                      SizedBox(height: AppTheme.getLargePadding(screenSize)),
+
+                      // Filters Section
+                      _buildFiltersSection(context, screenSize),
+
+                      SizedBox(height: AppTheme.getLargePadding(screenSize)),
+
+                      // Records List
+                      Container(
+                        padding: EdgeInsets.all(
+                            AppTheme.getMediumPadding(screenSize)),
+                        decoration: BoxDecoration(
+                          color: AppTheme.getCardColor(context),
+                          borderRadius: BorderRadius.circular(
+                              AppTheme.getLargeRadius(screenSize)),
+                          border: Border.all(
+                              color: AppTheme.getBorderColor(context)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            RecordsHeader(
+                              recordCount: _filteredRecords.length,
+                              screenSize: screenSize,
+                            ),
+                            SizedBox(
+                                height: AppTheme.getMediumPadding(screenSize)),
+                            if (_isLoading)
+                              const Center(child: CircularProgressIndicator())
+                            else if (_error != null)
+                              Center(
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      'Error al cargar datos: $_error',
+                                      style: AppTheme.getBodyMedium(screenSize),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: _loadAttendanceData,
+                                      child: const Text('Reintentar'),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else if (_filteredRecords.isEmpty)
+                              EmptyRecordsState(screenSize: screenSize)
+                            else
+                              ListView.builder(
+                                shrinkWrap: true,
+                                padding: EdgeInsets.zero,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: _filteredRecords.length,
+                                itemBuilder: (context, index) {
+                                  return AttendanceRecordItem(
+                                    record: _filteredRecords[index],
+                                    screenSize: screenSize,
+                                    isLast:
+                                        index == _filteredRecords.length - 1,
+                                  );
+                                },
+                              ),
+                          ],
+                        ),
+                      ),
+
+                      SizedBox(height: AppTheme.getLargePadding(screenSize)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
+        ));
   }
 }

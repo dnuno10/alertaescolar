@@ -7,6 +7,7 @@ import 'package:alertaescolar/components/school/contact_card.dart';
 import 'package:alertaescolar/components/school/description_section.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -129,9 +130,13 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
       builder: (context, _, __) {
         return Scaffold(
           backgroundColor: AppTheme.getBackgroundColor(context),
-          body: RefreshIndicator.adaptive(
+          body: LiquidPullToRefresh(
+            color: AppTheme.accentPurple,
+            backgroundColor: AppTheme.getBackgroundColor(context),
+            height: 120,
+            animSpeedFactor: 9.0,
+            showChildOpacityTransition: false,
             onRefresh: _onRefresh,
-            displacement: 88,
             child: CustomScrollView(
               physics: const BouncingScrollPhysics(
                 parent: AlwaysScrollableScrollPhysics(),
@@ -424,6 +429,7 @@ class _StatusBox extends StatelessWidget {
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(rad),
+                  // ignore: deprecated_member_use
                   side: BorderSide(color: primary.withOpacity(0.3)),
                 ),
               ),

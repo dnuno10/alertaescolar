@@ -59,7 +59,6 @@ class ShiftSummary extends StatelessWidget {
     final toleranceCalc = _addMinutes(startTime, tolerance);
     final toleranceEnd = toleranceCalc.time;
 
-    // ⬇️ Ahora TODO en 12h + AM/PM
     final scheduleText =
         '${_format12WithAmPm(startTime)} - ${_format12WithAmPm(endTime)}';
     final presentWindowText =
@@ -84,8 +83,10 @@ class ShiftSummary extends StatelessWidget {
               Container(
                 padding: EdgeInsets.all(padXS),
                 decoration: BoxDecoration(
+                  // ignore: deprecated_member_use
                   color: color.withOpacity(0.10),
                   borderRadius: BorderRadius.circular(radS),
+                  // ignore: deprecated_member_use
                   border: Border.all(color: color.withOpacity(0.35), width: 1),
                 ),
                 child: Icon(

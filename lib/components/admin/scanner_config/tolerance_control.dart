@@ -70,6 +70,7 @@ class ToleranceControl extends StatelessWidget {
                 borderRadius:
                     BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
                 border: Border.all(
+                  // ignore: deprecated_member_use
                   color: AppTheme.warningColor.withOpacity(0.30),
                   width: 1.5,
                 ),
@@ -147,8 +148,10 @@ class ToleranceControl extends StatelessWidget {
               data: SliderTheme.of(context).copyWith(
                 trackHeight: (screenSize.shortestSide * 0.018).clamp(6.0, 10.0),
                 activeTrackColor: AppTheme.warningColor,
+                // ignore: deprecated_member_use
                 inactiveTrackColor: AppTheme.warningColor.withOpacity(0.18),
                 thumbColor: AppTheme.warningColor,
+                // ignore: deprecated_member_use
                 overlayColor: AppTheme.warningColor.withOpacity(0.10),
                 thumbShape: RoundSliderThumbShape(
                   enabledThumbRadius:
@@ -212,10 +215,13 @@ class _SegmentBar extends StatelessWidget {
             decoration: BoxDecoration(
               color: active
                   ? AppTheme.warningColor
+                  // ignore: deprecated_member_use
                   : AppTheme.warningColor.withOpacity(0.12),
               border: Border.all(
                 color: active
+                    // ignore: deprecated_member_use
                     ? AppTheme.warningColor.withOpacity(0.90)
+                    // ignore: deprecated_member_use
                     : AppTheme.warningColor.withOpacity(0.25),
                 width: 1,
               ),
@@ -256,6 +262,7 @@ class _Tick extends StatelessWidget {
             decoration: BoxDecoration(
               color: isActive
                   ? AppTheme.warningColor
+                  // ignore: deprecated_member_use
                   : AppTheme.warningColor.withOpacity(0.30),
               shape: BoxShape.circle,
             ),

@@ -30,9 +30,11 @@ class ContactButton extends StatelessWidget {
         child: Container(
           padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
           decoration: BoxDecoration(
+            // ignore: deprecated_member_use
             color: color.withOpacity(0.1),
             borderRadius:
                 BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
+            // ignore: deprecated_member_use
             border: Border.all(color: color.withOpacity(0.3)),
           ),
           child: Column(

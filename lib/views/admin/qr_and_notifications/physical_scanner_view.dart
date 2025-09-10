@@ -261,6 +261,7 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
       final returnDetailed = !_showResultInProcessing; // si headless => true
 
       // 4) Navegar a ProcessingView con parámetros completos
+      // ignore: use_build_context_synchronously
       final result = await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => ProcessingView(
@@ -358,9 +359,11 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
                         vertical: AppTheme.getSmallPadding(screenSize) * 0.8,
                       ),
                       decoration: BoxDecoration(
+                        // ignore: deprecated_member_use
                         color: _getAccessTypeColor().withOpacity(0.07),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
+                          // ignore: deprecated_member_use
                           color: _getAccessTypeColor().withOpacity(0.18),
                           width: 1,
                         ),
@@ -388,6 +391,7 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
                               listening: _listening,
                               accent: AppTheme.accentOrange,
                               background: AppTheme.getCardColor(context)
+                                  // ignore: deprecated_member_use
                                   .withOpacity(.6),
                               borderRadius:
                                   BorderRadius.circular(16), // consistente
@@ -420,9 +424,11 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
                           vertical: AppTheme.getSmallPadding(screenSize),
                         ),
                         decoration: BoxDecoration(
+                          // ignore: deprecated_member_use
                           color: AppTheme.accentOrange.withOpacity(0.06),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
+                            // ignore: deprecated_member_use
                             color: AppTheme.accentOrange.withOpacity(0.2),
                             width: 1,
                           ),
@@ -448,7 +454,9 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                              color: Colors.white.withOpacity(0.1), width: 1),
+                              // ignore: deprecated_member_use
+                              color: Colors.white.withOpacity(0.1),
+                              width: 1),
                         ),
                         child: Padding(
                           padding: EdgeInsets.symmetric(
@@ -457,13 +465,15 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.person_search_rounded,
-                                  color: Colors.white, size: 18),
+                              Icon(Icons.person_search_rounded,
+                                  color: AppTheme.getTextPrimaryColor(context),
+                                  size: 18),
                               const SizedBox(width: 8),
                               Text(
                                 'Revisión de alumno',
-                                style: AppTheme.getCaption(screenSize)
-                                    .copyWith(color: Colors.white),
+                                style: AppTheme.getCaption(screenSize).copyWith(
+                                    color:
+                                        AppTheme.getTextPrimaryColor(context)),
                               ),
                               const SizedBox(width: 8),
                               Switch(
@@ -489,10 +499,12 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
                           EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
                       decoration: BoxDecoration(
                         color: AppTheme.getTextSecondaryColor(context)
+                            // ignore: deprecated_member_use
                             .withOpacity(0.05),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: AppTheme.getTextSecondaryColor(context)
+                              // ignore: deprecated_member_use
                               .withOpacity(0.08),
                           width: 1,
                         ),
@@ -592,7 +604,9 @@ class _ScannerAreaState extends State<_ScannerArea>
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
+                    // ignore: deprecated_member_use
                     Colors.black.withOpacity(0.02),
+                    // ignore: deprecated_member_use
                     Colors.black.withOpacity(0.06),
                   ],
                   begin: Alignment.topLeft,
@@ -611,7 +625,9 @@ class _ScannerAreaState extends State<_ScannerArea>
                 return CustomPaint(
                   painter: _GradientBorderPainter(
                     progress: t,
+                    // ignore: deprecated_member_use
                     color1: c1.withOpacity(0.7),
+                    // ignore: deprecated_member_use
                     color2: c2.withOpacity(0.35),
                     strokeWidth: 1.3,
                     borderRadius: widget.borderRadius,
@@ -627,6 +643,7 @@ class _ScannerAreaState extends State<_ScannerArea>
                 child: Icon(
                   Icons.qr_code_2_rounded,
                   size: 80,
+                  // ignore: deprecated_member_use
                   color: widget.accent.withOpacity(0.3),
                 ),
               ),
@@ -637,7 +654,9 @@ class _ScannerAreaState extends State<_ScannerArea>
                   return CustomPaint(
                     painter: _SweepLinePainter(
                       position: _sweepCtrl.value, // 0..1
+                      // ignore: deprecated_member_use
                       color: widget.accent.withOpacity(0.28),
+                      // ignore: deprecated_member_use
                       glow: widget.accent.withOpacity(0.10),
                     ),
                   );
@@ -651,7 +670,9 @@ class _ScannerAreaState extends State<_ScannerArea>
                   child: Text(
                     'Escanea un código con tu lector físico',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withOpacity(.65),
+                          color: AppTheme.getTextPrimaryColor(context)
+                              // ignore: deprecated_member_use
+                              .withOpacity(.65),
                           letterSpacing: .2,
                           fontWeight: FontWeight.w600,
                         ),
@@ -670,6 +691,7 @@ class _ScannerAreaState extends State<_ScannerArea>
                     builder: (_, __) => CustomPaint(
                       painter: _SpinnerDotsPainter(
                         turn: _spinnerCtrl.value,
+                        // ignore: deprecated_member_use
                         baseColor: widget.accent.withOpacity(.20),
                         dotColor: widget.accent,
                       ),
@@ -684,6 +706,7 @@ class _ScannerAreaState extends State<_ScannerArea>
                   child: Text(
                     'Procesando…',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          // ignore: deprecated_member_use
                           color: Colors.white.withOpacity(.65),
                           letterSpacing: .2,
                           fontWeight: FontWeight.w600,

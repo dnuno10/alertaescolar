@@ -21,6 +21,7 @@ class StatusChip extends StatelessWidget {
         vertical: AppTheme.getSmallPadding(screenSize) * 0.25,
       ),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: color.withOpacity(0.1),
         borderRadius:
             BorderRadius.circular(AppTheme.getSmallRadius(screenSize) * 0.5),

@@ -138,8 +138,10 @@ class _DividerStripe extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
+            // ignore: deprecated_member_use
             AppTheme.getBorderColor(this.context).withOpacity(0.1),
             AppTheme.getBorderColor(this.context),
+            // ignore: deprecated_member_use
             AppTheme.getBorderColor(this.context).withOpacity(0.1),
           ],
         ),

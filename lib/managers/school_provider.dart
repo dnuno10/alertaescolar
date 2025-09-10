@@ -8,13 +8,10 @@ class SchoolProvider with ChangeNotifier {
   Escuela? _currentSchool;
   bool _isLoading = false;
   String? _error;
+  final Map<String, Future<Escuela?>> _inFlightLoads = {};
 
-  bool _loadingSchool = false;
-
-  // Caché simple por ID (objeto completo)
   final Map<String, Escuela> _cache = {};
 
-  // Caché liviano para solo "nombre" (reduce roundtrips cuando solo queremos mostrarlo)
   final Map<String, String> _nameCache = {};
 
   Escuela? get currentSchool => _currentSchool;
@@ -30,14 +27,11 @@ class SchoolProvider with ChangeNotifier {
     _currentSchool = null;
     _isLoading = false;
     _error = null;
-    _loadingSchool = false;
     _cache.clear();
     _nameCache.clear();
     notifyListeners();
   }
 
-  /// Devuelve la escuela por ID.
-  /// - Si `useCache` es true y existe en caché, lo regresa sin consultar BD.
   Future<Escuela?> getSchoolById(String schoolId,
       {bool useCache = true}) async {
     try {
@@ -55,7 +49,7 @@ class SchoolProvider with ChangeNotifier {
 
       final escuela = Escuela.fromJson(response);
       _cache[schoolId] = escuela;
-      _nameCache[schoolId] = escuela.nombre; // mantener nombre sincronizado
+      _nameCache[schoolId] = escuela.nombre;
       return escuela;
     } catch (e) {
       if (kDebugMode) {
@@ -65,8 +59,6 @@ class SchoolProvider with ChangeNotifier {
     }
   }
 
-  /// Devuelve SOLO el nombre de la escuela por ID (consulta ligera).
-  /// - Usa caché de nombres y permite `forceRefresh`.
   Future<String?> getSchoolNameById(String schoolId,
       {bool forceRefresh = false}) async {
     try {
@@ -83,7 +75,6 @@ class SchoolProvider with ChangeNotifier {
       final nombre = response?['nombre']?.toString();
       if (nombre != null) {
         _nameCache[schoolId] = nombre;
-        // si ya estaba en el cache completo, sincronizamos el nombre
         if (_cache.containsKey(schoolId)) {
           _cache[schoolId] = _cache[schoolId]!.copyWith(nombre: nombre);
         }
@@ -97,39 +88,46 @@ class SchoolProvider with ChangeNotifier {
     }
   }
 
-  /// Carga la escuela "actual" y la deja disponible en `currentSchool`.
-  /// - Si `forceRefresh` es false y `_currentSchool` ya coincide, evita nueva consulta.
   Future<Escuela?> loadSchool(String schoolId,
       {bool forceRefresh = false}) async {
-    if (_loadingSchool) return _currentSchool;
-
     if (!forceRefresh && _currentSchool?.id == schoolId) {
-      // Ya cargada; no hacemos nada más
       return _currentSchool;
     }
 
-    _loadingSchool = true;
+    final existingFuture = _inFlightLoads[schoolId];
+    if (!forceRefresh && existingFuture != null) {
+      return await existingFuture;
+    }
+
     _isLoading = true;
     _error = null;
     notifyListeners();
 
-    try {
-      // Reusar getSchoolById con cache controlado
-      final escuela = await getSchoolById(schoolId, useCache: !forceRefresh);
-      _currentSchool = escuela;
-      return _currentSchool;
-    } catch (e) {
-      _error = 'Error loading school: $e';
-      if (kDebugMode) print('SchoolProvider.loadSchool error: $e');
-      return null;
-    } finally {
-      _loadingSchool = false;
-      _isLoading = false;
-      notifyListeners();
-    }
+    final future = () async {
+      try {
+        final escuela = await getSchoolById(schoolId, useCache: !forceRefresh);
+        _currentSchool = escuela;
+
+        if (escuela != null) {
+          _cache[escuela.id] = escuela;
+          _nameCache[escuela.id] = escuela.nombre;
+        }
+
+        return escuela;
+      } catch (e) {
+        _error = 'Error loading school: $e';
+        return null;
+      } finally {
+        _isLoading = false;
+        _inFlightLoads.remove(schoolId);
+        notifyListeners();
+      }
+    }();
+
+    _inFlightLoads[schoolId] = future;
+    return await future;
   }
 
-  /// Actualiza en BD y sincroniza caches + estado.
   Future<bool> updateSchool(Escuela updatedSchool) async {
     _isLoading = true;
     _error = null;
@@ -146,7 +144,6 @@ class SchoolProvider with ChangeNotifier {
         print('SchoolProvider: Datos a enviar: ${updatedSchool.toJson()}');
       }
 
-      // Verificar primero que el registro existe y es visible
       final existingRecord = await _supabase
           .from('escuelas')
           .select('id, nombre')
@@ -179,10 +176,8 @@ class SchoolProvider with ChangeNotifier {
         return false;
       }
 
-      // Si llegamos aquí, el UPDATE fue exitoso
       final updated = Escuela.fromJson(updateResult);
 
-      // Sincronizar estado y caches
       _currentSchool = updated;
       _cache[updated.id] = updated;
       _nameCache[updated.id] = updated.nombre;

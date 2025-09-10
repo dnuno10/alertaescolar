@@ -85,6 +85,7 @@ class QuickToleranceSelector extends StatelessWidget {
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
+                                // ignore: deprecated_member_use
                                 color: AppTheme.warningColor.withOpacity(0.3),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
@@ -107,6 +108,7 @@ class QuickToleranceSelector extends StatelessWidget {
                           l10n.min,
                           style: AppTheme.getCaptionSmall(screenSize).copyWith(
                             color: isSelected
+                                // ignore: deprecated_member_use
                                 ? Colors.white.withOpacity(0.8)
                                 : AppTheme.getTextSecondaryColor(context),
                             fontWeight: FontWeight.w500,

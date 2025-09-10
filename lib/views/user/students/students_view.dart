@@ -7,6 +7,7 @@ import 'package:alertaescolar/managers/user_provider.dart';
 import 'package:alertaescolar/models/models.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:provider/provider.dart';
 import 'add_student_view.dart';
 
@@ -95,28 +96,35 @@ class _StudentsViewState extends State<StudentsView> {
 
                   // Contenido principal (cuando hay usuario)
                   if (currentUser != null)
-                    CustomScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      slivers: [
-                        SliverToBoxAdapter(
-                          child: StudentsHeader(screenSize: screenSize),
+                    LiquidPullToRefresh(
+                      onRefresh: _onPullToRefresh,
+                      color: AppTheme.accentPurple,
+                      backgroundColor: AppTheme.getBackgroundColor(context),
+                      height: 120,
+                      animSpeedFactor: 9.0,
+                      showChildOpacityTransition: false,
+                      child: CustomScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
                         ),
-
-                        // 👇 NO renderizar StudentsSection mientras showGlobalLoader sea true
-                        if (!showGlobalLoader)
+                        slivers: [
                           SliverToBoxAdapter(
-                            child: Padding(
-                              // espacio para el botón flotante centrado
-                              padding: EdgeInsets.only(
-                                  bottom: screenSize.height * 0.12),
-                              child: StudentsSection(
-                                isWide: isWide,
-                                screenSize: screenSize,
-                                onAddStudent: _goToAdd,
+                            child: StudentsHeader(screenSize: screenSize),
+                          ),
+                          if (!showGlobalLoader)
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: EdgeInsets.only(
+                                    bottom: screenSize.height * 0.12),
+                                child: StudentsSection(
+                                  isWide: isWide,
+                                  screenSize: screenSize,
+                                  onAddStudent: _goToAdd,
+                                ),
                               ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
 
                   // Overlay de loading (sólo carga inicial)
@@ -213,6 +221,20 @@ class _StudentsViewState extends State<StudentsView> {
             userId: user.id,
             forceReload: true,
           );
+    }
+  }
+
+  Future<void> _onPullToRefresh() async {
+    final user = context.read<UserProvider>().currentUser;
+    if (user != null) {
+      await context
+          .read<StudentProvider>()
+          .loadStudentsForUser(userId: user.id, forceReload: true);
+    } else {
+      // Si por algo perdió sesión, reintenta cargar usuario sin diálogos
+      await context
+          .read<UserProvider>()
+          .loadCurrentUser(context, showDialog: false);
     }
   }
 }

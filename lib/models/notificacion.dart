@@ -238,8 +238,8 @@ class Notificacion {
   // From JSON/BD
   // ---------------------
   factory Notificacion.fromJson(Map<String, dynamic> json) {
-    String? _str(Map m, String a, String b) => (m[a] ?? m[b])?.toString();
-    DateTime? _dt(dynamic v) {
+    String? str(Map m, String a, String b) => (m[a] ?? m[b])?.toString();
+    DateTime? dt(dynamic v) {
       try {
         return v == null ? null : DateTime.parse(v.toString());
       } catch (_) {
@@ -248,11 +248,11 @@ class Notificacion {
     }
 
     // lee ambos nombres (bd y camel) por compatibilidad
-    final tipoDb = _str(json, 'tipo_notificacion', 'tipo') ??
-        _str(json, 'tipoNotificacion', 'tipo');
+    final tipoDb = str(json, 'tipo_notificacion', 'tipo') ??
+        str(json, 'tipoNotificacion', 'tipo');
 
-    final estadoDb = _str(json, 'estado', 'estadoNotificacion') ??
-        _str(json, 'estado_notificacion', 'estado');
+    final estadoDb = str(json, 'estado', 'estadoNotificacion') ??
+        str(json, 'estado_notificacion', 'estado');
 
     final tipoNotif = tipoDb != null
         ? TipoNotificacionDb.fromDb(tipoDb)
@@ -262,29 +262,29 @@ class Notificacion {
         ? EstadoNotificacionDb.fromDb(estadoDb)
         : EstadoNotificacion.nueva;
 
-    final tipoComStr = _str(json, 'tipo_comunicado', 'tipoComunicacion');
+    final tipoComStr = str(json, 'tipo_comunicado', 'tipoComunicacion');
     final prioridadStr =
-        _str(json, 'prioridad_comunicado', 'prioridadComunicado');
+        str(json, 'prioridad_comunicado', 'prioridadComunicado');
 
     return Notificacion(
-      id: _str(json, 'id', 'id') ?? '',
-      alumnoId: _str(json, 'id_alumno', 'alumnoId') ?? '',
-      adminId: _str(json, 'id_admin', 'adminId'),
-      titulo: _str(json, 'titulo', 'titulo') ?? '',
-      mensaje: _str(json, 'mensaje', 'mensaje') ?? '',
+      id: str(json, 'id', 'id') ?? '',
+      alumnoId: str(json, 'id_alumno', 'alumnoId') ?? '',
+      adminId: str(json, 'id_admin', 'adminId'),
+      titulo: str(json, 'titulo', 'titulo') ?? '',
+      mensaje: str(json, 'mensaje', 'mensaje') ?? '',
       tipo: tipoNotif,
       estado: estado,
-      fechaHora: _dt(json['fecha_hora'] ?? json['fechaHora']) ?? DateTime.now(),
+      fechaHora: dt(json['fecha_hora'] ?? json['fechaHora']) ?? DateTime.now(),
       datosAdicionales: (json['datos_adicionales'] ?? json['datosAdicionales'])
           as Map<String, dynamic>?,
 
       // comunicado
-      escuelaId: _str(json, 'id_escuela', 'escuelaId'),
-      autorId: _str(json, 'id_autor', 'autorId'),
+      escuelaId: str(json, 'id_escuela', 'escuelaId'),
+      autorId: str(json, 'id_autor', 'autorId'),
       tipoComunicacion: TipoComunicacionDb.fromDb(tipoComStr),
       prioridadComunicado: PrioridadComunicadoDb.fromDb(prioridadStr),
-      fechaEnvio: _dt(json['fecha_envio'] ?? json['fechaEnvio']),
-      fechaProgramada: _dt(json['fecha_programada'] ?? json['fechaProgramada']),
+      fechaEnvio: dt(json['fecha_envio'] ?? json['fechaEnvio']),
+      fechaProgramada: dt(json['fecha_programada'] ?? json['fechaProgramada']),
     );
   }
 

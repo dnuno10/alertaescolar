@@ -28,6 +28,7 @@ class NotificationSettingToggle extends StatelessWidget {
           width: screenSize.width * 0.12,
           height: screenSize.width * 0.12,
           decoration: BoxDecoration(
+            // ignore: deprecated_member_use
             color: AppTheme.accentPurple.withOpacity(0.1),
             borderRadius:
                 BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
@@ -68,9 +69,11 @@ class NotificationSettingToggle extends StatelessWidget {
             onChanged(value);
           },
           activeColor: AppTheme.accentPurple,
+          // ignore: deprecated_member_use
           activeTrackColor: AppTheme.accentPurple.withOpacity(0.3),
           inactiveThumbColor: AppTheme.getTextSecondaryColor(context),
           inactiveTrackColor:
+              // ignore: deprecated_member_use
               AppTheme.getTextSecondaryColor(context).withOpacity(0.3),
         ),
       ],

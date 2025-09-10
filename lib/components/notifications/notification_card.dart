@@ -84,6 +84,7 @@ class NotificationCard extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: isUnread
+                  // ignore: deprecated_member_use
                   ? statusColor.withOpacity(0.12)
                   : AppTheme.getShadowColor(context),
               blurRadius: isUnread
@@ -126,6 +127,7 @@ class NotificationCard extends StatelessWidget {
                             vertical: screenSize.height * 0.003,
                           ),
                           decoration: BoxDecoration(
+                            // ignore: deprecated_member_use
                             color: statusColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(
                                 screenSize.height * 0.008),

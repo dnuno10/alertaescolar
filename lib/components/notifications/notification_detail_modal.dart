@@ -202,7 +202,7 @@ class NotificationDetailModal extends StatelessWidget {
                   if (studentTurno.isNotEmpty)
                     _buildDetailRow(
                       context,
-                      l10n.shift ?? 'Turno',
+                      l10n.shift,
                       studentTurno,
                       Icons.school_rounded,
                       screenSize,
@@ -270,6 +270,7 @@ class NotificationDetailModal extends StatelessWidget {
                           EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
                       decoration: BoxDecoration(
                         color: AppTheme.getBackgroundColor(context)
+                            // ignore: deprecated_member_use
                             .withOpacity(0.7),
                         borderRadius: BorderRadius.circular(
                             AppTheme.getMediumRadius(screenSize)),
@@ -700,16 +701,5 @@ class NotificationDetailModal extends StatelessWidget {
         ),
       );
     }).toList();
-  }
-
-  // Por si la necesitas: formateo desde string ISO
-  String _formatDateFromString(String? dateString) {
-    if (dateString == null) return '';
-    try {
-      final DateTime date = DateTime.parse(dateString);
-      return _formatDate(date);
-    } catch (_) {
-      return dateString; // Fallback si falla el parseo
-    }
   }
 }

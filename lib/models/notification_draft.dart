@@ -1,8 +1,4 @@
-// lib/models/notification_draft.dart
-import 'package:alertaescolar/models/models.dart';
-
-/// Contrato único entre SendView, ReviewView y el Service.
-/// 100% serializable y alineado a columnas SQL.
+/// Contrato único entre SendView, ReviewView y el Service./// 100% serializable y alineado a columnas SQL.
 class NotificationDraft {
   /// 'permiso' | 'comunicado' (snake_case según tu .dbValue)
   final String tipoMensaje;

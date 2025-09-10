@@ -18,13 +18,6 @@ class StudentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final colors = [
-      AppTheme.accentBlue,
-      AppTheme.successColor,
-      AppTheme.accentPurple,
-      AppTheme.warningColor
-    ];
-    final color = colors[student.hashCode % colors.length];
 
     return Container(
       decoration: BoxDecoration(
@@ -79,7 +72,9 @@ class StudentCard extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: student.vinculado
+                              // ignore: deprecated_member_use
                               ? AppTheme.successColor.withOpacity(0.1)
+                              // ignore: deprecated_member_use
                               : AppTheme.warningColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(
                               AppTheme.getSmallRadius(screenSize) * 0.7),

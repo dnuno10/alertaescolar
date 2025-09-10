@@ -42,10 +42,12 @@ class SettingsTile extends StatelessWidget {
 
     final textColor = enabled
         ? AppTheme.getTextPrimaryColor(context)
+        // ignore: deprecated_member_use
         : AppTheme.getTextSecondaryColor(context).withOpacity(0.6);
 
     final secondaryColor = enabled
         ? AppTheme.getTextSecondaryColor(context)
+        // ignore: deprecated_member_use
         : AppTheme.getTextSecondaryColor(context).withOpacity(0.6);
 
     return Semantics(
@@ -71,6 +73,7 @@ class SettingsTile extends StatelessWidget {
                     width: screenSize.width * 0.1,
                     height: screenSize.width * 0.1,
                     decoration: BoxDecoration(
+                      // ignore: deprecated_member_use
                       color: AppTheme.accentPurple.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(
                           AppTheme.getSmallRadius(screenSize)),

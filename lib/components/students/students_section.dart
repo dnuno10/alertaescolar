@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../managers/student_provider.dart';
-import '../../models/models.dart';
 import 'students_list.dart';
 import 'students_error_state.dart';
 import 'students_empty_state.dart';
@@ -78,6 +77,7 @@ class _StudentsSectionState extends State<StudentsSection> {
                           AppTheme.getSmallPadding(widget.screenSize) * 0.5,
                     ),
                     decoration: BoxDecoration(
+                      // ignore: deprecated_member_use
                       color: AppTheme.accentBlue.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(
                         AppTheme.getSmallRadius(widget.screenSize),

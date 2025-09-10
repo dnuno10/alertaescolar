@@ -66,6 +66,7 @@ class _DangerZoneCardState extends State<DangerZoneCard> {
               padding:
                   EdgeInsets.all(AppTheme.getSmallPadding(widget.screenSize)),
               decoration: BoxDecoration(
+                // ignore: deprecated_member_use
                 color: AppTheme.errorColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(
                   AppTheme.getSmallRadius(widget.screenSize),
@@ -136,6 +137,7 @@ class _DangerZoneCardState extends State<DangerZoneCard> {
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(widget.screenSize)),
         border: Border.all(
+          // ignore: deprecated_member_use
           color: AppTheme.errorColor.withOpacity(0.3),
           width: 1,
         ),
@@ -180,6 +182,7 @@ class _DangerZoneCardState extends State<DangerZoneCard> {
             padding:
                 EdgeInsets.all(AppTheme.getSmallPadding(widget.screenSize)),
             decoration: BoxDecoration(
+              // ignore: deprecated_member_use
               color: AppTheme.errorColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(
                 AppTheme.getSmallRadius(widget.screenSize),

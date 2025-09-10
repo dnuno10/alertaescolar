@@ -64,6 +64,7 @@ class AdminMainActions extends StatelessWidget {
                         icon: Icons.send_rounded,
                         gradient: [
                           AppTheme.accentOrange,
+                          // ignore: deprecated_member_use
                           AppTheme.accentOrange.withOpacity(0.8)
                         ],
                         onTap: () => _navigateToNotificationSend(context),
@@ -78,6 +79,7 @@ class AdminMainActions extends StatelessWidget {
                         icon: Icons.schedule_rounded,
                         gradient: [
                           AppTheme.accentBlue,
+                          // ignore: deprecated_member_use
                           AppTheme.accentBlue.withOpacity(0.8)
                         ],
                         onTap: () => _navigateToScheduleManagement(context),
@@ -95,6 +97,7 @@ class AdminMainActions extends StatelessWidget {
                       icon: Icons.send_rounded,
                       gradient: [
                         AppTheme.accentOrange,
+                        // ignore: deprecated_member_use
                         AppTheme.accentOrange.withOpacity(0.8)
                       ],
                       onTap: () => _navigateToNotificationSend(context),
@@ -107,6 +110,7 @@ class AdminMainActions extends StatelessWidget {
                       icon: Icons.schedule_rounded,
                       gradient: [
                         AppTheme.accentBlue,
+                        // ignore: deprecated_member_use
                         AppTheme.accentBlue.withOpacity(0.8)
                       ],
                       onTap: () => _navigateToScheduleManagement(context),
@@ -140,7 +144,9 @@ class AdminMainActions extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
+                // ignore: deprecated_member_use
                 gradient[0].withOpacity(0.08),
+                // ignore: deprecated_member_use
                 gradient[1].withOpacity(0.03),
               ],
               begin: Alignment.topLeft,
@@ -149,6 +155,7 @@ class AdminMainActions extends StatelessWidget {
             borderRadius:
                 BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
             border: Border.all(
+              // ignore: deprecated_member_use
               color: gradient[0].withOpacity(0.15),
               width: 1.2,
             ),
@@ -159,6 +166,7 @@ class AdminMainActions extends StatelessWidget {
               Container(
                 padding: EdgeInsets.all(screenSize.height * 0.012),
                 decoration: BoxDecoration(
+                  // ignore: deprecated_member_use
                   color: gradient[0].withOpacity(0.15),
                   borderRadius:
                       BorderRadius.circular(screenSize.height * 0.015),
@@ -209,6 +217,7 @@ class AdminMainActions extends StatelessWidget {
               Container(
                 padding: EdgeInsets.all(screenSize.height * 0.008),
                 decoration: BoxDecoration(
+                  // ignore: deprecated_member_use
                   color: gradient[0].withOpacity(0.1),
                   borderRadius: BorderRadius.circular(screenSize.height * 0.01),
                 ),

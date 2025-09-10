@@ -52,6 +52,7 @@ class ScheduleStudentCard extends StatelessWidget {
                   BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
               boxShadow: [
                 BoxShadow(
+                  // ignore: deprecated_member_use
                   color: color.withOpacity(0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
@@ -92,6 +93,7 @@ class ScheduleStudentCard extends StatelessWidget {
                         vertical: AppTheme.getSmallPadding(screenSize) * 0.25,
                       ),
                       decoration: BoxDecoration(
+                        // ignore: deprecated_member_use
                         color: color.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(
                             AppTheme.getSmallRadius(screenSize) * 0.5),
@@ -113,7 +115,9 @@ class ScheduleStudentCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: student.vinculado
+                            // ignore: deprecated_member_use
                             ? AppTheme.successColor.withOpacity(0.1)
+                            // ignore: deprecated_member_use
                             : AppTheme.warningColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(
                             AppTheme.getSmallRadius(screenSize) * 0.5),

@@ -1,3 +1,4 @@
+// lib/managers/schedule_provider.dart
 import 'package:alertaescolar/main.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -113,10 +114,15 @@ class ScheduleProvider with ChangeNotifier {
               await loadHorarios(
                 escuelaId: escuelaId,
                 grupoId: affectedGroupId,
-                context: null, // evita superposición de diálogos
+                context: null,
+                silent: true, // 🔇 evita parpadeos
               );
             } else {
-              await loadHorarios(escuelaId: escuelaId, context: null);
+              await loadHorarios(
+                escuelaId: escuelaId,
+                context: null,
+                silent: true, // 🔇 evita parpadeos
+              );
             }
           } catch (e) {
             debugPrint('Realtime horarios callback error: $e');
@@ -137,7 +143,11 @@ class ScheduleProvider with ChangeNotifier {
           value: escuelaId,
         ),
         callback: (payload) async {
-          await loadMaterias(escuelaId: escuelaId, context: null);
+          await loadMaterias(
+            escuelaId: escuelaId,
+            context: null,
+            silent: true, // 🔇
+          );
         },
       )
       ..subscribe();
@@ -154,8 +164,17 @@ class ScheduleProvider with ChangeNotifier {
           value: escuelaId,
         ),
         callback: (payload) async {
-          await loadGrupos(escuelaId: escuelaId, loadAll: true, context: null);
-          await loadHorarios(escuelaId: escuelaId, context: null);
+          await loadGrupos(
+            escuelaId: escuelaId,
+            loadAll: true,
+            context: null,
+            silent: true, // 🔇
+          );
+          await loadHorarios(
+            escuelaId: escuelaId,
+            context: null,
+            silent: true, // 🔇
+          );
         },
       )
       ..subscribe();
@@ -205,13 +224,19 @@ class ScheduleProvider with ChangeNotifier {
   Future<void> loadNivelesEducativos({
     required String escuelaId,
     BuildContext? context,
+    bool silent = false,
   }) async {
+    bool showDialogHere = false;
     try {
-      _isLoading = true;
-      if (context != null && context.mounted) {
-        LoadingDialog.show(context, message: 'Cargando niveles educativos...');
+      if (!silent) {
+        _isLoading = true;
+        if (context != null && context.mounted && !LoadingDialog.isVisible) {
+          LoadingDialog.show(context,
+              message: 'Cargando niveles educativos...');
+          showDialogHere = true;
+        }
+        _safeNotifyListeners();
       }
-      _safeNotifyListeners();
 
       final response = await supabase
           .from('niveles_educativos')
@@ -225,11 +250,15 @@ class ScheduleProvider with ChangeNotifier {
       _error = 'Error al cargar niveles educativos: $e';
       debugPrint(_error);
     } finally {
-      _isLoading = false;
-      if (context != null && context.mounted) {
-        LoadingDialog.hide(context);
+      if (!silent) {
+        _isLoading = false;
+        if (context != null && context.mounted && showDialogHere) {
+          LoadingDialog.hide(context);
+        }
+        _safeNotifyListeners();
+      } else {
+        _safeNotifyListeners();
       }
-      _safeNotifyListeners();
     }
   }
 
@@ -237,13 +266,18 @@ class ScheduleProvider with ChangeNotifier {
   Future<void> loadMaterias({
     required String escuelaId,
     BuildContext? context,
+    bool silent = false,
   }) async {
+    bool showDialogHere = false;
     try {
-      _isLoading = true;
-      if (context != null && context.mounted) {
-        LoadingDialog.show(context, message: 'Cargando materias...');
+      if (!silent) {
+        _isLoading = true;
+        if (context != null && context.mounted && !LoadingDialog.isVisible) {
+          LoadingDialog.show(context, message: 'Cargando materias...');
+          showDialogHere = true;
+        }
+        _safeNotifyListeners();
       }
-      _safeNotifyListeners();
 
       final response = await supabase
           .from('materias')
@@ -258,11 +292,15 @@ class ScheduleProvider with ChangeNotifier {
       _error = 'Error al cargar materias: $e';
       debugPrint(_error);
     } finally {
-      _isLoading = false;
-      if (context != null && context.mounted) {
-        LoadingDialog.hide(context);
+      if (!silent) {
+        _isLoading = false;
+        if (context != null && context.mounted && showDialogHere) {
+          LoadingDialog.hide(context);
+        }
+        _safeNotifyListeners();
+      } else {
+        _safeNotifyListeners();
       }
-      _safeNotifyListeners();
     }
   }
 
@@ -273,13 +311,18 @@ class ScheduleProvider with ChangeNotifier {
     String? nivelEducativoNombre,
     bool loadAll = false,
     BuildContext? context,
+    bool silent = false,
   }) async {
+    bool showDialogHere = false;
     try {
-      _isLoading = true;
-      if (context != null && context.mounted) {
-        LoadingDialog.show(context, message: 'Cargando grupos...');
+      if (!silent) {
+        _isLoading = true;
+        if (context != null && context.mounted && !LoadingDialog.isVisible) {
+          LoadingDialog.show(context, message: 'Cargando grupos...');
+          showDialogHere = true;
+        }
+        _safeNotifyListeners();
       }
-      _safeNotifyListeners();
 
       var filterBuilder =
           supabase.from('grupos').select().eq('id_escuela', escuelaId);
@@ -298,7 +341,6 @@ class ScheduleProvider with ChangeNotifier {
         }
       }
 
-      // Orden al final para mantener el tipo correcto
       final response = await filterBuilder.order('grupo');
 
       _grupos =
@@ -308,11 +350,15 @@ class ScheduleProvider with ChangeNotifier {
       _error = 'Error al cargar grupos: $e';
       debugPrint(_error);
     } finally {
-      _isLoading = false;
-      if (context != null && context.mounted) {
-        LoadingDialog.hide(context);
+      if (!silent) {
+        _isLoading = false;
+        if (context != null && context.mounted && showDialogHere) {
+          LoadingDialog.hide(context);
+        }
+        _safeNotifyListeners();
+      } else {
+        _safeNotifyListeners();
       }
-      _safeNotifyListeners();
     }
   }
 
@@ -321,22 +367,20 @@ class ScheduleProvider with ChangeNotifier {
     required String escuelaId,
     String? grupoId,
     BuildContext? context,
+    bool silent = false,
   }) async {
     bool showDialogHere = false;
     try {
-      _isLoading = true;
-      _error = null;
-
-      if (context != null && context.mounted) {
-        // evita abrir múltiples diálogos si ya hay uno activo
-        if (!LoadingDialog.isVisible) {
+      if (!silent) {
+        _isLoading = true;
+        _error = null;
+        if (context != null && context.mounted && !LoadingDialog.isVisible) {
           LoadingDialog.show(context, message: 'Cargando horarios...');
           showDialogHere = true;
         }
+        _safeNotifyListeners();
       }
-      _safeNotifyListeners();
 
-      // Filtros primero
       var filterBuilder =
           supabase.from('horarios').select().eq('id_escuela', escuelaId);
 
@@ -344,8 +388,6 @@ class ScheduleProvider with ChangeNotifier {
         filterBuilder = filterBuilder.eq('id_grupo', grupoId);
       }
 
-      // ❗ No existe 'dia_semana' en la tabla, solo booleans por día.
-      // Ordenamos por hora de inicio únicamente.
       final response =
           await filterBuilder.order('hora_inicio', ascending: true);
 
@@ -366,11 +408,15 @@ class ScheduleProvider with ChangeNotifier {
       _error = 'Error al cargar horarios: $e';
       debugPrint(_error);
     } finally {
-      _isLoading = false;
-      if (context != null && context.mounted && showDialogHere) {
-        LoadingDialog.hide(context);
+      if (!silent) {
+        _isLoading = false;
+        if (context != null && context.mounted && showDialogHere) {
+          LoadingDialog.hide(context);
+        }
+        _safeNotifyListeners();
+      } else {
+        _safeNotifyListeners();
       }
-      _safeNotifyListeners();
     }
   }
 
@@ -450,18 +496,16 @@ class ScheduleProvider with ChangeNotifier {
       _isLoading = true;
       _error = null;
 
-      if (context != null && context.mounted) {
-        if (!LoadingDialog.isVisible) {
-          LoadingDialog.show(context, message: 'Inicializando horarios...');
-          showDialogHere = true;
-        }
+      if (context != null && context.mounted && !LoadingDialog.isVisible) {
+        LoadingDialog.show(context, message: 'Inicializando horarios...');
+        showDialogHere = true;
       }
       _safeNotifyListeners();
 
-      await loadNivelesEducativos(escuelaId: escuelaId);
-      await loadMaterias(escuelaId: escuelaId);
-      await loadGrupos(escuelaId: escuelaId, loadAll: true);
-      await loadHorarios(escuelaId: escuelaId);
+      await loadNivelesEducativos(escuelaId: escuelaId, silent: true);
+      await loadMaterias(escuelaId: escuelaId, silent: true);
+      await loadGrupos(escuelaId: escuelaId, loadAll: true, silent: true);
+      await loadHorarios(escuelaId: escuelaId, silent: true);
 
       _error = null;
     } catch (e) {
@@ -473,6 +517,34 @@ class ScheduleProvider with ChangeNotifier {
         LoadingDialog.hide(context);
       }
       _safeNotifyListeners();
+    }
+  }
+
+  // ===== Prefetch helpers (cache-aware) =====
+
+  Future<void> ensureMateriasLoaded({
+    required String escuelaId,
+    bool force = false,
+  }) async {
+    if (force ||
+        _materias.isEmpty ||
+        _currentSchoolIdForRealtime != escuelaId) {
+      await loadMaterias(escuelaId: escuelaId, context: null, silent: true);
+    }
+  }
+
+  Future<void> ensureHorariosLoaded({
+    required String escuelaId,
+    required String grupoId,
+    bool force = false,
+  }) async {
+    if (force || !_horariosPorGrupoId.containsKey(grupoId)) {
+      await loadHorarios(
+        escuelaId: escuelaId,
+        grupoId: grupoId,
+        context: null,
+        silent: true,
+      );
     }
   }
 

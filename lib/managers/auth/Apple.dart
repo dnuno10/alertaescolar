@@ -18,6 +18,7 @@ import 'package:alertaescolar/models/models.dart';
 
 class Apple {
   static final Apple _instance = Apple._Internal();
+  // ignore: non_constant_identifier_names
   Apple._Internal();
   factory Apple() => _instance;
 
@@ -38,6 +39,7 @@ class Apple {
       return;
     }
 
+    // ignore: use_build_context_synchronously
     LoadingDialog.show(context, message: l10n.signingInWithApple);
 
     try {
@@ -81,23 +83,28 @@ class Apple {
       // 2) Admin si aplica
       if (resolvedEmail.isNotEmpty) {
         final isAdmin = await AdminSetup.checkAndSetupAdmin(
+          // ignore: use_build_context_synchronously
           context,
           resolvedEmail,
           authUser.id,
         );
         if (isAdmin) {
+          // ignore: use_build_context_synchronously
           LoadingDialog.hide(context);
           CustomSnackBar.show(
+            // ignore: use_build_context_synchronously
             context: context,
             message: l10n.loginSuccessful,
             isError: false,
           );
+          // ignore: use_build_context_synchronously
           Navigator.of(context).pushReplacementNamed(AppRoutes.adminDashboard);
           return;
         }
       }
 
       // 3) Actualiza provider y navega
+      // ignore: use_build_context_synchronously
       await Provider.of<UserProvider>(context, listen: false)
           .updateUser(usuario);
 
@@ -108,12 +115,15 @@ class Apple {
               ? AppRoutes.adminDashboard
               : AppRoutes.home);
 
+      // ignore: use_build_context_synchronously
       LoadingDialog.hide(context);
       CustomSnackBar.show(
+        // ignore: use_build_context_synchronously
         context: context,
         message: incomplete ? l10n.completeYourProfile : l10n.loginSuccessful,
         isError: false,
       );
+      // ignore: use_build_context_synchronously
       Navigator.of(context).pushReplacementNamed(nextRoute);
     } on SignInWithAppleAuthorizationException catch (e) {
       if (context.mounted) {

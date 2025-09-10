@@ -44,14 +44,6 @@ class _PersonalInformationViewState extends State<PersonalInformationView> {
     super.dispose();
   }
 
-  bool get _hasUnsavedChanges {
-    final up = Provider.of<UserProvider>(context, listen: false).currentUser;
-    final originalName = (up?.nombre ?? '').trim();
-    final originalLast = (up?.apellido ?? '').trim();
-    return _nameController.text.trim() != originalName ||
-        _lastNameController.text.trim() != originalLast;
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -61,6 +53,7 @@ class _PersonalInformationViewState extends State<PersonalInformationView> {
       builder: (context, themeProvider, child) {
         return GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
+          // ignore: deprecated_member_use
           child: WillPopScope(
             // Evita salir mientras se está guardando (para no romper el LoadingDialog)
             onWillPop: () async => !_isLoading,

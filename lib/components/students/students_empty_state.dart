@@ -29,6 +29,7 @@ class StudentsEmptyState extends StatelessWidget {
             width: screenSize.width * 0.2,
             height: screenSize.width * 0.2,
             decoration: BoxDecoration(
+              // ignore: deprecated_member_use
               color: AppTheme.getBorderColor(context).withOpacity(0.5),
               borderRadius:
                   BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),

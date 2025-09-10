@@ -243,9 +243,11 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
                             gradient: LinearGradient(
                               colors: [
                                 AppTheme.getBorderColor(context)
+                                    // ignore: deprecated_member_use
                                     .withOpacity(0.1),
                                 AppTheme.getBorderColor(context),
                                 AppTheme.getBorderColor(context)
+                                    // ignore: deprecated_member_use
                                     .withOpacity(0.1),
                               ],
                             ),
@@ -269,9 +271,11 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
                             gradient: LinearGradient(
                               colors: [
                                 AppTheme.getBorderColor(context)
+                                    // ignore: deprecated_member_use
                                     .withOpacity(0.1),
                                 AppTheme.getBorderColor(context),
                                 AppTheme.getBorderColor(context)
+                                    // ignore: deprecated_member_use
                                     .withOpacity(0.1),
                               ],
                             ),
@@ -573,9 +577,4 @@ class _AppleSignInButton extends StatelessWidget {
       ),
     );
   }
-}
-
-// helper redundante pero mantenido por compatibilidad con tu código existente
-void _signInWithApple(BuildContext context) {
-  Apple().signInWithApple(context);
 }

@@ -31,8 +31,7 @@ class TimeFilterSection extends StatelessWidget {
             l10n.period,
             style: AppTheme.getSubtitle1(screenSize).copyWith(
               color: AppTheme.getTextPrimaryColor(context),
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.1,
+              fontWeight: FontWeight.w700,
             ),
           ),
           SizedBox(height: AppTheme.getSmallPadding(screenSize)),
@@ -86,50 +85,39 @@ class _TimeFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final rad = AppTheme.getSmallRadius(screenSize);
     return Expanded(
       child: GestureDetector(
         onTap: () {
-          HapticFeedback.mediumImpact();
+          HapticFeedback.selectionClick();
           onSelected(value);
         },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          height: screenSize.height * 0.055,
+          duration: const Duration(milliseconds: 160),
+          height: screenSize.height * 0.052,
           decoration: BoxDecoration(
             color: isSelected
                 ? AppTheme.accentBlue
                 : AppTheme.getCardColor(context),
-            borderRadius:
-                BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-            border: isSelected
-                ? null
-                : Border.all(
-                    color: AppTheme.getBorderColor(context),
-                    width: 1,
-                  ),
-            boxShadow: [
-              BoxShadow(
-                color: isSelected
-                    ? AppTheme.accentBlue.withOpacity(0.25)
-                    : AppTheme.getShadowColor(context),
-                blurRadius: screenSize.height * (isSelected ? 0.01 : 0.005),
-                offset: Offset(
-                  0,
-                  screenSize.height * (isSelected ? 0.0025 : 0.00125),
-                ),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(rad),
+            border: Border.all(
+              color: isSelected
+                  ? AppTheme.accentBlue
+                  : AppTheme.getBorderColor(context),
+              width: 1,
+            ),
           ),
-          child: Center(
-            child: Text(
-              label,
-              style: AppTheme.getSubtitle2(screenSize).copyWith(
-                color: isSelected
-                    ? Colors.white
-                    : AppTheme.getTextSecondaryColor(context),
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.1,
-              ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTheme.getSubtitle2(screenSize).copyWith(
+              color: isSelected
+                  ? Colors.white
+                  : AppTheme.getTextSecondaryColor(context),
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.1,
             ),
           ),
         ),

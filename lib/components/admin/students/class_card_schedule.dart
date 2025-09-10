@@ -30,7 +30,6 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
   late Animation<Offset> _slideAnimation;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
-  bool _isPressed = false;
 
   @override
   void initState() {
@@ -82,23 +81,14 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
   }
 
   void _onTapDown(TapDownDetails details) {
-    setState(() {
-      _isPressed = true;
-    });
     _scaleController.forward();
   }
 
   void _onTapUp(TapUpDetails details) {
-    setState(() {
-      _isPressed = false;
-    });
     _scaleController.reverse();
   }
 
   void _onTapCancel() {
-    setState(() {
-      _isPressed = false;
-    });
     _scaleController.reverse();
   }
 
@@ -219,7 +209,6 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
     final Color cardColor =
         _getSubjectColor(widget.materia?.color ?? '#9B5DE5');
     final Duration duration = _getClassDuration();
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return SlideTransition(
       position: _slideAnimation,
@@ -247,6 +236,7 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
                   end: Alignment.bottomRight,
                   colors: [
                     AppTheme.getCardColor(context),
+                    // ignore: deprecated_member_use
                     AppTheme.getCardColor(context).withOpacity(0.95),
                   ],
                 ),
@@ -254,6 +244,7 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
                   AppTheme.getLargeRadius(widget.screenSize),
                 ),
                 border: Border.all(
+                  // ignore: deprecated_member_use
                   color: cardColor.withOpacity(0.2),
                   width: 1,
                 ),
@@ -318,7 +309,9 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
+            // ignore: deprecated_member_use
             cardColor.withOpacity(0.15),
+            // ignore: deprecated_member_use
             cardColor.withOpacity(0.1),
           ],
         ),
@@ -326,6 +319,7 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
           AppTheme.getMediumRadius(widget.screenSize),
         ),
         border: Border.all(
+          // ignore: deprecated_member_use
           color: cardColor.withOpacity(0.3),
           width: 1.5,
         ),
@@ -350,12 +344,14 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
           Container(
             width: 20,
             height: 1,
+            // ignore: deprecated_member_use
             color: cardColor.withOpacity(0.5),
             margin: const EdgeInsets.symmetric(vertical: 1),
           ),
           Text(
             _formatTime(widget.clase.horaFin),
             style: AppTheme.getCaption(widget.screenSize).copyWith(
+              // ignore: deprecated_member_use
               color: cardColor.withOpacity(0.8),
               fontSize: 9,
             ),
@@ -390,6 +386,7 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
+                // ignore: deprecated_member_use
                 color: AppTheme.getOnPrimaryColor(context).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -496,6 +493,7 @@ class _ClassCardScheduleState extends State<ClassCardSchedule>
             width: 40,
             height: 4,
             decoration: BoxDecoration(
+              // ignore: deprecated_member_use
               color: AppTheme.getTextSecondaryColor(context).withOpacity(0.3),
               borderRadius: BorderRadius.circular(2),
             ),
@@ -591,6 +589,7 @@ class _DetailRow extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
+            // ignore: deprecated_member_use
             color: color.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),

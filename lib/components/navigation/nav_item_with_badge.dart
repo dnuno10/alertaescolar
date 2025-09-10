@@ -43,6 +43,7 @@ class NavItemWithBadge extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             color: isSelected
+                // ignore: deprecated_member_use
                 ? AppTheme.accentPurple.withOpacity(0.1)
                 : Colors.transparent,
             borderRadius:

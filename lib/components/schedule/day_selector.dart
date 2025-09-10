@@ -89,6 +89,7 @@ class DaySelector extends StatelessWidget {
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
+                                  // ignore: deprecated_member_use
                                   color: AppTheme.accentPurple.withOpacity(0.3),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),

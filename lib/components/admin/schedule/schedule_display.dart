@@ -301,10 +301,12 @@ class _HeaderMinimal extends StatelessWidget {
             Container(
               padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
               decoration: BoxDecoration(
+                // ignore: deprecated_member_use
                 color: (color ?? AppTheme.accentBlue).withOpacity(0.10),
                 borderRadius:
                     BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
                 border: Border.all(
+                    // ignore: deprecated_member_use
                     color: (color ?? AppTheme.accentBlue).withOpacity(0.28),
                     width: 1),
               ),
@@ -371,8 +373,10 @@ class _DayStrip extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: padH, vertical: padV),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: color.withOpacity(0.10),
         borderRadius: BorderRadius.circular(rad),
+        // ignore: deprecated_member_use
         border: Border.all(color: color.withOpacity(0.30), width: 1),
       ),
       child: Row(
@@ -459,10 +463,13 @@ class _MinimalClassRow extends StatelessWidget {
                 padding: EdgeInsets.symmetric(
                     horizontal: padS * 0.8, vertical: padS * 0.4),
                 decoration: BoxDecoration(
+                  // ignore: deprecated_member_use
                   color: AppTheme.accentBlue.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(rad),
                   border: Border.all(
-                      color: AppTheme.accentBlue.withOpacity(0.28), width: 1),
+                      // ignore: deprecated_member_use
+                      color: AppTheme.accentBlue.withOpacity(0.28),
+                      width: 1),
                 ),
                 child: Text(
                   end == null ? start : '$start - $end',
@@ -556,10 +563,12 @@ class _EmptyStrip extends StatelessWidget {
       width: double.infinity,
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: AppTheme.getTextSecondaryColor(context).withOpacity(0.06),
         borderRadius:
             BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
         border: Border.all(
+          // ignore: deprecated_member_use
           color: AppTheme.getTextSecondaryColor(context).withOpacity(0.12),
           width: 1,
         ),

@@ -13,7 +13,6 @@ import '../../l10n/app_localizations.dart';
 import '../../managers/student_provider.dart';
 import '../../app/app_theme.dart';
 import '../buttons/solid_button.dart';
-import '../buttons/custom_outline_button.dart';
 
 class StudentActionButtons extends StatefulWidget {
   final StudentDetails student;
@@ -57,21 +56,6 @@ class _StudentActionButtonsState extends State<StudentActionButtons> {
           screenSize: widget.screenSize,
           backgroundColor: AppTheme.accentOrange,
         ),
-
-        // // Botón eliminar (igual que antes)
-        // SizedBox(
-        //   width: double.infinity,
-        //   child: CustomOutlineButton(
-        //     onPressed: () {
-        //       HapticFeedback.mediumImpact();
-        //       _deleteStudent(context, l10n);
-        //     },
-        //     label: l10n.delete,
-        //     icon: Icons.delete,
-        //     color: AppTheme.errorColor,
-        //     screenSize: widget.screenSize,
-        //   ),
-        // ),
       ],
     );
   }
@@ -86,41 +70,20 @@ class _StudentActionButtonsState extends State<StudentActionButtons> {
       final theme = Theme.of(context);
       final locale = Localizations.localeOf(context);
 
-      // 🔒 Sanitiza datos: sin nulos ni espacios, evita valores vacíos
-      StudentDetails _safeStudent(StudentDetails s) {
+      StudentDetails safeStudent(StudentDetails s) {
         String clean(String? v) => (v ?? '').trim();
-        return s.copyWith?.call(
-              nombre: clean(s.nombre).isEmpty ? '-' : clean(s.nombre),
-              matricula: clean(s.matricula).isEmpty ? '-' : clean(s.matricula),
-              grupo: clean(s.grupo).isEmpty ? 'Sin asignar' : clean(s.grupo),
-              turno: clean(s.turno).isEmpty ? 'Sin asignar' : clean(s.turno),
-            ) ??
-            StudentDetails(
-              id: s.id,
-              nombre: clean(s.nombre).isEmpty ? '-' : clean(s.nombre),
-              matricula: clean(s.matricula).isEmpty ? '-' : clean(s.matricula),
-              escuelaId: clean(s.escuelaId),
-              grupoId: clean(s.grupoId),
-              grupo: clean(s.grupo).isEmpty ? 'Sin asignar' : clean(s.grupo),
-              nivelEducativo: clean(s.nivelEducativo),
-              turnoId: clean(s.turnoId),
-              turno: clean(s.turno).isEmpty ? 'Sin asignar' : clean(s.turno),
-              llaveId: s.llaveId,
-              llaveCodigo: s.llaveCodigo,
-              llaveActiva: s.llaveActiva,
-              fechaRegistro: s.fechaRegistro,
-              fechaRegistroLlave: s.fechaRegistroLlave,
-              limiteVinculacion: s.limiteVinculacion,
-              tutores: s.tutores,
-              familyContacts: s.familyContacts,
-            );
+        return s.copyWith.call(
+          nombre: clean(s.nombre).isEmpty ? '-' : clean(s.nombre),
+          matricula: clean(s.matricula).isEmpty ? '-' : clean(s.matricula),
+          grupo: clean(s.grupo).isEmpty ? 'Sin asignar' : clean(s.grupo),
+          turno: clean(s.turno).isEmpty ? 'Sin asignar' : clean(s.turno),
+        );
       }
 
-      final safe = _safeStudent(widget.student);
+      final safe = safeStudent(widget.student);
       final safeSchool =
           (widget.schoolName).trim().isEmpty ? '-' : widget.schoolName.trim();
 
-      // 🖼️ Captura con repaint boundary y un delay ligeramente mayor
       final bytes = await _shot
           .captureFromWidget(
             MediaQuery(
@@ -169,7 +132,9 @@ class _StudentActionButtonsState extends State<StudentActionButtons> {
       await file.writeAsBytes(bytes);
 
       // 3) Hoja de compartir nativa
+      // ignore: use_build_context_synchronously
       final box = context.findRenderObject() as RenderBox?;
+      // ignore: deprecated_member_use
       final result = await Share.shareXFiles(
         [XFile(filePath, mimeType: 'image/png', name: '$fileName.png')],
         sharePositionOrigin:

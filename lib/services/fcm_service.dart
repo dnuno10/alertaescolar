@@ -193,7 +193,7 @@ class FCMService {
         'notificationId': notificationId,
         'studentId': studentId,
         'type': 'attendance',
-        ...?(additionalData ?? {}),
+        ...(additionalData ?? {}),
       };
 
       await sendToTokens(
@@ -508,14 +508,14 @@ class FCMService {
     }
 
     debugPrint('FCM: ==========================================');
-    debugPrint('FCM: 🚀 SENDING REAL NOTIFICATIONS (Edge Function)');
+    debugPrint('FCM: SENDING REAL NOTIFICATIONS (Edge Function)');
     debugPrint('FCM: ==========================================');
     debugPrint('FCM: Tokens: ${tokens.length}');
     debugPrint('FCM: Title: $title');
     debugPrint('FCM: Body:  $body');
     debugPrint('FCM: Data:  $data');
     debugPrint(
-        'FCM: Tokens (first 20 chars): ${tokens.map((t) => t.substring(0, min(20, t.length)) + '...').join(', ')}');
+        'FCM: Tokens (first 20 chars): ${tokens.map((t) => '${t.substring(0, min(20, t.length))}...').join(', ')}');
 
     try {
       final response = await _supabase.functions.invoke(
@@ -555,7 +555,7 @@ class FCMService {
             final tk = (item['token'] ?? '').toString();
             final err = (item['error'] ?? '').toString();
             debugPrint(
-                'FCM: ${ok ? '✅' : '❌'} ${tk.isEmpty ? '(unknown)' : tk.substring(0, min(20, tk.length)) + '...'} ${ok ? '' : err}');
+                'FCM: ${ok ? 'YESY' : 'ERROR'} ${tk.isEmpty ? '(unknown)' : '${tk.substring(0, min(20, tk.length))}...'} ${ok ? '' : err}');
           }
         }
 

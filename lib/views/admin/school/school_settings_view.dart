@@ -1,5 +1,4 @@
 // lib/views/school/school_settings_view.dart
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -85,7 +84,7 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
     });
   }
 
-  /// Obtiene referencias a los providers de manera segura y (re)adjunta listeners
+// SchoolSettingsView: REEMPLAZO COMPLETO del método didChangeDependencies
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -93,7 +92,6 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
     final newSp = context.read<SchoolProvider>();
     final newUp = context.read<UserProvider>();
 
-    // Si cambió alguna instancia del provider, limpia listeners previos y re-anexa
     final spChanged = !identical(_sp, newSp);
     final upChanged = !identical(_up, newUp);
 
@@ -107,7 +105,6 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
     _sp = newSp;
     _up = newUp;
 
-    // Crear listeners si no existen (o recrearlos si cambiaron instancias)
     _providerListener ??= () {
       final s = _sp?.currentSchool;
       if (s == null || !mounted) return;
@@ -118,14 +115,19 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
 
     _userListener ??= () async {
       if (!mounted) return;
+      if (_formDirty) return;
+
       final id = _up?.currentUser?.escuelaId;
       if (id == null || id.isEmpty) return;
-      if (_sp?.currentSchool?.id == id) return;
-      if (_formDirty) return; // no recargar en medio de edición
-      await _loadSchoolData();
+
+      // Carga/coalesce directa en el provider (evita doble _loadSchoolData)
+      final loaded = await _sp?.loadSchool(id, forceRefresh: true);
+      if (loaded != null && mounted && !_formDirty) {
+        _populateControllers(loaded);
+        setState(() {});
+      }
     };
 
-    // Adjuntar listeners a las instancias actuales
     _sp!.addListener(_providerListener!);
     _up!.addListener(_userListener!);
   }
@@ -175,50 +177,68 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
 
   void _populateControllers(Escuela school) {
     if (!_nombreFocusNode.hasFocus) _nombreController.text = school.nombre;
-    if (!_codigoFocusNode.hasFocus)
+    if (!_codigoFocusNode.hasFocus) {
       _codigoController.text = school.codigo ?? '';
+    }
     if (!_descripcionFocusNode.hasFocus) {
       _descripcionController.text = school.descripcion ?? '';
     }
-    if (!_direccionFocusNode.hasFocus)
+    if (!_direccionFocusNode.hasFocus) {
       _direccionController.text = school.direccion;
-    if (!_telefonoFocusNode.hasFocus)
+    }
+    if (!_telefonoFocusNode.hasFocus) {
       _telefonoController.text = school.telefono;
+    }
     if (!_emailFocusNode.hasFocus) _emailController.text = school.email;
-    if (!_sitioWebFocusNode.hasFocus)
+    if (!_sitioWebFocusNode.hasFocus) {
       _sitioWebController.text = school.sitioWeb ?? '';
+    }
 
     // Solo cambia el dropdown si no hay edición en curso
     if (!_formDirty) _selectedTipo = school.tipo;
   }
 
+// SchoolSettingsView: REEMPLAZO COMPLETO del método _loadSchoolData
   Future<void> _loadSchoolData() async {
-    if (!mounted) return;
+    if (!mounted || _isLoading) return; // evita reentradas
     setState(() => _isLoading = true);
+
     try {
       final userProvider = _up ?? context.read<UserProvider>();
       final schoolProvider = _sp ?? context.read<SchoolProvider>();
       final l10n = AppLocalizations.of(context);
 
-      // 🚫 sin polling: usa el contrato del UserProvider
+      // Asegura el escuelaId (primer login admin típico)
       String escuelaId;
       try {
-        escuelaId = await userProvider.ensureEscuelaIdOrThrow();
+        // Forzamos para evitar estados parciales la primera vez
+        escuelaId =
+            await userProvider.ensureEscuelaIdOrThrow(forceRefresh: true);
       } catch (_) {
         _showErrorDialog(l10n.error, l10n.noAssociatedSchool);
         return;
       }
 
-      // Carga inicial (sin watcher/polling)
-      final school =
+      // Carga/coalesce: primer intento con forceRefresh
+      Escuela? school =
           await schoolProvider.loadSchool(escuelaId, forceRefresh: true);
 
+      // Si por carrera aún viene null, colgarnos de la future ya en vuelo (sin forzar)
+      if (school == null) {
+        await Future.delayed(const Duration(milliseconds: 150));
+        school =
+            await schoolProvider.loadSchool(escuelaId, forceRefresh: false);
+      }
+
       if (school != null && mounted) {
-        // Este repoblamiento es inicial, no está "sucio"
         _formDirty = false;
         _populateControllers(school);
         setState(() {}); // refresca UI
-      } else if (school == null && userProvider.isAdmin()) {
+        return;
+      }
+
+      // Si sigue null y es admin, prepara la UI básica sin datos
+      if (userProvider.isAdmin()) {
         if (!mounted) return;
         _nombreController.text = '';
         _codigoController.text = '';
@@ -229,33 +249,36 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
         _sitioWebController.text = '';
         _selectedTipo = TipoEscuela.publica;
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                l10n.couldNotGetSchoolInfo,
-                style:
-                    AppTheme.getCaption(MediaQuery.of(context).size).copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              backgroundColor: AppTheme.warningColor,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(
-                  AppTheme.getSmallRadius(MediaQuery.of(context).size),
-                ),
-              ),
-            ),
-          );
-        }
-      } else if (school == null) {
         final msg = (schoolProvider.error?.isNotEmpty ?? false)
             ? '${l10n.errorLoadingSchoolInfo}: ${schoolProvider.error}'
             : l10n.couldNotGetSchoolInfo;
-        _showErrorDialog(l10n.error, msg);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              msg,
+              style: AppTheme.getCaption(MediaQuery.of(context).size).copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            backgroundColor: AppTheme.warningColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(
+                AppTheme.getSmallRadius(MediaQuery.of(context).size),
+              ),
+            ),
+          ),
+        );
+        return;
       }
+
+      // No admin y sigue null → diálogo de error
+      final msg = (schoolProvider.error?.isNotEmpty ?? false)
+          ? '${l10n.errorLoadingSchoolInfo}: ${schoolProvider.error}'
+          : l10n.couldNotGetSchoolInfo;
+      _showErrorDialog(l10n.error, msg);
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context);
@@ -580,8 +603,4 @@ class _SchoolSettingsViewState extends State<SchoolSettingsView>
       ),
     );
   }
-}
-
-extension on PlatformDispatcher {
-  FlutterView? get firstOrNull => views.isNotEmpty ? views.first : null;
 }

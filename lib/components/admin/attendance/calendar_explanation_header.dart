@@ -12,14 +12,16 @@ class CalendarExplanationHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!; // Added non-null assertion
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: AppTheme.accentBlue.withOpacity(0.1),
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+        // ignore: deprecated_member_use
         border: Border.all(color: AppTheme.accentBlue.withOpacity(0.2)),
       ),
       child: Row(

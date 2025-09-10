@@ -144,12 +144,13 @@ class ContactInfoCard extends StatelessWidget {
       context: context,
       barrierLabel: 'Cerrar',
       barrierDismissible: true,
+      // ignore: deprecated_member_use
       barrierColor: Colors.black.withOpacity(0.25),
       transitionDuration: const Duration(milliseconds: 150),
       pageBuilder: (_, __, ___) {
         return Center(
           child: Dialog(
-            elevation: 0, // 🚫 sin sombras
+            elevation: 0,
             backgroundColor: AppTheme.getCardColor(context),
             shape: RoundedRectangleBorder(
               borderRadius:
@@ -298,6 +299,7 @@ class _MinimalContactItem extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           border: Border.all(
+            // ignore: deprecated_member_use
             color: color.withOpacity(0.20),
             width: 1,
           ),

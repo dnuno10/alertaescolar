@@ -19,9 +19,11 @@ class ToleranceSummaryCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: AppTheme.warningColor.withOpacity(0.1),
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+        // ignore: deprecated_member_use
         border: Border.all(color: AppTheme.warningColor.withOpacity(0.3)),
       ),
       child: Row(
@@ -29,6 +31,7 @@ class ToleranceSummaryCard extends StatelessWidget {
           Container(
             padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.8),
             decoration: BoxDecoration(
+              // ignore: deprecated_member_use
               color: AppTheme.warningColor.withOpacity(0.2),
               borderRadius:
                   BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:postgrest/postgrest.dart';
 import '../models/contacto_familiar.dart';
 import '../components/loading_dialog.dart';
 import '../l10n/app_localizations.dart';

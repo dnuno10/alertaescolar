@@ -72,16 +72,22 @@ class AppTheme {
   // ==================================================
   // (DEPRECATED) CONSTANTES DE ESPACIADO/RADIO – SE MANTIENEN
   // ==================================================
+  // ignore: provide_deprecation_message
   @deprecated
   static const double borderRadiusSmall = 12.0;
+  // ignore: provide_deprecation_message
   @deprecated
   static const double borderRadiusMedium = 20.0;
+  // ignore: provide_deprecation_message
   @deprecated
   static const double borderRadiusLarge = 24.0;
+  // ignore: provide_deprecation_message
   @deprecated
   static const double paddingSmall = 12.0;
+  // ignore: provide_deprecation_message
   @deprecated
   static const double paddingMedium = 20.0;
+  // ignore: provide_deprecation_message
   @deprecated
   static const double paddingLarge = 32.0;
 
@@ -199,7 +205,9 @@ class AppTheme {
 
   static Color getOverlayColor(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark
+          // ignore: deprecated_member_use
           ? Colors.black.withOpacity(0.45)
+          // ignore: deprecated_member_use
           : Colors.black.withOpacity(0.08);
 
   static Color getSecondaryBackgroundColor(BuildContext context) =>
@@ -300,30 +308,39 @@ class AppTheme {
       getCaptionSmall(s).copyWith(color: textSecondaryDark);
 
   // (LEGACY) estáticos – se conservan
+  // ignore: provide_deprecation_message
   @deprecated
   static TextStyle get h1 => GoogleFonts.podkova(
       fontSize: 32, fontWeight: FontWeight.bold, color: textPrimaryLight);
+  // ignore: provide_deprecation_message
   @deprecated
   static TextStyle get h2 => GoogleFonts.podkova(
       fontSize: 24, fontWeight: FontWeight.w600, color: textPrimaryLight);
+  // ignore: provide_deprecation_message
   @deprecated
   static TextStyle get bodyLarge => GoogleFonts.poppins(
       fontSize: 18, fontWeight: FontWeight.w400, color: textPrimaryLight);
+  // ignore: provide_deprecation_message
   @deprecated
   static TextStyle get bodyMedium => GoogleFonts.poppins(
       fontSize: 16, fontWeight: FontWeight.w400, color: textPrimaryLight);
+  // ignore: provide_deprecation_message
   @deprecated
   static TextStyle get caption => GoogleFonts.poppins(
       fontSize: 14, fontWeight: FontWeight.w300, color: textSecondaryLight);
+  // ignore: provide_deprecation_message
   @deprecated
   static TextStyle get captionSmall => GoogleFonts.poppins(
       fontSize: 13, fontWeight: FontWeight.w300, color: textSecondaryLight);
+  // ignore: provide_deprecation_message
   @deprecated
   static TextStyle get subtitle1 => GoogleFonts.poppins(
       fontSize: 16, fontWeight: FontWeight.w500, color: textPrimaryLight);
+  // ignore: provide_deprecation_message
   @deprecated
   static TextStyle get subtitle2 => GoogleFonts.poppins(
       fontSize: 14, fontWeight: FontWeight.w500, color: textPrimaryLight);
+  // ignore: provide_deprecation_message
   @deprecated
   static TextStyle get button =>
       GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600);
@@ -362,6 +379,7 @@ class AppTheme {
     colorScheme: ColorScheme.fromSeed(
       seedColor: secondaryColor,
       brightness: Brightness.light,
+      // ignore: deprecated_member_use
       background: backgroundLight,
       surface: surfaceLight,
     ).copyWith(
@@ -553,7 +571,9 @@ class AppTheme {
       backgroundColor: const Color(0xFFF1F2F6),
       deleteIconColor: textSecondaryLight,
       disabledColor: const Color(0xFFE8EAEE),
+      // ignore: deprecated_member_use
       selectedColor: primaryColor.withOpacity(0.10),
+      // ignore: deprecated_member_use
       secondarySelectedColor: secondaryColor.withOpacity(0.14),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
@@ -587,6 +607,7 @@ class AppTheme {
     colorScheme: ColorScheme.fromSeed(
       seedColor: accentBlue, // azul principal del dark
       brightness: Brightness.dark,
+      // ignore: deprecated_member_use
       background: backgroundDark,
       surface: surfaceDark,
     ).copyWith(
@@ -738,7 +759,9 @@ class AppTheme {
       backgroundColor: const Color(0xFF1A233A),
       deleteIconColor: textSecondaryDark,
       disabledColor: const Color(0xFF192236),
+      // ignore: deprecated_member_use
       selectedColor: const Color(0xFF4361EE).withOpacity(0.22),
+      // ignore: deprecated_member_use
       secondarySelectedColor: secondaryColor.withOpacity(0.22),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),

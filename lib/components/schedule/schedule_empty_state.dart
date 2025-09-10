@@ -26,6 +26,7 @@ class ScheduleEmptyState extends StatelessWidget {
               width: screenSize.width * 0.2,
               height: screenSize.width * 0.2,
               decoration: BoxDecoration(
+                // ignore: deprecated_member_use
                 color: AppTheme.accentPurple.withOpacity(0.1),
                 borderRadius:
                     BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),

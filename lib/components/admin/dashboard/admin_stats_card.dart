@@ -237,7 +237,7 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
           ),
 
           if (_isLoading)
-            Container(
+            SizedBox(
               height: widget.screenSize.height * 0.12,
               child: Center(
                 child: Column(
@@ -270,6 +270,7 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
               padding: EdgeInsets.all(
                   AppTheme.getSmallPadding(widget.screenSize) * 1.5),
               decoration: BoxDecoration(
+                // ignore: deprecated_member_use
                 color: Colors.red.withOpacity(0.06),
                 borderRadius: BorderRadius.circular(
                     AppTheme.getSmallRadius(widget.screenSize)),
@@ -370,6 +371,7 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
             width: widget.screenSize.width * 0.11,
             height: widget.screenSize.width * 0.11,
             decoration: BoxDecoration(
+              // ignore: deprecated_member_use
               color: color.withOpacity(0.1),
               borderRadius:
                   BorderRadius.circular(widget.screenSize.width * 0.022),
@@ -428,6 +430,7 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
         horizontal: widget.screenSize.width * 0.02,
       ),
       height: 1,
+      // ignore: deprecated_member_use
       color: AppTheme.getTextSecondaryColor(context).withOpacity(0.08),
     );
   }

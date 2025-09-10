@@ -40,8 +40,6 @@ class LocaleProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final savedLanguage = prefs.getString(_languageKey);
 
-      print('Loading saved language: $savedLanguage');
-
       if (savedLanguage != null && savedLanguage.contains('_')) {
         final parts = savedLanguage.split('_');
         final newLocale = Locale(parts[0], parts[1]);
@@ -50,12 +48,9 @@ class LocaleProvider extends ChangeNotifier {
         if (supportedLocales
             .any((locale) => locale.languageCode == newLocale.languageCode)) {
           _locale = newLocale;
-          print('Language loaded: ${_locale.languageCode}');
         }
       }
-    } catch (e) {
-      print('Error loading saved language: $e');
-      // Mantener el idioma por defecto si hay error
-    }
+      // ignore: empty_catches
+    } catch (e) {}
   }
 }

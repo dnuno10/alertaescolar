@@ -10,8 +10,7 @@ import '../../../app/app_theme.dart';
 import '../../../components/admin/qr_and_notifications/attendance_control_header.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../managers/turno_provider.dart';
-import '../../../managers/turno_provider.dart'
-    as tp; // alias para enums de fase
+
 import '../../../managers/user_provider.dart';
 import '../../../providers/attendance_scanner_provider.dart';
 import '../../../providers/theme_provider.dart';
@@ -177,18 +176,18 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
         return;
       }
 
-      TimeOfDay? _p(dynamic v) => turnoProvider.parseTimeString(v);
+      TimeOfDay? p(dynamic v) => turnoProvider.parseTimeString(v);
       // Orden por hora de inicio
       turnos.sort((a, b) {
-        final ta = _p(a.horaInicio) ?? const TimeOfDay(hour: 0, minute: 0);
-        final tb = _p(b.horaInicio) ?? const TimeOfDay(hour: 0, minute: 0);
+        final ta = p(a.horaInicio) ?? const TimeOfDay(hour: 0, minute: 0);
+        final tb = p(b.horaInicio) ?? const TimeOfDay(hour: 0, minute: 0);
         return (ta.hour * 60 + ta.minute).compareTo(tb.hour * 60 + tb.minute);
       });
 
       // Turno A (primero)
       final tA = turnos.first;
-      final tAStart = _p(tA.horaInicio);
-      final tAEnd = _p(tA.horaFin);
+      final tAStart = p(tA.horaInicio);
+      final tAEnd = p(tA.horaFin);
       if (tAStart != null) _turnoAStart = tAStart;
       if (tAEnd != null) _turnoAEnd = tAEnd;
 
@@ -198,8 +197,8 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
       // Turno B si existe (solo para prellenar UI)
       if (turnos.length >= 2) {
         final tB = turnos[1];
-        final tBStart = _p(tB.horaInicio);
-        final tBEnd = _p(tB.horaFin);
+        final tBStart = p(tB.horaInicio);
+        final tBEnd = p(tB.horaFin);
         _turnoBStart = tBStart ?? _fallbackStartB();
         _turnoBEnd = tBEnd ?? _fallbackEndB();
         if (_toleranceMinutes == 0) {
@@ -233,19 +232,15 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
     }
   }
 
-  // ----------------- Lógica de modo automático (alineado a reglas de turnos) -----------------
   void _updateAutomaticModeFromTurnoProvider() {
     final tpv = Provider.of<TurnoProvider>(context, listen: false);
-    final phase = tpv.resolveAccessPhase(); // usa hora actual
+    final phase = tpv.resolveAccessPhase();
 
-    // Entrada: mientras estamos dentro de un turno (tolerancia solo califica retraso)
-    // Salida: desde hora_fin del turno activo hasta que arranque otro turno.
     setState(() {
       _isDefaultEntryConfig = (phase.type == ScannerAccessType.entry);
     });
   }
 
-  // ----------------- UI -----------------
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -308,7 +303,6 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
           body: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // Header
               SliverToBoxAdapter(
                 child: AttendanceControlHeader(
                   isScanning: scannerProvider.isScanning,
@@ -320,7 +314,6 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
                   onAccessTypeChanged: _handleAccessTypeChange,
                 ),
               ),
-              // Contenido
               SliverToBoxAdapter(
                 child: Padding(
                   padding:
@@ -359,7 +352,6 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
         color: AppTheme.getCardColor(context),
         borderRadius:
             BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
-        // ❌ sin sombras
         border: Border.all(color: AppTheme.getBorderColor(context), width: 1),
       ),
       child: _buildScannerSelection(context, screenSize, l10n),
@@ -399,10 +391,12 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
           Container(
             padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
             decoration: BoxDecoration(
+              // ignore: deprecated_member_use
               color: AppTheme.getTextSecondaryColor(context).withOpacity(0.05),
               borderRadius:
                   BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
               border: Border.all(
+                // ignore: deprecated_member_use
                 color: AppTheme.getTextSecondaryColor(context).withOpacity(0.1),
                 width: 1,
               ),
@@ -465,7 +459,9 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(radiusL),
-          splashColor: color.withOpacity(0.10), // feedback sutil, sin sombra
+          // ignore: deprecated_member_use
+          splashColor: color.withOpacity(0.10),
+          // ignore: deprecated_member_use
           highlightColor: color.withOpacity(0.06),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 140),
@@ -477,7 +473,6 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
             ),
             padding: EdgeInsets.all(padL),
             decoration: BoxDecoration(
-              // ❌ Sin sombras, ❌ sin gradientes
               color: surface,
               borderRadius: BorderRadius.circular(radiusL),
               border: Border.all(color: borderColor, width: 1),
@@ -485,11 +480,9 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Cabecera: icono principal + título 2 líneas + acciones
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Título (2 líneas, no se corta)
                     Expanded(
                       child: Text(
                         title,
@@ -503,10 +496,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
                         ),
                       ),
                     ),
-
                     SizedBox(width: padM),
-
-                    // Acciones compactas: icono secundario + chevron
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
@@ -515,10 +505,13 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
                           height: screenSize.shortestSide * 0.10,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
+                            // ignore: deprecated_member_use
                             color: color.withOpacity(0.10),
                             borderRadius: BorderRadius.circular(padS),
                             border: Border.all(
-                                color: color.withOpacity(0.35), width: 1),
+                                // ignore: deprecated_member_use
+                                color: color.withOpacity(0.35),
+                                width: 1),
                           ),
                           child: Icon(
                             secondaryIcon,
@@ -536,18 +529,17 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
                     ),
                   ],
                 ),
-
                 SizedBox(height: padM),
-
-                // Chip de subtítulo a lo ancho (sin sombra)
                 Container(
                   width: double.infinity,
                   padding:
                       EdgeInsets.symmetric(horizontal: padM, vertical: padS),
                   decoration: BoxDecoration(
+                    // ignore: deprecated_member_use
                     color: color.withOpacity(0.10),
                     borderRadius: BorderRadius.circular(radiusS),
                     border:
+                        // ignore: deprecated_member_use
                         Border.all(color: color.withOpacity(0.35), width: 1),
                   ),
                   child: Text(
@@ -562,10 +554,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
                     ),
                   ),
                 ),
-
                 SizedBox(height: padM),
-
-                // Descripción clara, elástica (anti-overflow)
                 Text(
                   description,
                   style: AppTheme.getBodyMedium(screenSize).copyWith(
@@ -573,10 +562,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
                     height: 1.4,
                   ),
                 ),
-
                 SizedBox(height: padS),
-
-                // CTA visible (parece botón real) alineado a la derecha
                 Align(
                   alignment: Alignment.centerRight,
                   child: ConstrainedBox(
@@ -592,7 +578,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
                           vertical: padS * 0.9,
                         ),
                         decoration: BoxDecoration(
-                          color: color, // botón sólido
+                          color: color,
                           borderRadius: BorderRadius.circular(padS * 1.8),
                           border: Border.all(color: color, width: 1),
                         ),
@@ -630,7 +616,6 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
     );
   }
 
-  // ----------------- Modo/acciones -----------------
   void _handleAccessTypeChange(AccessType newType) {
     setState(() {
       _selectedAccessType = newType;
@@ -659,7 +644,6 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
     CustomSnackBar.show(message: message, isError: false, context: context);
   }
 
-  // ----------------- Navegación -----------------
   void _navigateToCameraScanner() {
     final bool isExtracurricular =
         _selectedAccessType == AccessType.extracurricular_entry ||
@@ -696,9 +680,8 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
     );
   }
 
-  // ----------------- Escaneo (producción, sin mocks) -----------------
   Future<void> _handleScannedCode(String code) async {
-    if (_isProcessingScan) return; // evita doble lectura
+    if (_isProcessingScan) return;
     _isProcessingScan = true;
 
     try {
@@ -714,7 +697,6 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
         return;
       }
 
-      // 1) Resolver escuelaId desde el contexto (UserProvider)
       String? escuelaId;
       try {
         escuelaId = await userProvider.ensureEscuelaIdOrThrow();
@@ -725,6 +707,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
 
       if (escuelaId == null || escuelaId.isEmpty) {
         CustomSnackBar.show(
+          // ignore: use_build_context_synchronously
           context: context,
           message: 'No se pudo determinar la escuela del usuario.',
           isError: true,
@@ -732,22 +715,18 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
         return;
       }
 
-      final accessType =
-          _convertToScannerAccessType(_selectedAccessType); // auto/fijo
+      final accessType = _convertToScannerAccessType(_selectedAccessType);
 
-      // Determinar si es extracurricular
       final bool isExtracurricular =
           _selectedAccessType == AccessType.extracurricular_entry ||
               _selectedAccessType == AccessType.extracurricular_exit;
 
-      // Determinar si es acceso fijo (no automático)
       final bool isFixedAccess =
           _selectedAccessType == AccessType.fixed_entry ||
               _selectedAccessType == AccessType.fixed_exit ||
               _selectedAccessType == AccessType.extracurricular_entry ||
               _selectedAccessType == AccessType.extracurricular_exit;
 
-      // 2) Llamar al servicio
       final result = await _scannerService.processScannedCode(
         escuelaIdFromContext: escuelaId,
         scannedCode: code,
@@ -762,6 +741,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
         final accessMsg =
             (result['access']?['message'] as String?) ?? 'Registro realizado';
         CustomSnackBar.show(
+          // ignore: use_build_context_synchronously
           context: context,
           message: accessMsg,
           isError: false,
@@ -769,10 +749,12 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
       } else {
         final msg = (result['error'] as String?) ??
             'No se pudo registrar la asistencia';
+        // ignore: use_build_context_synchronously
         CustomSnackBar.show(context: context, message: msg, isError: true);
       }
     } catch (e) {
       CustomSnackBar.show(
+        // ignore: use_build_context_synchronously
         context: context,
         message: 'Error al procesar el escaneo: $e',
         isError: true,
@@ -782,7 +764,6 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
     }
   }
 
-  // ----------------- Utilidades -----------------
   ScannerAccessType _convertToScannerAccessType(AccessType accessType) {
     switch (accessType) {
       case AccessType.default_config:
@@ -798,7 +779,6 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
     }
   }
 
-  // Tap protegido por permisos de admin
   void _onConfigurationTapGuarded() {
     final isAdmin = context.read<UserProvider>().isAdmin();
     if (!isAdmin) {
@@ -829,7 +809,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
               _turnoBStart = bStart;
               _turnoBEnd = bEnd;
               _toleranceMinutes = tol;
-              _updateAutomaticModeFromTurnoProvider(); // recalcular con reglas reales
+              _updateAutomaticModeFromTurnoProvider();
             });
           },
         ),

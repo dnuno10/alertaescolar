@@ -111,6 +111,7 @@ class _QRScannerViewState extends State<QRScannerView>
                       // Cerrar
                       Container(
                         decoration: BoxDecoration(
+                          // ignore: deprecated_member_use
                           color: Colors.black.withOpacity(0.5),
                           borderRadius: BorderRadius.circular(
                             AppTheme.getSmallRadius(screenSize),
@@ -132,6 +133,7 @@ class _QRScannerViewState extends State<QRScannerView>
                       // Flash
                       Container(
                         decoration: BoxDecoration(
+                          // ignore: deprecated_member_use
                           color: Colors.black.withOpacity(0.5),
                           borderRadius: BorderRadius.circular(
                             AppTheme.getSmallRadius(screenSize),
@@ -159,6 +161,7 @@ class _QRScannerViewState extends State<QRScannerView>
                     padding:
                         EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
                     decoration: BoxDecoration(
+                      // ignore: deprecated_member_use
                       color: Colors.black.withOpacity(0.7),
                       borderRadius: BorderRadius.circular(
                         AppTheme.getMediumRadius(screenSize),
@@ -187,6 +190,7 @@ class _QRScannerViewState extends State<QRScannerView>
               child: Container(
                 padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
                 decoration: BoxDecoration(
+                  // ignore: deprecated_member_use
                   color: Colors.black.withOpacity(0.7),
                   borderRadius: BorderRadius.only(
                     topLeft:
@@ -210,6 +214,7 @@ class _QRScannerViewState extends State<QRScannerView>
                     Text(
                       l10n.qrScannerInstructions,
                       style: AppTheme.getCaption(screenSize).copyWith(
+                        // ignore: deprecated_member_use
                         color: Colors.white.withOpacity(0.8),
                       ),
                       textAlign: TextAlign.center,

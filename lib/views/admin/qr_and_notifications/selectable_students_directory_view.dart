@@ -6,6 +6,7 @@ import 'package:alertaescolar/managers/student_provider.dart';
 import 'package:alertaescolar/managers/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../app/app_theme.dart';
@@ -94,6 +95,10 @@ class _SelectableStudentsDirectoryViewState
         _updateSuggestionsOverlay();
       }
     }
+  }
+
+  Future<void> _onRefresh() async {
+    await _loadInitialData();
   }
 
   Future<void> _loadInitialData() async {
@@ -247,6 +252,7 @@ class _SelectableStudentsDirectoryViewState
                         separatorBuilder: (_, __) => Divider(
                           height: 1,
                           color:
+                              // ignore: deprecated_member_use
                               AppTheme.getBorderColor(context).withOpacity(0.2),
                         ),
                         itemBuilder: (context, index) {
@@ -320,8 +326,10 @@ class _SelectableStudentsDirectoryViewState
                                     decoration: BoxDecoration(
                                       color: consideredActive
                                           ? AppTheme.successColor
+                                              // ignore: deprecated_member_use
                                               .withOpacity(0.12)
                                           : AppTheme.errorColor
+                                              // ignore: deprecated_member_use
                                               .withOpacity(0.12),
                                       borderRadius: BorderRadius.circular(
                                           AppTheme.getSmallRadius(screenSize)),
@@ -429,374 +437,374 @@ class _SelectableStudentsDirectoryViewState
           resizeToAvoidBottomInset: true,
           body: Stack(
             children: [
-              CustomScrollView(
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  NavHeader(title: l10n.selectStudent),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding:
-                          EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-                      child: Container(
+              LiquidPullToRefresh(
+                onRefresh: _onRefresh,
+                color: AppTheme.accentPurple,
+                backgroundColor: AppTheme.getBackgroundColor(context),
+                height: 120,
+                animSpeedFactor: 9.0,
+                showChildOpacityTransition: false,
+                child: CustomScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    NavHeader(title: l10n.selectStudent),
+                    SliverToBoxAdapter(
+                      child: Padding(
                         padding: EdgeInsets.all(
                             AppTheme.getMediumPadding(screenSize)),
-                        decoration: BoxDecoration(
-                          color: AppTheme.getCardColor(context),
-                          borderRadius: BorderRadius.circular(
-                              AppTheme.getLargeRadius(screenSize)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppTheme.getShadowColor(context)
-                                  .withOpacity(0.1),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Header + Clear
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.person_search_rounded,
-                                  color: AppTheme.accentBlue,
-                                  size: screenSize.width * 0.06,
-                                ),
-                                SizedBox(
-                                    width:
-                                        AppTheme.getMediumPadding(screenSize)),
-                                Expanded(
-                                  child: Text(
-                                    'Seleccionar Estudiante',
-                                    style: AppTheme.getH2(screenSize).copyWith(
-                                      color:
-                                          AppTheme.getTextPrimaryColor(context),
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    HapticFeedback.mediumImpact();
-                                    setState(() {
-                                      _selectedGrupoNombre = 'all';
-                                      _selectedNivelEducativo = 'all';
-                                      _selectedEstado = 'all';
-                                      _selectedTurnoNombre = 'all';
-                                      _searchController.clear();
-                                    });
-                                    _filterStudents();
-                                    _removeSuggestionsOverlay();
-                                  },
-                                  child: Text(
-                                    l10n.clear,
-                                    style: AppTheme.getCaption(screenSize)
-                                        .copyWith(
-                                      color: AppTheme.accentBlue,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(
-                                height: AppTheme.getMediumPadding(screenSize)),
-
-                            // SEARCH (anclado y medible)
-                            CompositedTransformTarget(
-                              link: _searchFieldLink,
-                              child: Container(
-                                key: _searchFieldKey,
-                                child: CustomInputField(
-                                  controller: _searchController,
-                                  label: l10n.searchByName,
-                                  icon: Icons.search_rounded,
-                                  screenSize: screenSize,
-                                  keyboardType: TextInputType.text,
-                                  focusNode: _searchFocusNode,
-                                  onSubmitted: (_) =>
-                                      _removeSuggestionsOverlay(),
-                                ),
-                              ),
-                            ),
-
-                            SizedBox(
-                                height: AppTheme.getMediumPadding(screenSize)),
-
-                            // Filtros dinámicos desde BD (ModernDropdown ya es exclusivo globalmente)
-                            Row(
-                              children: [
-                                // Nivel educativo
-                                Expanded(
-                                  child: ModernDropdown<String>(
-                                    label: 'Nivel Educativo',
-                                    value: _selectedNivelEducativo,
-                                    items: availableNiveles,
-                                    onChanged: (String? value) {
-                                      HapticFeedback.mediumImpact();
-                                      setState(() {
-                                        _selectedNivelEducativo =
-                                            value ?? 'all';
-                                        _selectedGrupoNombre =
-                                            'all'; // reset grupo
-                                      });
-                                      _filterStudents();
-                                      _updateSuggestionsOverlay();
-                                    },
-                                    getLabel: (String value) =>
-                                        value == 'all' ? l10n.all : value,
-                                    screenSize: screenSize,
-                                  ),
-                                ),
-                                SizedBox(
-                                    width:
-                                        AppTheme.getMediumPadding(screenSize)),
-                                // Grupo
-                                Expanded(
-                                  child: ModernDropdown<String>(
-                                    label: l10n.group,
-                                    value: _selectedGrupoNombre,
-                                    items: availableGroups,
-                                    onChanged: (String? value) {
-                                      HapticFeedback.mediumImpact();
-                                      setState(() {
-                                        _selectedGrupoNombre = value ?? 'all';
-                                      });
-                                      _filterStudents();
-                                      _updateSuggestionsOverlay();
-                                    },
-                                    getLabel: (String value) =>
-                                        value == 'all' ? l10n.all : value,
-                                    screenSize: screenSize,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(
-                                height: AppTheme.getSmallPadding(screenSize)),
-                            Row(
-                              children: [
-                                // Estado
-                                Expanded(
-                                  child: ModernDropdown<String>(
-                                    label: l10n.status,
-                                    value: _selectedEstado,
-                                    items: const ['all', 'active', 'inactive'],
-                                    onChanged: (String? value) {
-                                      HapticFeedback.mediumImpact();
-                                      setState(() {
-                                        _selectedEstado = value ?? 'all';
-                                      });
-                                      _filterStudents();
-                                      _updateSuggestionsOverlay();
-                                    },
-                                    getLabel: (String value) {
-                                      switch (value) {
-                                        case 'all':
-                                          return l10n.all;
-                                        case 'active':
-                                          return l10n.active;
-                                        case 'inactive':
-                                          return l10n.inactive;
-                                        default:
-                                          return value;
-                                      }
-                                    },
-                                    screenSize: screenSize,
-                                  ),
-                                ),
-                                SizedBox(
-                                    width:
-                                        AppTheme.getMediumPadding(screenSize)),
-                                // Turno
-                                Expanded(
-                                  child: ModernDropdown<String>(
-                                    label: 'Turno',
-                                    value: _selectedTurnoNombre,
-                                    items: availableTurnos,
-                                    onChanged: (String? value) {
-                                      HapticFeedback.mediumImpact();
-                                      setState(() {
-                                        _selectedTurnoNombre = value ?? 'all';
-                                      });
-                                      _filterStudents();
-                                      _updateSuggestionsOverlay();
-                                    },
-                                    getLabel: (String value) =>
-                                        value == 'all' ? l10n.all : value,
-                                    screenSize: screenSize,
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            if (studentProvider.students.isNotEmpty) ...[
-                              SizedBox(
-                                  height:
-                                      AppTheme.getMediumPadding(screenSize)),
-                              Container(
-                                padding: EdgeInsets.all(
-                                    AppTheme.getSmallPadding(screenSize)),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.accentBlue.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(
-                                      AppTheme.getSmallRadius(screenSize)),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.info_outline_rounded,
-                                      color: AppTheme.accentBlue,
-                                      size: screenSize.height * 0.02,
-                                    ),
-                                    SizedBox(
-                                        width: AppTheme.getSmallPadding(
-                                            screenSize)),
-                                    Expanded(
-                                      child: Text(
-                                        'Mostrando ${filteredStudents.length} de ${studentProvider.students.length} estudiantes',
-                                        style:
-                                            AppTheme.getCaptionSmall(screenSize)
-                                                .copyWith(
-                                          color: AppTheme.accentBlue,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                        child: Container(
+                          padding: EdgeInsets.all(
+                              AppTheme.getMediumPadding(screenSize)),
+                          decoration: BoxDecoration(
+                            color: AppTheme.getCardColor(context),
+                            borderRadius: BorderRadius.circular(
+                                AppTheme.getLargeRadius(screenSize)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.getShadowColor(context)
+                                    // ignore: deprecated_member_use
+                                    .withOpacity(0.1),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
                               ),
                             ],
-
-                            if (filteredStudents.isNotEmpty) ...[
-                              SizedBox(
-                                  height: AppTheme.getLargePadding(screenSize)),
-                              Text(
-                                'Estudiantes Disponibles',
-                                style:
-                                    AppTheme.getSubtitle1(screenSize).copyWith(
-                                  color: AppTheme.getTextPrimaryColor(context),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Header + Clear
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.person_search_rounded,
+                                    color: AppTheme.accentBlue,
+                                    size: screenSize.width * 0.06,
+                                  ),
+                                  SizedBox(
+                                      width: AppTheme.getMediumPadding(
+                                          screenSize)),
+                                  Expanded(
+                                    child: Text(
+                                      'Seleccionar Estudiante',
+                                      style:
+                                          AppTheme.getH2(screenSize).copyWith(
+                                        color: AppTheme.getTextPrimaryColor(
+                                            context),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      HapticFeedback.mediumImpact();
+                                      setState(() {
+                                        _selectedGrupoNombre = 'all';
+                                        _selectedNivelEducativo = 'all';
+                                        _selectedEstado = 'all';
+                                        _selectedTurnoNombre = 'all';
+                                        _searchController.clear();
+                                      });
+                                      _filterStudents();
+                                      _removeSuggestionsOverlay();
+                                    },
+                                    child: Text(
+                                      l10n.clear,
+                                      style: AppTheme.getCaption(screenSize)
+                                          .copyWith(
+                                        color: AppTheme.accentBlue,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                               SizedBox(
                                   height:
                                       AppTheme.getMediumPadding(screenSize)),
-                              ...filteredStudents.map((student) {
-                                // === ACTIVO correcto: vínculo + ventana de vigencia ===
-                                final now = DateTime.now();
-                                final start = student.fechaRegistroLlave ??
-                                    student.fechaRegistro;
-                                final end = student.fechaDesactivacionLlave;
-                                final dentroVentana = !now.isBefore(start) &&
-                                    (end == null || !now.isAfter(end));
-                                final consideredActive =
-                                    (student.hasTutores && dentroVentana);
 
-                                final statusColor = consideredActive
-                                    ? AppTheme.successColor
-                                    : AppTheme.errorColor;
-                                final statusIcon = consideredActive
-                                    ? Icons.verified_rounded
-                                    : Icons.block_rounded;
+                              // SEARCH (anclado y medible)
+                              CompositedTransformTarget(
+                                link: _searchFieldLink,
+                                child: Container(
+                                  key: _searchFieldKey,
+                                  child: CustomInputField(
+                                    controller: _searchController,
+                                    label: l10n.searchByName,
+                                    icon: Icons.search_rounded,
+                                    screenSize: screenSize,
+                                    keyboardType: TextInputType.text,
+                                    focusNode: _searchFocusNode,
+                                    onSubmitted: (_) =>
+                                        _removeSuggestionsOverlay(),
+                                  ),
+                                ),
+                              ),
 
-                                return Container(
-                                  margin: EdgeInsets.only(
-                                      bottom:
-                                          AppTheme.getSmallPadding(screenSize)),
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      borderRadius: BorderRadius.circular(
-                                          AppTheme.getMediumRadius(screenSize)),
-                                      onTap: () {
+                              SizedBox(
+                                  height:
+                                      AppTheme.getMediumPadding(screenSize)),
+
+                              // Filtros dinámicos desde BD (ModernDropdown ya es exclusivo globalmente)
+                              Row(
+                                children: [
+                                  // Nivel educativo
+                                  Expanded(
+                                    child: ModernDropdown<String>(
+                                      label: 'Nivel Educativo',
+                                      value: _selectedNivelEducativo,
+                                      items: availableNiveles,
+                                      onChanged: (String? value) {
                                         HapticFeedback.mediumImpact();
-                                        _selectStudent(student);
+                                        setState(() {
+                                          _selectedNivelEducativo =
+                                              value ?? 'all';
+                                          _selectedGrupoNombre =
+                                              'all'; // reset grupo
+                                        });
+                                        _filterStudents();
+                                        _updateSuggestionsOverlay();
                                       },
-                                      child: Container(
-                                        // Más compacto: padding vertical reducido y sin avatar
-                                        padding: EdgeInsets.symmetric(
-                                          vertical: AppTheme.getSmallPadding(
-                                                  screenSize) *
-                                              0.8,
-                                          horizontal: AppTheme.getMediumPadding(
-                                              screenSize),
-                                        ),
-                                        decoration: BoxDecoration(
-                                          border: Border.all(
-                                            color:
-                                                AppTheme.getBorderColor(context)
-                                                    .withOpacity(0.3),
-                                            width: 1,
+                                      getLabel: (String value) =>
+                                          value == 'all' ? l10n.all : value,
+                                      screenSize: screenSize,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                      width: AppTheme.getMediumPadding(
+                                          screenSize)),
+                                  // Grupo
+                                  Expanded(
+                                    child: ModernDropdown<String>(
+                                      label: l10n.group,
+                                      value: _selectedGrupoNombre,
+                                      items: availableGroups,
+                                      onChanged: (String? value) {
+                                        HapticFeedback.mediumImpact();
+                                        setState(() {
+                                          _selectedGrupoNombre = value ?? 'all';
+                                        });
+                                        _filterStudents();
+                                        _updateSuggestionsOverlay();
+                                      },
+                                      getLabel: (String value) =>
+                                          value == 'all' ? l10n.all : value,
+                                      screenSize: screenSize,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(
+                                  height: AppTheme.getSmallPadding(screenSize)),
+                              Row(
+                                children: [
+                                  // Estado
+                                  Expanded(
+                                    child: ModernDropdown<String>(
+                                      label: l10n.status,
+                                      value: _selectedEstado,
+                                      items: const [
+                                        'all',
+                                        'active',
+                                        'inactive'
+                                      ],
+                                      onChanged: (String? value) {
+                                        HapticFeedback.mediumImpact();
+                                        setState(() {
+                                          _selectedEstado = value ?? 'all';
+                                        });
+                                        _filterStudents();
+                                        _updateSuggestionsOverlay();
+                                      },
+                                      getLabel: (String value) {
+                                        switch (value) {
+                                          case 'all':
+                                            return l10n.all;
+                                          case 'active':
+                                            return l10n.active;
+                                          case 'inactive':
+                                            return l10n.inactive;
+                                          default:
+                                            return value;
+                                        }
+                                      },
+                                      screenSize: screenSize,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                      width: AppTheme.getMediumPadding(
+                                          screenSize)),
+                                  // Turno
+                                  Expanded(
+                                    child: ModernDropdown<String>(
+                                      label: 'Turno',
+                                      value: _selectedTurnoNombre,
+                                      items: availableTurnos,
+                                      onChanged: (String? value) {
+                                        HapticFeedback.mediumImpact();
+                                        setState(() {
+                                          _selectedTurnoNombre = value ?? 'all';
+                                        });
+                                        _filterStudents();
+                                        _updateSuggestionsOverlay();
+                                      },
+                                      getLabel: (String value) =>
+                                          value == 'all' ? l10n.all : value,
+                                      screenSize: screenSize,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              if (studentProvider.students.isNotEmpty) ...[
+                                SizedBox(
+                                    height:
+                                        AppTheme.getMediumPadding(screenSize)),
+                                Container(
+                                  padding: EdgeInsets.all(
+                                      AppTheme.getSmallPadding(screenSize)),
+                                  decoration: BoxDecoration(
+                                    // ignore: deprecated_member_use
+                                    color: AppTheme.accentBlue.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(
+                                        AppTheme.getSmallRadius(screenSize)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.info_outline_rounded,
+                                        color: AppTheme.accentBlue,
+                                        size: screenSize.height * 0.02,
+                                      ),
+                                      SizedBox(
+                                          width: AppTheme.getSmallPadding(
+                                              screenSize)),
+                                      Expanded(
+                                        child: Text(
+                                          'Mostrando ${filteredStudents.length} de ${studentProvider.students.length} estudiantes',
+                                          style: AppTheme.getCaptionSmall(
+                                                  screenSize)
+                                              .copyWith(
+                                            color: AppTheme.accentBlue,
+                                            fontWeight: FontWeight.w600,
                                           ),
-                                          color: AppTheme.getBackgroundColor(
-                                              context),
-                                          borderRadius: BorderRadius.circular(
-                                              AppTheme.getMediumRadius(
-                                                  screenSize)),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                        child: Row(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.center,
-                                          children: [
-                                            // Info (compacta con elipsis) + MATRÍCULA (nuevo)
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    student.nombre,
-                                                    style:
-                                                        AppTheme.getBodyMedium(
-                                                                screenSize)
-                                                            .copyWith(
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color: AppTheme
-                                                          .getTextPrimaryColor(
-                                                              context),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+
+                              if (filteredStudents.isNotEmpty) ...[
+                                SizedBox(
+                                    height:
+                                        AppTheme.getLargePadding(screenSize)),
+                                Text(
+                                  'Estudiantes Disponibles',
+                                  style: AppTheme.getSubtitle1(screenSize)
+                                      .copyWith(
+                                    color:
+                                        AppTheme.getTextPrimaryColor(context),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                SizedBox(
+                                    height:
+                                        AppTheme.getMediumPadding(screenSize)),
+                                ...filteredStudents.map((student) {
+                                  // === ACTIVO correcto: vínculo + ventana de vigencia ===
+                                  final now = DateTime.now();
+                                  final start = student.fechaRegistroLlave ??
+                                      student.fechaRegistro;
+                                  final end = student.fechaDesactivacionLlave;
+                                  final dentroVentana = !now.isBefore(start) &&
+                                      (end == null || !now.isAfter(end));
+                                  final consideredActive =
+                                      (student.hasTutores && dentroVentana);
+
+                                  final statusColor = consideredActive
+                                      ? AppTheme.successColor
+                                      : AppTheme.errorColor;
+                                  final statusIcon = consideredActive
+                                      ? Icons.verified_rounded
+                                      : Icons.block_rounded;
+
+                                  return Container(
+                                    margin: EdgeInsets.only(
+                                        bottom: AppTheme.getSmallPadding(
+                                            screenSize)),
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(
+                                            AppTheme.getMediumRadius(
+                                                screenSize)),
+                                        onTap: () {
+                                          HapticFeedback.mediumImpact();
+                                          _selectStudent(student);
+                                        },
+                                        child: Container(
+                                          // Más compacto: padding vertical reducido y sin avatar
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: AppTheme.getSmallPadding(
+                                                    screenSize) *
+                                                0.8,
+                                            horizontal:
+                                                AppTheme.getMediumPadding(
+                                                    screenSize),
+                                          ),
+                                          decoration: BoxDecoration(
+                                            border: Border.all(
+                                              color: AppTheme.getBorderColor(
+                                                      context)
+                                                  // ignore: deprecated_member_use
+                                                  .withOpacity(0.3),
+                                              width: 1,
+                                            ),
+                                            color: AppTheme.getBackgroundColor(
+                                                context),
+                                            borderRadius: BorderRadius.circular(
+                                                AppTheme.getMediumRadius(
+                                                    screenSize)),
+                                          ),
+                                          child: Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
+                                            children: [
+                                              // Info (compacta con elipsis) + MATRÍCULA (nuevo)
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      student.nombre,
+                                                      style: AppTheme
+                                                              .getBodyMedium(
+                                                                  screenSize)
+                                                          .copyWith(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: AppTheme
+                                                            .getTextPrimaryColor(
+                                                                context),
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
                                                     ),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                  SizedBox(
-                                                      height: AppTheme
-                                                              .getSmallPadding(
-                                                                  screenSize) *
-                                                          0.25),
-                                                  Text(
-                                                    '${student.nivelEducativo} - ${student.grupo}',
-                                                    style: AppTheme
-                                                            .getCaptionSmall(
-                                                                screenSize)
-                                                        .copyWith(
-                                                      color: AppTheme
-                                                          .getTextSecondaryColor(
-                                                              context),
-                                                    ),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                  if (student.matricula
-                                                      .isNotEmpty) ...[
                                                     SizedBox(
                                                         height: AppTheme
                                                                 .getSmallPadding(
                                                                     screenSize) *
-                                                            0.2),
+                                                            0.25),
                                                     Text(
-                                                      'Matrícula: ${student.matricula}',
+                                                      '${student.nivelEducativo} - ${student.grupo}',
                                                       style: AppTheme
                                                               .getCaptionSmall(
                                                                   screenSize)
@@ -809,132 +817,161 @@ class _SelectableStudentsDirectoryViewState
                                                       overflow:
                                                           TextOverflow.ellipsis,
                                                     ),
-                                                  ],
-                                                ],
-                                              ),
-                                            ),
-
-                                            SizedBox(
-                                                width: AppTheme.getSmallPadding(
-                                                    screenSize)),
-
-                                            // Estado (chip con ícono dentro) + chevron pequeño
-                                            Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Container(
-                                                  padding: EdgeInsets.symmetric(
-                                                    horizontal: AppTheme
-                                                            .getSmallPadding(
-                                                                screenSize) *
-                                                        0.8,
-                                                    vertical: AppTheme
-                                                            .getSmallPadding(
-                                                                screenSize) *
-                                                        0.4,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: statusColor
-                                                        .withOpacity(0.1),
-                                                    borderRadius: BorderRadius
-                                                        .circular(AppTheme
-                                                            .getSmallRadius(
-                                                                screenSize)),
-                                                    border: Border.all(
-                                                      color: statusColor
-                                                          .withOpacity(0.25),
-                                                      width: 1,
-                                                    ),
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      Icon(
-                                                        statusIcon,
-                                                        color: statusColor,
-                                                        size:
-                                                            screenSize.height *
-                                                                0.018,
-                                                      ),
-                                                      const SizedBox(width: 6),
+                                                    if (student.matricula
+                                                        .isNotEmpty) ...[
+                                                      SizedBox(
+                                                          height: AppTheme
+                                                                  .getSmallPadding(
+                                                                      screenSize) *
+                                                              0.2),
                                                       Text(
-                                                        consideredActive
-                                                            ? l10n.active
-                                                            : l10n.inactive,
+                                                        'Matrícula: ${student.matricula}',
                                                         style: AppTheme
                                                                 .getCaptionSmall(
                                                                     screenSize)
                                                             .copyWith(
-                                                          color: statusColor,
-                                                          fontWeight:
-                                                              FontWeight.w600,
+                                                          color: AppTheme
+                                                              .getTextSecondaryColor(
+                                                                  context),
                                                         ),
                                                         maxLines: 1,
                                                         overflow: TextOverflow
                                                             .ellipsis,
                                                       ),
                                                     ],
+                                                  ],
+                                                ),
+                                              ),
+
+                                              SizedBox(
+                                                  width:
+                                                      AppTheme.getSmallPadding(
+                                                          screenSize)),
+
+                                              // Estado (chip con ícono dentro) + chevron pequeño
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Container(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                      horizontal: AppTheme
+                                                              .getSmallPadding(
+                                                                  screenSize) *
+                                                          0.8,
+                                                      vertical: AppTheme
+                                                              .getSmallPadding(
+                                                                  screenSize) *
+                                                          0.4,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: statusColor
+                                                          // ignore: deprecated_member_use
+                                                          .withOpacity(0.1),
+                                                      borderRadius: BorderRadius
+                                                          .circular(AppTheme
+                                                              .getSmallRadius(
+                                                                  screenSize)),
+                                                      border: Border.all(
+                                                        color: statusColor
+                                                            // ignore: deprecated_member_use
+                                                            .withOpacity(0.25),
+                                                        width: 1,
+                                                      ),
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        Icon(
+                                                          statusIcon,
+                                                          color: statusColor,
+                                                          size: screenSize
+                                                                  .height *
+                                                              0.018,
+                                                        ),
+                                                        const SizedBox(
+                                                            width: 6),
+                                                        Text(
+                                                          consideredActive
+                                                              ? l10n.active
+                                                              : l10n.inactive,
+                                                          style: AppTheme
+                                                                  .getCaptionSmall(
+                                                                      screenSize)
+                                                              .copyWith(
+                                                            color: statusColor,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          ),
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                        ),
+                                                      ],
+                                                    ),
                                                   ),
-                                                ),
-                                                SizedBox(
-                                                    width: AppTheme
-                                                            .getSmallPadding(
-                                                                screenSize) *
-                                                        0.5),
-                                                Icon(
-                                                  Icons.chevron_right_rounded,
-                                                  color: AppTheme
-                                                      .getTextSecondaryColor(
-                                                          context),
-                                                  size:
-                                                      screenSize.height * 0.022,
-                                                ),
-                                              ],
-                                            ),
-                                          ],
+                                                  SizedBox(
+                                                      width: AppTheme
+                                                              .getSmallPadding(
+                                                                  screenSize) *
+                                                          0.5),
+                                                  Icon(
+                                                    Icons.chevron_right_rounded,
+                                                    color: AppTheme
+                                                        .getTextSecondaryColor(
+                                                            context),
+                                                    size: screenSize.height *
+                                                        0.022,
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                );
-                              }),
-                            ] else ...[
-                              SizedBox(
-                                  height: AppTheme.getLargePadding(screenSize)),
-                              Center(
-                                child: Column(
-                                  children: [
-                                    Icon(
-                                      Icons.person_search_rounded,
-                                      size: screenSize.height * 0.08,
-                                      color: AppTheme.getTextSecondaryColor(
-                                          context),
-                                    ),
-                                    SizedBox(
-                                        height: AppTheme.getMediumPadding(
-                                            screenSize)),
-                                    Text(
-                                      'No se encontraron estudiantes',
-                                      style: AppTheme.getBodyMedium(screenSize)
-                                          .copyWith(
+                                  );
+                                }),
+                              ] else ...[
+                                SizedBox(
+                                    height:
+                                        AppTheme.getLargePadding(screenSize)),
+                                Center(
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.person_search_rounded,
+                                        size: screenSize.height * 0.08,
                                         color: AppTheme.getTextSecondaryColor(
                                             context),
                                       ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ],
+                                      SizedBox(
+                                          height: AppTheme.getMediumPadding(
+                                              screenSize)),
+                                      Text(
+                                        'No se encontraron estudiantes',
+                                        style:
+                                            AppTheme.getBodyMedium(screenSize)
+                                                .copyWith(
+                                          color: AppTheme.getTextSecondaryColor(
+                                              context),
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox.shrink(),
             ],

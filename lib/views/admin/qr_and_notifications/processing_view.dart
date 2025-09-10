@@ -9,7 +9,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../app/app_theme.dart';
 import '../../../services/scanner_service.dart';
-import '../../../l10n/app_localizations.dart';
 import '../../../managers/turno_provider.dart';
 
 enum ProcessingDisplayMode { full, headless }
@@ -75,7 +74,6 @@ class _ProcessingViewState extends State<ProcessingView>
   late final AnimationController _resultAnimationController;
   late final AnimationController _slideInAnimationController;
   late final Animation<double> _processingRotationAnimation;
-  late final Animation<double> _resultScaleAnimation;
   late final Animation<Offset> _slideInAnimation;
 
   @override
@@ -99,11 +97,6 @@ class _ProcessingViewState extends State<ProcessingView>
     _processingRotationAnimation = Tween<double>(begin: 0.0, end: 2.0).animate(
       CurvedAnimation(
           parent: _processingAnimationController, curve: Curves.linear),
-    );
-
-    _resultScaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(
-          parent: _resultAnimationController, curve: Curves.easeOutCubic),
     );
 
     _slideInAnimation = Tween<Offset>(
@@ -273,9 +266,7 @@ class _ProcessingViewState extends State<ProcessingView>
         }
       }
 
-      final outcome = ProcessingOutcome(
-          success: false,
-          message: clean ?? AppLocalizations.of(context).errorProcessingCode);
+      final outcome = ProcessingOutcome(success: false, message: clean);
 
       if (widget.displayMode == ProcessingDisplayMode.headless) {
         _return(outcome);
@@ -422,11 +413,14 @@ class _ProcessingViewState extends State<ProcessingView>
             padding: EdgeInsets.symmetric(horizontal: padL),
             child: DecoratedBox(
               decoration: BoxDecoration(
+                // ignore: deprecated_member_use
                 color: AppTheme.accentOrange.withOpacity(0.08),
                 borderRadius:
                     BorderRadius.circular(AppTheme.getLargeRadius(size)),
                 border: Border.all(
-                    color: AppTheme.accentOrange.withOpacity(0.36), width: 1),
+                    // ignore: deprecated_member_use
+                    color: AppTheme.accentOrange.withOpacity(0.36),
+                    width: 1),
               ),
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: padL, vertical: padM),
@@ -436,6 +430,7 @@ class _ProcessingViewState extends State<ProcessingView>
                     Text(
                       'Código escaneado',
                       style: AppTheme.getCaption(size).copyWith(
+                        // ignore: deprecated_member_use
                         color: AppTheme.accentOrange.withOpacity(0.8),
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.6,
@@ -790,6 +785,7 @@ class _InfoPill extends StatelessWidget {
     final padS = AppTheme.getSmallPadding(size);
     return DecoratedBox(
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: Theme.of(context).cardColor.withOpacity(0.6),
         borderRadius: BorderRadius.circular(AppTheme.getLargeRadius(size)),
         border: Border.all(color: AppTheme.getBorderColor(context)),
@@ -870,6 +866,7 @@ class _RingPainter extends CustomPainter {
         size.width - strokeWidth, size.height - strokeWidth);
 
     final base = Paint()
+      // ignore: deprecated_member_use
       ..color = color.withOpacity(0.18)
       ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke

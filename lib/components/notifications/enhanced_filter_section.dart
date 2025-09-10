@@ -20,6 +20,7 @@ class EnhancedFilterSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final filters = ['access_alerts', 'communications', 'all'];
+    final rad = AppTheme.getMediumRadius(screenSize);
 
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -33,46 +34,44 @@ class EnhancedFilterSection extends StatelessWidget {
             l10n.categories,
             style: AppTheme.getSubtitle1(screenSize).copyWith(
               color: AppTheme.getTextPrimaryColor(context),
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.1,
+              fontWeight: FontWeight.w700,
             ),
           ),
           SizedBox(height: AppTheme.getSmallPadding(screenSize)),
           Container(
-            height: screenSize.height * 0.065,
+            height: screenSize.height * 0.06,
             decoration: BoxDecoration(
               color: AppTheme.getCardColor(context),
-              borderRadius: BorderRadius.circular(
-                AppTheme.getMediumRadius(screenSize),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.getShadowColor(context),
-                  blurRadius: screenSize.height * 0.01,
-                  offset: Offset(0, screenSize.height * 0.0025),
-                ),
-              ],
+              borderRadius: BorderRadius.circular(rad),
+              border:
+                  Border.all(color: AppTheme.getBorderColor(context), width: 1),
             ),
             child: TabBar(
               controller: tabController,
+              onTap: (i) => onFilterChanged(filters[i]),
+              labelPadding: EdgeInsets.symmetric(
+                horizontal: AppTheme.getSmallPadding(screenSize),
+              ),
+              indicator: BoxDecoration(
+                // ignore: deprecated_member_use
+                color: AppTheme.accentPurple.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(rad - 4),
+                border: Border.all(
+                  // ignore: deprecated_member_use
+                  color: AppTheme.accentPurple.withOpacity(0.35),
+                  width: 1,
+                ),
+              ),
+              indicatorSize: TabBarIndicatorSize.tab,
               labelColor: AppTheme.accentPurple,
               unselectedLabelColor: AppTheme.getTextSecondaryColor(context),
-              indicatorColor: AppTheme.accentPurple,
-              indicatorWeight: 3,
-              indicatorSize: TabBarIndicatorSize.label,
+              dividerColor: Colors.transparent,
               labelStyle: AppTheme.getSubtitle2(screenSize).copyWith(
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.1,
+                fontWeight: FontWeight.w700,
               ),
               unselectedLabelStyle: AppTheme.getSubtitle2(screenSize).copyWith(
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0.1,
+                fontWeight: FontWeight.w600,
               ),
-              dividerColor: Colors.transparent,
-              padding: EdgeInsets.symmetric(
-                horizontal: AppTheme.getSmallPadding(screenSize) * 0.5,
-              ),
-              onTap: (index) => onFilterChanged(filters[index]),
               tabs: [
                 Tab(text: l10n.accessAlerts),
                 Tab(text: l10n.announcements),

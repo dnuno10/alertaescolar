@@ -96,7 +96,7 @@ class _StudentFamilyInfoCardState extends State<StudentFamilyInfoCard> {
       final sa = (a['fecha_registro'] ?? '')?.toString();
       final sb = (b['fecha_registro'] ?? '')?.toString();
       if (sa!.isEmpty && sb!.isEmpty) return 0;
-      if (sa!.isEmpty) return 1; // nulls last
+      if (sa.isEmpty) return 1; // nulls last
       if (sb!.isEmpty) return -1;
       return sa.compareTo(sb);
     });
@@ -167,6 +167,7 @@ class _StudentFamilyInfoCardState extends State<StudentFamilyInfoCard> {
                 padding: EdgeInsets.all(
                     AppTheme.getSmallPadding(widget.screenSize) * 0.5),
                 decoration: BoxDecoration(
+                  // ignore: deprecated_member_use
                   color: AppTheme.accentPurple.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(
                       AppTheme.getSmallRadius(widget.screenSize)),
@@ -194,6 +195,7 @@ class _StudentFamilyInfoCardState extends State<StudentFamilyInfoCard> {
                   vertical: AppTheme.getSmallPadding(widget.screenSize) * 0.5,
                 ),
                 decoration: BoxDecoration(
+                  // ignore: deprecated_member_use
                   color: AppTheme.accentPurple.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(
                       AppTheme.getSmallRadius(widget.screenSize) * 0.5),
@@ -324,6 +326,7 @@ class _FamilyMemberItem extends StatelessWidget {
               vertical: AppTheme.getSmallPadding(screenSize) * 0.25,
             ),
             decoration: BoxDecoration(
+              // ignore: deprecated_member_use
               color: AppTheme.accentBlue.withOpacity(0.1),
               borderRadius: BorderRadius.circular(
                   AppTheme.getSmallRadius(screenSize) * 0.5),

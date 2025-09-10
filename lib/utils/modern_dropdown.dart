@@ -118,7 +118,9 @@ class _ModernDropdownState<T> extends State<ModernDropdown<T>>
                   borderRadius: BorderRadius.circular(
                       AppTheme.getSmallRadius(widget.screenSize)),
                   border: Border.all(
-                      color: AppTheme.accentPurple.withOpacity(0.25), width: 1),
+                      // ignore: deprecated_member_use
+                      color: AppTheme.accentPurple.withOpacity(0.25),
+                      width: 1),
                 ),
                 child: ListView(
                   padding: EdgeInsets.zero,
@@ -139,6 +141,7 @@ class _ModernDropdownState<T> extends State<ModernDropdown<T>>
                         ),
                         decoration: BoxDecoration(
                           color: isSelected
+                              // ignore: deprecated_member_use
                               ? AppTheme.accentPurple.withOpacity(0.25)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(
@@ -217,6 +220,7 @@ class _ModernDropdownState<T> extends State<ModernDropdown<T>>
                 border: Border.all(
                   color: _isDropdownOpen
                       ? AppTheme.accentPurple
+                      // ignore: deprecated_member_use
                       : AppTheme.accentPurple.withOpacity(0.25),
                   width: 1.2,
                 ),

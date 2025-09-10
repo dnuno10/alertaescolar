@@ -1,5 +1,6 @@
 // lib/views/students/student_detail_view.dart
 import 'package:flutter/material.dart';
+import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:provider/provider.dart';
 
 import 'package:alertaescolar/app/app_theme.dart';
@@ -145,16 +146,26 @@ class _StudentDetailViewState extends State<StudentDetailView> {
 
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
-      body: CustomScrollView(
-        slivers: [
-          NavHeader(title: widget.student.nombre),
-          SliverToBoxAdapter(
-            child: _isLoading
-                ? const SizedBox
-                    .shrink() // mientras se muestra el LoadingDialog
-                : _buildContent(context, l10n, screenSize, escuela),
+      body: LiquidPullToRefresh(
+        color: AppTheme.accentPurple,
+        backgroundColor: AppTheme.getBackgroundColor(context),
+        height: 120,
+        animSpeedFactor: 9.0,
+        showChildOpacityTransition: false,
+        onRefresh: _onPullToRefresh,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
           ),
-        ],
+          slivers: [
+            NavHeader(title: widget.student.nombre),
+            SliverToBoxAdapter(
+              child: _isLoading
+                  ? const SizedBox.shrink()
+                  : _buildContent(context, l10n, screenSize, escuela),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -263,5 +274,10 @@ class _StudentDetailViewState extends State<StudentDetailView> {
         ],
       ),
     );
+  }
+
+  Future<void> _onPullToRefresh() async {
+    setState(() => _isLoading = true);
+    await _loadStudentDetails();
   }
 }

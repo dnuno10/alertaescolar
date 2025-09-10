@@ -11,6 +11,7 @@ import 'package:alertaescolar/utils/modern_dropdown.dart';
 import 'package:alertaescolar/app/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -77,6 +78,10 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _onRefresh() async {
+    await _loadInitialData();
   }
 
   // ========================= Carga de datos =========================
@@ -284,6 +289,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                         separatorBuilder: (_, __) => Divider(
                           height: 1,
                           color:
+                              // ignore: deprecated_member_use
                               AppTheme.getBorderColor(context).withOpacity(0.2),
                         ),
                         itemBuilder: (context, index) {
@@ -364,8 +370,10 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                                     decoration: BoxDecoration(
                                       color: consideredActive
                                           ? AppTheme.successColor
+                                              // ignore: deprecated_member_use
                                               .withOpacity(0.12)
                                           : AppTheme.errorColor
+                                              // ignore: deprecated_member_use
                                               .withOpacity(0.12),
                                       borderRadius: BorderRadius.circular(
                                           AppTheme.getSmallRadius(screenSize)),
@@ -505,7 +513,6 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
       'all',
       ...studentProvider.getAvailableTurnoNames(),
     ];
-    final accessTypes = const ['all', 'entrada', 'salida', 'retraso'];
 
     return Container(
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -514,6 +521,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
         borderRadius:
             BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
         border: Border.all(
+          // ignore: deprecated_member_use
           color: AppTheme.getBorderColor(context).withOpacity(0.3),
         ),
         boxShadow: [
@@ -682,6 +690,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
             Container(
               padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
               decoration: BoxDecoration(
+                // ignore: deprecated_member_use
                 color: AppTheme.accentBlue.withOpacity(0.1),
                 borderRadius:
                     BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
@@ -763,12 +772,15 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
+                  // ignore: deprecated_member_use
                   AppTheme.accentPurple.withOpacity(0.1),
+                  // ignore: deprecated_member_use
                   AppTheme.accentBlue.withOpacity(0.05),
                 ],
               ),
               borderRadius:
                   BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+              // ignore: deprecated_member_use
               border: Border.all(color: AppTheme.accentPurple.withOpacity(0.3)),
             ),
             child: Row(
@@ -782,6 +794,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                         padding: EdgeInsets.all(
                             AppTheme.getSmallPadding(screenSize) * 0.6),
                         decoration: BoxDecoration(
+                          // ignore: deprecated_member_use
                           color: AppTheme.accentPurple.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(
                               AppTheme.getSmallRadius(screenSize)),
@@ -826,6 +839,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
         borderRadius:
             BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
         border: Border.all(
+          // ignore: deprecated_member_use
           color: AppTheme.getBorderColor(context).withOpacity(0.3),
         ),
         boxShadow: [
@@ -991,6 +1005,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
               color: AppTheme.getCardColor(context),
               borderRadius:
                   BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+              // ignore: deprecated_member_use
               border: Border.all(color: typeColor.withOpacity(0.25), width: 1),
             ),
             child: Row(
@@ -1052,11 +1067,13 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                         vertical: AppTheme.getSmallPadding(screenSize) * 0.4,
                       ),
                       decoration: BoxDecoration(
+                        // ignore: deprecated_member_use
                         color: typeColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(
                           AppTheme.getSmallRadius(screenSize),
                         ),
                         border: Border.all(
+                          // ignore: deprecated_member_use
                           color: typeColor.withOpacity(0.25),
                           width: 1,
                         ),
@@ -1191,6 +1208,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
     final studentDetails = await _convertToStudentDetailsWithKeys(studentData);
     if (!mounted) return;
     Navigator.push(
+      // ignore: use_build_context_synchronously
       context,
       MaterialPageRoute(
         builder: (context) => StudentProfileAdminView(student: studentDetails),
@@ -1240,39 +1258,48 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
         }
 
         return Scaffold(
-          backgroundColor: AppTheme.getBackgroundColor(context),
-          resizeToAvoidBottomInset: true,
-          body: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: () {
-              _removeSuggestionsOverlay(); // Oculta sugerencias si se toca afuera
-              FocusScope.of(context).unfocus();
-            },
-            child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                NavHeader(title: l10n.attendanceCalendar),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding:
-                        EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildFiltersSection(
-                            context, screenSize, studentProvider),
-                        SizedBox(height: AppTheme.getLargePadding(screenSize)),
-                        _buildDateSelector(context, screenSize),
-                        SizedBox(height: AppTheme.getLargePadding(screenSize)),
-                        _buildDateDetails(context, screenSize),
-                      ],
+            backgroundColor: AppTheme.getBackgroundColor(context),
+            resizeToAvoidBottomInset: true,
+            body: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () {
+                _removeSuggestionsOverlay(); // Oculta sugerencias si se toca afuera
+                FocusScope.of(context).unfocus();
+              },
+              child: LiquidPullToRefresh(
+                onRefresh: _onRefresh,
+                color: AppTheme.accentPurple,
+                backgroundColor: AppTheme.getBackgroundColor(context),
+                height: 120,
+                animSpeedFactor: 9.0,
+                showChildOpacityTransition: false,
+                child: CustomScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    NavHeader(title: l10n.attendanceCalendar),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.all(
+                            AppTheme.getMediumPadding(screenSize)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildFiltersSection(
+                                context, screenSize, studentProvider),
+                            SizedBox(
+                                height: AppTheme.getLargePadding(screenSize)),
+                            _buildDateSelector(context, screenSize),
+                            SizedBox(
+                                height: AppTheme.getLargePadding(screenSize)),
+                            _buildDateDetails(context, screenSize),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-        );
+              ),
+            ));
       },
     );
   }

@@ -301,8 +301,10 @@ class _SignUpBodyComponentState extends State<SignUpBodyComponent>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
+            // ignore: deprecated_member_use
             AppTheme.getBorderColor(context).withOpacity(0.1),
             AppTheme.getBorderColor(context),
+            // ignore: deprecated_member_use
             AppTheme.getBorderColor(context).withOpacity(0.1),
           ],
         ),

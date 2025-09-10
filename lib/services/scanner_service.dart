@@ -64,7 +64,7 @@ class ScannerService {
 
       // NUEVO: Crear clave única para el procesamiento
       final processKey =
-          '${scannedCode.trim()}_${adminId}_${escuelaIdFromContext}';
+          '${scannedCode.trim()}_${adminId}_$escuelaIdFromContext';
 
       // NUEVO: Verificar si ya hay un procesamiento en curso para este código
       if (_processingLocks.containsKey(processKey)) {

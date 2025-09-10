@@ -113,6 +113,7 @@ class ComunicadoTypeSelector extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: isSelected
+                        // ignore: deprecated_member_use
                         ? AppTheme.warningColor.withOpacity(0.0)
                         : AppTheme.getBackgroundColor(context),
                     borderRadius: BorderRadius.circular(

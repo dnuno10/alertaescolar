@@ -47,7 +47,8 @@ class NavHeader extends StatelessWidget {
                         width: screenSize.width * 0.1,
                         height: screenSize.width * 0.1,
                         decoration: BoxDecoration(
-                          color: AppTheme.accentPurple.withOpacity(0.1),
+                          // ignore: deprecated_member_use
+                          color: AppTheme.accentPurple.withOpacity(0.0),
                           borderRadius: BorderRadius.circular(
                             AppTheme.getSmallRadius(screenSize),
                           ),

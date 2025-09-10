@@ -10,8 +10,6 @@ class ThemeDialogHandler {
     _isOpen = true;
 
     try {
-      final screenSize = MediaQuery.of(context).size;
-
       await showGeneralDialog(
         context: context,
         pageBuilder: (_, __, ___) => const ThemeSelectionDialog(),

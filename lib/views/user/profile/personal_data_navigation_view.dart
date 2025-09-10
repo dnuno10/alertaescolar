@@ -55,6 +55,7 @@ class _PersonalDataNavigationViewState
     }
 
     // A partir de aquí, es admin
+    // ignore: use_build_context_synchronously
     final schoolProvider = context.read<SchoolProvider>();
 
     setState(() {
@@ -103,21 +104,11 @@ class _PersonalDataNavigationViewState
         _schoolName = null;
       });
     } finally {
+      // ignore: control_flow_in_finally
       if (!mounted) return;
       setState(() {
         _isLoadingSchool = false;
       });
-    }
-  }
-
-  Future<void> _onRefresh() async {
-    // Recarga silenciosa de usuario…
-    await context.read<UserProvider>().reloadSilently(context);
-
-    // …y SOLO si es admin re-intenta cargar la escuela
-    if (!mounted) return;
-    if (context.read<UserProvider>().isAdmin()) {
-      await _loadSchoolInfo(forceRefresh: true);
     }
   }
 
@@ -128,122 +119,119 @@ class _PersonalDataNavigationViewState
 
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
-      body: RefreshIndicator(
-        onRefresh: _onRefresh,
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
-          ),
-          slivers: [
-            NavHeader(title: l10n.personalData),
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
+        slivers: [
+          NavHeader(title: l10n.personalData),
 
-            // Content
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Personal Data Section
-                    PersonalDataSectionTitle(
-                      title: l10n.personalData,
-                      screenSize: screenSize,
-                    ),
-                    SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-                    PersonalDataNavigationCard(
-                      screenSize: screenSize,
-                      children: [
-                        PersonalDataNavigationTile(
-                          title: l10n.personalInformation,
-                          subtitle: l10n.managePersonalDetails,
-                          icon: Icons.person_outline,
-                          route: AppRoutes.personalInformation,
-                          screenSize: screenSize,
-                        ),
-                        const PersonalDataDivider(),
-                        PersonalDataNavigationTile(
-                          title: l10n.contactInformation,
-                          subtitle: l10n.viewContactData,
-                          icon: Icons.contact_mail_outlined,
-                          route: AppRoutes.contactInformation,
-                          screenSize: screenSize,
-                        ),
-                      ],
-                    ),
+          // Content
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Personal Data Section
+                  PersonalDataSectionTitle(
+                    title: l10n.personalData,
+                    screenSize: screenSize,
+                  ),
+                  SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+                  PersonalDataNavigationCard(
+                    screenSize: screenSize,
+                    children: [
+                      PersonalDataNavigationTile(
+                        title: l10n.personalInformation,
+                        subtitle: l10n.managePersonalDetails,
+                        icon: Icons.person_outline,
+                        route: AppRoutes.personalInformation,
+                        screenSize: screenSize,
+                      ),
+                      const PersonalDataDivider(),
+                      PersonalDataNavigationTile(
+                        title: l10n.contactInformation,
+                        subtitle: l10n.viewContactData,
+                        icon: Icons.contact_mail_outlined,
+                        route: AppRoutes.contactInformation,
+                        screenSize: screenSize,
+                      ),
+                    ],
+                  ),
 
-                    SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+                  SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-                    // Account Information Section
-                    PersonalDataSectionTitle(
-                      title: l10n.accountInformation,
-                      screenSize: screenSize,
-                    ),
-                    SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-                    Consumer<UserProvider>(
-                      builder: (context, userProvider, _) {
-                        final user = userProvider.currentUser;
+                  // Account Information Section
+                  PersonalDataSectionTitle(
+                    title: l10n.accountInformation,
+                    screenSize: screenSize,
+                  ),
+                  SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+                  Consumer<UserProvider>(
+                    builder: (context, userProvider, _) {
+                      final user = userProvider.currentUser;
 
-                        return PersonalDataInfoCard(
-                          screenSize: screenSize,
-                          children: [
-                            // Tipo de usuario
-                            PersonalDataInfoTile(
-                              label: l10n.userType,
-                              value: _formatUserRole(user?.tipo, l10n),
-                              screenSize: screenSize,
-                            ),
+                      return PersonalDataInfoCard(
+                        screenSize: screenSize,
+                        children: [
+                          // Tipo de usuario
+                          PersonalDataInfoTile(
+                            label: l10n.userType,
+                            value: _formatUserRole(user?.tipo, l10n),
+                            screenSize: screenSize,
+                          ),
 
-                            // Subtipo de admin (si aplica)
-                            if (user?.tipo == TipoUsuario.administrador &&
-                                user?.tipoAdministrador != null) ...[
-                              const PersonalDataDivider(),
-                              PersonalDataInfoTile(
-                                label: l10n.adminRole,
-                                value: _formatAdminType(
-                                  user?.tipoAdministrador,
-                                  l10n,
-                                ),
-                                screenSize: screenSize,
-                              ),
-                            ],
-
+                          // Subtipo de admin (si aplica)
+                          if (user?.tipo == TipoUsuario.administrador &&
+                              user?.tipoAdministrador != null) ...[
                             const PersonalDataDivider(),
-
-                            // Fecha de registro
                             PersonalDataInfoTile(
-                              label: l10n.registrationDate,
-                              value: user?.fechaRegistro != null
-                                  ? l10n.dateFormat(user!.fechaRegistro)
-                                  : 'N/A',
+                              label: l10n.adminRole,
+                              value: _formatAdminType(
+                                user?.tipoAdministrador,
+                                l10n,
+                              ),
                               screenSize: screenSize,
                             ),
-
-                            // Escuela (SOLO admins)
-                            if (userProvider.isAdmin() &&
-                                (user?.escuelaId != null ||
-                                    _schoolName != null ||
-                                    _isLoadingSchool)) ...[
-                              const PersonalDataDivider(),
-                              PersonalDataInfoTile(
-                                label: l10n.school,
-                                value: _isLoadingSchool
-                                    ? '${l10n.loading}...'
-                                    : (_schoolName ?? user?.escuelaId ?? 'N/A'),
-                                screenSize: screenSize,
-                              ),
-                            ],
                           ],
-                        );
-                      },
-                    ),
 
-                    SizedBox(height: AppTheme.getLargePadding(screenSize)),
-                  ],
-                ),
+                          const PersonalDataDivider(),
+
+                          // Fecha de registro
+                          PersonalDataInfoTile(
+                            label: l10n.registrationDate,
+                            value: user?.fechaRegistro != null
+                                ? l10n.dateFormat(user!.fechaRegistro)
+                                : 'N/A',
+                            screenSize: screenSize,
+                          ),
+
+                          // Escuela (SOLO admins)
+                          if (userProvider.isAdmin() &&
+                              (user?.escuelaId != null ||
+                                  _schoolName != null ||
+                                  _isLoadingSchool)) ...[
+                            const PersonalDataDivider(),
+                            PersonalDataInfoTile(
+                              label: l10n.school,
+                              value: _isLoadingSchool
+                                  ? '${l10n.loading}...'
+                                  : (_schoolName ?? user?.escuelaId ?? 'N/A'),
+                              screenSize: screenSize,
+                            ),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+
+                  SizedBox(height: AppTheme.getLargePadding(screenSize)),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

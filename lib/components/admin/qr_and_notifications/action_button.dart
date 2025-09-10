@@ -27,9 +27,11 @@ class ActionButton extends StatelessWidget {
     // Botón cápsula sin sombras, con borde y relleno muy sutil
     return Container(
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(radiusM),
         border: Border.all(
+          // ignore: deprecated_member_use
           color: color.withOpacity(0.35),
           width: 1,
         ),
@@ -37,7 +39,6 @@ class ActionButton extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          // ❌ Sin splash agresivo; mantén el estilo sobrio
           onTap: onTap,
           borderRadius: BorderRadius.circular(radiusM),
           child: Padding(

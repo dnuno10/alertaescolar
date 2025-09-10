@@ -82,7 +82,6 @@ class LoadingDialog extends StatelessWidget {
     try {
       final navigator = Navigator.of(context, rootNavigator: true);
       if (navigator.canPop()) {
-        final topRoute = navigator.widget;
         // Forzamos a cerrar solo si el diálogo está visible
         navigator.pop();
       }

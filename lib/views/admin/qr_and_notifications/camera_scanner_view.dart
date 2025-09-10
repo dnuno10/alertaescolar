@@ -48,7 +48,6 @@ class _CameraScannerViewState extends State<CameraScannerView>
   bool _isInitialized = false;
   bool _hasError = false;
   bool _navigating = false; // evita múltiples pushes / resumes concurrentes
-  bool _pausedByLifecycle = false;
   bool _processing = false;
   String? _lastProcessedCode; // NUEVO: para evitar duplicados del mismo código
   DateTime? _lastProcessTime;
@@ -127,7 +126,6 @@ class _CameraScannerViewState extends State<CameraScannerView>
       if (state == AppLifecycleState.paused ||
           state == AppLifecycleState.inactive ||
           state == AppLifecycleState.detached) {
-        _pausedByLifecycle = true;
         _controller!.pauseCamera();
       } else if (state == AppLifecycleState.resumed) {
         Future.delayed(const Duration(milliseconds: 300), () async {
@@ -135,7 +133,6 @@ class _CameraScannerViewState extends State<CameraScannerView>
           if (_navigating) return;
           try {
             await _controller!.resumeCamera();
-            _pausedByLifecycle = false;
           } catch (e) {
             debugPrint('Camera resume on resume error: $e');
           }
@@ -277,9 +274,11 @@ class _CameraScannerViewState extends State<CameraScannerView>
                                 vertical: AppTheme.getSmallPadding(screenSize),
                               ),
                               decoration: BoxDecoration(
+                                // ignore: deprecated_member_use
                                 color: _getAccessTypeColor().withOpacity(0.9),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
+                                    // ignore: deprecated_member_use
                                     color: Colors.white.withOpacity(0.3),
                                     width: 1),
                               ),
@@ -311,9 +310,11 @@ class _CameraScannerViewState extends State<CameraScannerView>
             margin: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
             padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
             decoration: BoxDecoration(
+              // ignore: deprecated_member_use
               color: Colors.black.withOpacity(0.7),
               borderRadius: BorderRadius.circular(16),
               border:
+                  // ignore: deprecated_member_use
                   Border.all(color: Colors.white.withOpacity(0.2), width: 1),
             ),
             child: Column(
@@ -338,10 +339,13 @@ class _CameraScannerViewState extends State<CameraScannerView>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   decoration: BoxDecoration(
+                    // ignore: deprecated_member_use
                     color: Colors.black.withOpacity(0.65),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                        color: Colors.white.withOpacity(0.25), width: 1),
+                        // ignore: deprecated_member_use
+                        color: Colors.white.withOpacity(0.25),
+                        width: 1),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -386,8 +390,10 @@ class _CameraScannerViewState extends State<CameraScannerView>
       width: 48,
       height: 48,
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: Colors.black.withOpacity(0.7),
         shape: BoxShape.circle,
+        // ignore: deprecated_member_use
         border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
       ),
       child: IconButton(
@@ -407,6 +413,7 @@ class _CameraScannerViewState extends State<CameraScannerView>
     _controller = controller;
 
     // Algunos OEMs no disparan onPermissionSet
+    // ignore: body_might_complete_normally_catch_error
     controller.getCameraInfo().catchError((_) {});
 
     _initializeCamera(controller);
@@ -560,6 +567,7 @@ class _CameraScannerViewState extends State<CameraScannerView>
       final returnDetailed = !_showResultInProcessing; // si headless => true
 
       // 4) Navegar a ProcessingView con parámetros completos
+      // ignore: use_build_context_synchronously
       final result = await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => ProcessingView(

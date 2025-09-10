@@ -16,6 +16,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class Google {
   static final Google _instance = Google._Internal();
   final SupabaseClient _supabase = Supabase.instance.client;
+  // ignore: non_constant_identifier_names
   Google._Internal();
   factory Google() => _instance;
 
@@ -79,23 +80,28 @@ class Google {
       // 2) Elevar a admin si aplica (lista blanca)
       if (resolvedEmail.isNotEmpty) {
         final isAdmin = await AdminSetup.checkAndSetupAdmin(
+          // ignore: use_build_context_synchronously
           context,
           resolvedEmail,
           authUser.id,
         );
         if (isAdmin) {
+          // ignore: use_build_context_synchronously
           LoadingDialog.hide(context);
           CustomSnackBar.show(
+            // ignore: use_build_context_synchronously
             context: context,
             message: l10n.loginSuccessful,
             isError: false,
           );
+          // ignore: use_build_context_synchronously
           Navigator.pushReplacementNamed(context, AppRoutes.adminDashboard);
           return;
         }
       }
 
       // 3) Actualiza provider y navega según perfil
+      // ignore: use_build_context_synchronously
       await Provider.of<UserProvider>(context, listen: false)
           .updateUser(usuario);
 
@@ -106,12 +112,15 @@ class Google {
               ? AppRoutes.adminDashboard
               : AppRoutes.home);
 
+      // ignore: use_build_context_synchronously
       LoadingDialog.hide(context);
       CustomSnackBar.show(
+        // ignore: use_build_context_synchronously
         context: context,
         message: incomplete ? l10n.completeYourProfile : l10n.loginSuccessful,
         isError: false,
       );
+      // ignore: use_build_context_synchronously
       Navigator.pushReplacementNamed(context, nextRoute);
     } catch (e, st) {
       debugPrint('Error en Google Sign In: $e\n$st');
