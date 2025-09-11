@@ -19,9 +19,9 @@ class PrioritySelector extends StatelessWidget {
     required this.selectedPriority,
     required this.onPriorityChanged,
     required this.screenSize,
-    this.enabled = true, // <- NUEVO
-    this.enableHaptics = false, // <- NUEVO
-    this.semanticsLabel, // <- NUEVO
+    this.enabled = true,
+    this.enableHaptics = false,
+    this.semanticsLabel,
   });
 
   @override

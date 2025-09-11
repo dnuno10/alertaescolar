@@ -2,6 +2,7 @@
 import 'package:alertaescolar/components/headers/home_header.dart';
 import 'package:alertaescolar/components/navigation/custom_bottom_navigation_bar.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:alertaescolar/components/notifications/notification_detail_modal.dart';
 import 'package:alertaescolar/components/notifications/recent_notifications_section.dart';
 import 'package:alertaescolar/components/quick_actions_section.dart';
@@ -13,6 +14,7 @@ import 'package:alertaescolar/views/user/students/students_view.dart';
 import 'package:flutter/material.dart';
 import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 import '../../../app/app_theme.dart';
 import '../../../managers/user_provider.dart';
 import '../../../managers/notification_provider.dart';
@@ -35,6 +37,12 @@ class _HomeViewState extends State<HomeView> {
   TipoUsuario? _lastUserTipo;
   bool _isInitLoading = false;
   UserProvider? _userProv; // para administrar el listener
+
+  // Callback para forzar recarga de RecentNotificationsSection
+  Future<void> Function()? _recentNotificationsReload;
+
+  // Timer para verificar conexiones realtime periódicamente
+  Timer? _realtimeCheckTimer;
 
   // ignore: prefer_function_declarations_over_variables
   late final VoidCallback _userListener = () {
@@ -62,6 +70,36 @@ class _HomeViewState extends State<HomeView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _primeAndLoad();
     });
+
+    // Iniciar timer para verificar conexiones realtime cada 30 segundos
+    _startRealtimeCheckTimer();
+  }
+
+  void _startRealtimeCheckTimer() {
+    _realtimeCheckTimer?.cancel();
+    _realtimeCheckTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _checkRealtimeConnections();
+    });
+  }
+
+  void _checkRealtimeConnections() async {
+    if (!mounted) return;
+
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final currentUser = userProvider.currentUser;
+
+    if (currentUser == null || currentUser.tipo == TipoUsuario.administrador) {
+      return;
+    }
+
+    try {
+      final notificationProvider =
+          Provider.of<NotificationProvider>(context, listen: false);
+      await notificationProvider.ensureRealtimeConnections();
+    } catch (e) {
+      // Error silencioso, no interrumpir la UX
+      debugPrint('Error checking realtime connections: $e');
+    }
   }
 
   @override
@@ -81,6 +119,7 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   void dispose() {
+    _realtimeCheckTimer?.cancel();
     _userProv?.removeListener(_userListener);
     super.dispose();
   }
@@ -195,6 +234,9 @@ class _HomeViewState extends State<HomeView> {
               HapticFeedback.mediumImpact();
               setState(() => _selectedIndex = 2);
             },
+            onReloadCallbackSet: (callback) {
+              _recentNotificationsReload = callback;
+            },
             onNotificationTap: (String notificationId) async {
               final np = context.read<NotificationProvider>();
               await np.markAsRead(notificationId);
@@ -256,23 +298,23 @@ class _HomeViewState extends State<HomeView> {
     final user = context.read<UserProvider>().currentUser;
     if (user == null || user.tipo == TipoUsuario.administrador) return;
 
+    // Verificación inmediata ANTES del reload para detectar cambios rápidamente
+    final notificationProvider = context.read<NotificationProvider>();
+    await notificationProvider.checkImmediateUpdates();
+
+    final futures = <Future>[];
+
+    // Forzar recarga de RecentNotificationsSection
+    if (_recentNotificationsReload != null) {
+      futures.add(_recentNotificationsReload!());
+    }
+
     final students = context.read<StudentProvider>();
-    final notifs = context.read<NotificationProvider>();
     final schedule = context.read<ScheduleProvider>();
 
-    await Future.wait([
+    futures.addAll([
       // Alumnos
       students.loadStudentsForUser(userId: user.id, forceReload: true),
-
-      // Notificaciones (si falla, cae a carga básica)
-      (() async {
-        try {
-          await notifs.reloadAndRefreshRealtime();
-        } catch (_) {
-          await notifs.loadNotifications();
-          await notifs.startRealtimeForCurrentUser();
-        }
-      })(),
 
       // Horario (si tu proveedor expone reloadTodayForTutor, llámalo sin romper)
       (() async {
@@ -284,5 +326,16 @@ class _HomeViewState extends State<HomeView> {
         } catch (_) {/* no-op */}
       })(),
     ]);
+
+    // Esperar a que todos los componentes terminen de cargar
+    if (futures.isNotEmpty) {
+      await Future.wait(futures);
+    }
+
+    // Verificación inmediata FINAL para asegurar que no se perdió nada
+    await notificationProvider.checkImmediateUpdates();
+
+    // Pequeño delay para mejor UX
+    await Future.delayed(const Duration(milliseconds: 300));
   }
 }

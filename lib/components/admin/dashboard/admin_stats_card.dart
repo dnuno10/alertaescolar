@@ -8,10 +8,12 @@ import '../../../managers/user_provider.dart';
 
 class AdminStatsCard extends StatefulWidget {
   final Size screenSize;
+  final void Function(Future<void> Function())? onReloadCallbackSet;
 
   const AdminStatsCard({
     super.key,
     required this.screenSize,
+    this.onReloadCallbackSet,
   });
 
   @override
@@ -35,6 +37,14 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
   UserProvider? _userProvider;
   VoidCallback? _userProviderListener;
 
+  /// Método público para forzar recarga desde componentes padre
+  Future<void> forceReload() async {
+    if (!mounted || _escuelaIdInUse == null || _escuelaIdInUse!.isEmpty) {
+      return;
+    }
+    await _loadTodayStats();
+  }
+
   ({DateTime startUtc, DateTime endUtc}) _todayUtcRangeFromLocal() {
     final nowLocal = DateTime.now();
     final startOfDayLocal =
@@ -48,6 +58,14 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
     super.didChangeDependencies();
     if (!_isInitialized) {
       _isInitialized = true;
+
+      // Registrar callback de recarga si se proporciona
+      if (widget.onReloadCallbackSet != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          widget.onReloadCallbackSet!(forceReload);
+        });
+      }
+
       _userProvider = Provider.of<UserProvider>(context, listen: false);
 
       _userProviderListener = () async {
@@ -113,6 +131,36 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
     _realtimeChannel = _supabase.channel('rt-notificaciones-stats-card')
       ..onPostgresChanges(
         event: PostgresChangeEvent.insert,
+        schema: 'public',
+        table: 'notificaciones',
+        callback: (_) {
+          _debounceReloadTimer?.cancel();
+          _debounceReloadTimer = Timer(
+            Duration(
+                milliseconds: (widget.screenSize.shortestSide * 0.4).round()),
+            () {
+              if (mounted) _loadTodayStats();
+            },
+          );
+        },
+      )
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.update,
+        schema: 'public',
+        table: 'notificaciones',
+        callback: (_) {
+          _debounceReloadTimer?.cancel();
+          _debounceReloadTimer = Timer(
+            Duration(
+                milliseconds: (widget.screenSize.shortestSide * 0.4).round()),
+            () {
+              if (mounted) _loadTodayStats();
+            },
+          );
+        },
+      )
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.delete,
         schema: 'public',
         table: 'notificaciones',
         callback: (_) {

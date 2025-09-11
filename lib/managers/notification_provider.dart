@@ -1,5 +1,6 @@
 // lib/managers/notification_provider.dart
 import 'dart:collection';
+import 'dart:async';
 import 'package:alertaescolar/services/notification_send_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -20,6 +21,10 @@ class NotificationProvider extends ChangeNotifier {
   // Pequeño anti-duplicados (insert + update back-to-back)
   final Map<String, DateTime> _lastUpsertAt = HashMap();
 
+  // Sistema de polling de respaldo para detectar INSERT/DELETE inmediatamente
+  Timer? _pollingTimer;
+  DateTime _lastUpdateTime = DateTime.now();
+
   // Getters
   List<Notificacion> get notifications => List.unmodifiable(_notifications);
   List<Notificacion> get unreadNotifications => _notifications
@@ -28,6 +33,7 @@ class NotificationProvider extends ChangeNotifier {
 
   bool get isLoading => _isLoading;
   String? get error => _error;
+  DateTime get lastUpdateTime => _lastUpdateTime;
   int get unreadCount => unreadNotifications.length;
   bool get hasNotifications => _notifications.isNotEmpty;
 
@@ -105,6 +111,7 @@ class NotificationProvider extends ChangeNotifier {
       _notifications = [];
     } finally {
       _isLoading = false;
+      _lastUpdateTime = DateTime.now();
       notifyListeners();
     }
   }
@@ -113,6 +120,52 @@ class NotificationProvider extends ChangeNotifier {
   Future<void> reloadAndRefreshRealtime() async {
     await loadNotifications();
     await startRealtimeForCurrentUser();
+    _startPollingBackup(); // Iniciar polling después del realtime
+  }
+
+  /// Verificación inmediata de cambios - para llamar después de acciones del usuario
+  Future<void> checkImmediateUpdates() async {
+    try {
+      if (_childrenIds.isEmpty) return;
+
+      debugPrint('🔔 Checking immediate updates...');
+
+      // Obtener todos los IDs actuales de la base de datos
+      final dbRows = await _supabase
+          .from('notificaciones')
+          .select('id, fecha_registro')
+          .inFilter('id_alumno', _childrenIds.toList())
+          .order('fecha_registro', ascending: false);
+
+      final dbIds = dbRows.map((row) => row['id'] as int).toSet();
+      final localIds = _notifications.map((n) => n.id).toSet();
+
+      // Verificar si hay diferencias en los IDs (INSERT o DELETE)
+      final newIds = dbIds.difference(localIds);
+      final deletedIds = localIds.difference(dbIds);
+
+      if (newIds.isNotEmpty || deletedIds.isNotEmpty) {
+        debugPrint(
+            '🔔 IMMEDIATE changes detected! New: ${newIds.length}, Deleted: ${deletedIds.length}');
+        await loadNotifications();
+        return;
+      }
+
+      // Verificar si hay actualizaciones en registros existentes
+      if (dbRows.isNotEmpty) {
+        final latestTimestamp = dbRows.first['fecha_registro'] as String?;
+        if (latestTimestamp != null) {
+          final latestDate = DateTime.parse(latestTimestamp);
+
+          if (latestDate.isAfter(_lastUpdateTime)) {
+            debugPrint('🔔 IMMEDIATE newer notification detected');
+            await loadNotifications();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error in immediate check: $e');
+    }
   }
 
   /// Inicia suscripciones Realtime (por cada hijo, para filtrar en servidor).
@@ -253,11 +306,19 @@ class NotificationProvider extends ChangeNotifier {
           _notifications[i] = mapped;
         }
         _notifications.sort((a, b) => b.fechaHora.compareTo(a.fechaHora));
-        notifyListeners();
+        _notifyWithTimestamp();
+      } else {
+        debugPrint('🔔 Record not found after realtime update: $id');
       }
     } catch (e) {
       debugPrint('Error upserting realtime notification: $e');
     }
+  }
+
+  /// Notifica cambios y actualiza timestamp
+  void _notifyWithTimestamp() {
+    _lastUpdateTime = DateTime.now();
+    notifyListeners();
   }
 
   /// Mapea filas de Supabase → modelo Notificacion (esquema actual).
@@ -504,8 +565,81 @@ class NotificationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Inicia sistema de polling agresivo cada 2 segundos para detectar INSERT/DELETE inmediatamente
+  void _startPollingBackup() {
+    _pollingTimer?.cancel();
+
+    debugPrint(
+        '🔔 Starting aggressive polling backup with ${_notifications.length} notifications');
+
+    _pollingTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+      await _checkForUpdatesViaPolling();
+    });
+  }
+
+  /// Verifica si hay actualizaciones mediante polling agresivo
+  Future<void> _checkForUpdatesViaPolling() async {
+    try {
+      if (_childrenIds.isEmpty) return;
+
+      // Obtener todos los IDs actuales de la base de datos
+      final dbRows = await _supabase
+          .from('notificaciones')
+          .select('id, fecha_registro')
+          .inFilter('id_alumno', _childrenIds.toList())
+          .order('fecha_registro', ascending: false);
+
+      final dbIds = dbRows.map((row) => row['id'] as int).toSet();
+      final localIds = _notifications.map((n) => n.id).toSet();
+
+      // Verificar si hay diferencias en los IDs (INSERT o DELETE)
+      final newIds = dbIds.difference(localIds);
+      final deletedIds = localIds.difference(dbIds);
+
+      if (newIds.isNotEmpty || deletedIds.isNotEmpty) {
+        debugPrint(
+            '🔔 POLLING detected changes! New: ${newIds.length}, Deleted: ${deletedIds.length}');
+        debugPrint('🔔 New IDs: $newIds');
+        debugPrint('🔔 Deleted IDs: $deletedIds');
+        await loadNotifications();
+        return;
+      }
+
+      // Verificar si hay actualizaciones en registros existentes
+      if (dbRows.isNotEmpty) {
+        final latestTimestamp = dbRows.first['fecha_registro'] as String?;
+        if (latestTimestamp != null) {
+          final latestDate = DateTime.parse(latestTimestamp);
+
+          if (latestDate.isAfter(_lastUpdateTime)) {
+            debugPrint('🔔 POLLING detected newer notification');
+            await loadNotifications();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error in polling backup: $e');
+    }
+  }
+
+  /// Asegura que las conexiones realtime estén activas
+  Future<void> ensureRealtimeConnections() async {
+    try {
+      // Verificar conexiones realtime
+      await startRealtimeForCurrentUser();
+
+      // Hacer una verificación inmediata
+      await checkImmediateUpdates();
+
+      debugPrint('🔔 Realtime connections ensured');
+    } catch (e) {
+      debugPrint('🔔 Error ensuring realtime connections: $e');
+    }
+  }
+
   @override
   void dispose() {
+    _pollingTimer?.cancel();
     for (final ch in _notiChannels) {
       try {
         _supabase.removeChannel(ch);

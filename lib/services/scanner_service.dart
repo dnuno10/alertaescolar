@@ -225,7 +225,7 @@ class ScannerService {
       isDefaultEntryConfig: isDefaultEntryConfig,
       turnoProvider: turnoProvider,
       escuelaIdFromContext: escuelaIdFromContext,
-      isFixedAccess: isFixedAccess,
+      isExtracurricular: isExtracurricular,
     );
 
     // Determinar el tipo de notificación ANTES del check de duplicados
@@ -418,7 +418,7 @@ class ScannerService {
     required bool isDefaultEntryConfig,
     TurnoProvider? turnoProvider,
     String? escuelaIdFromContext,
-    bool isFixedAccess = false, // Nuevo parámetro
+    bool isExtracurricular = false,
   }) {
     // Debug: Log all input parameters
     debugPrint('=== _validateAccessTime DEBUG ===');
@@ -426,8 +426,14 @@ class ScannerService {
     debugPrint('turno data: $turno');
     debugPrint('accessType: $accessType');
     debugPrint('isDefaultEntryConfig: $isDefaultEntryConfig');
+    debugPrint('isExtracurricular: $isExtracurricular');
 
-    // Resuelve el tipo real de acceso (fijo/auto) respetando la configuración
+    // Determinar si es acceso fijo basado en el tipo de acceso
+    final isFixedAccess = (accessType == ScannerAccessType.entry ||
+        accessType == ScannerAccessType.exit ||
+        isExtracurricular);
+
+    // Resuelve el tipo real de acceso respetando EXACTAMENTE la configuración del dropdown
     final actualAccess = _getActualAccessType(
       accessType,
       isDefaultEntryConfig,
@@ -435,9 +441,11 @@ class ScannerService {
       turno: turno,
       turnoProvider: turnoProvider,
       escuelaId: escuelaIdFromContext,
+      isExtracurricular: isExtracurricular,
     );
 
     debugPrint('actualAccess resolved to: $actualAccess');
+    debugPrint('isFixedAccess: $isFixedAccess');
 
     final String? turnoInicioStr = turno['hora_inicio']?.toString();
     final int tolerancia = turno['tolerancia'] is int
@@ -447,23 +455,21 @@ class ScannerService {
     debugPrint('turnoInicioStr: $turnoInicioStr');
     debugPrint('tolerancia: $tolerancia');
 
-    // IMPORTANTE: Solo aplicamos validación de tardanza para ENTRADA AUTOMÁTICA
-    // Si es SALIDA o ENTRADA FIJA (incluye extracurricular), nunca se considera tardanza
+    // REGLA FUNDAMENTAL: SOLO AUTOMÁTICO puede generar retraso
+    // Entradas fijas (normales y extracurriculares) y salidas NUNCA son tarde
     bool isLate = false;
     String message;
 
     debugPrint('🕐 LATENESS CHECK: actualAccess=$actualAccess');
     debugPrint('🕐 LATENESS CHECK: accessType=$accessType');
-    debugPrint('🕐 LATENESS CHECK: turnoInicioStr=$turnoInicioStr');
+    debugPrint('🕐 LATENESS CHECK: isFixedAccess=$isFixedAccess');
 
-    // Solo validamos tardanza para ENTRADA AUTOMÁTICA
-    // Las entradas fijas (normal y extracurricular) NUNCA son tarde
     if (actualAccess == ScannerAccessType.entry &&
-        !isFixedAccess && // Solo para automático
+        !isFixedAccess &&
+        accessType == ScannerAccessType.automatic &&
         turnoInicioStr != null &&
         turnoInicioStr.isNotEmpty) {
       debugPrint('🕐 AUTOMATIC ENTRY MODE: Checking for lateness...');
-      // Solo para ENTRADA AUTOMÁTICA validamos tardanza
       try {
         final parts = turnoInicioStr.split(':');
         if (parts.length >= 2) {
@@ -504,13 +510,17 @@ class ScannerService {
         message = 'Llegada registrada';
       }
     } else {
-      // Para SALIDA, ENTRADA FIJA, o ENTRADA EXTRACURRICULAR
+      // Para SALIDA, ENTRADA FIJA, o ENTRADA EXTRACURRICULAR - NUNCA tarde
       if (actualAccess == ScannerAccessType.exit) {
-        message = 'Salida registrada';
+        message = isExtracurricular
+            ? 'Salida extracurricular registrada'
+            : 'Salida registrada';
         debugPrint('🕐 EXIT MODE: No lateness check applied');
       } else {
         // Entrada fija o extracurricular - NUNCA tarde
-        message = 'Llegada registrada';
+        message = isExtracurricular
+            ? 'Entrada extracurricular registrada'
+            : 'Entrada registrada';
         debugPrint(
             '🕐 FIXED ENTRY MODE: No lateness check applied (always on time)');
       }
@@ -534,10 +544,12 @@ class ScannerService {
     Map<String, dynamic>? turno,
     TurnoProvider? turnoProvider,
     String? escuelaId,
+    bool isExtracurricular = false,
   }) {
     debugPrint('=== _getActualAccessType DEBUG ===');
     debugPrint('accessType: $accessType');
     debugPrint('isDefaultEntryConfig: $isDefaultEntryConfig');
+    debugPrint('isExtracurricular: $isExtracurricular');
 
     // Si es fijo, se respeta literalmente.
     if (accessType == ScannerAccessType.entry ||
@@ -554,6 +566,7 @@ class ScannerService {
     debugPrint('🚨 IMPORTANTE: Automatic mode configuration');
     debugPrint('🚨 isDefaultEntryConfig=$isDefaultEntryConfig');
     debugPrint('🚨 Resolved automaticType=$automaticType');
+    debugPrint('🚨 isExtracurricular=$isExtracurricular');
     debugPrint(
         '🚨 This means: ${automaticType == ScannerAccessType.entry ? "ENTRADA (can have lateness)" : "SALIDA (never late)"}');
 

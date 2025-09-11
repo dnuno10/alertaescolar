@@ -9,10 +9,12 @@ import '../../../views/admin/qr_and_notifications/attendance_calendar_view.dart'
 
 class RecentAttendanceCard extends StatefulWidget {
   final Size screenSize;
+  final void Function(Future<void> Function())? onReloadCallbackSet;
 
   const RecentAttendanceCard({
     super.key,
     required this.screenSize,
+    this.onReloadCallbackSet,
   });
 
   @override
@@ -34,11 +36,27 @@ class _RecentAttendanceCardState extends State<RecentAttendanceCard> {
   UserProvider? _userProvider;
   VoidCallback? _userProviderListener;
 
+  /// Método público para forzar recarga desde componentes padre
+  Future<void> forceReload() async {
+    if (!mounted || _escuelaIdInUse == null || _escuelaIdInUse!.isEmpty) {
+      return;
+    }
+    await _loadRecentNotifications();
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_isInitialized) {
       _isInitialized = true;
+
+      // Registrar callback de recarga si se proporciona
+      if (widget.onReloadCallbackSet != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          widget.onReloadCallbackSet!(forceReload);
+        });
+      }
+
       _userProvider = Provider.of<UserProvider>(context, listen: false);
 
       _userProviderListener = () async {
@@ -104,6 +122,36 @@ class _RecentAttendanceCardState extends State<RecentAttendanceCard> {
     _realtimeChannel = _supabase.channel('notificaciones-recent-card')
       ..onPostgresChanges(
         event: PostgresChangeEvent.insert,
+        schema: 'public',
+        table: 'notificaciones',
+        callback: (_) {
+          _debounceReloadTimer?.cancel();
+          _debounceReloadTimer = Timer(
+            Duration(
+                milliseconds: (widget.screenSize.shortestSide * 0.4).round()),
+            () {
+              if (mounted) _loadRecentNotifications();
+            },
+          );
+        },
+      )
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.update,
+        schema: 'public',
+        table: 'notificaciones',
+        callback: (_) {
+          _debounceReloadTimer?.cancel();
+          _debounceReloadTimer = Timer(
+            Duration(
+                milliseconds: (widget.screenSize.shortestSide * 0.4).round()),
+            () {
+              if (mounted) _loadRecentNotifications();
+            },
+          );
+        },
+      )
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.delete,
         schema: 'public',
         table: 'notificaciones',
         callback: (_) {
