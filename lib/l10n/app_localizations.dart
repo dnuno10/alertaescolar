@@ -1951,7 +1951,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get termsOfService => 'Terms of Service';
 
   @override
-  String get versionInfo => 'Version 1.0.0';
+  String get versionInfo => 'Version 1.11.0';
 
   @override
   String get continueAsGuest => 'Continue as Guest';
@@ -5059,7 +5059,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get termsOfService => 'Términos de Servicio';
 
   @override
-  String get versionInfo => 'Versión 1.0.0';
+  String get versionInfo => 'Versión 1.11.0';
 
   @override
   String get continueAsGuest => 'Continuar como Invitado';

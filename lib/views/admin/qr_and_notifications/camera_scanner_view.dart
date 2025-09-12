@@ -5,20 +5,18 @@ import 'package:alertaescolar/managers/user_provider.dart';
 import 'package:alertaescolar/models/usuario.dart';
 import 'package:alertaescolar/services/scanner_service.dart';
 import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 import '../../../app/app_theme.dart';
 import 'processing_view.dart';
-
-// Usa la ruta real donde vive tu clase CustomSnackBar
 import '../../../widgets/custom_snack_bar.dart';
 
 class CameraScannerView extends StatefulWidget {
   final Function(String) onCodeScanned;
   final ScannerAccessType? accessType;
   final bool? isDefaultEntryConfig;
-  final bool isExtracurricular; // Nuevo parámetro
+  final bool isExtracurricular;
 
   /// true  => mostrar detalles en ProcessingView (pantalla completa)
   /// false => headless (solo loader) y mensaje por CustomSnackBar
@@ -29,7 +27,7 @@ class CameraScannerView extends StatefulWidget {
     required this.onCodeScanned,
     this.accessType,
     this.isDefaultEntryConfig,
-    this.isExtracurricular = false, // Por defecto falso
+    this.isExtracurricular = false,
     this.initialShowResultInProcessing = true,
   });
 
@@ -39,100 +37,100 @@ class CameraScannerView extends StatefulWidget {
 
 class _CameraScannerViewState extends State<CameraScannerView>
     with TickerProviderStateMixin, WidgetsBindingObserver {
-  // Generamos una GlobalKey nueva por cada instancia de cámara
-  late GlobalKey _qrKey;
-
-  QRViewController? _controller;
-  StreamSubscription<Barcode>? _scanSub;
+  late final MobileScannerController _controller;
 
   bool _isInitialized = false;
   bool _hasError = false;
   bool _navigating = false; // evita múltiples pushes / resumes concurrentes
   bool _processing = false;
-  String? _lastProcessedCode; // NUEVO: para evitar duplicados del mismo código
+  String? _lastProcessedCode;
   DateTime? _lastProcessTime;
 
-  // Mostramos/ocultamos la vista para forzar dispose/recreate del PlatformView
   bool _showCamera = true;
-  int _cameraInstanceId = 0;
 
   // Animaciones UI
   late final AnimationController _accessTypeAnimationController;
 
-  // Switch para decidir el comportamiento de post-proceso
   bool _showResultInProcessing = true;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _qrKey = GlobalKey(debugLabel: 'QR_$_cameraInstanceId');
+
+    _controller = MobileScannerController(
+      facing: CameraFacing.back,
+      detectionSpeed: DetectionSpeed.normal,
+      detectionTimeoutMs: 250,
+      returnImage: false,
+      formats: const [BarcodeFormat.qrCode], // Limitar a QR para menos falsos
+    );
+
     _accessTypeAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 2000),
       vsync: this,
-    )..forward();
+    )..repeat(reverse: true);
 
     _showResultInProcessing = widget.initialShowResultInProcessing;
+
+    _initCamera();
+  }
+
+  Future<void> _initCamera() async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 120));
+      await _controller.start();
+      if (!mounted) return;
+      setState(() {
+        _isInitialized = true;
+        _hasError = false;
+      });
+    } catch (e) {
+      debugPrint('Camera initialization error: $e');
+      // Reintento único
+      await Future.delayed(const Duration(milliseconds: 800));
+      try {
+        await _controller.start();
+        if (!mounted) return;
+        setState(() {
+          _isInitialized = true;
+          _hasError = false;
+        });
+      } catch (e2) {
+        debugPrint('Camera retry failed: $e2');
+        if (!mounted) return;
+        setState(() => _hasError = true);
+      }
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _disposeCameraController(); // cancela stream + dispose controller seguro
+    try {
+      _controller.dispose();
+    } catch (e) {
+      debugPrint('Camera dispose error: $e');
+    }
     _accessTypeAnimationController.dispose();
     super.dispose();
   }
 
-  Future<void> _disposeCameraController() async {
-    // Cerrar stream y cámara con cuidado
-    try {
-      await _scanSub?.cancel();
-    } catch (_) {}
-    _scanSub = null;
-
-    final c = _controller;
-    _controller = null;
-    if (c != null) {
-      try {
-        await c.pauseCamera();
-      } catch (_) {}
-
-      // ⚡ iOS FIX: Añadir delay antes de dispose para iOS UiKitView
-      if (Platform.isIOS) {
-        await Future.delayed(const Duration(milliseconds: 100));
-      }
-
-      try {
-        c.dispose();
-      } catch (e) {
-        debugPrint('Camera dispose error: $e');
-      }
-    }
-
-    _isInitialized = false;
-  }
-
-  void _recreateCameraKey() {
-    _cameraInstanceId++;
-    _qrKey = GlobalKey(debugLabel: 'QR_$_cameraInstanceId');
-  }
-
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Si la cámara no está visible, no intentes pausar/reanudar
-    if (_controller == null || !_isInitialized || !_showCamera) return;
+    if (!_isInitialized || !_showCamera) return;
 
     try {
       if (state == AppLifecycleState.paused ||
           state == AppLifecycleState.inactive ||
           state == AppLifecycleState.detached) {
-        _controller!.pauseCamera();
+        _controller.stop();
       } else if (state == AppLifecycleState.resumed) {
         Future.delayed(const Duration(milliseconds: 300), () async {
-          if (!mounted || _controller == null) return;
+          if (!mounted) return;
           if (_navigating) return;
           try {
-            await _controller!.resumeCamera();
+            await _controller.start();
           } catch (e) {
             debugPrint('Camera resume on resume error: $e');
           }
@@ -146,21 +144,21 @@ class _CameraScannerViewState extends State<CameraScannerView>
   @override
   void reassemble() {
     super.reassemble();
-    // Manejo recomendado por plataforma durante Hot Reload
+    // Hot Reload handling
     try {
-      if (_controller == null || !_showCamera) return;
+      if (!_showCamera) return;
       if (Platform.isAndroid) {
-        _controller!.pauseCamera();
+        _controller.stop();
         Future.delayed(const Duration(milliseconds: 200), () async {
-          if (!mounted || _controller == null) return;
+          if (!mounted) return;
           try {
-            await _controller!.resumeCamera();
+            await _controller.start();
           } catch (e) {
             debugPrint('Android reassemble resume error: $e');
           }
         });
       } else if (Platform.isIOS) {
-        _controller!.resumeCamera();
+        _controller.start().catchError((_) {});
       }
     } catch (e) {
       debugPrint('Camera reassemble error: $e');
@@ -179,21 +177,12 @@ class _CameraScannerViewState extends State<CameraScannerView>
       body: Stack(
         children: [
           if (!_hasError && _showCamera)
-            QRView(
-              key: _qrKey,
-              onQRViewCreated: _onQRViewCreated,
-              cameraFacing: CameraFacing.back,
-              // Limitar a QR reduce carga y falsos positivos
-              formatsAllowed: const [BarcodeFormat.qrcode],
-              overlay: QrScannerOverlayShape(
-                borderColor: _navigating ? Colors.green : AppTheme.accentBlue,
-                borderRadius: 24,
-                borderLength: 80,
-                borderWidth: 4,
-                cutOutSize: screenSize.width * 0.7,
-              ),
-              onPermissionSet: (ctrl, hasPermission) {
-                if (!hasPermission) _failWithPermissionError();
+            MobileScanner(
+              controller: _controller,
+              onDetect: _onDetect,
+              // onPermissionSet no existe en algunas versiones → usamos errorBuilder
+              errorBuilder: (context, error, child) {
+                return _buildErrorState(context);
               },
             ),
           if (_hasError) _buildErrorState(context),
@@ -240,6 +229,8 @@ class _CameraScannerViewState extends State<CameraScannerView>
   }
 
   Widget _buildScannerOverlay(Size screenSize) {
+    final cutOut = screenSize.width * 0.7;
+
     return SafeArea(
       child: Column(
         children: [
@@ -259,40 +250,26 @@ class _CameraScannerViewState extends State<CameraScannerView>
                 Expanded(
                   child: Align(
                     alignment: Alignment.center,
-                    child: AnimatedBuilder(
-                      animation: _accessTypeAnimationController,
-                      builder: (context, child) {
-                        return Transform.translate(
-                          offset: Offset(0,
-                              -20 * (1 - _accessTypeAnimationController.value)),
-                          child: Opacity(
-                            opacity: _accessTypeAnimationController.value,
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal:
-                                    AppTheme.getMediumPadding(screenSize),
-                                vertical: AppTheme.getSmallPadding(screenSize),
-                              ),
-                              decoration: BoxDecoration(
-                                // ignore: deprecated_member_use
-                                color: _getAccessTypeColor().withOpacity(0.9),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                    // ignore: deprecated_member_use
-                                    color: Colors.white.withOpacity(0.3),
-                                    width: 1),
-                              ),
-                              child: Text(
-                                _getAccessTypeText(),
-                                style: AppTheme.getCaption(screenSize).copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppTheme.getMediumPadding(screenSize),
+                        vertical: AppTheme.getSmallPadding(screenSize),
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getAccessTypeColor().withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        _getAccessTypeText(),
+                        style: AppTheme.getCaption(screenSize).copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -305,24 +282,166 @@ class _CameraScannerViewState extends State<CameraScannerView>
 
           const Spacer(),
 
+          // Marco guía (cutout) - Diseño moderno de escáner QR
+          Center(
+            child: SizedBox(
+              width: cutOut,
+              height: cutOut,
+              child: Stack(
+                children: [
+                  // Esquinas del escáner - Solo bordes en las esquinas
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    child: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(color: AppTheme.accentBlue, width: 4),
+                          left:
+                              BorderSide(color: AppTheme.accentBlue, width: 4),
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(color: AppTheme.accentBlue, width: 4),
+                          right:
+                              BorderSide(color: AppTheme.accentBlue, width: 4),
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          topRight: Radius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    child: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom:
+                              BorderSide(color: AppTheme.accentBlue, width: 4),
+                          left:
+                              BorderSide(color: AppTheme.accentBlue, width: 4),
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom:
+                              BorderSide(color: AppTheme.accentBlue, width: 4),
+                          right:
+                              BorderSide(color: AppTheme.accentBlue, width: 4),
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          bottomRight: Radius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Línea de escaneo animada horizontal
+                  AnimatedBuilder(
+                    animation: _accessTypeAnimationController,
+                    builder: (context, child) {
+                      return Positioned(
+                        top: (cutOut * 0.2) +
+                            (cutOut *
+                                0.6 *
+                                _accessTypeAnimationController.value),
+                        left: cutOut * 0.1,
+                        right: cutOut * 0.1,
+                        child: Container(
+                          height: 3,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.transparent,
+                                AppTheme.accentBlue.withOpacity(0.3),
+                                AppTheme.accentBlue,
+                                Colors.white,
+                                AppTheme.accentBlue,
+                                AppTheme.accentBlue.withOpacity(0.3),
+                                Colors.transparent,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.accentBlue.withOpacity(0.6),
+                                blurRadius: 12,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
+                  // Puntos de ayuda en el centro
+                  Center(
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentBlue.withOpacity(0.6),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.accentBlue.withOpacity(0.4),
+                            blurRadius: 8,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
           // Bottom instructions + switch centrado
           Container(
             margin: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
             padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
             decoration: BoxDecoration(
-              // ignore: deprecated_member_use
               color: Colors.black.withOpacity(0.7),
               borderRadius: BorderRadius.circular(16),
               border:
-                  // ignore: deprecated_member_use
                   Border.all(color: Colors.white.withOpacity(0.2), width: 1),
             ),
             child: Column(
-              mainAxisSize: MainAxisSize
-                  .min, // importante para que el switch quede pegado debajo
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.qr_code_scanner,
-                    color: AppTheme.accentBlue, size: 32),
+                const Icon(Icons.qr_code_scanner,
+                    color: Colors.white, size: 32),
                 SizedBox(height: AppTheme.getSmallPadding(screenSize)),
                 Text(
                   'Apunta la cámara al código QR',
@@ -332,29 +451,22 @@ class _CameraScannerViewState extends State<CameraScannerView>
                   ),
                   textAlign: TextAlign.center,
                 ),
-
                 SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-                // Switch debajo (centrado) - etiqueta fija "Revisión de alumno"
+                // Switch "Revisión de alumno"
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   decoration: BoxDecoration(
-                    // ignore: deprecated_member_use
                     color: Colors.black.withOpacity(0.65),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                        // ignore: deprecated_member_use
-                        color: Colors.white.withOpacity(0.25),
-                        width: 1),
+                        color: Colors.white.withOpacity(0.25), width: 1),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.person_search_rounded,
-                        color: Colors.white,
-                        size: 18,
-                      ),
+                      const Icon(Icons.person_search_rounded,
+                          color: Colors.white, size: 18),
                       const SizedBox(width: 8),
                       Text(
                         'Revisión de alumno',
@@ -366,7 +478,6 @@ class _CameraScannerViewState extends State<CameraScannerView>
                         value: _showResultInProcessing,
                         onChanged: (v) {
                           setState(() => _showResultInProcessing = v);
-                          // Podrías persistir por escuela si lo deseas
                         },
                         activeColor: AppTheme.accentBlue,
                       ),
@@ -390,10 +501,8 @@ class _CameraScannerViewState extends State<CameraScannerView>
       width: 48,
       height: 48,
       decoration: BoxDecoration(
-        // ignore: deprecated_member_use
         color: Colors.black.withOpacity(0.7),
         shape: BoxShape.circle,
-        // ignore: deprecated_member_use
         border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
       ),
       child: IconButton(
@@ -404,93 +513,40 @@ class _CameraScannerViewState extends State<CameraScannerView>
   }
 
   // ========================
-  // Cámara / Escaneo
+  // Detección / Navegación
   // ========================
+  void _onDetect(BarcodeCapture capture) async {
+    if (!_isInitialized || _navigating || _processing) return;
 
-  void _onQRViewCreated(QRViewController controller) {
-    if (!mounted) return;
+    final code = capture.barcodes
+        .map((b) => b.rawValue?.trim() ?? '')
+        .firstWhere((v) => v.isNotEmpty, orElse: () => '');
 
-    _controller = controller;
+    if (code.isEmpty) return;
 
-    // Algunos OEMs no disparan onPermissionSet
-    // ignore: body_might_complete_normally_catch_error
-    controller.getCameraInfo().catchError((_) {});
-
-    _initializeCamera(controller);
-  }
-
-  Future<void> _initializeCamera(QRViewController controller) async {
-    if (!mounted) return;
+    // Establecer flag de navegación y procesar
+    setState(() {
+      _navigating = true;
+    });
 
     try {
-      // Pequeño delay para asegurar que el Surface esté creado
-      await Future.delayed(const Duration(milliseconds: 120));
-
-      await controller.resumeCamera();
-
-      if (!mounted) return;
-
-      setState(() {
-        _isInitialized = true;
-        _hasError = false;
-      });
-
-      // Suscripción EXACTAMENTE una vez por instancia
-      _scanSub = controller.scannedDataStream.listen((scanData) {
-        if (!_isInitialized || _navigating) return;
-        final code = scanData.code;
-        if (code == null || code.isEmpty) return;
-
-        // Bloquea reentradas inmediatamente
-        _navigating = true;
-
-        // Al navegar, desmontamos la cámara para evitar recreating_view en iOS
-        _handleScanAndNavigate(code);
-      }, onError: (e) {
-        debugPrint('Scan stream error: $e');
-      });
-
-      debugPrint('Camera initialized successfully');
-    } catch (e) {
-      debugPrint('Camera initialization error: $e');
-
-      // Reintento único
-      await Future.delayed(const Duration(milliseconds: 800));
-      try {
-        await controller.resumeCamera();
-        if (!mounted) return;
+      await _handleScanAndNavigate(code);
+    } finally {
+      // Asegurar que _navigating siempre se resetea
+      if (mounted) {
         setState(() {
-          _isInitialized = true;
-          _hasError = false;
+          _navigating = false;
         });
-
-        _scanSub = controller.scannedDataStream.listen((scanData) {
-          if (!_isInitialized || _navigating) return;
-          final code = scanData.code;
-          if (code == null || code.isEmpty) return;
-          _navigating = true;
-          _handleScanAndNavigate(code);
-        }, onError: (e) {
-          debugPrint('Scan stream error (retry): $e');
-        });
-
-        debugPrint('Camera initialized on retry');
-      } catch (e2) {
-        debugPrint('Camera retry failed: $e2');
-        if (!mounted) return;
-        setState(() => _hasError = true);
       }
     }
   }
 
   Future<void> _handleScanAndNavigate(String code) async {
-    // NUEVO: Evitar procesamiento si ya estamos procesando
     if (_processing) {
       debugPrint('🔒 SCANNER: Already processing, ignoring scan: $code');
       return;
     }
 
-    // NUEVO: Evitar duplicados del mismo código en un período corto
     final now = DateTime.now();
     if (_lastProcessedCode == code &&
         _lastProcessTime != null &&
@@ -499,30 +555,60 @@ class _CameraScannerViewState extends State<CameraScannerView>
       return;
     }
 
-    // NUEVO: Marcar como procesando
     _processing = true;
     _lastProcessedCode = code;
     _lastProcessTime = now;
 
     debugPrint('🔒 SCANNER: Starting to process code: $code');
 
-    // 1) Ocultar cámara → fuerza dispose del PlatformView
-    setState(() {
-      _showCamera = false;
-    });
-    await _disposeCameraController();
+    try {
+      // 1) Pausar detección temporalmente
+      setState(() {
+        _showCamera = false;
+      });
 
-    // 2) Procesar navegación
-    await _processScannedCode(code);
+      try {
+        await _controller.stop();
+      } catch (e) {
+        debugPrint('Error stopping camera: $e');
+      }
 
-    // 3) Volver a mostrar cámara completamente limpia (nueva key y controller)
-    if (!mounted) return;
-    setState(() {
-      _recreateCameraKey(); // nueva GlobalKey => nuevo PlatformView
-      _showCamera = true;
-      _navigating = false;
-      _processing = false; // NUEVO: liberar el bloqueo
-    });
+      // 2) Procesar navegación
+      await _processScannedCode(code);
+    } finally {
+      // 3) Asegurar que siempre se restaure el estado, incluso si hay errores
+      if (mounted) {
+        debugPrint('🔒 SCANNER: Restoring camera state');
+
+        setState(() {
+          _showCamera = true;
+          _processing = false;
+        });
+
+        // 4) Reiniciar cámara con delay para estabilidad
+        await Future.delayed(const Duration(milliseconds: 300));
+
+        if (mounted) {
+          try {
+            await _controller.start();
+            debugPrint('🔒 SCANNER: Camera restarted successfully');
+          } catch (e) {
+            debugPrint('Failed to restart camera: $e');
+            // Intentar reiniciar una vez más
+            await Future.delayed(const Duration(milliseconds: 500));
+            if (mounted) {
+              try {
+                await _controller.start();
+                debugPrint('🔒 SCANNER: Camera restarted on retry');
+              } catch (e2) {
+                debugPrint('Failed to restart camera on retry: $e2');
+                setState(() => _hasError = true);
+              }
+            }
+          }
+        }
+      }
+    }
 
     debugPrint('🔒 SCANNER: Finished processing code: $code');
   }
@@ -547,7 +633,6 @@ class _CameraScannerViewState extends State<CameraScannerView>
       try {
         escuelaId = await userProvider.ensureEscuelaIdOrThrow();
       } catch (_) {
-        // Intento no bloqueante de resolución (por si aún no estaba cacheado)
         await userProvider.ensureEscuelaIdLoaded();
         final cached = userProvider.currentUser?.escuelaId;
         if (cached == null || cached.isEmpty) {
@@ -567,16 +652,15 @@ class _CameraScannerViewState extends State<CameraScannerView>
       final returnDetailed = !_showResultInProcessing; // si headless => true
 
       // 4) Navegar a ProcessingView con parámetros completos
-      // ignore: use_build_context_synchronously
       final result = await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => ProcessingView(
             scannedCode: code,
             adminId: admin.id,
-            escuelaId: escuelaId, // <-- YA DEFINIDO
+            escuelaId: escuelaId,
             accessType: widget.accessType ?? ScannerAccessType.automatic,
             isDefaultEntryConfig: widget.isDefaultEntryConfig ?? true,
-            isExtracurricular: widget.isExtracurricular, // Nuevo parámetro
+            isExtracurricular: widget.isExtracurricular,
             displayMode: displayMode,
             returnDetailedResult: returnDetailed,
           ),
@@ -587,25 +671,22 @@ class _CameraScannerViewState extends State<CameraScannerView>
 
       // 5) Manejo de retorno
       if (_showResultInProcessing) {
-        // Modo clásico: ProcessingView ya mostró UI. Solo propagar OK a caller.
         if (result == true ||
             (result is ProcessingOutcome && result.success == true)) {
           widget.onCodeScanned(code);
         }
-        return; // IMPORTANTE: Salir aquí para NO mostrar CustomSnackBar
+        return;
       }
 
-      // Headless: esperamos un ProcessingOutcome para mostrar mensaje
       if (result is ProcessingOutcome) {
         final success = result.success;
         final msg = result.message ??
             (success
                 ? 'Notificación enviada correctamente.'
-                : 'No se pudo registrar el escaneo.'); // motivo de error
+                : 'No se pudo registrar el escaneo.');
         _showFeedbackMessage(msg, success: success);
         if (success) widget.onCodeScanned(code);
       } else if (result == true) {
-        // Por compatibilidad
         _showFeedbackMessage('Notificación enviada correctamente.',
             success: true);
         widget.onCodeScanned(code);
@@ -623,7 +704,6 @@ class _CameraScannerViewState extends State<CameraScannerView>
   // Mensajes
   // ========================
   void _showFeedbackMessage(String text, {required bool success}) {
-    // Usa tu CustomSnackBar; si falla, fallback a SnackBar nativo
     final controller = CustomSnackBar.show(
       context: context,
       message: text,
@@ -633,7 +713,6 @@ class _CameraScannerViewState extends State<CameraScannerView>
     );
 
     if (controller == null) {
-      // Fallback
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(text),
@@ -674,20 +753,9 @@ class _CameraScannerViewState extends State<CameraScannerView>
       case ScannerAccessType.automatic:
         return isDefaultEntry ? Colors.green : Colors.red;
       case ScannerAccessType.entry:
-        return Colors.green; // Verde para todas las entradas
+        return Colors.green;
       case ScannerAccessType.exit:
-        return Colors.red; // Rojo para todas las salidas
+        return Colors.red;
     }
-  }
-
-  // ========================
-  // Errores de permiso
-  // ========================
-  void _failWithPermissionError() {
-    setState(() => _hasError = true);
-    _showFeedbackMessage(
-      'Permisos de cámara requeridos para escanear códigos QR',
-      success: false,
-    );
   }
 }

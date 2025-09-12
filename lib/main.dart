@@ -35,8 +35,9 @@ void main() async {
   await dotenv.load();
 
   await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+    url: "https://nxzyodpetbfhgishwbrx.supabase.co",
+    anonKey:
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54enlvZHBldGJmaGdpc2h3YnJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NzExNDMsImV4cCI6MjA2NTM0NzE0M30.mjLMUonFEfd8Q7FPfmLnzdE5c61HcZP3mLm-om8vMpc",
   );
 
   // Set up FCM auth state listener

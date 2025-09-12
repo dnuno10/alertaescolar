@@ -538,9 +538,12 @@ class StudentProvider with ChangeNotifier {
   }) async {
     debugPrint('loadStudentsForUser: userId=$userId, force=$forceReload');
 
-    // Si ya cargaste en modo admin y no se fuerza, no sobreescribas la lista
-    if (_currentLoadingMode == 'admin' && !forceReload) {
-      debugPrint('loadStudentsForUser: skipping (admin list loaded)');
+    // Cambiar a contexto de usuario y limpiar datos admin si es necesario
+    switchToUserContext(userId);
+
+    // Solo skipear si estamos en loading para evitar llamadas concurrentes
+    if (_isLoading && _currentLoadingMode == 'user' && !forceReload) {
+      debugPrint('loadStudentsForUser: skipping (already loading user data)');
       return;
     }
 
@@ -606,6 +609,10 @@ class StudentProvider with ChangeNotifier {
 
       final response = await query;
 
+      // VALIDACIÓN ADICIONAL: Verificar que la respuesta solo contenga vínculos del usuario correcto
+      debugPrint(
+          'loadStudentsForUser: Found ${response.length} student links for user $userId');
+
       // Mapear a StudentDetails
       final list = <StudentDetails>[];
       for (final item in response) {
@@ -613,6 +620,13 @@ class StudentProvider with ChangeNotifier {
         final usuario = Map<String, dynamic>.from(item['usuarios'] as Map);
         final fechaVinc = item['fecha_vinculacion']?.toString() ??
             DateTime.now().toIso8601String();
+
+        // VALIDACIÓN DE SEGURIDAD: Asegurar que el tutor ID coincida
+        if (usuario['id']?.toString() != userId) {
+          debugPrint(
+              'WARNING: Skipping student ${alumno['id']} - tutor mismatch. Expected: $userId, Got: ${usuario['id']}');
+          continue;
+        }
 
         // Incrustar datos de vínculo/usuario para el mapper existente
         alumno['alumno_tutores'] = [
@@ -637,8 +651,23 @@ class StudentProvider with ChangeNotifier {
       list.sort(
           (a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()));
 
+      // VALIDACIÓN FINAL: Asegurar que todos los estudiantes pertenecen al usuario
+      final validatedList = list.where((student) {
+        final belongsToUser =
+            student.tutores.any((tutor) => tutor.id == userId);
+        if (!belongsToUser) {
+          debugPrint(
+              'WARNING: Removing student ${student.id} (${student.nombre}) - no valid tutor link for user $userId');
+          return false;
+        }
+        return true;
+      }).toList();
+
+      debugPrint(
+          'loadStudentsForUser: Final count after validation: ${validatedList.length}/${list.length}');
+
       // Publicar en estado
-      _students = list;
+      _students = validatedList;
       _filteredStudents = List.from(_students);
 
       // Resolver escuela (primero por tutor, fallback admin)
@@ -795,7 +824,20 @@ class StudentProvider with ChangeNotifier {
     String? grupoId,
     String? turnoId,
   }) async {
-    debugPrint('loadStudents: escuelaId=$escuelaId userId=$userId');
+    debugPrint(
+        'loadStudents (ADMIN MODE): escuelaId=$escuelaId userId=$userId');
+
+    // Solo skipear si estamos cargando en modo admin para evitar llamadas concurrentes
+    if (_isLoading && _currentLoadingMode == 'admin') {
+      debugPrint('loadStudents: skipping (already loading admin data)');
+      return;
+    }
+
+    // Cambiar a contexto de admin y limpiar datos user si es necesario
+    if (escuelaId != null) {
+      switchToAdminContext(escuelaId);
+    }
+
     try {
       _setLoading(true, mode: 'admin');
       _setError(null);
@@ -879,6 +921,9 @@ class StudentProvider with ChangeNotifier {
 
       _filteredStudents = List.from(_students);
       _currentSchoolId = schoolId;
+
+      debugPrint(
+          'loadStudents (ADMIN MODE): Loaded ${_students.length} students for school $schoolId');
 
       _startRealtimeForSchool(schoolId);
 
@@ -1816,6 +1861,32 @@ class StudentProvider with ChangeNotifier {
     _currentSchoolId = null;
     _lastConvertedCount = 0;
     Future.microtask(notifyListeners);
+  }
+
+  /// Cambia el contexto de carga y limpia datos previos para evitar contaminación
+  void switchToUserContext(String userId) {
+    debugPrint('Switching to USER context for userId: $userId');
+    if (_currentLoadingMode == 'admin') {
+      debugPrint('Clearing admin data before loading user data');
+      _students.clear();
+      _filteredStudents.clear();
+      _selectedStudent = null;
+      _currentLoadingMode = null;
+      Future.microtask(notifyListeners);
+    }
+  }
+
+  /// Cambia el contexto de carga y limpia datos previos para evitar contaminación
+  void switchToAdminContext(String schoolId) {
+    debugPrint('Switching to ADMIN context for schoolId: $schoolId');
+    if (_currentLoadingMode == 'user') {
+      debugPrint('Clearing user data before loading admin data');
+      _students.clear();
+      _filteredStudents.clear();
+      _selectedStudent = null;
+      _currentLoadingMode = null;
+      Future.microtask(notifyListeners);
+    }
   }
 
   @override

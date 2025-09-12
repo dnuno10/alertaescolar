@@ -50,9 +50,11 @@ class _StudentsViewState extends State<StudentsView> {
     if (currentUser != null && _lastLoadedUserId != currentUser.id) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        context
-            .read<StudentProvider>()
-            .loadStudentsForUser(userId: currentUser.id);
+        final studentProvider = context.read<StudentProvider>();
+
+        // Asegurar contexto de usuario antes de cargar
+        studentProvider.switchToUserContext(currentUser.id);
+        studentProvider.loadStudentsForUser(userId: currentUser.id);
         _lastLoadedUserId = currentUser.id;
       });
     }
@@ -217,19 +219,28 @@ class _StudentsViewState extends State<StudentsView> {
 
     final user = context.read<UserProvider>().currentUser;
     if (user != null) {
-      await context.read<StudentProvider>().loadStudentsForUser(
-            userId: user.id,
-            forceReload: true,
-          );
+      final studentProvider = context.read<StudentProvider>();
+
+      // Asegurar contexto de usuario antes de recargar
+      studentProvider.switchToUserContext(user.id);
+      await studentProvider.loadStudentsForUser(
+        userId: user.id,
+        forceReload: true,
+      );
     }
   }
 
   Future<void> _onPullToRefresh() async {
     final user = context.read<UserProvider>().currentUser;
     if (user != null) {
-      await context
-          .read<StudentProvider>()
-          .loadStudentsForUser(userId: user.id, forceReload: true);
+      final studentProvider = context.read<StudentProvider>();
+
+      // Asegurar contexto de usuario antes de recargar
+      studentProvider.switchToUserContext(user.id);
+      await studentProvider.loadStudentsForUser(
+        userId: user.id,
+        forceReload: true,
+      );
     } else {
       // Si por algo perdió sesión, reintenta cargar usuario sin diálogos
       await context

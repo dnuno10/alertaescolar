@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../managers/user_provider.dart';
+import '../../../utils/time_format.dart';
 import '../../../views/admin/qr_and_notifications/attendance_calendar_view.dart';
 
 class RecentAttendanceCard extends StatefulWidget {
@@ -119,53 +120,83 @@ class _RecentAttendanceCardState extends State<RecentAttendanceCard> {
 
   Future<void> _subscribeToRealtime() async {
     await _unsubscribeFromRealtime();
-    _realtimeChannel = _supabase.channel('notificaciones-recent-card')
+
+    if (_escuelaIdInUse == null || _escuelaIdInUse!.isEmpty) {
+      debugPrint(
+          '🔄 RecentAttendanceCard: No escuelaId, skipping realtime subscription');
+      return;
+    }
+
+    // 🔧 FIX: Mejorar suscripción realtime con canal único y filtros específicos
+    final channelName =
+        'notificaciones-recent-${_escuelaIdInUse!}-${DateTime.now().millisecondsSinceEpoch}';
+    _realtimeChannel = _supabase.channel(channelName);
+
+    // Escuchar cambios en notificaciones de asistencia
+    _realtimeChannel!
       ..onPostgresChanges(
         event: PostgresChangeEvent.insert,
         schema: 'public',
         table: 'notificaciones',
-        callback: (_) {
-          _debounceReloadTimer?.cancel();
-          _debounceReloadTimer = Timer(
-            Duration(
-                milliseconds: (widget.screenSize.shortestSide * 0.4).round()),
-            () {
-              if (mounted) _loadRecentNotifications();
-            },
-          );
+        callback: (payload) {
+          debugPrint('🔄 RecentAttendanceCard: INSERT detected');
+          debugPrint('🔄 Payload: ${payload.newRecord}');
+
+          // Verificar que sea de nuestra escuela y tipo relevante
+          final record = payload.newRecord;
+          final tipoNotif = record['tipo_notificacion']?.toString();
+          if (['entrada', 'salida', 'retraso'].contains(tipoNotif)) {
+            debugPrint(
+                '🔄 RecentAttendanceCard: Relevant notification type: $tipoNotif');
+            _triggerReload();
+          }
         },
       )
       ..onPostgresChanges(
         event: PostgresChangeEvent.update,
         schema: 'public',
         table: 'notificaciones',
-        callback: (_) {
-          _debounceReloadTimer?.cancel();
-          _debounceReloadTimer = Timer(
-            Duration(
-                milliseconds: (widget.screenSize.shortestSide * 0.4).round()),
-            () {
-              if (mounted) _loadRecentNotifications();
-            },
-          );
+        callback: (payload) {
+          debugPrint('🔄 RecentAttendanceCard: UPDATE detected');
+          final record = payload.newRecord;
+          final tipoNotif = record['tipo_notificacion']?.toString();
+          if (['entrada', 'salida', 'retraso'].contains(tipoNotif)) {
+            _triggerReload();
+          }
         },
       )
       ..onPostgresChanges(
         event: PostgresChangeEvent.delete,
         schema: 'public',
         table: 'notificaciones',
-        callback: (_) {
-          _debounceReloadTimer?.cancel();
-          _debounceReloadTimer = Timer(
-            Duration(
-                milliseconds: (widget.screenSize.shortestSide * 0.4).round()),
-            () {
-              if (mounted) _loadRecentNotifications();
-            },
-          );
+        callback: (payload) {
+          debugPrint('🔄 RecentAttendanceCard: DELETE detected');
+          _triggerReload();
         },
       )
-      ..subscribe();
+      ..subscribe((status, [ref]) {
+        debugPrint(
+            '🔄 RecentAttendanceCard: Subscription status: $status for escuela: $_escuelaIdInUse');
+        if (status == 'SUBSCRIBED') {
+          debugPrint(
+              '🔄 RecentAttendanceCard: Successfully subscribed to realtime updates');
+        }
+      });
+
+    debugPrint(
+        '🔄 RecentAttendanceCard: Realtime subscription configured for escuela: $_escuelaIdInUse');
+  }
+
+  void _triggerReload() {
+    _debounceReloadTimer?.cancel();
+    _debounceReloadTimer = Timer(
+      const Duration(
+          milliseconds: 100), // Reducir debounce para updates más rápidos
+      () {
+        debugPrint('🔄 RecentAttendanceCard: Executing reload...');
+        if (mounted) _loadRecentNotifications();
+      },
+    );
   }
 
   Future<void> _loadRecentNotifications() async {
@@ -358,12 +389,12 @@ class _AttendanceItem extends StatelessWidget {
     final statusColor = _getStatusColor(tipoNotificacion);
     final statusIcon = _getStatusIcon(tipoNotificacion);
 
-    // Fecha segura
+    // 🔧 FIX: Fecha segura usando TimeFormat.parseSupabaseDateTime para manejar timestamptz
     DateTime fechaRegistro;
     final rawFecha = notification['fecha_registro'];
     try {
       fechaRegistro = rawFecha is String
-          ? DateTime.parse(rawFecha)
+          ? TimeFormat.parseSupabaseDateTime(rawFecha)
           : (rawFecha is DateTime ? rawFecha : DateTime.now());
     } catch (_) {
       fechaRegistro = DateTime.now();

@@ -154,6 +154,9 @@ class _HomeViewState extends State<HomeView> {
       }
 
       // Cargas iniciales
+      // Asegurar contexto de usuario para estudiantes
+      studentProvider.switchToUserContext(currentUser.id);
+
       await Future.wait([
         notificationProvider.loadNotifications(),
         studentProvider.loadStudentsForUser(userId: currentUser.id),
@@ -311,6 +314,9 @@ class _HomeViewState extends State<HomeView> {
 
     final students = context.read<StudentProvider>();
     final schedule = context.read<ScheduleProvider>();
+
+    // Asegurar contexto de usuario antes de recargar
+    students.switchToUserContext(user.id);
 
     futures.addAll([
       // Alumnos

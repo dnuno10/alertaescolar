@@ -12,15 +12,41 @@
           "package_name": "com.example.alertaescolarMb"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "328996489325-267t2hme8sr0l74tllhsfubtqg69j9jv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.alertaescolarMb",
+            "certificate_hash": "92e33f27f221fb6c05862ff413309a006d0abdfc"
+          }
+        },
+        {
+          "client_id": "328996489325-1qblqo4s2h2s6bnmajf4ia331a49fssa.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyDf97wf-Iv8xhzZx9r2UHPvHFA5sGKPl84"
+          "current_key": "AIzaSyBL6Ax79bZjPByDE-ypBkCnkU8scG1qNc8"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "328996489325-1qblqo4s2h2s6bnmajf4ia331a49fssa.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "328996489325-4p4vhv5psrpnashnuokin3eboej6ulnq.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.alertaescolarMb",
+                "app_store_id": "6526502450"
+              }
+            }
+          ]
         }
       }
     },
@@ -31,15 +57,33 @@
           "package_name": "com.example.alertaescolar_mb"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "328996489325-1qblqo4s2h2s6bnmajf4ia331a49fssa.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyDf97wf-Iv8xhzZx9r2UHPvHFA5sGKPl84"
+          "current_key": "AIzaSyBL6Ax79bZjPByDE-ypBkCnkU8scG1qNc8"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "328996489325-1qblqo4s2h2s6bnmajf4ia331a49fssa.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "328996489325-4p4vhv5psrpnashnuokin3eboej6ulnq.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.alertaescolarMb",
+                "app_store_id": "6526502450"
+              }
+            }
+          ]
         }
       }
     }

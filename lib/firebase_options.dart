@@ -25,15 +25,9 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -47,7 +41,7 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCRLl9Qp2Sw7NwVO7JeIbmMxbNUifpdM6E',
+    apiKey: 'AIzaSyDQDpTXe0G02QcRDqpZ4qKzwVgC5-eUdfg',
     appId: '1:328996489325:web:5ab759737e0e02ef375764',
     messagingSenderId: '328996489325',
     projectId: 'alerta-escolar-1e870',
@@ -57,7 +51,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDf97wf-Iv8xhzZx9r2UHPvHFA5sGKPl84',
+    apiKey: 'AIzaSyBL6Ax79bZjPByDE-ypBkCnkU8scG1qNc8',
     appId: '1:328996489325:android:c606bea66610aa1a375764',
     messagingSenderId: '328996489325',
     projectId: 'alerta-escolar-1e870',
@@ -65,12 +59,35 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyA5Ngcb5EJfxnGqOCm7N4iuhMyluLi2a3A',
+    apiKey: 'AIzaSyCIqg9vacRkeYIvnaCSJ2osW0Nf11-CwGg',
     appId: '1:328996489325:ios:f45e7721ba20c1cd375764',
     messagingSenderId: '328996489325',
     projectId: 'alerta-escolar-1e870',
     storageBucket: 'alerta-escolar-1e870.firebasestorage.app',
+    androidClientId: '328996489325-267t2hme8sr0l74tllhsfubtqg69j9jv.apps.googleusercontent.com',
+    iosClientId: '328996489325-4p4vhv5psrpnashnuokin3eboej6ulnq.apps.googleusercontent.com',
     iosBundleId: 'com.example.alertaescolarMb',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyCIqg9vacRkeYIvnaCSJ2osW0Nf11-CwGg',
+    appId: '1:328996489325:ios:f45e7721ba20c1cd375764',
+    messagingSenderId: '328996489325',
+    projectId: 'alerta-escolar-1e870',
+    storageBucket: 'alerta-escolar-1e870.firebasestorage.app',
+    androidClientId: '328996489325-267t2hme8sr0l74tllhsfubtqg69j9jv.apps.googleusercontent.com',
+    iosClientId: '328996489325-4p4vhv5psrpnashnuokin3eboej6ulnq.apps.googleusercontent.com',
+    iosBundleId: 'com.example.alertaescolarMb',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyDQDpTXe0G02QcRDqpZ4qKzwVgC5-eUdfg',
+    appId: '1:328996489325:web:fdb3ec2b89d0100d375764',
+    messagingSenderId: '328996489325',
+    projectId: 'alerta-escolar-1e870',
+    authDomain: 'alerta-escolar-1e870.firebaseapp.com',
+    storageBucket: 'alerta-escolar-1e870.firebasestorage.app',
+    measurementId: 'G-RKYCG86LG1',
   );
 
 }

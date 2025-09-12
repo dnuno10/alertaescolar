@@ -447,10 +447,36 @@ class ScannerService {
     debugPrint('actualAccess resolved to: $actualAccess');
     debugPrint('isFixedAccess: $isFixedAccess');
 
-    final String? turnoInicioStr = turno['hora_inicio']?.toString();
-    final int tolerancia = turno['tolerancia'] is int
+    // 🔧 FIX: Para determinar retrasos, usar SIEMPRE el turno de la configuración del sistema
+    // NO el turno del alumno. Solo usar turno del alumno como fallback si no hay TurnoProvider.
+    String? turnoInicioStr = turno['hora_inicio']?.toString();
+    int tolerancia = turno['tolerancia'] is int
         ? turno['tolerancia']
         : (int.tryParse('${turno['tolerancia'] ?? '0'}') ?? 15);
+
+    // Si estamos en modo automático Y tenemos TurnoProvider, usar el turno activo del sistema
+    if (actualAccess == ScannerAccessType.entry &&
+        !isFixedAccess &&
+        accessType == ScannerAccessType.automatic &&
+        turnoProvider != null) {
+      try {
+        final accessPhase = turnoProvider.resolveAccessPhase(now: currentTime);
+        debugPrint('🔧 TURNO FIX: TurnoProvider phase: ${accessPhase.type}');
+
+        if (accessPhase.turno != null) {
+          // Usar el turno activo del sistema en lugar del turno del alumno
+          turnoInicioStr = accessPhase.turno!.horaInicio;
+          tolerancia = accessPhase.turno!.tolerancia;
+          debugPrint(
+              '🔧 TURNO FIX: Using system turno "${accessPhase.turno!.turno}" instead of student turno');
+          debugPrint(
+              '🔧 TURNO FIX: System turno time: $turnoInicioStr, tolerance: $tolerancia min');
+        }
+      } catch (e) {
+        debugPrint(
+            '🔧 TURNO FIX: Error getting system turno, using student turno as fallback: $e');
+      }
+    }
 
     debugPrint('turnoInicioStr: $turnoInicioStr');
     debugPrint('tolerancia: $tolerancia');
@@ -469,7 +495,8 @@ class ScannerService {
         accessType == ScannerAccessType.automatic &&
         turnoInicioStr != null &&
         turnoInicioStr.isNotEmpty) {
-      debugPrint('🕐 AUTOMATIC ENTRY MODE: Checking for lateness...');
+      debugPrint(
+          '🕐 AUTOMATIC ENTRY MODE: Checking for lateness using system turno...');
       try {
         final parts = turnoInicioStr.split(':');
         if (parts.length >= 2) {
@@ -486,8 +513,9 @@ class ScannerService {
 
           final lateThreshold = turnoDt.add(Duration(minutes: tolerancia));
 
-          debugPrint('turnoDt: $turnoDt');
-          debugPrint('lateThreshold: $lateThreshold');
+          debugPrint('🔧 SYSTEM TURNO: turnoDt: $turnoDt');
+          debugPrint('🔧 SYSTEM TURNO: lateThreshold: $lateThreshold');
+          debugPrint('🔧 SYSTEM TURNO: tolerancia: $tolerancia min');
           debugPrint(
               'currentTime.isAfter(lateThreshold): ${currentTime.isAfter(lateThreshold)}');
 

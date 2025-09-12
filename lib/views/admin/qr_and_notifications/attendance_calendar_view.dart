@@ -461,7 +461,9 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
 
     // Día seleccionado
     filtered = filtered.where((n) {
-      final fechaRegistro = DateTime.parse(n['fecha_registro']);
+      // 🔧 FIX: Usar TimeFormat.parseSupabaseDateTime para manejar timestamptz
+      final fechaRegistro =
+          TimeFormat.parseSupabaseDateTime(n['fecha_registro']);
       return fechaRegistro.year == selectedDate.year &&
           fechaRegistro.month == selectedDate.month &&
           fechaRegistro.day == selectedDate.day;
@@ -472,7 +474,9 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
 
   List<Map<String, dynamic>> _getNotificationsForDate(DateTime date) {
     return _filteredNotifications.where((n) {
-      final fechaRegistro = DateTime.parse(n['fecha_registro']);
+      // 🔧 FIX: Usar TimeFormat.parseSupabaseDateTime para manejar timestamptz
+      final fechaRegistro =
+          TimeFormat.parseSupabaseDateTime(n['fecha_registro']);
       return fechaRegistro.year == date.year &&
           fechaRegistro.month == date.month &&
           fechaRegistro.day == date.day;
@@ -946,12 +950,14 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
     final student = notification['alumnos'] ?? const {};
     final tipoNotificacion =
         (notification['tipo_notificacion'] ?? '').toString();
-    final fechaRegistro = DateTime.parse(notification['fecha_registro']);
+
+    // 🔧 FIX: Usar TimeFormat.parseSupabaseDateTime para manejar timestamptz correctamente
+    final fechaRegistro =
+        TimeFormat.parseSupabaseDateTime(notification['fecha_registro']);
     final adminId = (notification['id_admin'] ?? '').toString();
 
-    final horaAmPm = TimeFormat.format24to12(
-      '${fechaRegistro.hour.toString().padLeft(2, '0')}:${fechaRegistro.minute.toString().padLeft(2, '0')}',
-    );
+    // 🔧 FIX: Usar TimeFormat.formatDateTimeToAmPm para formato correcto con timezone local
+    final horaAmPm = TimeFormat.formatDateTimeToAmPm(fechaRegistro);
 
     Color typeColor;
     IconData typeIcon;

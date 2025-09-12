@@ -23,4 +23,41 @@ class TimeFormat {
       return time24;
     }
   }
+
+  /// Parsea una fecha de Supabase (que puede incluir timezone) a DateTime local
+  static DateTime parseSupabaseDateTime(String dateTimeString) {
+    try {
+      // Si ya es un DateTime válido con zona horaria, parsearlo directamente
+      final parsed = DateTime.parse(dateTimeString);
+
+      // Si es UTC, convertir a hora local
+      if (parsed.isUtc) {
+        return parsed.toLocal();
+      }
+
+      // Si no tiene información de timezone, asumir que es local
+      return parsed;
+    } catch (e) {
+      // Fallback: retornar fecha actual si hay error
+      return DateTime.now();
+    }
+  }
+
+  /// Convierte un DateTime a formato de hora AM/PM usando la zona horaria local
+  static String formatDateTimeToAmPm(DateTime dateTime) {
+    final localDateTime = dateTime.isUtc ? dateTime.toLocal() : dateTime;
+    final timeString =
+        '${localDateTime.hour.toString().padLeft(2, '0')}:${localDateTime.minute.toString().padLeft(2, '0')}';
+    return format24to12(timeString);
+  }
+
+  /// Obtiene el rango UTC para un día específico desde la perspectiva local
+  static ({DateTime startUtc, DateTime endUtc}) getDayUtcRangeFromLocal(
+      [DateTime? date]) {
+    final targetDate = date ?? DateTime.now();
+    final startOfDayLocal =
+        DateTime(targetDate.year, targetDate.month, targetDate.day);
+    final endOfDayLocal = startOfDayLocal.add(const Duration(days: 1));
+    return (startUtc: startOfDayLocal.toUtc(), endUtc: endOfDayLocal.toUtc());
+  }
 }

@@ -24,9 +24,10 @@ class Google {
     final l10n = AppLocalizations.of(context);
 
     const webClientId =
-        '84476159662-prk0gfmqhd1j1dtechkas0s4gffm5iu6.apps.googleusercontent.com';
+        '328996489325-1qblqo4s2h2s6bnmajf4ia331a49fssa.apps.googleusercontent.com';
+
     const iosClientId =
-        '84476159662-5srkbbd1l6aibi2ng9plj67ec6qhr8pf.apps.googleusercontent.com';
+        '328996489325-4p4vhv5psrpnashnuokin3eboej6ulnq.apps.googleusercontent.com';
 
     final googleSignIn = GoogleSignIn(
       clientId: iosClientId,

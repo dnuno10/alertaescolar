@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -20,40 +20,54 @@ class QRScannerView extends StatefulWidget {
 
 class _QRScannerViewState extends State<QRScannerView>
     with WidgetsBindingObserver {
-  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  QRViewController? controller;
+  late final MobileScannerController _controller;
   bool flashOn = false;
-  bool _handled = false; // evita lecturas múltiples / rebotes
+  bool _handled = false; // evita lecturas múltiples
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    _controller = MobileScannerController(
+      facing: CameraFacing.back,
+      detectionSpeed: DetectionSpeed.normal,
+      detectionTimeoutMs: 250,
+      returnImage: false,
+      formats: const [
+        BarcodeFormat.qrCode,
+        BarcodeFormat.code128,
+        BarcodeFormat.code39,
+      ],
+    );
+
+    // Intento de arranque (si falla, el widget mostrará error vía errorBuilder)
+    _controller.start().catchError((_) {});
   }
 
   @override
   void reassemble() {
     super.reassemble();
     // Hot reload: pausa y reanuda para evitar cámara bloqueada
-    controller?.pauseCamera();
-    controller?.resumeCamera();
+    _controller.stop().then((_) => _controller.start()).catchError((_) {});
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Pausa/resume para evitar cámara activa en background
-    if (controller == null) return;
-    if (state == AppLifecycleState.paused) {
-      controller!.pauseCamera();
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      _controller.stop();
     } else if (state == AppLifecycleState.resumed) {
-      controller!.resumeCamera();
+      _controller.start().catchError((_) {});
     }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    controller?.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -61,42 +75,49 @@ class _QRScannerViewState extends State<QRScannerView>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final screenSize = MediaQuery.of(context).size;
-    final cutout =
-        screenSize.shortestSide * 0.8; // más robusto en rotación/tablets
+    final cutout = screenSize.shortestSide * 0.8;
 
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
           // Scanner
-          QRView(
-            key: qrKey,
-            onQRViewCreated: _onQRViewCreated,
-            onPermissionSet: (ctrl, permitted) async {
-              if (!permitted) {
-                // Feedback y salida limpia si no hay permisos
-                HapticFeedback.mediumImpact();
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Permiso de cámara denegado')),
-                );
-                await Future.delayed(const Duration(milliseconds: 300));
-                if (!mounted) return;
-                widget.onClose();
-              }
+          MobileScanner(
+            controller: _controller,
+            onDetect: _onDetect,
+            // En algunas versiones no hay onPermissionSet; usamos errorBuilder
+            errorBuilder: (context, error, child) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline,
+                          color: Colors.red, size: 64),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Error de cámara (${error.errorCode})',
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 16),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Verifica permisos de cámara y vuelve a intentarlo.',
+                        style: TextStyle(color: Colors.white70),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: widget.onClose,
+                        child: const Text('Cerrar'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
             },
-            overlay: QrScannerOverlayShape(
-              borderColor: AppTheme.accentBlue,
-              borderRadius: 10,
-              borderLength: 30,
-              borderWidth: 10,
-              cutOutSize: cutout,
-            ),
-            formatsAllowed: const [
-              BarcodeFormat.qrcode,
-              BarcodeFormat.code128,
-              BarcodeFormat.code39,
-            ],
           ),
 
           // Controles superiores
@@ -111,7 +132,6 @@ class _QRScannerViewState extends State<QRScannerView>
                       // Cerrar
                       Container(
                         decoration: BoxDecoration(
-                          // ignore: deprecated_member_use
                           color: Colors.black.withOpacity(0.5),
                           borderRadius: BorderRadius.circular(
                             AppTheme.getSmallRadius(screenSize),
@@ -133,7 +153,6 @@ class _QRScannerViewState extends State<QRScannerView>
                       // Flash
                       Container(
                         decoration: BoxDecoration(
-                          // ignore: deprecated_member_use
                           color: Colors.black.withOpacity(0.5),
                           borderRadius: BorderRadius.circular(
                             AppTheme.getSmallRadius(screenSize),
@@ -161,7 +180,6 @@ class _QRScannerViewState extends State<QRScannerView>
                     padding:
                         EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
                     decoration: BoxDecoration(
-                      // ignore: deprecated_member_use
                       color: Colors.black.withOpacity(0.7),
                       borderRadius: BorderRadius.circular(
                         AppTheme.getMediumRadius(screenSize),
@@ -181,46 +199,64 @@ class _QRScannerViewState extends State<QRScannerView>
             ),
           ),
 
-          // Pie con título e instrucciones
+          // Pie con título e instrucciones + marco guía
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
             child: SafeArea(
-              child: Container(
-                padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-                decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
-                  color: Colors.black.withOpacity(0.7),
-                  borderRadius: BorderRadius.only(
-                    topLeft:
-                        Radius.circular(AppTheme.getLargeRadius(screenSize)),
-                    topRight:
-                        Radius.circular(AppTheme.getLargeRadius(screenSize)),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Marco guía
+                  Container(
+                    width: cutout,
+                    height: cutout,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(
+                          AppTheme.getLargeRadius(screenSize)),
+                      border: Border.all(
+                        color: AppTheme.accentBlue,
+                        width: 4,
+                      ),
+                    ),
                   ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      l10n.qrScannerTitle,
-                      style: AppTheme.getH2(screenSize).copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                  const SizedBox(height: 16),
+                  Container(
+                    padding:
+                        EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(
+                            AppTheme.getLargeRadius(screenSize)),
+                        topRight: Radius.circular(
+                            AppTheme.getLargeRadius(screenSize)),
                       ),
-                      textAlign: TextAlign.center,
                     ),
-                    SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-                    Text(
-                      l10n.qrScannerInstructions,
-                      style: AppTheme.getCaption(screenSize).copyWith(
-                        // ignore: deprecated_member_use
-                        color: Colors.white.withOpacity(0.8),
-                      ),
-                      textAlign: TextAlign.center,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          l10n.qrScannerTitle,
+                          style: AppTheme.getH2(screenSize).copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+                        Text(
+                          l10n.qrScannerInstructions,
+                          style: AppTheme.getCaption(screenSize).copyWith(
+                            color: Colors.white.withOpacity(0.8),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -229,39 +265,27 @@ class _QRScannerViewState extends State<QRScannerView>
     );
   }
 
-  void _onQRViewCreated(QRViewController controller) async {
-    setState(() => this.controller = controller);
+  void _onDetect(BarcodeCapture capture) async {
+    if (_handled) return;
 
-    // Sincroniza estado real del flash al crear
-    try {
-      final status = await controller.getFlashStatus();
-      if (mounted && status != null) {
-        setState(() => flashOn = status);
-      }
-    } catch (_) {
-      // Ignora si el dispositivo no soporta flash
-    }
+    final code = capture.barcodes
+        .map((b) => b.rawValue?.trim() ?? '')
+        .firstWhere((v) => v.isNotEmpty, orElse: () => '');
 
-    // Debounce/one-shot para evitar lecturas múltiples
-    controller.scannedDataStream.listen((scanData) async {
-      final code = scanData.code;
-      if (_handled || code == null || code.isEmpty) return;
-      _handled = true;
+    if (code.isEmpty) return;
 
-      await controller.pauseCamera();
-      if (!mounted) return;
-      widget.onCodeScanned(code);
-    });
+    _handled = true;
+    await _controller.stop(); // pausa antes de salir
+    if (!mounted) return;
+    widget.onCodeScanned(code);
   }
 
   Future<void> _toggleFlash() async {
-    final c = controller;
-    if (c == null) return;
     try {
-      await c.toggleFlash();
-      final status = await c.getFlashStatus();
+      await _controller.toggleTorch();
+      // Si no podemos leer el estado real, invertimos localmente
       if (!mounted) return;
-      setState(() => flashOn = status ?? !flashOn);
+      setState(() => flashOn = !flashOn);
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 enum ScannerType { camera, physical }
 
@@ -13,7 +13,7 @@ class AttendanceScannerProvider with ChangeNotifier {
   String? _successMessage;
 
   bool _isListeningToPhysicalScanner = false;
-  QRViewController? _cameraController;
+  MobileScannerController? _cameraController;
 
   // Historial de códigos leídos (solo para UI)
   List<String> _scannedHistory = [];
@@ -65,32 +65,40 @@ class AttendanceScannerProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ===== Cámara =====
-  void setCameraController(QRViewController controller) {
+  // ===== Cámara (mobile_scanner) =====
+  void setCameraController(MobileScannerController controller) {
     _cameraController = controller;
   }
 
-  void startCameraScanning() {
+  Future<void> startCameraScanning() async {
     if (_cameraController != null) {
       _setState(ScannerState.scanning);
-      _cameraController!.resumeCamera();
+      try {
+        await _cameraController!.start();
+      } catch (e) {
+        _setError('No se pudo iniciar la cámara: $e');
+      }
     }
   }
 
-  void stopCameraScanning() {
-    _cameraController?.pauseCamera();
+  Future<void> stopCameraScanning() async {
+    try {
+      await _cameraController?.stop();
+    } catch (_) {}
     _setState(ScannerState.idle);
   }
 
-  /// Importante: el View debe haber llamado antes a `setOnScanCallback(...)`
-  /// para que el procesamiento real (sin mocks) ocurra fuera del provider.
-  void onCameraQRViewCreated(QRViewController controller) {
-    setCameraController(controller);
-    controller.scannedDataStream.listen((scanData) async {
-      if (_state == ScannerState.scanning && (scanData.code ?? '').isNotEmpty) {
-        await _forwardScan(scanData.code!.trim());
-      }
-    });
+  /// Con mobile_scanner usamos `onDetect` desde la vista y lo encaminamos aquí si quieres centralizar la lógica.
+  Future<void> handleMobileDetection(BarcodeCapture capture) async {
+    if (_state != ScannerState.scanning) return;
+
+    // Tomamos el primer barcode con valor válido
+    final code = capture.barcodes
+        .map((b) => b.rawValue?.trim() ?? '')
+        .firstWhere((v) => v.isNotEmpty, orElse: () => '');
+
+    if (code.isEmpty) return;
+    await _forwardScan(code);
   }
 
   // ===== Lector físico =====
@@ -111,10 +119,8 @@ class AttendanceScannerProvider with ChangeNotifier {
     final code = input.trim();
     if (code.isEmpty) return;
 
-    // Solo condicionamos por estado para evitar ruido cuando no está activo
     if (!_isListeningToPhysicalScanner &&
         _selectedScannerType == ScannerType.physical) {
-      // Si explícitamente estamos en físico pero no escuchando, ignoramos
       return;
     }
     await _forwardScan(code);
@@ -124,7 +130,7 @@ class AttendanceScannerProvider with ChangeNotifier {
   bool _isForwarding = false;
 
   Future<void> _forwardScan(String code) async {
-    if (_isForwarding) return; // anti doble-disparo por stream
+    if (_isForwarding) return; // anti doble-disparo
     _isForwarding = true;
     _lastScannedCode = code;
     _setState(ScannerState.processing);
@@ -153,15 +159,18 @@ class AttendanceScannerProvider with ChangeNotifier {
   }
 
   // ===== Utilidades =====
-  void resetScanner() {
-    stopCameraScanning();
+  Future<void> resetScanner() async {
+    await stopCameraScanning();
     stopPhysicalScannerListening();
     _selectedScannerType = null;
     clearMessages();
     _lastScannedCode = null;
   }
 
-  void clearAllData() {
+  Future<void> clearAllData() async {
+    try {
+      await _cameraController?.dispose();
+    } catch (_) {}
     _state = ScannerState.idle;
     _selectedScannerType = null;
     _lastScannedCode = null;
@@ -175,7 +184,9 @@ class AttendanceScannerProvider with ChangeNotifier {
 
   @override
   void dispose() {
-    _cameraController?.dispose();
+    try {
+      _cameraController?.dispose();
+    } catch (_) {}
     super.dispose();
   }
 }
