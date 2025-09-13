@@ -123,7 +123,7 @@ class _RecentAttendanceCardState extends State<RecentAttendanceCard> {
 
     if (_escuelaIdInUse == null || _escuelaIdInUse!.isEmpty) {
       debugPrint(
-          '🔄 RecentAttendanceCard: No escuelaId, skipping realtime subscription');
+          'RecentAttendanceCard: No escuelaId, skipping realtime subscription');
       return;
     }
 
@@ -302,8 +302,8 @@ class _RecentAttendanceCardState extends State<RecentAttendanceCard> {
         ),
         SizedBox(height: AppTheme.getMediumPadding(widget.screenSize)),
 
-        // Tarjeta estilo "capsule" sin sombras
         Container(
+          width: double.infinity,
           padding: EdgeInsets.all(AppTheme.getMediumPadding(widget.screenSize)),
           decoration: BoxDecoration(
             color: AppTheme.getCardColor(context),

@@ -1,4 +1,5 @@
 import 'package:alertaescolar/providers/language_provider.dart';
+import 'package:alertaescolar/widgets/connectivity_wrapper.dart';
 import 'package:alertaescolar/models/usuario.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -50,7 +51,6 @@ final supabase = Supabase.instance.client;
 
 /// --- Función para calcular si un usuario es admin ---
 Future<bool> _computeIsAdmin(SupabaseClient supabase, User user) async {
-  // revisa campo tipo en usuarios
   final userData = await supabase
       .from('usuarios')
       .select('tipo')
@@ -60,7 +60,6 @@ Future<bool> _computeIsAdmin(SupabaseClient supabase, User user) async {
   final isAdminByTipo =
       (userData?['tipo']?.toString() ?? '') == TipoUsuario.administrador.name;
 
-  // revisa lista blanca
   final email = (user.email ?? '').trim().toLowerCase();
   bool isAdminByList = false;
   if (email.isNotEmpty) {
@@ -91,7 +90,6 @@ void _setupFCMAuthListener() {
           }
         } catch (e) {
           debugPrint('FCM: Error checking user type: $e');
-          // fallback
           await FCMService().initializeFCM();
         }
       }
@@ -133,21 +131,16 @@ class _AppContentState extends State<_AppContent> {
   Future<void> _initializeProvidersAndAutoLogin() async {
     if (!_providersInitialized && mounted) {
       await Future.delayed(const Duration(milliseconds: 50));
-
-      // Initialize providers básicos
-      // ignore: use_build_context_synchronously
       await _initializeProvidersWithoutAuth(context);
 
       if (!mounted) return;
       final userProvider = Provider.of<UserProvider>(context, listen: false);
-
       final session = supabase.auth.currentSession;
+
       if (session != null) {
-        debugPrint("Found existing session: ${session.user.id}");
         try {
           await userProvider.loadCurrentUser(context, showDialog: false);
 
-          // lee datos del usuario
           final userData = await supabase
               .from('usuarios')
               .select('email, nombre, apellido, tipo')
@@ -162,13 +155,10 @@ class _AppContentState extends State<_AppContent> {
 
           if (!hasCompleteProfile) {
             _initialRoute = AppRoutes.finishSettingUp;
-            debugPrint("Profile incomplete → ${AppRoutes.finishSettingUp}");
           } else if (isAdmin) {
             _initialRoute = AppRoutes.adminDashboard;
-            debugPrint("Admin user → ${AppRoutes.adminDashboard}");
           } else {
             _initialRoute = AppRoutes.home;
-            debugPrint("Regular user → ${AppRoutes.home}");
           }
         } catch (e) {
           debugPrint("Error loading user data: $e");
@@ -183,7 +173,6 @@ class _AppContentState extends State<_AppContent> {
           _providersInitialized = true;
           _isAutoLoginChecked = true;
         });
-        debugPrint("Final initial route determined: $_initialRoute");
       }
     }
   }
@@ -195,7 +184,6 @@ class _AppContentState extends State<_AppContent> {
           Provider.of<NotificationProvider>(context, listen: false);
       try {
         await notificationProvider.loadNotifications();
-        debugPrint("Notification provider initialized successfully");
       } catch (e) {
         debugPrint("Notification provider initialization error: $e");
       }
@@ -240,7 +228,6 @@ class _AppContentState extends State<_AppContent> {
 
     return Consumer2<LocaleProvider, ThemeProvider>(
       builder: (context, localeProvider, themeProvider, child) {
-        debugPrint("Building MaterialApp with initial route: $_initialRoute");
         return MaterialApp(
           title: 'Alerta Escolar',
           debugShowCheckedModeBanner: false,
@@ -253,19 +240,19 @@ class _AppContentState extends State<_AppContent> {
           themeMode: themeProvider.themeMode,
           initialRoute: _initialRoute,
           onGenerateInitialRoutes: (String initialRouteName) {
-            debugPrint(
-                'Forcing initial route: $_initialRoute (framework asked for: $initialRouteName)');
             final Route<dynamic>? first = AppRoutes.onGenerateRoute(
               RouteSettings(name: _initialRoute),
             );
-            assert(first != null,
-                'onGenerateRoute devolvió null para $_initialRoute');
             return [first!];
           },
           onGenerateRoute: AppRoutes.onGenerateRoute,
           navigatorObservers: [
             _NavigationObserver(),
           ],
+          // Envolver toda la app con el GlobalConnectivityWrapper
+          builder: (context, child) {
+            return GlobalConnectivityWrapper(child: child ?? Container());
+          },
         );
       },
     );

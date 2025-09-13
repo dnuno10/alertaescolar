@@ -426,7 +426,7 @@ class _ScheduleManagementViewState extends State<ScheduleManagementView> {
           Text(
             error,
             style: AppTheme.getCaption(screenSize).copyWith(
-              color: AppTheme.getTextSecondaryColor(context),
+              color: AppTheme.getTextPrimaryColor(context),
             ),
             textAlign: TextAlign.center,
           ),

@@ -408,16 +408,61 @@ class StudentProvider with ChangeNotifier {
     _chAlumnos = _chLlaves = _chVinculos = null;
   }
 
+  /// Verifica si un estudiante específico está vinculado a un usuario específico
+  Future<bool> _isStudentLinkedToUser(String studentId, String userId) async {
+    try {
+      final result = await _supabase
+          .from('alumno_tutores')
+          .select('id')
+          .eq('id_alumno', studentId)
+          .eq('id_tutor', userId)
+          .maybeSingle();
+      return result != null;
+    } catch (e) {
+      debugPrint('Error checking student link: $e');
+      return false;
+    }
+  }
+
+  /// Verifica si una llave específica pertenece a un alumno vinculado a un usuario específico
+  Future<bool> _isKeyLinkedToUser(String keyId, String userId) async {
+    try {
+      final result = await _supabase
+          .from('llaves')
+          .select('id_alumno')
+          .eq('id', keyId)
+          .maybeSingle();
+
+      if (result == null) return false;
+
+      final studentId = result['id_alumno']?.toString();
+      if (studentId == null) return false;
+
+      return await _isStudentLinkedToUser(studentId, userId);
+    } catch (e) {
+      debugPrint('Error checking key link: $e');
+      return false;
+    }
+  }
+
   void _startRealtimeForUser(String userId) {
     _disposeRealtime();
 
+    // Para padres de familia: Solo escuchar cambios específicos a sus estudiantes vinculados
     _chAlumnos = _supabase.channel('alumnos_user_$userId')
       ..onPostgresChanges(
         event: PostgresChangeEvent.all,
         schema: 'public',
         table: 'alumnos',
         callback: (payload) async {
-          await loadStudentsForUser(userId: userId, forceReload: true);
+          // Solo recargar si el cambio afecta a un alumno vinculado a este usuario
+          final alumnoId = payload.newRecord['id']?.toString() ??
+              payload.oldRecord['id']?.toString();
+          if (alumnoId != null &&
+              await _isStudentLinkedToUser(alumnoId, userId)) {
+            debugPrint('Realtime: Alumno $alumnoId changed for user $userId');
+            await loadStudentsForUser(userId: userId, forceReload: true);
+          }
         },
       )
       ..subscribe();
@@ -428,7 +473,13 @@ class StudentProvider with ChangeNotifier {
         schema: 'public',
         table: 'llaves',
         callback: (payload) async {
-          await loadStudentsForUser(userId: userId, forceReload: true);
+          // Solo recargar si la llave pertenece a un alumno vinculado a este usuario
+          final llaveId = payload.newRecord['id']?.toString() ??
+              payload.oldRecord['id']?.toString();
+          if (llaveId != null && await _isKeyLinkedToUser(llaveId, userId)) {
+            debugPrint('Realtime: Llave $llaveId changed for user $userId');
+            await loadStudentsForUser(userId: userId, forceReload: true);
+          }
         },
       )
       ..subscribe();
@@ -445,6 +496,7 @@ class StudentProvider with ChangeNotifier {
           value: userId,
         ),
         callback: (payload) async {
+          debugPrint('Realtime: Vínculo alumno-tutor changed for user $userId');
           await loadStudentsForUser(userId: userId, forceReload: true);
         },
       )
@@ -465,7 +517,14 @@ class StudentProvider with ChangeNotifier {
           value: schoolId,
         ),
         callback: (payload) async {
-          await loadStudents(escuelaId: schoolId);
+          // Solo recargar si estamos en modo administrador
+          if (_currentLoadingMode == 'admin') {
+            debugPrint(
+                'Realtime: Alumno changed in school $schoolId (admin mode)');
+            await loadStudents(escuelaId: schoolId);
+          } else {
+            debugPrint('Realtime: Ignoring alumno change - not in admin mode');
+          }
         },
       )
       ..subscribe();
@@ -476,7 +535,14 @@ class StudentProvider with ChangeNotifier {
         schema: 'public',
         table: 'llaves',
         callback: (payload) async {
-          await loadStudents(escuelaId: schoolId);
+          // Solo recargar si estamos en modo administrador
+          if (_currentLoadingMode == 'admin') {
+            debugPrint(
+                'Realtime: Llave changed in school $schoolId (admin mode)');
+            await loadStudents(escuelaId: schoolId);
+          } else {
+            debugPrint('Realtime: Ignoring llave change - not in admin mode');
+          }
         },
       )
       ..subscribe();
@@ -487,7 +553,14 @@ class StudentProvider with ChangeNotifier {
         schema: 'public',
         table: 'alumno_tutores',
         callback: (payload) async {
-          await loadStudents(escuelaId: schoolId);
+          // Solo recargar si estamos en modo administrador
+          if (_currentLoadingMode == 'admin') {
+            debugPrint(
+                'Realtime: Vínculo changed in school $schoolId (admin mode)');
+            await loadStudents(escuelaId: schoolId);
+          } else {
+            debugPrint('Realtime: Ignoring vínculo change - not in admin mode');
+          }
         },
       )
       ..subscribe();
@@ -677,12 +750,9 @@ class StudentProvider with ChangeNotifier {
       _currentSchoolId = resolvedSchool;
       debugPrint('loadStudentsForUser: resolved schoolId = $_currentSchoolId');
 
-      // Realtime: si hay escuela, suscribirse por escuela; si no, por usuario
-      if (_currentSchoolId != null) {
-        _startRealtimeForSchool(_currentSchoolId!);
-      } else {
-        _startRealtimeForUser(userId);
-      }
+      // Para padres de familia: SIEMPRE usar filtros específicos por usuario
+      // No importa si conocemos la escuela, evitamos contaminación cruzada
+      _startRealtimeForUser(userId);
 
       _setError(null);
     } catch (e) {

@@ -24,7 +24,7 @@ class NotificationsView extends StatefulWidget {
 class _NotificationsViewViewState extends State<NotificationsView>
     with TickerProviderStateMixin {
   late TabController _tabController;
-  String _currentFilter = 'access_alerts';
+  String _currentFilter = 'all';
   String _timeFilter = 'today';
   late Size screenSize;
 

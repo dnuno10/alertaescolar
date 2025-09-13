@@ -180,12 +180,13 @@ class _SignUpBodyComponentState extends State<SignUpBodyComponent>
 
                   SizedBox(height: AppTheme.getLargePadding(size)),
 
-                  // Botón continuar (sin loader visual; solo cambia el label)
+                  // Botón continuar (con loader visual)
                   SolidButton(
                     label: _isSubmitting ? l10n.sending : l10n.continue_,
                     backgroundColor: AppTheme.accentPurple,
                     screenSize: size,
                     width: size.width * 0.9,
+                    isLoading: _isSubmitting,
                     onPressed: _isSubmitting
                         ? null
                         : () {

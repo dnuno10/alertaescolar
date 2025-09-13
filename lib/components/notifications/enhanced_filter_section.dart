@@ -19,7 +19,7 @@ class EnhancedFilterSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final filters = ['access_alerts', 'communications', 'all'];
+    final filters = ['all', 'access_alerts', 'communications'];
     final rad = AppTheme.getMediumRadius(screenSize);
 
     return Padding(
@@ -73,9 +73,9 @@ class EnhancedFilterSection extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
               tabs: [
+                Tab(text: l10n.allNotifications),
                 Tab(text: l10n.accessAlerts),
                 Tab(text: l10n.announcements),
-                Tab(text: l10n.allNotifications),
               ],
             ),
           ),

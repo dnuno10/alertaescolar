@@ -926,7 +926,7 @@ class _ErrorBlock extends StatelessWidget {
             message,
             textAlign: TextAlign.center,
             style: AppTheme.getCaption(screenSize).copyWith(
-              color: AppTheme.getTextSecondaryColor(context),
+              color: AppTheme.getTextPrimaryColor(context),
             ),
           ),
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),

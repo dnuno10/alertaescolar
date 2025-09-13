@@ -191,6 +191,7 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
                     backgroundColor: AppTheme.accentPurple,
                     screenSize: size,
                     width: size.width * 0.9,
+                    isLoading: _isSubmitting,
                     onPressed: _isSubmitting
                         ? null
                         : () {

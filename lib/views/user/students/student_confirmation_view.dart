@@ -207,7 +207,12 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
 
       if (ok) {
         _showSuccessSnackBar(l10n.studentRegisteredSuccessfully);
-        Navigator.of(context).pop(true);
+
+        // Regresar a la pantalla de "Mis estudiantes" (2 pantallas atrás)
+        // Pop StudentConfirmationView -> AddStudentView -> StudentsView
+        Navigator.of(context).pop(); // Cerrar StudentConfirmationView
+        Navigator.of(context)
+            .pop(true); // Cerrar AddStudentView y notificar a StudentsView
       } else {
         final msg = studentProvider.error ?? l10n.errorRegisteringStudent;
         studentProvider.clearError();

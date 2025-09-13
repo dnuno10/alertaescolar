@@ -24,6 +24,14 @@
             "deviceId": "00008120-001224E102D1A01E",
             "request": "launch",
             "type": "dart"
+        },
+        {
+            "name": "alertaescolar (Flutter SM X110)",
+            "program": "lib/main.dart",
+            "deviceId": "R83Y70LDJCY",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
         }
     ]
 }

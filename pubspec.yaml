@@ -1,5 +1,5 @@
 name: alertaescolar
-description: "A new Flutter project."
+description: Alerta Escolar es una plataforma móvil desarrollada en Flutter que conecta escuelas, padres y alumnos en un mismo sistema. La aplicación permite administrar alumnos, grupos, horarios y turnos escolares, así como enviar notificaciones en tiempo real a tutores y administradores. Además, integra control de asistencia mediante escaneo, comunicación directa entre instituciones y familias, y una gestión ágil de la información académica.
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
@@ -16,7 +16,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.11.0+33
+version: 1.12.0+33
 
 environment:
   sdk: ^3.6.0
@@ -80,6 +80,7 @@ dependencies:
   liquid_pull_to_refresh: ^3.0.1
   path_provider: ^2.1.5
   mobile_scanner: ^6.0.0
+  connectivity_plus: ^7.0.0
 
 dev_dependencies:
   flutter_test:
