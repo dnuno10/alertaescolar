@@ -120,7 +120,7 @@ extension TipoComunicacionDb on TipoComunicacion {
       case TipoComunicacion.celebracion:
         return 'celebracion';
       case TipoComunicacion.suspencionClases:
-        return 'suspencion_clases';
+        return 'suspension_clases'; // Corregido: suspension con 's'
       case TipoComunicacion.cambioHorario:
         return 'cambio_horario';
     }
@@ -143,7 +143,8 @@ extension TipoComunicacionDb on TipoComunicacion {
         return TipoComunicacion.informativo;
       case 'celebracion':
         return TipoComunicacion.celebracion;
-      case 'suspencion_clases':
+      case 'suspencion_clases': // Mantener por compatibilidad
+      case 'suspension_clases': // Versión corregida
         return TipoComunicacion.suspencionClases;
       case 'cambio_horario':
         return TipoComunicacion.cambioHorario;

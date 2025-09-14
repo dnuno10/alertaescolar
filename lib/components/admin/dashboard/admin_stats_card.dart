@@ -27,6 +27,7 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
   int _totalScanned = 0;
   int _presentStudents = 0;
   int _lateStudents = 0;
+  int _exitStudents = 0;
   bool _isLoading = true;
   String? _error;
   bool _isInitialized = false;
@@ -70,6 +71,7 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
             _totalScanned = 0;
             _presentStudents = 0;
             _lateStudents = 0;
+            _exitStudents = 0;
             _error = null;
             _isLoading = false;
             if (mounted) setState(() {});
@@ -247,6 +249,7 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
       int totalScanned = 0;
       int presentStudents = 0;
       int lateStudents = 0;
+      int exitStudents = 0;
 
       final countByType = <String, int>{};
       for (final notif in response) {
@@ -257,9 +260,10 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
       totalScanned = countByType.values.fold(0, (sum, count) => sum + count);
       presentStudents = (countByType['entrada'] ?? 0);
       lateStudents = (countByType['retraso'] ?? 0);
+      exitStudents = (countByType['salida'] ?? 0);
 
       debugPrint(
-          '🔧 AdminStatsCard: Calculated stats - Total: $totalScanned, Present: $presentStudents, Late: $lateStudents');
+          '🔧 AdminStatsCard: Calculated stats - Total: $totalScanned, Present: $presentStudents, Late: $lateStudents, Exit: $exitStudents');
       debugPrint('🔧 AdminStatsCard: Count by type: $countByType');
 
       if (mounted) {
@@ -267,6 +271,7 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
           _totalScanned = totalScanned;
           _presentStudents = presentStudents;
           _lateStudents = lateStudents;
+          _exitStudents = exitStudents;
           _error = null;
           _isLoading = false;
         });
@@ -377,6 +382,13 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
               label: 'Estudiantes tarde',
               value: _lateStudents.toString(),
               color: AppTheme.warningColor,
+            ),
+            _buildDivider(),
+            _buildStatRow(
+              icon: Icons.logout_rounded,
+              label: 'Estudiantes salidas',
+              value: _exitStudents.toString(),
+              color: AppTheme.errorColor,
               isLast: true,
             ),
           ],

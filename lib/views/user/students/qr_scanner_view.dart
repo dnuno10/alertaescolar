@@ -19,8 +19,9 @@ class QRScannerView extends StatefulWidget {
 }
 
 class _QRScannerViewState extends State<QRScannerView>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, TickerProviderStateMixin {
   late final MobileScannerController _controller;
+  late final AnimationController _scanLineController;
   bool flashOn = false;
   bool _handled = false; // evita lecturas múltiples
 
@@ -40,6 +41,11 @@ class _QRScannerViewState extends State<QRScannerView>
         BarcodeFormat.code39,
       ],
     );
+
+    _scanLineController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    )..repeat(reverse: true);
 
     // Intento de arranque (si falla, el widget mostrará error vía errorBuilder)
     _controller.start().catchError((_) {});
@@ -68,7 +74,42 @@ class _QRScannerViewState extends State<QRScannerView>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _controller.dispose();
+    _scanLineController.dispose();
     super.dispose();
+  }
+
+  Widget _buildErrorView(String title, String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red, size: 64),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: widget.onClose,
+              child: const Text('Cerrar'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -85,113 +126,70 @@ class _QRScannerViewState extends State<QRScannerView>
           MobileScanner(
             controller: _controller,
             onDetect: _onDetect,
-            // En algunas versiones no hay onPermissionSet; usamos errorBuilder
             errorBuilder: (context, error, child) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.error_outline,
-                          color: Colors.red, size: 64),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Error de cámara (${error.errorCode})',
-                        style:
-                            const TextStyle(color: Colors.white, fontSize: 16),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Verifica permisos de cámara y vuelve a intentarlo.',
-                        style: TextStyle(color: Colors.white70),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: widget.onClose,
-                        child: const Text('Cerrar'),
-                      ),
-                    ],
-                  ),
-                ),
-              );
+              debugPrint(
+                  'QR Scanner error: ${error.errorCode} - ${error.errorDetails}');
+              // Solo mostrar error para problemas reales y críticos
+              if (error.errorCode == MobileScannerErrorCode.permissionDenied) {
+                return _buildErrorView('Sin permisos de cámara',
+                    'Habilita los permisos de cámara en la configuración del dispositivo para escanear códigos QR');
+              } else if (error.errorCode ==
+                  MobileScannerErrorCode.unsupported) {
+                return _buildErrorView('Cámara no compatible',
+                    'Este dispositivo no es compatible con el escáner de códigos QR');
+              }
+              // Para errores temporales, de inicialización u otros no críticos, mostrar la cámara normal
+              // Esto permite que MobileScanner maneje internamente los errores menores
+              return child ?? Container();
             },
           ),
 
-          // Controles superiores
+          // Controles superiores - solo botones
           SafeArea(
             child: Padding(
               padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-              child: Column(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Cerrar
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(
-                            AppTheme.getSmallRadius(screenSize),
-                          ),
-                        ),
-                        child: IconButton(
-                          tooltip: 'Cerrar',
-                          onPressed: () {
-                            HapticFeedback.mediumImpact();
-                            widget.onClose();
-                          },
-                          icon: const Icon(
-                            Icons.close_rounded,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-
-                      // Flash
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(
-                            AppTheme.getSmallRadius(screenSize),
-                          ),
-                        ),
-                        child: IconButton(
-                          tooltip: flashOn ? 'Apagar flash' : 'Encender flash',
-                          onPressed: () {
-                            HapticFeedback.mediumImpact();
-                            _toggleFlash();
-                          },
-                          icon: Icon(
-                            flashOn ? Icons.flash_on : Icons.flash_off,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
-                  // Instrucciones
+                  // Cerrar
                   Container(
-                    padding:
-                        EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
+                      color: Colors.black.withOpacity(0.5),
                       borderRadius: BorderRadius.circular(
-                        AppTheme.getMediumRadius(screenSize),
+                        AppTheme.getSmallRadius(screenSize),
                       ),
                     ),
-                    child: Text(
-                      l10n.qrScannerPointCamera,
-                      style: AppTheme.getBodyMedium(screenSize).copyWith(
+                    child: IconButton(
+                      tooltip: 'Cerrar',
+                      onPressed: () {
+                        HapticFeedback.mediumImpact();
+                        widget.onClose();
+                      },
+                      icon: const Icon(
+                        Icons.close_rounded,
                         color: Colors.white,
-                        fontWeight: FontWeight.w500,
                       ),
-                      textAlign: TextAlign.center,
+                    ),
+                  ),
+
+                  // Flash
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.getSmallRadius(screenSize),
+                      ),
+                    ),
+                    child: IconButton(
+                      tooltip: flashOn ? 'Apagar flash' : 'Encender flash',
+                      onPressed: () {
+                        HapticFeedback.mediumImpact();
+                        _toggleFlash();
+                      },
+                      icon: Icon(
+                        flashOn ? Icons.flash_on : Icons.flash_off,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ],
@@ -199,64 +197,158 @@ class _QRScannerViewState extends State<QRScannerView>
             ),
           ),
 
-          // Pie con título e instrucciones + marco guía
+          // Marco QR centrado
+          Center(
+            child: SizedBox(
+              width: cutout,
+              height: cutout,
+              child: Stack(
+                children: [
+                  // Esquina superior izquierda
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(color: AppTheme.accentBlue, width: 4),
+                          left:
+                              BorderSide(color: AppTheme.accentBlue, width: 4),
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Esquina superior derecha
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(color: AppTheme.accentBlue, width: 4),
+                          right:
+                              BorderSide(color: AppTheme.accentBlue, width: 4),
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          topRight: Radius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Esquina inferior izquierda
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom:
+                              BorderSide(color: AppTheme.accentBlue, width: 4),
+                          left:
+                              BorderSide(color: AppTheme.accentBlue, width: 4),
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Esquina inferior derecha
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom:
+                              BorderSide(color: AppTheme.accentBlue, width: 4),
+                          right:
+                              BorderSide(color: AppTheme.accentBlue, width: 4),
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          bottomRight: Radius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Línea de escaneo animada - minimalista
+                  AnimatedBuilder(
+                    animation: _scanLineController,
+                    builder: (context, child) {
+                      return Positioned(
+                        top: (cutout * 0.15) +
+                            (cutout * 0.7 * _scanLineController.value),
+                        left: 60,
+                        right: 60,
+                        child: Container(
+                          height: 1.5,
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentBlue.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(0.75),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.accentBlue.withOpacity(0.4),
+                                blurRadius: 4,
+                                spreadRadius: 0.5,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Pie con título e instrucciones
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
             child: SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Marco guía
-                  Container(
-                    width: cutout,
-                    height: cutout,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(
-                          AppTheme.getLargeRadius(screenSize)),
-                      border: Border.all(
-                        color: AppTheme.accentBlue,
-                        width: 4,
+              child: Container(
+                margin: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+                padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(
+                      AppTheme.getLargeRadius(screenSize)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      l10n.qrScannerTitle,
+                      style: AppTheme.getH2(screenSize).copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
                       ),
+                      textAlign: TextAlign.center,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding:
-                        EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(
-                            AppTheme.getLargeRadius(screenSize)),
-                        topRight: Radius.circular(
-                            AppTheme.getLargeRadius(screenSize)),
+                    SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+                    Text(
+                      l10n.qrScannerPointCamera,
+                      style: AppTheme.getBodyMedium(screenSize).copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
                       ),
+                      textAlign: TextAlign.center,
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          l10n.qrScannerTitle,
-                          style: AppTheme.getH2(screenSize).copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        SizedBox(height: AppTheme.getSmallPadding(screenSize)),
-                        Text(
-                          l10n.qrScannerInstructions,
-                          style: AppTheme.getCaption(screenSize).copyWith(
-                            color: Colors.white.withOpacity(0.8),
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

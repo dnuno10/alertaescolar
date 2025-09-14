@@ -319,21 +319,68 @@ class NotificationSendService {
   }
 
   /// Filtra estudiantes que están registrados por tutores (activos en el sistema)
+  /// y que tienen llaves activas dentro de la ventana de vigencia
   Future<List<String>> _filterActiveStudents(List<String> studentIds) async {
     try {
       if (studentIds.isEmpty) return [];
 
-      final rows = await _sb
+      // Primero verificar que tengan tutores registrados
+      final tutorRows = await _sb
           .from('alumno_tutores')
           .select('id_alumno')
           .inFilter('id_alumno', studentIds);
 
-      final active = <String>{};
-      for (final r in rows) {
+      final studentsWithTutors = <String>{};
+      for (final r in tutorRows) {
         final v = (r['id_alumno'] ?? '').toString();
-        if (v.isNotEmpty) active.add(v);
+        if (v.isNotEmpty) studentsWithTutors.add(v);
       }
-      return active.toList();
+
+      if (studentsWithTutors.isEmpty) return [];
+
+      // Ahora verificar las llaves activas y dentro de ventana de vigencia
+      final llaveRows = await _sb
+          .from('llaves')
+          .select('''
+            id_alumno,
+            activo,
+            fecha_registro,
+            fecha_desactivacion,
+            alumnos!inner(
+              id,
+              fecha_registro
+            )
+          ''')
+          .inFilter('id_alumno', studentsWithTutors.toList())
+          .eq('activo', true);
+
+      final activeStudents = <String>{};
+      for (final r in llaveRows) {
+        final studentId = (r['id_alumno'] ?? '').toString();
+        if (studentId.isEmpty) continue;
+
+        // Verificar ventana de vigencia (misma lógica que selectable_students_directory_view)
+        final fechaRegistroLlave = r['fecha_registro'] as String?;
+        final fechaDesactivacionLlave = r['fecha_desactivacion'] as String?;
+        final alumnoData = r['alumnos'] as Map<String, dynamic>;
+        final fechaRegistroAlumno = alumnoData['fecha_registro'] as String;
+
+        // Usar fecha_registro de llave si existe, sino la del alumno
+        final startStr = fechaRegistroLlave ?? fechaRegistroAlumno;
+        final start = DateTime.parse(startStr);
+        final end = fechaDesactivacionLlave != null
+            ? DateTime.parse(fechaDesactivacionLlave)
+            : null;
+
+        final dentroVentana = !DateTime.now().isBefore(start) &&
+            (end == null || !DateTime.now().isAfter(end));
+
+        if (dentroVentana) {
+          activeStudents.add(studentId);
+        }
+      }
+
+      return activeStudents.toList();
     } catch (e) {
       debugPrint('_filterActiveStudents error: $e');
       return [];

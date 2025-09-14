@@ -21,15 +21,107 @@ class ContactSupportView extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
-        title: Text('Contacto y soporte'),
+        title: Text(
+          'Contacto y soporte',
+          style: TextStyle(
+            color: AppTheme.getTextPrimaryColor(context),
+            fontWeight: FontWeight.w600,
+            fontSize: screenSize.width * 0.045,
+          ),
+        ),
         backgroundColor: AppTheme.getSurfaceColor(context),
         foregroundColor: AppTheme.getTextPrimaryColor(context),
-        elevation: 0.5,
+        elevation: 1,
+        shadowColor: AppTheme.getShadowColor(context),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
       body: ListView(
         physics: const BouncingScrollPhysics(),
         padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
         children: [
+          // Header con descripción
+          Container(
+            padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppTheme.accentPurple.withOpacity(0.1),
+                  AppTheme.accentPurple.withOpacity(0.05),
+                ],
+              ),
+              borderRadius:
+                  BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+              border: Border.all(
+                color: AppTheme.accentPurple.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding:
+                          EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentPurple.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(
+                            AppTheme.getSmallRadius(screenSize)),
+                      ),
+                      child: Icon(
+                        Icons.support_agent,
+                        color: AppTheme.accentPurple,
+                        size: screenSize.width * 0.07,
+                      ),
+                    ),
+                    SizedBox(width: AppTheme.getMediumPadding(screenSize)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '¿Necesitas ayuda?',
+                            style: AppTheme.getSubtitle1(screenSize).copyWith(
+                              color: AppTheme.getTextPrimaryColor(context),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          SizedBox(
+                              height:
+                                  AppTheme.getSmallPadding(screenSize) * 0.3),
+                          Text(
+                            'Contacta con nuestro equipo de soporte',
+                            style: AppTheme.getCaption(screenSize).copyWith(
+                              color: AppTheme.getTextSecondaryColor(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: AppTheme.getLargePadding(screenSize)),
+
+          // Canales de contacto
+          Text(
+            'Canales de contacto',
+            style: AppTheme.getSubtitle1(screenSize).copyWith(
+              color: AppTheme.getTextPrimaryColor(context),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+
           _ChannelCard(
             screenSize: screenSize,
             icon: Icons.photo_camera_outlined,
@@ -83,6 +175,47 @@ class ContactSupportView extends StatelessWidget {
             context: context,
           ),
           SizedBox(height: AppTheme.getLargePadding(screenSize)),
+
+          // Footer con horarios
+          Container(
+            padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+            decoration: BoxDecoration(
+              color: AppTheme.getSurfaceColor(context),
+              borderRadius:
+                  BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+              border: Border.all(color: AppTheme.getBorderColor(context)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.schedule,
+                      color: AppTheme.accentPurple,
+                      size: screenSize.width * 0.05,
+                    ),
+                    SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+                    Text(
+                      'Horarios de atención',
+                      style: AppTheme.getBodyMedium(screenSize).copyWith(
+                        color: AppTheme.getTextPrimaryColor(context),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+                Text(
+                  'Lunes a Viernes: 8:00 AM - 6:00 PM\nSábados: 9:00 AM - 2:00 PM',
+                  style: AppTheme.getCaption(screenSize).copyWith(
+                    color: AppTheme.getTextSecondaryColor(context),
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

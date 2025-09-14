@@ -156,17 +156,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Contenido del mensaje
-                    _buildMessageContentSection(
-                      context: context,
-                      pad: pad,
-                      gapS: gapS,
-                      gapM: gapM,
-                    ),
-
-                    SizedBox(height: gapM),
-
-                    // Detalles de comunicado (si aplica)
+                    // Detalles de comunicado (movido hacia arriba)
                     if (isComunicado &&
                         widget.draft.tipoComunicado != null &&
                         widget.draft.prioridad != null) ...[
@@ -197,9 +187,19 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
                       SizedBox(height: gapM),
                     ],
 
+                    // Contenido del mensaje
+                    _buildMessageContentSection(
+                      context: context,
+                      pad: pad,
+                      gapS: gapS,
+                      gapM: gapM,
+                    ),
+
+                    SizedBox(height: gapM),
+
                     // Destinatarios (nombres legibles)
                     _Section(
-                      title: l10n.recipients,
+                      title: 'Dirigido a',
                       pad: pad,
                       gapM: gapM,
                       child: _buildRecipientSummary(context, pad, gapS),
@@ -299,7 +299,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
           pad: pad,
           label: 'Cobertura',
           children: const [
-            _Pill(text: 'Todos los estudiantes'),
+            _Pill(text: 'Toda la escuela'),
           ],
         );
 
@@ -460,6 +460,7 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
       case 'evento':
         return 'Evento';
       case 'recordatorio_pago':
+      case 'recordatoriopago':
         return 'Recordatorio de pago';
       case 'citatorio':
         return 'Citatorio';
@@ -467,9 +468,12 @@ class _NotificationReviewViewState extends State<NotificationReviewView>
         return 'Informativo';
       case 'celebracion':
         return 'Celebración';
-      case 'suspension_clases':
+      case 'suspension_clases': // Versión corregida
+      case 'suspencion_clases': // Versión mal escrita por compatibilidad
+      case 'suspencionclases': // Versión sin guión bajo mal escrita
         return 'Suspensión de clases';
       case 'cambio_horario':
+      case 'cambiohorario':
         return 'Cambio de horario';
       default:
         return db;

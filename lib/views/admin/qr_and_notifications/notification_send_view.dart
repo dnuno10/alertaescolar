@@ -7,11 +7,14 @@ import 'package:alertaescolar/components/admin/notifications/priority_selector.d
 import 'package:alertaescolar/components/admin/notifications/message_content_form.dart';
 import 'package:alertaescolar/components/buttons/custom_outline_button.dart';
 import 'package:alertaescolar/components/headers/nav_header.dart';
+import 'package:alertaescolar/components/hints/pull_to_refresh_hint.dart';
 import 'package:alertaescolar/components/buttons/solid_button.dart';
 import 'package:alertaescolar/models/notification_draft.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../providers/theme_provider.dart';
 import '../../../managers/student_provider.dart';
@@ -111,6 +114,21 @@ class _NotificationSendViewState extends State<NotificationSendView>
     });
   }
 
+  /// Helper para mostrar snackbars con control de uno activo a la vez
+  void _showSnackBar(String message, {bool isError = false}) {
+    // Verificar si ya hay un snackbar activo - si es así, no mostrar nuevo
+    if (CustomSnackBar.isActive) {
+      debugPrint('SnackBar descartado: ya hay uno activo - $message');
+      return;
+    }
+
+    CustomSnackBar.show(
+      context: context,
+      message: message,
+      isError: isError,
+    );
+  }
+
   Future<void> _loadInitialData() async {
     if (!mounted) return;
 
@@ -126,10 +144,8 @@ class _NotificationSendViewState extends State<NotificationSendView>
     if (escuelaId == null || escuelaId.trim().isEmpty) {
       debugPrint('NotificationSendView: escuelaId no resuelto');
       if (mounted) {
-        CustomSnackBar.show(
-          context: context,
-          message:
-              'No se pudo resolver la escuela del usuario. Intenta recargar.',
+        _showSnackBar(
+          'No se pudo resolver la escuela del usuario. Intenta recargar.',
           isError: true,
         );
       }
@@ -203,9 +219,13 @@ class _NotificationSendViewState extends State<NotificationSendView>
             backgroundColor: AppTheme.getBackgroundColor(context),
             body: FadeTransition(
               opacity: _fadeAnimation,
-              child: RefreshIndicator(
+              child: LiquidPullToRefresh(
                 onRefresh: _onRefresh,
                 color: AppTheme.accentPurple,
+                backgroundColor: AppTheme.getBackgroundColor(context),
+                height: 120,
+                animSpeedFactor: 9.0,
+                showChildOpacityTransition: false,
                 child: CustomScrollView(
                   physics: const AlwaysScrollableScrollPhysics(
                       parent: BouncingScrollPhysics()),
@@ -1766,6 +1786,14 @@ class _NotificationSendViewState extends State<NotificationSendView>
   }
 
   NotificationDraft _buildDraft() {
+    // NOTA: Validaciones de estudiantes activos:
+    // - Para 'individual': Se valida aquí en frontend (_validateIndividualStudentActive)
+    // - Para 'grupo'/'turno'/'todos': Se filtran automáticamente en backend (NotificationSendService._filterActiveStudents)
+    //
+    // Un estudiante se considera activo si:
+    // 1. Tiene tutores registrados en alumno_tutores
+    // 2. Tiene llave activa (llaves.activo = true)
+    // 3. Está dentro de la ventana de vigencia de la llave
     return NotificationDraft(
       tipoMensaje: _selectedType.dbValue, // 'permiso'|'comunicado'
       tipoDestinatario:
@@ -1794,38 +1822,27 @@ class _NotificationSendViewState extends State<NotificationSendView>
     final body = _messageController.text.trim();
 
     if (title.isEmpty) {
-      CustomSnackBar.show(
-          context: context,
-          message: 'Por favor ingresa un título para el mensaje',
+      _showSnackBar('Por favor ingresa un título para el mensaje',
           isError: true);
       return false;
     }
     if (body.isEmpty) {
-      CustomSnackBar.show(
-          context: context,
-          message: 'Por favor ingresa el contenido del mensaje',
+      _showSnackBar('Por favor ingresa el contenido del mensaje',
           isError: true);
       return false;
     }
     if (title.length < 3) {
-      CustomSnackBar.show(
-          context: context, message: 'El título es muy corto', isError: true);
+      _showSnackBar('El título es muy corto', isError: true);
       return false;
     }
 
     // ✅ Alineado a MessageContentForm (maxTitleLength:80, maxMessageLength:500)
     if (title.length > 80) {
-      CustomSnackBar.show(
-          context: context,
-          message: 'El título no debe exceder 80 caracteres',
-          isError: true);
+      _showSnackBar('El título no debe exceder 80 caracteres', isError: true);
       return false;
     }
     if (body.length > 500) {
-      CustomSnackBar.show(
-          context: context,
-          message: 'El mensaje no debe exceder 500 caracteres',
-          isError: true);
+      _showSnackBar('El mensaje no debe exceder 500 caracteres', isError: true);
       return false;
     }
 
@@ -1839,9 +1856,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
     };
 
     if (!hasValidRecipient) {
-      CustomSnackBar.show(
-          context: context,
-          message: 'Por favor elige al menos un destinatario válido',
+      _showSnackBar('Por favor elige al menos un destinatario válido',
           isError: true);
       return false;
     }
@@ -1855,16 +1870,93 @@ class _NotificationSendViewState extends State<NotificationSendView>
 
       if ((escuelaActual ?? '').isEmpty ||
           escuelaAlumno != (escuelaActual ?? '')) {
-        CustomSnackBar.show(
-            // ignore: use_build_context_synchronously
-            context: context,
-            message: 'El alumno seleccionado no pertenece a tu escuela.',
+        _showSnackBar('El alumno seleccionado no pertenece a tu escuela.',
             isError: true);
         return false;
+      }
+
+      // ✅ NUEVA VALIDACIÓN: Para estudiante individual, verificar que esté activo
+      final isStudentActive =
+          await _validateIndividualStudentActive(_selectedStudent!);
+      if (!isStudentActive) {
+        return false; // El error ya se mostró en _validateIndividualStudentActive
       }
     }
 
     return true;
+  }
+
+  /// Valida que un estudiante individual esté activo según las mismas reglas que selectable_students_directory_view
+  /// Un estudiante está activo si:
+  /// 1. Tiene tutores registrados (hasTutores)
+  /// 2. Está dentro de la ventana de vigencia de la llave
+  Future<bool> _validateIndividualStudentActive(Alumno student) async {
+    try {
+      final supabase = Supabase.instance.client;
+
+      // Verificar si tiene tutores registrados (equivalent to student.hasTutores)
+      final tutorResponse = await supabase
+          .from('alumno_tutores')
+          .select('id')
+          .eq('id_alumno', student.id)
+          .limit(1);
+
+      final hasTutores = tutorResponse.isNotEmpty;
+
+      if (!hasTutores) {
+        _showSnackBar(
+          'No se puede enviar comunicado a un estudiante sin tutores registrados',
+          isError: true,
+        );
+        return false;
+      }
+
+      // Verificar ventana de vigencia de la llave (equivalent to dentroVentana logic)
+      final llaveResponse = await supabase
+          .from('llaves')
+          .select('fecha_registro, fecha_desactivacion, activo')
+          .eq('id_alumno', student.id)
+          .maybeSingle();
+
+      if (llaveResponse != null) {
+        final now = DateTime.now();
+        final fechaRegistroLlave = llaveResponse['fecha_registro'] != null
+            ? DateTime.parse(llaveResponse['fecha_registro'].toString())
+            : null;
+        final fechaDesactivacionLlave = llaveResponse['fecha_desactivacion'] !=
+                null
+            ? DateTime.parse(llaveResponse['fecha_desactivacion'].toString())
+            : null;
+        final llaveActiva = llaveResponse['activo'] == true;
+
+        // Usar fecha_registro del alumno si no hay fecha_registro de llave
+        final start = fechaRegistroLlave ?? student.fechaRegistro;
+        final end = fechaDesactivacionLlave;
+
+        final dentroVentana =
+            !now.isBefore(start) && (end == null || !now.isAfter(end));
+
+        if (!llaveActiva || !dentroVentana) {
+          _showSnackBar(
+            'No se puede enviar comunicado a un estudiante inactivo o con llave expirada',
+            isError: true,
+          );
+          return false;
+        }
+      } else {
+        // No tiene llave asignada
+        _showSnackBar(
+          'No se puede enviar comunicado a un estudiante sin llave asignada',
+          isError: true,
+        );
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      _showSnackBar('Error al validar el estudiante: $e', isError: true);
+      return false;
+    }
   }
 
   String _nivelDesdeDisplayGrupo(String display) {

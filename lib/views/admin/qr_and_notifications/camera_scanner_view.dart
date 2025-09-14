@@ -87,7 +87,18 @@ class _CameraScannerViewState extends State<CameraScannerView>
       });
     } catch (e) {
       debugPrint('Camera initialization error: $e');
-      // Reintento único
+
+      // No mostrar error si es solo un problema temporal o de inicialización
+      // Solo mostrar error si realmente es un problema de permisos o hardware
+      if (e.toString().contains('permission') ||
+          e.toString().contains('Permission') ||
+          e.toString().contains('unauthorized')) {
+        if (!mounted) return;
+        setState(() => _hasError = true);
+        return;
+      }
+
+      // Reintento único para errores temporales
       await Future.delayed(const Duration(milliseconds: 800));
       try {
         await _controller.start();
@@ -98,8 +109,20 @@ class _CameraScannerViewState extends State<CameraScannerView>
         });
       } catch (e2) {
         debugPrint('Camera retry failed: $e2');
-        if (!mounted) return;
-        setState(() => _hasError = true);
+        // Solo mostrar error si es realmente un problema persistente
+        if (e2.toString().contains('permission') ||
+            e2.toString().contains('Permission') ||
+            e2.toString().contains('unauthorized')) {
+          if (!mounted) return;
+          setState(() => _hasError = true);
+        } else {
+          // Para otros errores, intentar usar el errorBuilder del MobileScanner
+          if (!mounted) return;
+          setState(() {
+            _isInitialized = true;
+            _hasError = false;
+          });
+        }
       }
     }
   }
@@ -180,19 +203,43 @@ class _CameraScannerViewState extends State<CameraScannerView>
             MobileScanner(
               controller: _controller,
               onDetect: _onDetect,
-              // onPermissionSet no existe en algunas versiones → usamos errorBuilder
               errorBuilder: (context, error, child) {
-                return _buildErrorState(context);
+                debugPrint(
+                    'Camera error: ${error.errorCode} - ${error.errorDetails}');
+                // Solo mostrar error para problemas reales de permisos o hardware
+                if (error.errorCode ==
+                    MobileScannerErrorCode.permissionDenied) {
+                  return _buildErrorState(context,
+                      title: 'Sin permisos de cámara',
+                      message:
+                          'Habilita los permisos de cámara para escanear códigos QR');
+                } else if (error.errorCode ==
+                    MobileScannerErrorCode.unsupported) {
+                  return _buildErrorState(context,
+                      title: 'Cámara no compatible',
+                      message:
+                          'Este dispositivo no soporta el escáner de códigos');
+                }
+                // Para errores temporales, de inicialización u otros, mostrar la cámara normal
+                // Esto permite que el errorBuilder del MobileScanner maneje los errores menores
+                return child ?? Container();
               },
             ),
-          if (_hasError) _buildErrorState(context),
+          // Solo mostrar error si es un error crítico confirmado
+          if (_hasError && !_showCamera)
+            _buildErrorState(context,
+                title: 'Error de cámara',
+                message:
+                    'No se puede acceder a la cámara. Verifica los permisos.'),
           if (!_hasError) _buildScannerOverlay(screenSize),
         ],
       ),
     );
   }
 
-  Widget _buildErrorState(BuildContext context) {
+  Widget _buildErrorState(BuildContext context,
+      {String title = 'Error al inicializar la cámara',
+      String message = 'Verifica los permisos de cámara'}) {
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -203,18 +250,18 @@ class _CameraScannerViewState extends State<CameraScannerView>
           children: [
             const Icon(Icons.error_outline, color: Colors.red, size: 64),
             const SizedBox(height: 16),
-            const Text(
-              'Error al inicializar la cámara',
-              style: TextStyle(
+            Text(
+              title,
+              style: const TextStyle(
                   color: Colors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.w500),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Verifica los permisos de cámara',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
+            Text(
+              message,
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -280,149 +327,124 @@ class _CameraScannerViewState extends State<CameraScannerView>
             ),
           ),
 
-          const Spacer(),
-
-          // Marco guía (cutout) - Diseño moderno de escáner QR
-          Center(
-            child: SizedBox(
-              width: cutOut,
-              height: cutOut,
-              child: Stack(
-                children: [
-                  // Esquinas del escáner - Solo bordes en las esquinas
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    child: Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        border: Border(
-                          top: BorderSide(color: AppTheme.accentBlue, width: 4),
-                          left:
-                              BorderSide(color: AppTheme.accentBlue, width: 4),
-                        ),
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(20),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        border: Border(
-                          top: BorderSide(color: AppTheme.accentBlue, width: 4),
-                          right:
-                              BorderSide(color: AppTheme.accentBlue, width: 4),
-                        ),
-                        borderRadius: const BorderRadius.only(
-                          topRight: Radius.circular(20),
+          // Área central - Marco QR centrado
+          Expanded(
+            child: Center(
+              child: SizedBox(
+                width: cutOut,
+                height: cutOut,
+                child: Stack(
+                  children: [
+                    // Esquina superior izquierda
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          border: Border(
+                            top: BorderSide(
+                                color: AppTheme.accentBlue, width: 4),
+                            left: BorderSide(
+                                color: AppTheme.accentBlue, width: 4),
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(12),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    child: Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom:
-                              BorderSide(color: AppTheme.accentBlue, width: 4),
-                          left:
-                              BorderSide(color: AppTheme.accentBlue, width: 4),
-                        ),
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(20),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom:
-                              BorderSide(color: AppTheme.accentBlue, width: 4),
-                          right:
-                              BorderSide(color: AppTheme.accentBlue, width: 4),
-                        ),
-                        borderRadius: const BorderRadius.only(
-                          bottomRight: Radius.circular(20),
+                    // Esquina superior derecha
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          border: Border(
+                            top: BorderSide(
+                                color: AppTheme.accentBlue, width: 4),
+                            right: BorderSide(
+                                color: AppTheme.accentBlue, width: 4),
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topRight: Radius.circular(12),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-
-                  // Línea de escaneo animada horizontal
-                  AnimatedBuilder(
-                    animation: _accessTypeAnimationController,
-                    builder: (context, child) {
-                      return Positioned(
-                        top: (cutOut * 0.2) +
-                            (cutOut *
-                                0.6 *
-                                _accessTypeAnimationController.value),
-                        left: cutOut * 0.1,
-                        right: cutOut * 0.1,
-                        child: Container(
-                          height: 3,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.transparent,
-                                AppTheme.accentBlue.withOpacity(0.3),
-                                AppTheme.accentBlue,
-                                Colors.white,
-                                AppTheme.accentBlue,
-                                AppTheme.accentBlue.withOpacity(0.3),
-                                Colors.transparent,
+                    // Esquina inferior izquierda
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                                color: AppTheme.accentBlue, width: 4),
+                            left: BorderSide(
+                                color: AppTheme.accentBlue, width: 4),
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            bottomLeft: Radius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Esquina inferior derecha
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                                color: AppTheme.accentBlue, width: 4),
+                            right: BorderSide(
+                                color: AppTheme.accentBlue, width: 4),
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            bottomRight: Radius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Línea de escaneo animada - minimalista
+                    AnimatedBuilder(
+                      animation: _accessTypeAnimationController,
+                      builder: (context, child) {
+                        return Positioned(
+                          top: (cutOut * 0.15) +
+                              (cutOut *
+                                  0.7 *
+                                  _accessTypeAnimationController.value),
+                          left: 60,
+                          right: 60,
+                          child: Container(
+                            height: 1.5,
+                            decoration: BoxDecoration(
+                              color: AppTheme.accentBlue.withOpacity(0.8),
+                              borderRadius: BorderRadius.circular(0.75),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppTheme.accentBlue.withOpacity(0.4),
+                                  blurRadius: 4,
+                                  spreadRadius: 0.5,
+                                ),
                               ],
                             ),
-                            borderRadius: BorderRadius.circular(2),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.accentBlue.withOpacity(0.6),
-                                blurRadius: 12,
-                                spreadRadius: 2,
-                              ),
-                            ],
                           ),
-                        ),
-                      );
-                    },
-                  ),
-
-                  // Puntos de ayuda en el centro
-                  Center(
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: AppTheme.accentBlue.withOpacity(0.6),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.accentBlue.withOpacity(0.4),
-                            blurRadius: 8,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -704,6 +726,12 @@ class _CameraScannerViewState extends State<CameraScannerView>
   // Mensajes
   // ========================
   void _showFeedbackMessage(String text, {required bool success}) {
+    // Verificar si ya hay un snackbar activo - si es así, no mostrar nuevo
+    if (CustomSnackBar.isActive) {
+      debugPrint('SnackBar descartado: ya hay uno activo - $text');
+      return;
+    }
+
     final controller = CustomSnackBar.show(
       context: context,
       message: text,

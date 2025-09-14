@@ -17,8 +17,16 @@ class LegalCenterView extends StatelessWidget {
           centerTitle: true,
           title: Text(
             'Información legal',
-            style: AppTheme.getAppBarTitle(size),
+            style: TextStyle(
+              color: AppTheme.getTextPrimaryColor(context),
+              fontWeight: FontWeight.w600,
+              fontSize: size.width * 0.045,
+            ),
           ),
+          backgroundColor: AppTheme.getSurfaceColor(context),
+          foregroundColor: AppTheme.getTextPrimaryColor(context),
+          elevation: 1,
+          shadowColor: AppTheme.getShadowColor(context),
           leading: IconButton(
             tooltip: 'Volver',
             onPressed: () {
@@ -29,10 +37,17 @@ class LegalCenterView extends StatelessWidget {
           ),
           bottom: TabBar(
             labelColor: AppTheme.getTextPrimaryColor(context),
-            unselectedLabelColor:
-                // ignore: deprecated_member_use
-                AppTheme.getTextSecondaryColor(context).withOpacity(0.9),
+            unselectedLabelColor: AppTheme.getTextSecondaryColor(context),
             indicatorColor: AppTheme.accentPurple,
+            indicatorWeight: 3,
+            labelStyle: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: size.width * 0.038,
+            ),
+            unselectedLabelStyle: TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: size.width * 0.038,
+            ),
             tabs: const [
               Tab(text: 'Privacidad'),
               Tab(text: 'Términos'),
@@ -139,31 +154,92 @@ class _PrivacyContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Título
-          Text(
-            'Tu privacidad es importante',
-            style: AppTheme.getH2(size).copyWith(
-              color: AppTheme.getTextPrimaryColor(context),
-              fontWeight: FontWeight.w700,
+          Container(
+            padding: EdgeInsets.all(AppTheme.getMediumPadding(size)),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppTheme.accentPurple.withOpacity(0.1),
+                  AppTheme.accentPurple.withOpacity(0.05),
+                ],
+              ),
+              borderRadius:
+                  BorderRadius.circular(AppTheme.getMediumRadius(size)),
+              border: Border.all(
+                color: AppTheme.accentPurple.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(AppTheme.getSmallPadding(size)),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentPurple.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(
+                            AppTheme.getSmallRadius(size)),
+                      ),
+                      child: Icon(
+                        Icons.privacy_tip_outlined,
+                        color: AppTheme.accentPurple,
+                        size: size.width * 0.07,
+                      ),
+                    ),
+                    SizedBox(width: AppTheme.getMediumPadding(size)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Tu privacidad es importante',
+                            style: AppTheme.getH2(size).copyWith(
+                              color: AppTheme.getTextPrimaryColor(context),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          SizedBox(
+                              height: AppTheme.getSmallPadding(size) * 0.5),
+                          Text(
+                            'Protegemos tus datos personales',
+                            style: AppTheme.getCaption(size).copyWith(
+                              color: AppTheme.getTextSecondaryColor(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
           SizedBox(height: AppTheme.getSmallPadding(size)),
           // Meta
-          Row(
-            children: [
-              Icon(
-                Icons.lock_outline,
-                size: size.height * 0.022,
-                color: AppTheme.getTextSecondaryColor(context),
-              ),
-              SizedBox(width: AppTheme.getSmallPadding(size)),
-              Text(
-                'Última actualización: 01/2025',
-                style: AppTheme.getCaptionSmall(size).copyWith(
+          Padding(
+            padding: EdgeInsets.symmetric(
+                horizontal: AppTheme.getSmallPadding(size)),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.lock_outline,
+                  size: size.height * 0.022,
                   color: AppTheme.getTextSecondaryColor(context),
-                  fontWeight: FontWeight.w500,
                 ),
-              ),
-            ],
+                SizedBox(width: AppTheme.getSmallPadding(size)),
+                Text(
+                  'Última actualización: 01/2025',
+                  style: AppTheme.getCaptionSmall(size).copyWith(
+                    color: AppTheme.getTextSecondaryColor(context),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
 
           SizedBox(height: AppTheme.getLargePadding(size)),
@@ -386,31 +462,92 @@ class _TermsContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Título
-          Text(
-            'Bienvenido/a a Alerta Escolar',
-            style: AppTheme.getH2(size).copyWith(
-              color: AppTheme.getTextPrimaryColor(context),
-              fontWeight: FontWeight.w700,
+          Container(
+            padding: EdgeInsets.all(AppTheme.getMediumPadding(size)),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppTheme.accentPurple.withOpacity(0.1),
+                  AppTheme.accentPurple.withOpacity(0.05),
+                ],
+              ),
+              borderRadius:
+                  BorderRadius.circular(AppTheme.getMediumRadius(size)),
+              border: Border.all(
+                color: AppTheme.accentPurple.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(AppTheme.getSmallPadding(size)),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentPurple.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(
+                            AppTheme.getSmallRadius(size)),
+                      ),
+                      child: Icon(
+                        Icons.gavel_outlined,
+                        color: AppTheme.accentPurple,
+                        size: size.width * 0.07,
+                      ),
+                    ),
+                    SizedBox(width: AppTheme.getMediumPadding(size)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Bienvenido/a a Alerta Escolar',
+                            style: AppTheme.getH2(size).copyWith(
+                              color: AppTheme.getTextPrimaryColor(context),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          SizedBox(
+                              height: AppTheme.getSmallPadding(size) * 0.5),
+                          Text(
+                            'Condiciones de uso y servicio',
+                            style: AppTheme.getCaption(size).copyWith(
+                              color: AppTheme.getTextSecondaryColor(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
           SizedBox(height: AppTheme.getSmallPadding(size)),
           // Meta
-          Row(
-            children: [
-              Icon(
-                Icons.info_outline,
-                size: size.height * 0.022,
-                color: AppTheme.getTextSecondaryColor(context),
-              ),
-              SizedBox(width: AppTheme.getSmallPadding(size)),
-              Text(
-                'Última actualización: 01/2025',
-                style: AppTheme.getCaptionSmall(size).copyWith(
+          Padding(
+            padding: EdgeInsets.symmetric(
+                horizontal: AppTheme.getSmallPadding(size)),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: size.height * 0.022,
                   color: AppTheme.getTextSecondaryColor(context),
-                  fontWeight: FontWeight.w500,
                 ),
-              ),
-            ],
+                SizedBox(width: AppTheme.getSmallPadding(size)),
+                Text(
+                  'Última actualización: 01/2025',
+                  style: AppTheme.getCaptionSmall(size).copyWith(
+                    color: AppTheme.getTextSecondaryColor(context),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
 
           SizedBox(height: AppTheme.getLargePadding(size)),

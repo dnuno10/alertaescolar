@@ -1442,7 +1442,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
 // QR Scanner
   @override
-  String get qrScannerPointCamera => 'Point camera at student\'s QR code';
+  String get qrScannerPointCamera =>
+      'Point camera at student\'s credential QR code';
   @override
   String get qrScannerTitle => 'Scan QR Code';
   @override
@@ -4540,7 +4541,7 @@ class AppLocalizationsEs extends AppLocalizations {
 // QR Scanner
   @override
   String get qrScannerPointCamera =>
-      'Apunta la cámara al código QR del estudiante';
+      'Apunta la cámara al código QR de la credencial del estudiante';
   @override
   String get qrScannerTitle => 'Escanear Código QR';
   @override

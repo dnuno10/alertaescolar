@@ -41,10 +41,23 @@ class _HelpCenterViewState extends State<HelpCenterView> {
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
-        title: Text(l10n?.helpCenter ?? 'Centro de ayuda'),
+        title: Text(
+          l10n?.helpCenter ?? 'Centro de ayuda',
+          style: TextStyle(
+            color: AppTheme.getTextPrimaryColor(context),
+            fontWeight: FontWeight.w600,
+            fontSize: screenSize.width * 0.045,
+          ),
+        ),
         backgroundColor: AppTheme.getSurfaceColor(context),
         foregroundColor: AppTheme.getTextPrimaryColor(context),
-        elevation: 0.5,
+        elevation: 1,
+        shadowColor: AppTheme.getShadowColor(context),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
       body: Consumer<UserProvider>(
         builder: (context, userProvider, _) {
@@ -61,15 +74,91 @@ class _HelpCenterViewState extends State<HelpCenterView> {
 
           return Column(
             children: [
-              Padding(
+              // Header con información del centro de ayuda
+              Container(
+                margin: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
                 padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppTheme.accentPurple.withOpacity(0.1),
+                      AppTheme.accentPurple.withOpacity(0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(
+                      AppTheme.getMediumRadius(screenSize)),
+                  border: Border.all(
+                    color: AppTheme.accentPurple.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding:
+                          EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentPurple.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(
+                            AppTheme.getSmallRadius(screenSize)),
+                      ),
+                      child: Icon(
+                        isAdmin
+                            ? Icons.admin_panel_settings
+                            : Icons.help_outline,
+                        color: AppTheme.accentPurple,
+                        size: screenSize.width * 0.07,
+                      ),
+                    ),
+                    SizedBox(width: AppTheme.getMediumPadding(screenSize)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isAdmin
+                                ? 'Guía de Administración'
+                                : '¿Cómo podemos ayudarte?',
+                            style: AppTheme.getSubtitle1(screenSize).copyWith(
+                              color: AppTheme.getTextPrimaryColor(context),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          SizedBox(
+                              height:
+                                  AppTheme.getSmallPadding(screenSize) * 0.3),
+                          Text(
+                            isAdmin
+                                ? 'Herramientas y funciones administrativas'
+                                : 'Encuentra respuestas a tus preguntas',
+                            style: AppTheme.getCaption(screenSize).copyWith(
+                              color: AppTheme.getTextSecondaryColor(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Buscador
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppTheme.getMediumPadding(screenSize),
+                ),
                 child: _SearchField(
                   controller: _searchCtrl,
-                  hintText: l10n?.faqAndGuides ?? 'FAQ & Guías',
+                  hintText: 'Buscar en preguntas frecuentes...',
                   onChanged: (text) => setState(() => _query = text.trim()),
                   screenSize: screenSize,
                 ),
               ),
+              SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+
+              // Header de sección
               Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: AppTheme.getMediumPadding(screenSize),
@@ -78,7 +167,7 @@ class _HelpCenterViewState extends State<HelpCenterView> {
                   alignment: Alignment.centerLeft,
                   child: _SectionHeader(
                     label: isAdmin ? 'FAQ Administrador' : 'FAQ Usuario',
-                    count: data.length,
+                    count: filtered.length,
                     screenSize: screenSize,
                   ),
                 ),
@@ -142,35 +231,56 @@ class _SearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      onChanged: onChanged,
-      style: AppTheme.getBodyMedium(screenSize).copyWith(
-        color: AppTheme.getTextPrimaryColor(context),
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.getSurfaceColor(context),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+        border: Border.all(color: AppTheme.getBorderColor(context)),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.getShadowColor(context),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      decoration: InputDecoration(
-        prefixIcon: const Icon(Icons.search),
-        hintText: hintText,
-        filled: true,
-        fillColor: AppTheme.getSurfaceColor(context),
-        contentPadding: EdgeInsets.symmetric(
-          vertical: AppTheme.getSmallPadding(screenSize),
-          horizontal: AppTheme.getMediumPadding(screenSize),
+      child: TextField(
+        controller: controller,
+        onChanged: onChanged,
+        style: AppTheme.getBodyMedium(screenSize).copyWith(
+          color: AppTheme.getTextPrimaryColor(context),
         ),
-        border: OutlineInputBorder(
-          borderRadius:
-              BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-          borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius:
-              BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-          borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius:
-              BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-          borderSide: BorderSide(color: AppTheme.accentPurple),
+        decoration: InputDecoration(
+          prefixIcon: Icon(
+            Icons.search,
+            color: AppTheme.accentPurple,
+          ),
+          hintText: hintText,
+          hintStyle: AppTheme.getBodyMedium(screenSize).copyWith(
+            color: AppTheme.getTextSecondaryColor(context),
+          ),
+          filled: true,
+          fillColor: Colors.transparent,
+          contentPadding: EdgeInsets.symmetric(
+            vertical: AppTheme.getSmallPadding(screenSize),
+            horizontal: AppTheme.getMediumPadding(screenSize),
+          ),
+          border: OutlineInputBorder(
+            borderRadius:
+                BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius:
+                BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius:
+                BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+            borderSide: BorderSide(color: AppTheme.accentPurple, width: 2),
+          ),
         ),
       ),
     );
@@ -213,9 +323,20 @@ class _FaqTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppTheme.getSurfaceColor(context),
-      borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.getSurfaceColor(context),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+        border: Border.all(color: AppTheme.getBorderColor(context)),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.getShadowColor(context),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
@@ -223,15 +344,15 @@ class _FaqTile extends StatelessWidget {
             horizontal: AppTheme.getMediumPadding(screenSize),
             vertical: AppTheme.getSmallPadding(screenSize),
           ),
-          collapsedShape: RoundedRectangleBorder(
-            borderRadius:
-                BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-            side: BorderSide(color: AppTheme.getBorderColor(context)),
-          ),
+          iconColor: AppTheme.accentPurple,
+          collapsedIconColor: AppTheme.getTextSecondaryColor(context),
           shape: RoundedRectangleBorder(
             borderRadius:
                 BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-            side: BorderSide(color: AppTheme.getBorderColor(context)),
+          ),
+          collapsedShape: RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
           ),
           title: Text(
             q,
@@ -241,24 +362,47 @@ class _FaqTile extends StatelessWidget {
             ),
           ),
           children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                AppTheme.getMediumPadding(screenSize),
-                0,
-                AppTheme.getMediumPadding(screenSize),
-                AppTheme.getMediumPadding(screenSize),
+            Container(
+              margin: EdgeInsets.symmetric(
+                horizontal: AppTheme.getMediumPadding(screenSize),
               ),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  a,
-                  style: AppTheme.getCaption(screenSize).copyWith(
-                    color: AppTheme.getTextSecondaryColor(context),
-                    height: 1.4,
-                  ),
+              padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+              decoration: BoxDecoration(
+                color: AppTheme.accentPurple.withOpacity(0.05),
+                borderRadius:
+                    BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
+                border: Border.all(
+                  color: AppTheme.accentPurple.withOpacity(0.1),
                 ),
               ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    margin: EdgeInsets.only(
+                      top: 2,
+                      right: AppTheme.getSmallPadding(screenSize),
+                    ),
+                    width: 4,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentPurple,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      a,
+                      style: AppTheme.getBodyMedium(screenSize).copyWith(
+                        color: AppTheme.getTextPrimaryColor(context),
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
+            SizedBox(height: AppTheme.getMediumPadding(screenSize)),
           ],
         ),
       ),
@@ -278,10 +422,40 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Text(
-        message,
-        style: AppTheme.getBodyMedium(screenSize).copyWith(
-          color: AppTheme.getTextSecondaryColor(context),
+      child: Container(
+        padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+              decoration: BoxDecoration(
+                color: AppTheme.accentPurple.withOpacity(0.1),
+                borderRadius:
+                    BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
+              ),
+              child: Icon(
+                Icons.search_off,
+                size: screenSize.width * 0.12,
+                color: AppTheme.accentPurple,
+              ),
+            ),
+            SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+            Text(
+              message,
+              style: AppTheme.getSubtitle1(screenSize).copyWith(
+                color: AppTheme.getTextPrimaryColor(context),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+            Text(
+              'Intenta con otros términos de búsqueda',
+              style: AppTheme.getCaption(screenSize).copyWith(
+                color: AppTheme.getTextSecondaryColor(context),
+              ),
+            ),
+          ],
         ),
       ),
     );

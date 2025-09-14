@@ -19,7 +19,7 @@ class AppTheme {
 
   // Estados
   static const Color successColor = Color(0xFF58CC02);
-  static const Color warningColor = Color(0xFFF5C76A);
+  static const Color warningColor = Color(0xFFEAB308);
   static const Color errorColor = Color(0xFFFF5757);
   static const Color infoColor = Color(0xFF4C9DFF);
 

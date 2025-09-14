@@ -214,6 +214,21 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
   // Flujo de proceso
   // ========================
 
+  /// Helper para mostrar snackbars con control de uno activo a la vez
+  void _showSnackBar(String message, {bool isError = false}) {
+    // Verificar si ya hay un snackbar activo - si es así, no mostrar nuevo
+    if (CustomSnackBar.isActive) {
+      debugPrint('SnackBar descartado: ya hay uno activo - $message');
+      return;
+    }
+
+    CustomSnackBar.show(
+      context: context,
+      message: message,
+      isError: isError,
+    );
+  }
+
   Future<void> _processScannedCode(String code) async {
     if (!mounted) return;
 
@@ -226,11 +241,7 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
         admin = userProvider.requireCurrentUser();
       } catch (_) {
         if (!mounted) return;
-        CustomSnackBar.show(
-          context: context,
-          message: 'Error: Usuario no autenticado',
-          isError: true,
-        );
+        _showSnackBar('Error: Usuario no autenticado', isError: true);
         return;
       }
 
@@ -243,11 +254,8 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
         final cached = userProvider.currentUser?.escuelaId;
         if (cached == null || cached.isEmpty) {
           if (!mounted) return;
-          CustomSnackBar.show(
-            context: context,
-            message: 'No se pudo determinar la escuela del usuario',
-            isError: true,
-          );
+          _showSnackBar('No se pudo determinar la escuela del usuario',
+              isError: true);
           return;
         }
         escuelaId = cached;
@@ -294,33 +302,20 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
             (success
                 ? 'Notificación enviada correctamente.'
                 : 'No se pudo registrar el escaneo.');
-        CustomSnackBar.show(
-          context: context,
-          message: msg,
-          isError: !success,
-        );
+        _showSnackBar(msg, isError: !success);
         if (success) widget.onCodeScanned(code);
       } else if (result == true) {
-        CustomSnackBar.show(
-          context: context,
-          message: 'Notificación enviada correctamente.',
-        );
+        _showSnackBar('Notificación enviada correctamente.');
         widget.onCodeScanned(code);
       } else {
-        CustomSnackBar.show(
-          context: context,
-          message: 'No se pudo registrar el escaneo (sin detalles).',
-          isError: true,
-        );
+        _showSnackBar('No se pudo registrar el escaneo (sin detalles).',
+            isError: true);
       }
     } catch (e) {
       debugPrint('Error processing scanned code: $e');
       if (!mounted) return;
-      CustomSnackBar.show(
-        context: context,
-        message: '${AppLocalizations.of(context).errorProcessingCode}: $e',
-        isError: true,
-      );
+      _showSnackBar('${AppLocalizations.of(context).errorProcessingCode}: $e',
+          isError: true);
     } finally {
       _busy = false;
       _setListening(true);

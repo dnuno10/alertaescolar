@@ -683,79 +683,16 @@ class _ClassRowToday extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Primera línea: título + chips (estado y horario)
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title.isEmpty ? 'Materia' : title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTheme.getBodyMedium(screenSize).copyWith(
-                    color: AppTheme.getTextPrimaryColor(context),
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              SizedBox(width: padS * 0.5),
-              // Estado
-              Container(
-                padding:
-                    EdgeInsets.symmetric(horizontal: padS * 0.7, vertical: 4),
-                decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
-                  color: statusData.color.withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(rad),
-                  border: Border.all(
-                    // ignore: deprecated_member_use
-                    color: statusData.color.withOpacity(0.28),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(statusData.icon, size: 12, color: statusData.color),
-                    SizedBox(width: 4),
-                    Text(
-                      statusData.text,
-                      style: AppTheme.getCaption(screenSize).copyWith(
-                        color: statusData.color,
-                        fontWeight: FontWeight.w700,
-                        fontSize:
-                            AppTheme.getCaption(screenSize).fontSize! * 0.9,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: padS * 0.5),
-              // Horario
-              Container(
-                padding:
-                    EdgeInsets.symmetric(horizontal: padS * 0.8, vertical: 4),
-                decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
-                  color: AppTheme.accentBlue.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(rad),
-                  border: Border.all(
-                    // ignore: deprecated_member_use
-                    color: AppTheme.accentBlue.withOpacity(0.28),
-                    width: 1,
-                  ),
-                ),
-                child: Text(
-                  '$start - $end',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTheme.getCaption(screenSize).copyWith(
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                    color: AppTheme.accentBlue,
-                    fontWeight: FontWeight.w700,
-                    fontSize: AppTheme.getCaption(screenSize).fontSize! * 0.9,
-                  ),
-                ),
-              ),
-            ],
+          // Primera línea: título de la materia
+          Text(
+            title.isEmpty ? 'Materia' : title,
+            maxLines: 2, // Permitir 2 líneas para el título
+            overflow: TextOverflow.ellipsis,
+            style: AppTheme.getBodyMedium(screenSize).copyWith(
+              color: AppTheme.getTextPrimaryColor(context),
+              fontWeight: FontWeight.w700,
+              height: 1.3, // Mejor espaciado entre líneas
+            ),
           ),
 
           SizedBox(height: padS * 0.75),
@@ -813,6 +750,72 @@ class _ClassRowToday extends StatelessWidget {
                   ),
                 ),
               ],
+            ],
+          ),
+
+          SizedBox(height: padS * 0.75),
+
+          // Tercera línea: estado + horario (cápsulas al final)
+          Row(
+            children: [
+              // Estado
+              Container(
+                padding:
+                    EdgeInsets.symmetric(horizontal: padS * 0.7, vertical: 4),
+                decoration: BoxDecoration(
+                  // ignore: deprecated_member_use
+                  color: statusData.color.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(rad),
+                  border: Border.all(
+                    // ignore: deprecated_member_use
+                    color: statusData.color.withOpacity(0.28),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(statusData.icon, size: 12, color: statusData.color),
+                    SizedBox(width: 4),
+                    Text(
+                      statusData.text,
+                      style: AppTheme.getCaption(screenSize).copyWith(
+                        color: statusData.color,
+                        fontWeight: FontWeight.w700,
+                        fontSize:
+                            AppTheme.getCaption(screenSize).fontSize! * 0.9,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              // Horario
+              Container(
+                padding:
+                    EdgeInsets.symmetric(horizontal: padS * 0.8, vertical: 4),
+                decoration: BoxDecoration(
+                  // ignore: deprecated_member_use
+                  color: AppTheme.accentBlue.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(rad),
+                  border: Border.all(
+                    // ignore: deprecated_member_use
+                    color: AppTheme.accentBlue.withOpacity(0.28),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  '$start - $end',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTheme.getCaption(screenSize).copyWith(
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                    color: AppTheme.accentBlue,
+                    fontWeight: FontWeight.w700,
+                    fontSize: AppTheme.getCaption(screenSize).fontSize! * 0.9,
+                  ),
+                ),
+              ),
             ],
           ),
         ],

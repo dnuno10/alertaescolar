@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class CustomSnackBar {
+  // Control global de SnackBar activo
+  static ScaffoldFeatureController<SnackBar, SnackBarClosedReason>?
+      _currentController;
+  static bool _isSnackBarActive = false;
+
   static ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? show({
     required BuildContext context,
     required String message,
@@ -10,8 +15,16 @@ class CustomSnackBar {
     bool replace = true, // true = reemplaza el actual; false = encola
     String? actionLabel,
     VoidCallback? onAction,
+    bool forceShow = false, // true = fuerza mostrar incluso si hay uno activo
   }) {
     if (!context.mounted) return null;
+
+    // Si hay un snackbar activo y no se fuerza mostrar, descartar nuevo snackbar
+    if (_isSnackBarActive && !forceShow && !replace) {
+      debugPrint(
+          'SnackBar descartado: hay uno activo y no se permite reemplazar');
+      return null;
+    }
 
     try {
       // Colores hardcodeados (no usan tema)
@@ -26,6 +39,14 @@ class CustomSnackBar {
           isError ? Icons.error_rounded : Icons.check_circle_rounded;
 
       final messenger = ScaffoldMessenger.of(context);
+
+      // Si hay un snackbar activo, ocultarlo primero
+      if (_isSnackBarActive && _currentController != null) {
+        _currentController!.close();
+        _isSnackBarActive = false;
+        _currentController = null;
+      }
+
       if (replace) {
         messenger.hideCurrentSnackBar();
       }
@@ -65,10 +86,41 @@ class CustomSnackBar {
             : null,
       );
 
-      return messenger.showSnackBar(snack);
+      // Marcar como activo antes de mostrar
+      _isSnackBarActive = true;
+      final controller = messenger.showSnackBar(snack);
+      _currentController = controller;
+
+      // Configurar callback para cuando se cierre el snackbar
+      controller.closed.then((_) {
+        _isSnackBarActive = false;
+        _currentController = null;
+      });
+
+      return controller;
     } catch (e) {
       debugPrint('Failed to show snackbar: $e');
+      _isSnackBarActive = false;
+      _currentController = null;
       return null;
     }
+  }
+
+  /// Oculta el snackbar actual si hay uno activo
+  static void hide() {
+    if (_isSnackBarActive && _currentController != null) {
+      _currentController!.close();
+      _isSnackBarActive = false;
+      _currentController = null;
+    }
+  }
+
+  /// Verifica si hay un snackbar activo
+  static bool get isActive => _isSnackBarActive;
+
+  /// Limpia el estado (útil para debugging o casos edge)
+  static void clearState() {
+    _isSnackBarActive = false;
+    _currentController = null;
   }
 }

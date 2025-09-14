@@ -85,6 +85,21 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
     _startAccessTypeTimer();
   }
 
+  /// Helper para mostrar snackbars con control de uno activo a la vez
+  void _showSnackBar(String message, {bool isError = false}) {
+    // Verificar si ya hay un snackbar activo - si es así, no mostrar nuevo
+    if (CustomSnackBar.isActive) {
+      debugPrint('SnackBar descartado: ya hay uno activo - $message');
+      return;
+    }
+
+    CustomSnackBar.show(
+      context: context,
+      message: message,
+      isError: isError,
+    );
+  }
+
   @override
   void dispose() {
     _accessTypeTimer?.cancel();
@@ -109,11 +124,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
         if (!mounted) return;
         if (prev != _isDefaultEntryConfig) {
           final newType = _isDefaultEntryConfig ? 'Entrada' : 'Salida';
-          CustomSnackBar.show(
-            message: 'Modo automático actualizado a: $newType',
-            isError: false,
-            context: context,
-          );
+          _showSnackBar('Modo automático actualizado a: $newType');
         }
       }
     });
@@ -218,11 +229,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
       });
 
       final currentMode = _isDefaultEntryConfig ? 'entrada' : 'salida';
-      CustomSnackBar.show(
-        message: 'Configuración cargada. Modo automático: $currentMode',
-        isError: false,
-        context: context,
-      );
+      _showSnackBar('Configuración cargada. Modo automático: $currentMode');
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -641,7 +648,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
         message = 'Modo: Salida extracurricular';
         break;
     }
-    CustomSnackBar.show(message: message, isError: false, context: context);
+    _showSnackBar(message);
   }
 
   void _navigateToCameraScanner() {

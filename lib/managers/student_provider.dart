@@ -198,6 +198,21 @@ class StudentProvider with ChangeNotifier {
   // Contexto actual para recargar según modo
   String? _currentSchoolId;
 
+  // Helper para ordenar estudiantes: activos primero, después inactivos, luego por nombre
+  void _sortStudentsByActiveStatus(List<StudentDetails> students) {
+    students.sort((a, b) {
+      final aActive = a.hasTutores && _isLlaveVigenteFor(a);
+      final bActive = b.hasTutores && _isLlaveVigenteFor(b);
+
+      // Si uno es activo y el otro no, el activo va primero
+      if (aActive && !bActive) return -1;
+      if (!aActive && bActive) return 1;
+
+      // Si ambos tienen el mismo estado, ordenar por nombre
+      return a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase());
+    });
+  }
+
   // Getters
   List<StudentDetails> get students => _students;
   List<StudentDetails> get filteredStudents => _filteredStudents;
@@ -743,7 +758,9 @@ class StudentProvider with ChangeNotifier {
       _students = validatedList;
       _filteredStudents = List.from(_students);
 
-      // Resolver escuela (primero por tutor, fallback admin)
+      // Ordenar: primero activos, después inactivos
+      _sortStudentsByActiveStatus(
+          _filteredStudents); // Resolver escuela (primero por tutor, fallback admin)
       String? resolvedSchool = _normalizeUuid(await getUserSchoolId(userId)) ??
           _normalizeUuid(await getAdminEscuelaUuidByUserId(userId));
 
@@ -990,6 +1007,9 @@ class StudentProvider with ChangeNotifier {
       }
 
       _filteredStudents = List.from(_students);
+
+      // Ordenar: primero activos, después inactivos
+      _sortStudentsByActiveStatus(_filteredStudents);
       _currentSchoolId = schoolId;
 
       debugPrint(
@@ -1313,6 +1333,8 @@ class StudentProvider with ChangeNotifier {
           matchesTurno;
     }).toList();
 
+    // Ordenar: primero activos, después inactivos, luego por nombre
+    _sortStudentsByActiveStatus(_filteredStudents);
     notifyListeners();
   }
 
@@ -1356,6 +1378,7 @@ class StudentProvider with ChangeNotifier {
         if (_selectedStudent != null) {
           _students[idx] = _selectedStudent!;
           _filteredStudents = List.from(_students);
+          _sortStudentsByActiveStatus(_filteredStudents);
           notifyListeners();
         }
       }
@@ -1382,6 +1405,7 @@ class StudentProvider with ChangeNotifier {
       if (idx != -1) {
         _students[idx] = _students[idx].copyWith(llaveActiva: false);
         _filteredStudents = List.from(_students);
+        _sortStudentsByActiveStatus(_filteredStudents);
         notifyListeners();
       }
       return true;
@@ -1406,6 +1430,7 @@ class StudentProvider with ChangeNotifier {
       if (idx != -1) {
         _students[idx] = _students[idx].copyWith(llaveActiva: true);
         _filteredStudents = List.from(_students);
+        _sortStudentsByActiveStatus(_filteredStudents);
         notifyListeners();
       }
       return true;
