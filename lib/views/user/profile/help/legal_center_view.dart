@@ -357,7 +357,7 @@ class _PrivacyContent extends StatelessWidget {
                 ),
                 SizedBox(height: AppTheme.getSmallPadding(size) * 0.8),
                 Text(
-                  'Si tienes dudas sobre esta política o deseas ejercer tus derechos, escríbenos a soporte@alertaescolar.app.',
+                  'Si tienes dudas sobre esta política o deseas ejercer tus derechos, escríbenos a contacto@alertaescolar.mx.',
                   style: AppTheme.getBodyMedium(size).copyWith(
                     color: AppTheme.getTextSecondaryColor(context),
                     height: 1.5,
@@ -665,7 +665,7 @@ class _TermsContent extends StatelessWidget {
                 ),
                 SizedBox(height: AppTheme.getSmallPadding(size) * 0.8),
                 Text(
-                  'Para dudas legales o soporte, escríbenos a soporte@alertaescolar.app.',
+                  'Para dudas legales o soporte, escríbenos a contacto@alertaescolar.mx.',
                   style: AppTheme.getBodyMedium(size).copyWith(
                     color: AppTheme.getTextSecondaryColor(context),
                     height: 1.5,

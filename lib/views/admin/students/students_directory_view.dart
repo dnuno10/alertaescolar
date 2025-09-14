@@ -506,11 +506,11 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                 child: CustomScrollView(
                   physics: const BouncingScrollPhysics(),
                   slivers: [
-                    SliverToBoxAdapter(
-                      child: DirectoryHeader(
-                        title: l10n.studentsDirectory,
-                        subtitle: l10n.manageAndSearchStudents,
-                      ),
+                    DirectoryHeader(
+                      title: l10n.studentsDirectory,
+                      subtitle: l10n.manageAndSearchStudents,
+                      isSliverAppBar:
+                          true, // o false según el estilo que quieras
                     ),
                     SliverToBoxAdapter(
                       child: Padding(

@@ -180,7 +180,10 @@ class _StudentProfileAdminViewState extends State<StudentProfileAdminView> {
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
-                NavHeader(title: titleText),
+                NavHeader(
+                  title: titleText,
+                  isSliverAppBar: false,
+                ),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.all(padM),

@@ -9,7 +9,7 @@ class ContactSupportView extends StatelessWidget {
   const ContactSupportView({super.key});
 
   static const _instagramUser = 'alertaescolar.app';
-  static const _whatsNumberIntl = '526645290620'; // +52 664 529 0620 sin signos
+  static const _whatsNumberIntl = '526645290620';
   static const _whatsDisplay = '+52 664 529 0620';
   static const _email = 'contacto@alertaescolar.mx';
 

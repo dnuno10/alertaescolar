@@ -248,7 +248,7 @@ class TermsView extends StatelessWidget {
                     ),
                     SizedBox(height: AppTheme.getSmallPadding(size) * 0.8),
                     Text(
-                      'Para dudas legales o soporte, escríbenos a soporte@alertaescolar.app.',
+                      'Para dudas legales o soporte, escríbenos a contacto@alertaescolar.mx.',
                       style: AppTheme.getBodyMedium(size).copyWith(
                         color: AppTheme.getTextSecondaryColor(context),
                         height: 1.5,

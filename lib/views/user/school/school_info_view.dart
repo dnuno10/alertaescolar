@@ -142,7 +142,7 @@ class _SchoolInfoViewState extends State<SchoolInfoView>
                 parent: AlwaysScrollableScrollPhysics(),
               ),
               slivers: [
-                NavHeader(title: l10n.schoolInfo),
+                NavHeader(title: l10n.schoolInfo, isSliverAppBar: false),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.all(AppTheme.getMediumPadding(size)),

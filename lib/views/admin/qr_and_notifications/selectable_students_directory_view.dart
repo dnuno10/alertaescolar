@@ -448,7 +448,7 @@ class _SelectableStudentsDirectoryViewState
                 child: CustomScrollView(
                   physics: const BouncingScrollPhysics(),
                   slivers: [
-                    NavHeader(title: l10n.selectStudent),
+                    NavHeader(title: l10n.selectStudent, isSliverAppBar: false),
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: EdgeInsets.all(

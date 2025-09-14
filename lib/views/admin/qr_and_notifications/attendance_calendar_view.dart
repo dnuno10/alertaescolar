@@ -1222,7 +1222,6 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
     );
   }
 
-  // ========================= Build =========================
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -1282,7 +1281,8 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                 child: CustomScrollView(
                   physics: const BouncingScrollPhysics(),
                   slivers: [
-                    NavHeader(title: l10n.attendanceCalendar),
+                    NavHeader(
+                        title: l10n.attendanceCalendar, isSliverAppBar: false),
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: EdgeInsets.all(

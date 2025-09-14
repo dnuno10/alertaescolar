@@ -158,7 +158,10 @@ class _StudentDetailViewState extends State<StudentDetailView> {
             parent: BouncingScrollPhysics(),
           ),
           slivers: [
-            NavHeader(title: widget.student.nombre),
+            NavHeader(
+              title: widget.student.nombre,
+              isSliverAppBar: false,
+            ),
             SliverToBoxAdapter(
               child: _isLoading
                   ? const SizedBox.shrink()

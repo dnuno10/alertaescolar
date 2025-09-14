@@ -418,6 +418,7 @@ class _StudentAttendanceHistoryViewState
             slivers: [
               NavHeader(
                 title: l10n.attendanceHistory,
+                isSliverAppBar: false,
               ),
               SliverToBoxAdapter(
                 child: Padding(

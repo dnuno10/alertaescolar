@@ -230,7 +230,8 @@ class _NotificationSendViewState extends State<NotificationSendView>
                   physics: const AlwaysScrollableScrollPhysics(
                       parent: BouncingScrollPhysics()),
                   slivers: [
-                    NavHeader(title: l10n.sendNotification),
+                    NavHeader(
+                        title: l10n.sendNotification, isSliverAppBar: false),
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: EdgeInsets.all(
