@@ -318,8 +318,9 @@ class NotificationSendService {
     }
   }
 
-  /// Filtra estudiantes que están registrados por tutores (activos en el sistema)
-  /// y que tienen llaves activas dentro de la ventana de vigencia
+  /// Filtra estudiantes que están registrados por tutores (activos en el sistema),
+  /// que tienen llaves activas dentro de la ventana de vigencia,
+  /// y que han realizado el pago correspondiente (pagado = true)
   Future<List<String>> _filterActiveStudents(List<String> studentIds) async {
     try {
       if (studentIds.isEmpty) return [];
@@ -338,10 +339,23 @@ class NotificationSendService {
 
       if (studentsWithTutors.isEmpty) return [];
 
+      // Verificar que han pagado (pagado = true)
+      final paidStudentRows = await _sb
+          .from('alumnos')
+          .select('id')
+          .inFilter('id', studentsWithTutors.toList())
+          .eq('pagado', true);
+
+      final paidStudents = <String>{};
+      for (final r in paidStudentRows) {
+        final v = (r['id'] ?? '').toString();
+        if (v.isNotEmpty) paidStudents.add(v);
+      }
+
+      if (paidStudents.isEmpty) return [];
+
       // Ahora verificar las llaves activas y dentro de ventana de vigencia
-      final llaveRows = await _sb
-          .from('llaves')
-          .select('''
+      final llaveRows = await _sb.from('llaves').select('''
             id_alumno,
             activo,
             fecha_registro,
@@ -350,9 +364,7 @@ class NotificationSendService {
               id,
               fecha_registro
             )
-          ''')
-          .inFilter('id_alumno', studentsWithTutors.toList())
-          .eq('activo', true);
+          ''').inFilter('id_alumno', paidStudents.toList()).eq('activo', true);
 
       final activeStudents = <String>{};
       for (final r in llaveRows) {

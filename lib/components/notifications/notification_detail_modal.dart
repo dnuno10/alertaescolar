@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../app/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/models.dart';
@@ -471,18 +470,24 @@ class _NotificationDetailModalState extends State<NotificationDetailModal> {
   }
 
   String _formatDate(DateTime dateTime) {
-    return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year}';
+    // Convertir a zona horaria local para mostrar la fecha correcta
+    final localDateTime = dateTime.toLocal();
+    return '${localDateTime.day.toString().padLeft(2, '0')}/${localDateTime.month.toString().padLeft(2, '0')}/${localDateTime.year}';
   }
 
   String _formatTime(DateTime dateTime) {
-    final hour = dateTime.hour.toString().padLeft(2, '0');
-    final minute = dateTime.minute.toString().padLeft(2, '0');
+    // Convertir a zona horaria local para mostrar la hora correcta
+    final localDateTime = dateTime.toLocal();
+    final hour = localDateTime.hour.toString().padLeft(2, '0');
+    final minute = localDateTime.minute.toString().padLeft(2, '0');
+
     return '$hour:$minute';
   }
 
   String _formatTimeAgo(DateTime dateTime) {
     final now = DateTime.now();
-    final difference = now.difference(dateTime);
+    final localDateTime = dateTime.toLocal();
+    final difference = now.difference(localDateTime);
 
     if (difference.inDays == 0) {
       if (difference.inHours == 0) {
@@ -495,7 +500,7 @@ class _NotificationDetailModalState extends State<NotificationDetailModal> {
     } else if (difference.inDays < 7) {
       return '${difference.inDays}d';
     } else {
-      return '${dateTime.day}/${dateTime.month}';
+      return '${localDateTime.day}/${localDateTime.month}';
     }
   }
 

@@ -32,6 +32,14 @@
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"
+        },
+        {
+            "name": "alertaescolar (Flutter SM G950U)",
+            "program": "lib/main.dart",
+            "deviceId": "988a1b355545393656",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
         }
     ]
 }

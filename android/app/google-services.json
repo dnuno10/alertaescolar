@@ -86,6 +86,43 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:328996489325:android:eca056815499d51a375764",
+        "android_client_info": {
+          "package_name": "com.unosoft.alertaescolar_mb"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "328996489325-1qblqo4s2h2s6bnmajf4ia331a49fssa.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBL6Ax79bZjPByDE-ypBkCnkU8scG1qNc8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "328996489325-1qblqo4s2h2s6bnmajf4ia331a49fssa.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "328996489325-4p4vhv5psrpnashnuokin3eboej6ulnq.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.alertaescolarMb",
+                "app_store_id": "6526502450"
+              }
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"

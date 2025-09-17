@@ -21,7 +21,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace "com.example.alertaescolarMb"
+    namespace "com.unosoft.alertaescolar_mb"
 
     // Usa tus valores actuales (compatibles con Flutter)
     compileSdk 35
@@ -29,7 +29,7 @@ android {
 
     defaultConfig {
         // Mantengo tu applicationId actual para no romper Firebase/Google Sign-In, etc.
-        applicationId "com.example.alertaescolarMb"
+    applicationId "com.unosoft.alertaescolar_mb"
 
         minSdk 23
         targetSdk 35

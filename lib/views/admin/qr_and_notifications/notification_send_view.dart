@@ -1891,9 +1891,27 @@ class _NotificationSendViewState extends State<NotificationSendView>
   /// Un estudiante está activo si:
   /// 1. Tiene tutores registrados (hasTutores)
   /// 2. Está dentro de la ventana de vigencia de la llave
+  /// 3. Ha realizado el pago correspondiente (pagado = true)
   Future<bool> _validateIndividualStudentActive(Alumno student) async {
     try {
       final supabase = Supabase.instance.client;
+
+      // Verificar si ha pagado
+      final paymentResponse = await supabase
+          .from('alumnos')
+          .select('pagado')
+          .eq('id', student.id)
+          .maybeSingle();
+
+      final isPaid = paymentResponse?['pagado'] == true;
+
+      if (!isPaid) {
+        _showSnackBar(
+          'No se puede enviar comunicado a ${student.nombre} porque no ha realizado el pago correspondiente. Contacte a la administración.',
+          isError: true,
+        );
+        return false;
+      }
 
       // Verificar si tiene tutores registrados (equivalent to student.hasTutores)
       final tutorResponse = await supabase

@@ -38,11 +38,6 @@ class ScannerService {
   static final Map<String, Map<String, dynamic>> _turnoCache = {};
   static final Map<String, DateTime> _cacheTimestamps = {};
   static const Duration _cacheExpiry = Duration(minutes: 5);
-
-  // ⚡ OPTIMIZACIÓN: Cache para estudiantes para consultas repetidas
-  static final Map<String, Map<String, dynamic>> _studentCache = {};
-  static final Map<String, DateTime> _studentCacheTimestamps = {};
-  static const Duration _studentCacheExpiry = Duration(minutes: 2);
   Future<Map<String, dynamic>> processScannedCode({
     required String scannedCode,
     required String adminId,
@@ -185,6 +180,7 @@ class ScannerService {
     final String studentId = studentData['id']?.toString() ?? '';
     final String? turnoValue = studentData['id_turno']?.toString();
     final String? escuelaIdAlumno = studentData['id_escuela']?.toString();
+    final bool isPaid = studentData['pagado'] == true;
 
     if (studentId.isEmpty || turnoValue == null || escuelaIdAlumno == null) {
       debugPrint('ProcessScannedCode: Incomplete student data');
@@ -192,6 +188,18 @@ class ScannerService {
         'success': false,
         'error': 'Datos del estudiante incompletos',
         'shouldTerminate': true
+      };
+    }
+
+    // Verificar si el alumno ha pagado
+    if (!isPaid) {
+      debugPrint('ProcessScannedCode: Student has not paid - access denied');
+      return {
+        'success': false,
+        'error':
+            'El alumno ${studentData['nombre']} no ha realizado el pago correspondiente. Contacte a la administración.',
+        'shouldTerminate': true,
+        'unpaidStudent': true
       };
     }
 
@@ -311,24 +319,12 @@ class ScannerService {
       final m = matricula.trim();
       if (m.isEmpty) return null;
 
-      // ⚡ OPTIMIZACIÓN: Check cache first
-      final cacheKey = 'student_$m';
-      final now = DateTime.now();
+      // 🔄 CACHE DESHABILITADO: Para garantizar datos frescos sobre pagos
+      // El estado de 'pagado' debe ser siempre actual, por lo que consultamos
+      // directamente la base de datos cada vez
 
-      if (_studentCache.containsKey(cacheKey) &&
-          _studentCacheTimestamps.containsKey(cacheKey)) {
-        final cacheTime = _studentCacheTimestamps[cacheKey]!;
-        if (now.difference(cacheTime) < _studentCacheExpiry) {
-          debugPrint('⚡ Cache HIT: Student $m found in cache');
-          return _studentCache[cacheKey];
-        } else {
-          // Cache expired, remove it
-          _studentCache.remove(cacheKey);
-          _studentCacheTimestamps.remove(cacheKey);
-        }
-      }
-
-      debugPrint('⚡ Cache MISS: Querying database for student $m');
+      debugPrint(
+          '⚡ FRESH QUERY: Querying database for student $m (no cache for payment status)');
       final response = await _supabase.from('alumnos').select('''
           id,
           nombre,
@@ -336,6 +332,7 @@ class ScannerService {
           id_grupo,
           id_escuela,
           id_turno,
+          pagado,
           grupos!inner(
             grupo,
             nivel_educativo
@@ -355,11 +352,7 @@ class ScannerService {
         return null;
       }
 
-      // ⚡ OPTIMIZACIÓN: Store in cache
-      _studentCache[cacheKey] = response;
-      _studentCacheTimestamps[cacheKey] = now;
-      debugPrint('⚡ Cache STORED: Student $m cached');
-
+      debugPrint('⚡ FRESH DATA: Student $m data retrieved from database');
       return response;
     } catch (e) {
       debugPrint('Error finding student: $e');
@@ -999,13 +992,14 @@ class ScannerService {
   Future<Map<String, dynamic>> _validateStudentKeyAndTutor(
       String studentId) async {
     try {
-      // Tutor registrado
+      // Tutor registrado - un alumno puede tener múltiples tutores
       final tutorResponse = await _supabase
           .from('alumno_tutores')
           .select('id')
           .eq('id_alumno', studentId)
-          .maybeSingle();
-      if (tutorResponse == null) {
+          .limit(1); // Solo necesitamos saber si existe al menos uno
+
+      if (tutorResponse.isEmpty) {
         return {
           'isValid': false,
           'error': 'El alumno aún no ha sido registrado por un familiar',
@@ -1151,5 +1145,13 @@ class ScannerService {
         'error': 'Error interno al validar turno del estudiante: $e'
       };
     }
+  }
+
+  /// Método público para limpiar cache de turnos si es necesario
+  /// Útil cuando se actualizan turnos desde el admin y se necesita refrescar datos
+  static void clearTurnoCache() {
+    _turnoCache.clear();
+    _cacheTimestamps.clear();
+    debugPrint('🧹 Cache cleared: Turno cache has been cleared');
   }
 }
