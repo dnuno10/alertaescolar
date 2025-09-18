@@ -14,14 +14,6 @@
       },
       "oauth_client": [
         {
-          "client_id": "328996489325-267t2hme8sr0l74tllhsfubtqg69j9jv.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.alertaescolarMb",
-            "certificate_hash": "92e33f27f221fb6c05862ff413309a006d0abdfc"
-          }
-        },
-        {
           "client_id": "328996489325-1qblqo4s2h2s6bnmajf4ia331a49fssa.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -95,6 +87,22 @@
         }
       },
       "oauth_client": [
+        {
+          "client_id": "328996489325-267t2hme8sr0l74tllhsfubtqg69j9jv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.unosoft.alertaescolar_mb",
+            "certificate_hash": "331663f43080d95d96ac6093b30fc2103a094cc7"
+          }
+        },
+        {
+          "client_id": "328996489325-2n1jg0r320779o9gnp8ngqbh30aa48bm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.unosoft.alertaescolar_mb",
+            "certificate_hash": "92e33f27f221fb6c05862ff413309a006d0abdfc"
+          }
+        },
         {
           "client_id": "328996489325-1qblqo4s2h2s6bnmajf4ia331a49fssa.apps.googleusercontent.com",
           "client_type": 3
