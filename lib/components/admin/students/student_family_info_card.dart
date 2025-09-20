@@ -50,29 +50,36 @@ class _StudentFamilyInfoCardState extends State<StudentFamilyInfoCard> {
     try {
       setState(() => _isLoading = true);
 
-      // Única consulta: alumno_tutores -> usuarios.contactos_familiares
-      final resp = await _supabase.from('alumno_tutores').select('''
-        usuarios!inner(
-          contactos_familiares(
-            id,
-            id_usuario,
-            nombre,
-            parentesco,
-            telefono,
-            email,
-            fecha_registro
-          )
-        )
-      ''').eq('id_alumno', widget.student.id);
+      // 1. Obtén los id_tutor de los tutores vinculados al alumno
+      final tutorRows = await _supabase
+          .from('alumno_tutores')
+          .select('id_tutor')
+          .eq('id_alumno', widget.student.id);
 
-      final List<Map<String, dynamic>> flattened = [];
-      for (final row in (resp as List)) {
-        final usr = row['usuarios'];
-        final contacts = (usr?['contactos_familiares'] as List?) ?? const [];
-        for (final c in contacts) {
-          flattened.add(Map<String, dynamic>.from(c as Map));
-        }
+      final tutorIds = (tutorRows as List)
+          .map((row) => row['id_tutor'] as String?)
+          .where((id) => id != null)
+          .toList();
+
+      if (tutorIds.isEmpty) {
+        setState(() {
+          _familyContacts = [];
+          _isLoading = false;
+        });
+        return;
       }
+
+      // 2. Busca los contactos familiares de esos tutores
+      final contactsResp = await _supabase
+          .from('contactos_familiares')
+          .select(
+              'id, id_usuario, nombre, parentesco, telefono, email, fecha_registro')
+          .inFilter('id_usuario', tutorIds);
+
+      print('CONTACTOS FAMILIARES: $contactsResp');
+
+      final List<Map<String, dynamic>> flattened =
+          List<Map<String, dynamic>>.from(contactsResp as List);
 
       _sortContactsInPlace(flattened);
 

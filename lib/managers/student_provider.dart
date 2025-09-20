@@ -1883,7 +1883,6 @@ class StudentProvider with ChangeNotifier {
           .from('llaves')
           .update({
             'limite_vinculacion': newLimit,
-            'activo': newLimit > 0,
           })
           .eq('id', keyId)
           .select('id, limite_vinculacion, activo')

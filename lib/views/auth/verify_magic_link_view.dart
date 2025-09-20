@@ -375,6 +375,7 @@ class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
           borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
           fieldHeight: size.width * 0.14,
           fieldWidth: size.width * 0.12,
+
           // ignore: deprecated_member_use
           activeFillColor: AppTheme.accentPurple.withOpacity(0.2),
           // ignore: deprecated_member_use
@@ -387,6 +388,7 @@ class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
           selectedColor: AppTheme.accentPurple,
           borderWidth: 2,
         ),
+        cursorColor: AppTheme.accentPurple,
         enableActiveFill: true,
         onChanged: (v) => _currentPin = v,
         onCompleted: (pin) => _verifyCode(pin),

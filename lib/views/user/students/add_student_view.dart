@@ -8,6 +8,7 @@ import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:alertaescolar/managers/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart'; // <-- (NUEVO)
 import '../../../l10n/app_localizations.dart';
 import '../../../managers/student_provider.dart';
 import '../../../app/app_theme.dart';
@@ -25,6 +26,12 @@ class _AddStudentViewState extends State<AddStudentView> {
   final _keyController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _handledScan = false;
+
+  // Enlace del tutorial solicitado
+  static const String _helpVideoTitle =
+      'Activa la credencial de tu hijo en Alerta Escolar | Tutorial Padres de Familia';
+  static const String _helpVideoUrl =
+      'https://www.youtube.com/watch?v=tdH5ABk7a3E';
 
   @override
   void dispose() {
@@ -59,6 +66,16 @@ class _AddStudentViewState extends State<AddStudentView> {
                     ),
                     child: Column(
                       children: [
+                        // ———— ENLACE AL VIDEO (NUEVO) ————
+                        SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+                        _HelpVideoCard(
+                          title: _helpVideoTitle,
+                          url: _helpVideoUrl,
+                          onTap: () => _openExternalUrl(_helpVideoUrl),
+                          screenSize: screenSize,
+                        ),
+                        // ————————————————————————————————
+
                         SizedBox(height: AppTheme.getMediumPadding(screenSize)),
                         if (!isLoggedIn)
                           _NoSessionCard(
@@ -73,11 +90,7 @@ class _AddStudentViewState extends State<AddStudentView> {
                             onTap:
                                 spLoading ? null : () => _openQRScanner(l10n),
                           ),
-                          SizedBox(
-                              height: AppTheme.getMediumPadding(screenSize)),
                           OptionDivider(label: l10n.or),
-                          SizedBox(
-                              height: AppTheme.getMediumPadding(screenSize)),
                           ManualInputCard(
                             formKey: _formKey,
                             keyController: _keyController,
@@ -101,8 +114,6 @@ class _AddStudentViewState extends State<AddStudentView> {
                             semanticsLabel: l10n.validateCode,
                             screenSize: screenSize,
                           ),
-                          SizedBox(
-                              height: AppTheme.getMediumPadding(screenSize)),
                         ],
                       ],
                     ),
@@ -239,6 +250,16 @@ class _AddStudentViewState extends State<AddStudentView> {
       ),
     );
   }
+
+  // Abre URLs afuera (YouTube)
+  Future<void> _openExternalUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      _showErrorSnackBar('No se pudo abrir el enlace.');
+    }
+  }
 }
 
 class _NoSessionCard extends StatelessWidget {
@@ -284,6 +305,73 @@ class _NoSessionCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ———————————————————— Card del enlace al tutorial (NUEVO) ————————————————————
+class _HelpVideoCard extends StatelessWidget {
+  final String title;
+  final String url;
+  final VoidCallback onTap;
+  final Size screenSize;
+
+  const _HelpVideoCard({
+    required this.title,
+    required this.url,
+    required this.onTap,
+    required this.screenSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.getSurfaceColor(context),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+        border: Border.all(color: AppTheme.getBorderColor(context)),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.getShadowColor(context),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: AppTheme.getMediumPadding(screenSize),
+          vertical: AppTheme.getSmallPadding(screenSize),
+        ),
+        leading: Container(
+          padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
+          decoration: BoxDecoration(
+            color: AppTheme.accentPurple.withOpacity(0.12),
+            borderRadius:
+                BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
+          ),
+          child: const Icon(Icons.ondemand_video_rounded),
+        ),
+        title: Text(
+          title,
+          maxLines: 1,
+          style: AppTheme.getBodyMedium(screenSize).copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppTheme.getTextPrimaryColor(context),
+          ),
+        ),
+        subtitle: Text(
+          url,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTheme.getCaption(screenSize).copyWith(
+            color: AppTheme.getTextSecondaryColor(context),
+          ),
+        ),
+        trailing: Icon(Icons.open_in_new, color: AppTheme.accentPurple),
+        onTap: onTap,
       ),
     );
   }

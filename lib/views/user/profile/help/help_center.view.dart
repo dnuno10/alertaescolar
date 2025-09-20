@@ -3,6 +3,7 @@ import 'package:alertaescolar/l10n/app_localizations.dart';
 import 'package:alertaescolar/managers/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HelpCenterView extends StatefulWidget {
   const HelpCenterView({super.key});
@@ -65,8 +66,13 @@ class _HelpCenterViewState extends State<HelpCenterView> {
               userProvider.isLoadingUser && userProvider.currentUser == null;
           final isAdmin = userProvider.isAdmin();
 
-          final data = isAdmin ? _adminFaqs : _userFaqs;
-          final filtered = _filterFaqs(data, _query);
+          // Datos por rol
+          final videos = isAdmin ? _adminVideos : _userVideos;
+          final faqs = isAdmin ? _adminFaqs : _userFaqs;
+
+          // Filtros por query
+          final filteredVideos = _filterVideos(videos, _query);
+          final filteredFaqs = _filterFaqs(faqs, _query);
 
           if (isLoading) {
             return const Center(child: CircularProgressIndicator());
@@ -144,59 +150,86 @@ class _HelpCenterViewState extends State<HelpCenterView> {
                 ),
               ),
 
-              // Buscador
+              // Buscador (filtra VIDEOS y FAQ)
               Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: AppTheme.getMediumPadding(screenSize),
                 ),
                 child: _SearchField(
                   controller: _searchCtrl,
-                  hintText: 'Buscar en preguntas frecuentes...',
+                  hintText: 'Buscar en videos y preguntas frecuentes...',
                   onChanged: (text) => setState(() => _query = text.trim()),
                   screenSize: screenSize,
                 ),
               ),
               SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-              // Header de sección
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppTheme.getMediumPadding(screenSize),
-                ),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: _SectionHeader(
-                    label: isAdmin ? 'FAQ Administrador' : 'FAQ Usuario',
-                    count: filtered.length,
-                    screenSize: screenSize,
-                  ),
-                ),
-              ),
-              SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+              // Contenido scrollable
               Expanded(
-                child: filtered.isEmpty
-                    ? _EmptyState(
-                        message: 'Sin resultados',
+                child: ListView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppTheme.getMediumPadding(screenSize),
+                    vertical: AppTheme.getSmallPadding(screenSize),
+                  ),
+                  children: [
+                    // ———— Sección de VIDEOS por rol ————
+                    _SectionHeader(
+                      label: isAdmin
+                          ? 'Videos recomendados para Administrador'
+                          : 'Videos recomendados para Padres',
+                      count: filteredVideos.length,
+                      screenSize: screenSize,
+                    ),
+                    SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+                    if (filteredVideos.isEmpty)
+                      _EmptyState(
+                        message: 'Sin videos para “$_query”',
                         screenSize: screenSize,
                       )
-                    : ListView.separated(
-                        physics: const BouncingScrollPhysics(),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: AppTheme.getMediumPadding(screenSize),
-                          vertical: AppTheme.getSmallPadding(screenSize),
+                    else
+                      ...filteredVideos.map(
+                        (v) => Padding(
+                          padding: EdgeInsets.only(
+                            bottom: AppTheme.getSmallPadding(screenSize),
+                          ),
+                          child: _VideoTile(
+                            title: v.title,
+                            url: v.url,
+                            screenSize: screenSize,
+                          ),
                         ),
-                        itemBuilder: (context, index) {
-                          final item = filtered[index];
-                          return _FaqTile(
+                      ),
+
+                    SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+
+                    // ———— Sección de FAQ por rol ————
+                    _SectionHeader(
+                      label: isAdmin ? 'FAQ Administrador' : 'FAQ Usuario',
+                      count: filteredFaqs.length,
+                      screenSize: screenSize,
+                    ),
+                    SizedBox(height: AppTheme.getSmallPadding(screenSize)),
+                    if (filteredFaqs.isEmpty)
+                      _EmptyState(
+                        message: 'Sin resultados en FAQ',
+                        screenSize: screenSize,
+                      )
+                    else
+                      ...filteredFaqs.map(
+                        (item) => Padding(
+                          padding: EdgeInsets.only(
+                            bottom: AppTheme.getSmallPadding(screenSize),
+                          ),
+                          child: _FaqTile(
                             q: item.q,
                             a: item.a,
                             screenSize: screenSize,
-                          );
-                        },
-                        separatorBuilder: (_, __) => SizedBox(
-                            height: AppTheme.getSmallPadding(screenSize)),
-                        itemCount: filtered.length,
+                          ),
+                        ),
                       ),
+                  ],
+                ),
               ),
             ],
           );
@@ -205,11 +238,29 @@ class _HelpCenterViewState extends State<HelpCenterView> {
     );
   }
 
+  // ———————————————————— Navegación a YouTube ————————————————————
+  Future<void> openYouTube(String url) async {
+    final Uri uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  // ———————————————————— Filtros ————————————————————
   List<_FaqItem> _filterFaqs(List<_FaqItem> items, String query) {
     if (query.isEmpty) return items;
     final q = query.toLowerCase();
     return items.where((e) {
       return e.q.toLowerCase().contains(q) || e.a.toLowerCase().contains(q);
+    }).toList();
+  }
+
+  List<_VideoItem> _filterVideos(List<_VideoItem> items, String query) {
+    if (query.isEmpty) return items;
+    final q = query.toLowerCase();
+    return items.where((e) {
+      return e.title.toLowerCase().contains(q) ||
+          e.url.toLowerCase().contains(q);
     }).toList();
   }
 }
@@ -305,6 +356,73 @@ class _SectionHeader extends StatelessWidget {
       style: AppTheme.getSubtitle1(screenSize).copyWith(
         fontWeight: FontWeight.w700,
         color: AppTheme.getTextPrimaryColor(context),
+      ),
+    );
+  }
+}
+
+class _VideoTile extends StatelessWidget {
+  final String title;
+  final String url;
+  final Size screenSize;
+
+  const _VideoTile({
+    required this.title,
+    required this.url,
+    required this.screenSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.getSurfaceColor(context),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+        border: Border.all(color: AppTheme.getBorderColor(context)),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.getShadowColor(context),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: AppTheme.getMediumPadding(screenSize),
+          vertical: AppTheme.getSmallPadding(screenSize),
+        ),
+        leading: Container(
+          padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
+          decoration: BoxDecoration(
+            color: AppTheme.accentPurple.withOpacity(0.12),
+            borderRadius:
+                BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
+          ),
+          child: Icon(Icons.play_circle_fill,
+              color: AppTheme.accentPurple, size: screenSize.width * 0.07),
+        ),
+        title: Text(
+          title,
+          style: AppTheme.getBodyMedium(screenSize).copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppTheme.getTextPrimaryColor(context),
+          ),
+        ),
+        subtitle: Text(
+          url,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTheme.getCaption(screenSize).copyWith(
+            color: AppTheme.getTextSecondaryColor(context),
+          ),
+        ),
+        trailing: Icon(Icons.open_in_new, color: AppTheme.accentPurple),
+        onTap: () async {
+          final state = context.findAncestorStateOfType<_HelpCenterViewState>();
+          await state?.openYouTube(url);
+        },
       ),
     );
   }
@@ -464,12 +582,59 @@ class _EmptyState extends StatelessWidget {
 
 // ———————————————————— Datos ————————————————————
 
+class _VideoItem {
+  final String title;
+  final String url;
+  const _VideoItem(this.title, this.url);
+}
+
+// VIDEOS PARA ADMINISTRADORES (exactamente como los solicitaste)
+const List<_VideoItem> _adminVideos = [
+  _VideoItem(
+    'Envío de notificaciones por escaneo en Alerta Escolar | Tutorial Administradores',
+    'https://www.youtube.com/watch?v=1z95_3_rSME',
+  ),
+  _VideoItem(
+    'Envía comunicados y avisos en Alerta Escolar | Tutorial Administradores',
+    'https://www.youtube.com/watch?v=jBrpiiz35Us&t=8s',
+  ),
+  _VideoItem(
+    'Configura tipos de acceso y tolerancia en Alerta Escolar | Tutorial Administradores',
+    'https://www.youtube.com/watch?v=BjSboyY5L50',
+  ),
+  _VideoItem(
+    'Funcionalidades complementarias del administrador en Alerta Escolar | Tutorial Administradores',
+    'https://www.youtube.com/watch?v=gL9iRvWLcyY',
+  ),
+];
+
+// VIDEOS PARA PADRES (exactamente como los solicitaste)
+const List<_VideoItem> _userVideos = [
+  _VideoItem(
+    'Activa la credencial de tu hijo en Alerta Escolar | Tutorial Padres de Familia',
+    'https://www.youtube.com/watch?v=tdH5ABk7a3E',
+  ),
+  _VideoItem(
+    'Recibe notificaciones de acceso en Alerta Escolar | Tutorial Padres de Familia',
+    'https://www.youtube.com/watch?v=MIFwUx-Q09Y',
+  ),
+  _VideoItem(
+    'Consulta toda la información de tu hijo en Alerta Escolar | Tutorial Padres de Familia',
+    'https://www.youtube.com/watch?v=3PblldrZbYQ',
+  ),
+  _VideoItem(
+    'Registro e inicio de sesión en Alerta Escolar | Tutorial Padres de Familia',
+    'https://www.youtube.com/watch?v=ar3HfPAIHQQ',
+  ),
+];
+
 class _FaqItem {
   final String q;
   final String a;
   const _FaqItem(this.q, this.a);
 }
 
+// ——— FAQ ADMIN ———
 const List<_FaqItem> _adminFaqs = [
   _FaqItem('¿Cómo actualizo mis datos personales (nombre, correo, teléfono)?',
       'En Perfil > Datos Personales. Entras, editas los campos y guardas; si algo falta, el formulario lo resaltará.'),
@@ -575,6 +740,7 @@ const List<_FaqItem> _adminFaqs = [
       'Documenta impacto (usuarios afectados, frecuencia) y canaliza por el mecanismo oficial de soporte.'),
 ];
 
+// ——— FAQ USUARIO ———
 const List<_FaqItem> _userFaqs = [
   _FaqItem('¿Cómo actualizo mis datos de contacto?',
       'En Perfil > Datos Personales. Edita y guarda; se requerirá conexión.'),

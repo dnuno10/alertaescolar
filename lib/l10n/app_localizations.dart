@@ -1460,7 +1460,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get delayedEntry => 'Delayed Entry';
   @override
-  String get lastFiveRecords => 'Last 5 Records';
+  String get lastFiveRecords => 'Last 3 Records';
   @override
   String get entryRecords => 'Entry Records';
   @override
@@ -4558,7 +4558,7 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get delayedEntry => 'Entrada Tardía';
   @override
-  String get lastFiveRecords => 'Últimos 5 Registros';
+  String get lastFiveRecords => 'Últimos 3 Registros';
   @override
   String get entryRecords => 'Registros de Entrada';
   @override

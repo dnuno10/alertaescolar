@@ -24,7 +24,7 @@ class QRScanOptionCard extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: size.width * 0.2,
+            width: size.width,
             height: size.width * 0.2,
             decoration: BoxDecoration(
               // ignore: deprecated_member_use
@@ -44,14 +44,6 @@ class QRScanOptionCard extends StatelessWidget {
             style: AppTheme.getSubtitle1(size).copyWith(
               color: AppTheme.getTextPrimaryColor(context),
             ),
-          ),
-          SizedBox(height: size.height * 0.01),
-          Text(
-            l10n.useCameraToScanQR,
-            style: AppTheme.getBodyMedium(size).copyWith(
-              color: AppTheme.getTextSecondaryColor(context),
-            ),
-            textAlign: TextAlign.center,
           ),
           SizedBox(height: size.height * 0.008),
           Container(
