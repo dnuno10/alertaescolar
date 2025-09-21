@@ -147,17 +147,4 @@ class LogIn {
       }
     }
   }
-
-  void _showSuccessAndNavigate(
-      BuildContext context, String message, String route) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!context.mounted) return;
-      // Red de seguridad: si por alguna razón quedara abierto, ciérralo.
-      LoadingDialog.hide(context);
-      CustomSnackBar.show(context: context, message: message, isError: false);
-      if (context.mounted) {
-        Navigator.pushReplacementNamed(context, route);
-      }
-    });
-  }
 }
