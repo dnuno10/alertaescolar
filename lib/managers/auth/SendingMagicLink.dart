@@ -15,6 +15,7 @@ class SendingMagicLink {
 
   SendingMagicLink({required this.context, required this.email});
 
+  //?!? Es necesario el atributo isResend?
   Future<SendingResult> requestMagicLink({bool isResend = false}) async {
     final l10n = AppLocalizations.of(context);
     final normalizedEmail = email.trim();
@@ -22,8 +23,7 @@ class SendingMagicLink {
     if (normalizedEmail.isEmpty) {
       return SendingResult(
         success: false,
-        message: l10n
-            .loginErrorMessage, // o crea una key específica: l10n.enterValidEmail
+        message: l10n.loginErrorMessage,
       );
     }
 

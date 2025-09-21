@@ -19,6 +19,7 @@ Future<Usuario> ensureUserRow({
   Map<String, dynamic>? row =
       await supabase.from('usuarios').select('*').eq('id', id).maybeSingle();
 
+  //?!? - Es necesario hacer esta validación por email?
   // 2) Si no hay por id y sí tienes email, intenta por email
   if (row == null && email.isNotEmpty) {
     row = await supabase
@@ -33,7 +34,7 @@ Future<Usuario> ensureUserRow({
     final nowUtc = DateTime.now().toUtc();
     final payload = {
       'id': id,
-      'email': email, // puede venir vacío y está bien
+      'email': email,
       'nombre': '', // placeholder
       'apellido': '', // placeholder
       'tipo': defaultTipo.name, // placeholder (luego se puede actualizar)

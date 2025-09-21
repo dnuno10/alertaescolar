@@ -37,12 +37,8 @@ class _LoginViewState extends State<LoginView> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: const [
-                  // Quitar const en LoginBodyComponent para que reaccione al cambio de locale
-                  // (dejar el Column externo como está no afecta lo visual)
-                  // ignore: prefer_const_constructors
                   Column(
                     children: [
-                      // ignore: prefer_const_constructors
                       LoginBodyComponent(),
                     ],
                   ),

@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../components/buttons/solid_button.dart';
 import '../../../components/textfield/custom_input_field.dart';
+
 import '../../../managers/auth/Google.dart';
 import '../../../managers/auth/Apple.dart';
 import '../../../managers/auth/Login.dart';

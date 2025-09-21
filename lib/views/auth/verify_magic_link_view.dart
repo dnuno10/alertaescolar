@@ -85,6 +85,7 @@ class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
         isError: false,
       );
 
+      //?!? - Podemos realizar navegación con AppRoutes?
       // Navegar según el siguiente paso recomendado
       switch (result.next) {
         case VerifyNext.finishSetup:

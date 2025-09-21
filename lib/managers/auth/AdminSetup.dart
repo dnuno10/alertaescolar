@@ -69,6 +69,8 @@ class AdminSetup {
 
       // Persistir + actualizar estado local desde el provider
       final userProvider = Provider.of<UserProvider>(context, listen: false);
+      //Se actualiza en la base de datos en dado caso de que exista
+      // ?!? - Se puede evitar volver a realizar la operación de guardado del admin si ya se encuentra en la tabla "usuarios"
       await userProvider.updateUser(adminUser, saveToDatabase: true);
 
       if (!context.mounted) return true;
@@ -80,6 +82,7 @@ class AdminSetup {
         isError: false,
       );
 
+      // ?!? - Hace doble navegación? ya hay una que se encuentra en Google.dart y Apple.dart
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!context.mounted) return;
         Navigator.of(context).pushReplacementNamed(AppRoutes.adminDashboard);

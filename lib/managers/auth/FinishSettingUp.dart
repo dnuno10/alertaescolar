@@ -41,7 +41,7 @@ class FinishSettingUp {
     LoadingDialog.show(context, message: l10n.settingUpAccount);
 
     try {
-      // 🔐 Guardia de sesión: el usuario solo puede actualizar su propia fila
+      // Guardia de sesión: el usuario solo puede actualizar su propia fila
       final currentId = supabase.auth.currentUser?.id;
       if (currentId == null || currentId != idUser) {
         throw AuthException('Session mismatch');
@@ -97,6 +97,7 @@ class FinishSettingUp {
         isError: false,
       );
 
+      //?!? - El admin pasa por FinishSettingUp?
       // Navega según tipo de usuario
       final nextRoute = (usuario.tipo == TipoUsuario.administrador)
           ? AppRoutes.adminDashboard

@@ -47,6 +47,9 @@ class VerifyMagicLink {
       throw Exception(l10n.invalidVerificationCode);
     }
 
+    //?!? - Toda esta parte no se puede reutilizar en Google.dart, Apple.dart y VerifyMagicLink.dart?
+    //COMPARAR A PARTIR DE AQUÍ ---------
+
     final authUser = response.user!;
     final userProvider = Provider.of<UserProvider>(context, listen: false);
 

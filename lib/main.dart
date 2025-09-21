@@ -49,7 +49,7 @@ void main() async {
 
 final supabase = Supabase.instance.client;
 
-/// --- Función para calcular si un usuario es admin ---
+// ?!? - Podemos mover esta funcionalidad a alguna utilidad de admin para no tenerlo en el main.dart?
 Future<bool> _computeIsAdmin(SupabaseClient supabase, User user) async {
   final userData = await supabase
       .from('usuarios')
@@ -71,11 +71,12 @@ Future<bool> _computeIsAdmin(SupabaseClient supabase, User user) async {
     isAdminByList = adminData != null;
   }
 
+  //Validamos que el admin se encuentre con el tipo "administrador" en la tabla usuarios y el email del usuario se encuentre en la tabla admin_access_list
   return isAdminByTipo || isAdminByList;
 }
 
-/// --- Listener de cambios de auth para FCM ---
 void _setupFCMAuthListener() {
+  //Escuchamos cuando exista una autenticación
   supabase.auth.onAuthStateChange.listen((event) async {
     if (event.event == AuthChangeEvent.signedIn) {
       debugPrint('FCM: User signed in, initializing FCM service');
@@ -83,6 +84,7 @@ void _setupFCMAuthListener() {
       if (user != null) {
         try {
           final isAdmin = await _computeIsAdmin(supabase, user);
+          //Si no es admin inicializamos FCM (Solo asignamos token a usuarios no admin)
           if (!isAdmin) {
             await FCMService().initializeFCM();
           } else {
@@ -93,7 +95,10 @@ void _setupFCMAuthListener() {
           await FCMService().initializeFCM();
         }
       }
-    } else if (event.event == AuthChangeEvent.signedOut) {
+    }
+    //?!? - Por alguna razón no se eliminan los tokens cuando el usuario cierra sesión
+    else if (event.event == AuthChangeEvent.signedOut) {
+      //Si el usuario cierra sesión eliminamos el token FCM
       debugPrint('FCM: User signed out, removing FCM token');
       await FCMService().removeFCMToken();
     }
@@ -128,15 +133,17 @@ class _AppContentState extends State<_AppContent> {
     _initializeProvidersAndAutoLogin();
   }
 
+  // ?!? - Podemos mover esto a un provider de autenticación?
   Future<void> _initializeProvidersAndAutoLogin() async {
     if (!_providersInitialized && mounted) {
       await Future.delayed(const Duration(milliseconds: 50));
+      //  ?!? - Inicializamos providers sin un auth hay necesidad?
       await _initializeProvidersWithoutAuth(context);
 
       if (!mounted) return;
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       final session = supabase.auth.currentSession;
-
+      //Si se detecta una sesión activa
       if (session != null) {
         try {
           await userProvider.loadCurrentUser(context, showDialog: false);
@@ -151,20 +158,27 @@ class _AppContentState extends State<_AppContent> {
               (userData?['nombre']?.toString() ?? '').isNotEmpty &&
                   (userData?['apellido']?.toString() ?? '').isNotEmpty;
 
+          //Validamos si es admin
           final isAdmin = await _computeIsAdmin(supabase, session.user);
 
+          //Si no tiene nombre o apellido enviar a finishSettingUp
           if (!hasCompleteProfile) {
             _initialRoute = AppRoutes.finishSettingUp;
+            // Si la cuenta se encuentra con el tipo "administrador" en la tabla usuarios y el email del usuario se encuentre en la tabla admin_access_list
           } else if (isAdmin) {
             _initialRoute = AppRoutes.adminDashboard;
+            //Si no, es un usuario normal y accede como padre de familia
           } else {
             _initialRoute = AppRoutes.home;
           }
+          //Cualquier error se dirije al intro
         } catch (e) {
           debugPrint("Error loading user data: $e");
           _initialRoute = AppRoutes.intro;
         }
-      } else {
+      }
+      //En caso de que no haya ninguna sección activa se dirije al intro
+      else {
         _initialRoute = AppRoutes.intro;
       }
 
@@ -247,9 +261,9 @@ class _AppContentState extends State<_AppContent> {
           },
           onGenerateRoute: AppRoutes.onGenerateRoute,
           navigatorObservers: [
+            // ?!? - Podemos desactivar esto en producción?
             _NavigationObserver(),
           ],
-          // Envolver toda la app con el GlobalConnectivityWrapper
           builder: (context, child) {
             return GlobalConnectivityWrapper(child: child ?? Container());
           },

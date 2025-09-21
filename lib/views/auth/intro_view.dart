@@ -17,7 +17,6 @@ class _IntroViewState extends State<IntroView> {
   Widget build(BuildContext context) {
     final lp = context.watch<LocaleProvider>();
 
-    // Mostrar “splash”/pantalla vacía mientras carga el idioma guardado
     if (!lp.isInitialized) {
       return Scaffold(
         backgroundColor: AppTheme.getBackgroundColor(context),
@@ -33,7 +32,6 @@ class _IntroViewState extends State<IntroView> {
         duration: const Duration(milliseconds: 250),
         switchInCurve: Curves.easeOut,
         switchOutCurve: Curves.easeIn,
-        // Al cambiar el locale, reconstituye el árbol con una key distinta
         child: _IntroContent(key: ValueKey(locale.languageCode)),
       ),
     );
@@ -45,15 +43,10 @@ class _IntroContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Layout minimalmente responsivo para evitar overflows en pantallas chicas
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // Si la pantalla es muy baja, deja espacio flexible arriba
-
-        // Animación / marca
         const IntroAnimationComponent(),
-        // Botones / opciones (texto localizado)
         const IntroOptionsComponent(),
       ],
     );

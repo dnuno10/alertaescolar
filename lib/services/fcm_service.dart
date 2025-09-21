@@ -22,6 +22,7 @@ class FCMService {
     try {
       debugPrint('FCM: Initializing FCM service');
 
+      //Pedimos permiso para las notificaciones
       final settings = await _firebaseMessaging.requestPermission(
         alert: true,
         badge: true,
@@ -29,12 +30,14 @@ class FCMService {
         provisional: false,
       );
 
+      //Validamos si tenemos garantizado
       if (settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional) {
         debugPrint('FCM: Permission granted');
 
-        // Get FCM token
+        // Obtenemos el FCM token del dispositivo
         final token = await _firebaseMessaging.getToken();
+        //Si no es null, lo insertamos en la bd
         if (token != null) {
           await _registerToken(token);
         }
@@ -55,21 +58,22 @@ class FCMService {
   /// Register FCM token in database
   Future<void> _registerToken(String token) async {
     try {
+      //Obtenemos el usuario en sesión
       final user = _supabase.auth.currentUser;
       if (user == null) return;
 
       debugPrint('FCM: Registering token for user: ${user.id}');
 
-      // Check if token already exists
+      // Verificamos si ya existe este token en particular de este usuario
       final existing = await _supabase
           .from('mobile_tokens')
           .select('id')
           .eq('id_usuario', user.id)
           .eq('token', token)
           .maybeSingle();
-
+      //Si no se encontró el token, significa que aún no esta registrado y retorna null
       if (existing == null) {
-        // Insert new token (no encadenar .eq() después de insert)
+        //Insertamos el nuevo token del usuario
         await _supabase.from('mobile_tokens').insert({
           'id_usuario': user.id,
           'token': token,
@@ -84,7 +88,7 @@ class FCMService {
     }
   }
 
-  /// Remove FCM token on sign out
+  /// Eliminamos los token FCM si el usuario cierra sesión
   Future<void> removeFCMToken() async {
     try {
       final user = _supabase.auth.currentUser;
@@ -98,7 +102,6 @@ class FCMService {
     }
   }
 
-  /// Handle foreground messages
   void _handleForegroundMessage(RemoteMessage message) {
     debugPrint('FCM: ==========================================');
     debugPrint('FCM: 📱 NOTIFICATION RECEIVED! 📱');

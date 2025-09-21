@@ -69,18 +69,21 @@ class Apple {
       }
       if (!context.mounted) return;
 
+      //COMPARAR A PARTIR DE AQUÍ ---------
+
       final authUser = response.user!;
       final resolvedEmail =
           (authUser.email ?? credential.email ?? '').trim().toLowerCase();
 
-      // 1) Asegura/inserta fila mínima
+      //1. Asegura/inserta fila mínima en 'usuarios'
+      // En caso de que no exista en la tabla se inserta un registro del usuario en la tabla usuarios
       final usuario = await ensureUserRow(
         supabase: _supabase,
         authUser: authUser,
         defaultTipo: TipoUsuario.padre,
       );
 
-      // 2) Admin si aplica
+      // 2) Elevar a admin si aplica (lista blanca)
       if (resolvedEmail.isNotEmpty) {
         final isAdmin = await AdminSetup.checkAndSetupAdmin(
           // ignore: use_build_context_synchronously
@@ -109,6 +112,8 @@ class Apple {
           .updateUser(usuario);
 
       final incomplete = usuario.nombre.isEmpty || usuario.apellido.isEmpty;
+
+      //?!? - el admin llega hasta aquí? ya que no se ha redirigido antes?
       final nextRoute = incomplete
           ? AppRoutes.finishSettingUp
           : (usuario.tipo == TipoUsuario.administrador

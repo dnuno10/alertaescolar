@@ -65,13 +65,16 @@ class Google {
       if (response.session == null || response.user == null) {
         throw Exception('No Supabase session');
       }
-
       if (!context.mounted) return;
 
+      //COMPARAR A PARTIR DE AQUÍ ---------
+
       final authUser = response.user!;
+      //Obtenemos el email del usuario que se registro con google
       final resolvedEmail = (authUser.email ?? '').trim().toLowerCase();
 
-      // 1) Asegura/inserta fila mínima en 'usuarios'
+      //1. Asegura/inserta fila mínima en 'usuarios'
+      // En caso de que no exista en la tabla se inserta un registro del usuario en la tabla usuarios
       final usuario = await ensureUserRow(
         supabase: _supabase,
         authUser: authUser,
@@ -101,12 +104,17 @@ class Google {
         }
       }
 
+      // En caso de que no haya sido admin, el proceso continua normal
+
       // 3) Actualiza provider y navega según perfil
+      // con el modelo de "usuario" podemos actualizar al usuario en el provider
       // ignore: use_build_context_synchronously
       await Provider.of<UserProvider>(context, listen: false)
           .updateUser(usuario);
 
       final incomplete = usuario.nombre.isEmpty || usuario.apellido.isEmpty;
+
+      //?!? - el admin llega hasta aquí? ya que no se ha redirigido antes?
       final nextRoute = incomplete
           ? AppRoutes.finishSettingUp
           : (usuario.tipo == TipoUsuario.administrador

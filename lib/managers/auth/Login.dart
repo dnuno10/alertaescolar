@@ -2,15 +2,10 @@
 
 import 'package:alertaescolar/app/app_routes.dart';
 import 'package:alertaescolar/components/loading_dialog.dart';
-import 'package:alertaescolar/managers/auth/AdminSetup.dart';
-import 'package:alertaescolar/managers/auth/auth_utils.dart';
 import 'package:alertaescolar/widgets/custom_snack_bar.dart';
-import 'package:alertaescolar/managers/user_provider.dart';
-import 'package:alertaescolar/models/usuario.dart';
 import 'package:alertaescolar/managers/auth/SendingMagicLink.dart';
 import 'package:alertaescolar/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LogIn {
@@ -74,75 +69,10 @@ class LogIn {
     }
   }
 
-  Future<void> checkLoginStatus() async {
-    final l10n = AppLocalizations.of(context);
-    try {
-      final supabase = Supabase.instance.client;
-      final session = supabase.auth.currentSession;
-      if (session == null) return;
-
-      final authUser = session.user;
-      final emailNorm = (authUser.email ?? '').trim().toLowerCase();
-
-      // 1) Asegura/inserta fila mínima en 'usuarios'
-      final usuario = await ensureUserRow(
-        supabase: supabase,
-        authUser: authUser,
-        defaultTipo: TipoUsuario.padre,
-      );
-
-      // 2) Admin si aplica (lista blanca)
-      if (emailNorm.isNotEmpty) {
-        final isAdmin = await AdminSetup.checkAndSetupAdmin(
-          context,
-          emailNorm,
-          authUser.id,
-        );
-        if (isAdmin) return; // AdminSetup ya pudo navegar/ajustar
-      }
-
-      // 3) Actualiza provider y decide ruta
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      await userProvider.updateUser(usuario);
-
-      if (usuario.nombre.isEmpty || usuario.apellido.isEmpty) {
-        _showSuccessAndNavigate(
-          context,
-          l10n.completeYourProfile,
-          AppRoutes.finishSettingUp,
-        );
-      } else {
-        final route = usuario.tipo == TipoUsuario.administrador
-            ? AppRoutes.adminDashboard
-            : AppRoutes.home;
-        _showSuccessAndNavigate(context, l10n.loginSuccessful, route);
-      }
-    } on PostgrestException catch (e) {
-      if (context.mounted) {
-        CustomSnackBar.show(
-          context: context,
-          message: l10n.unexpectedError,
-          isError: true,
-        );
-      }
-      debugPrint("PostgrestException in checkLoginStatus: ${e.message}");
-    } catch (e) {
-      if (context.mounted) {
-        CustomSnackBar.show(
-          context: context,
-          message: l10n.unexpectedError,
-          isError: true,
-        );
-      }
-      debugPrint("Unexpected error in checkLoginStatus: $e");
-    }
-  }
-
   Future<void> checkAndRegister(String rawEmail) async {
     final l10n = AppLocalizations.of(context);
     final email = rawEmail.trim().toLowerCase();
 
-    // Guard simple por si viene vacío
     if (email.isEmpty) {
       CustomSnackBar.show(
         context: context,

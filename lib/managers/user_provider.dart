@@ -15,19 +15,17 @@ class UserProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isLoggedIn => _currentUser != null;
-  // Alias para compatibilidad con vistas que esperan isLoadingUser
   bool get isLoadingUser => _isLoading;
 
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  /// Nuevo: verificación real de email vía Supabase Auth.
   bool get isEmailVerified =>
       _supabase.auth.currentUser?.emailConfirmedAt != null;
 
   Future<String?> _resolveEscuelaIdForUser({
     required String userId,
     required String emailNorm,
-    required String tipoUsuario, // 'administrador' | 'padre' | etc
+    required String tipoUsuario,
   }) async {
     // Si es admin: admin_access_list → id_escuela (por email)
     if (tipoUsuario.toLowerCase() == 'administrador' ||
@@ -65,16 +63,13 @@ class UserProvider extends ChangeNotifier {
     return null;
   }
 
-  // ► Helpers para mostrar datos en UI sin lógica repetida
   String get displayName {
     final u = _currentUser;
     if (u == null) return '';
-    // nombreCompleto si tu modelo lo expone, sino "Nombre Apellido"
     final byModel = (u.nombreCompleto).trim();
     if (byModel.isNotEmpty) return byModel;
     final full = '${u.nombre} ${u.apellido}'.trim();
     if (full.isNotEmpty) return full;
-    // fallback: parte local del email
     final email = (u.email).trim();
     return email.contains('@') ? email.split('@').first : email;
   }
