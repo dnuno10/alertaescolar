@@ -263,37 +263,6 @@ class TurnoProvider extends ChangeNotifier {
     }
   }
 
-  /// Crea turno.
-  Future<turno_model.Turno?> createTurno({
-    required String escuelaId,
-    required String nombre,
-    required TimeOfDay horaInicio,
-    required TimeOfDay horaFin,
-    required int tolerancia,
-  }) async {
-    try {
-      final inserted = await _supabase
-          .from('turnos')
-          .insert({
-            'id_escuela': escuelaId,
-            'turno': nombre.trim(),
-            'hora_inicio': formatTimeOfDay(horaInicio),
-            'hora_fin': formatTimeOfDay(horaFin),
-            'tolerancia': tolerancia,
-          })
-          .select()
-          .single();
-
-      final t = turno_model.Turno.fromJson(inserted);
-      _replaceOrAdd(t);
-      notifyListeners();
-      return t;
-    } catch (e) {
-      _setError('Error al crear turno: $e');
-      return null;
-    }
-  }
-
   /// Actualiza un turno por ID.
   Future<bool> updateTurno({
     required String turnoId,

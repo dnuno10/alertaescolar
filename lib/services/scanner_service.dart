@@ -584,12 +584,12 @@ class ScannerService {
     final automaticType =
         isDefaultEntryConfig ? ScannerAccessType.entry : ScannerAccessType.exit;
 
-    debugPrint('🚨 IMPORTANTE: Automatic mode configuration');
-    debugPrint('🚨 isDefaultEntryConfig=$isDefaultEntryConfig');
-    debugPrint('🚨 Resolved automaticType=$automaticType');
-    debugPrint('🚨 isExtracurricular=$isExtracurricular');
+    debugPrint('IMPORTANTE: Automatic mode configuration');
+    debugPrint('isDefaultEntryConfig=$isDefaultEntryConfig');
+    debugPrint('Resolved automaticType=$automaticType');
+    debugPrint('isExtracurricular=$isExtracurricular');
     debugPrint(
-        '🚨 This means: ${automaticType == ScannerAccessType.entry ? "ENTRADA (can have lateness)" : "SALIDA (never late)"}');
+        'This means: ${automaticType == ScannerAccessType.entry ? "ENTRADA (can have lateness)" : "SALIDA (never late)"}');
 
     return automaticType;
   }
@@ -600,8 +600,7 @@ class ScannerService {
     required String escuelaIdContext,
     required Map<String, dynamic> accessInfo,
     required DateTime timestamp,
-    bool isExtracurricular =
-        false, // Nuevo parámetro para detectar extracurricular
+    bool isExtracurricular = false,
   }) async {
     try {
       debugPrint('_createNotification: Starting notification creation');

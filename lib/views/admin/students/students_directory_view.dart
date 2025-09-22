@@ -171,20 +171,23 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
     );
   }
 
-  // Sugerencias por nombre (orden: startsWith -> contains), respetando filtros seleccionados
-  List<StudentDetails> _buildNameSuggestions({
+  Future<List<StudentDetails>> _buildNameSuggestions({
     required StudentProvider studentProvider,
     required String query,
     int limit = 8,
-  }) {
+  }) async {
     final q = query.trim().toLowerCase();
     if (q.isEmpty) return const [];
 
-    final base = studentProvider.getFilteredBy(
+    final base = await studentProvider.getFilteredBy(
+      escuelaId: Provider.of<UserProvider>(context, listen: false)
+          .currentUser
+          ?.escuelaId,
       grupo: _selectedGrupoNombre,
       nivelEducativo: _selectedNivelEducativo,
       status: _selectedEstado,
       turno: _selectedTurnoNombre,
+      limit: limit,
     );
 
     final starts = <StudentDetails>[];
@@ -197,6 +200,7 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
         contains.add(s);
       }
     }
+
     final combined = [...starts, ...contains];
     return combined.length > limit ? combined.sublist(0, limit) : combined;
   }
@@ -212,27 +216,16 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
     final studentProvider =
         Provider.of<StudentProvider>(context, listen: false);
 
-    final suggestions = _buildNameSuggestions(
-      studentProvider: studentProvider,
-      query: _searchController.text,
-    );
-
-    if (suggestions.isEmpty) {
-      _removeSuggestionsOverlay();
-      return;
-    }
-
     final overlay = Overlay.of(context);
     _suggestionsOverlay?.remove();
 
     final screenSize = MediaQuery.of(context).size;
     final viewInsets = MediaQuery.of(context).viewInsets.bottom;
     final maxHeight = screenSize.height * 0.4;
+    final yOffset = (_searchFieldHeight > 0 ? _searchFieldHeight : 48) + 6;
 
     _suggestionsOverlay = OverlayEntry(
       builder: (context) {
-        final yOffset = (_searchFieldHeight > 0 ? _searchFieldHeight : 48) + 6;
-
         return Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
@@ -247,8 +240,7 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                     elevation: 8,
                     color: AppTheme.getCardColor(context),
                     borderRadius: BorderRadius.circular(
-                      AppTheme.getMediumRadius(screenSize),
-                    ),
+                        AppTheme.getMediumRadius(screenSize)),
                     clipBehavior: Clip.antiAlias,
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
@@ -259,126 +251,136 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                             _searchFieldWidth > 0 ? _searchFieldWidth : 240,
                         maxHeight: maxHeight,
                       ),
-                      child: ListView.separated(
-                        padding: EdgeInsets.only(
-                          top: AppTheme.getSmallPadding(screenSize) * 0.5,
-                          bottom: (viewInsets > 0 ? 6 : 0),
-                          left: AppTheme.getSmallPadding(screenSize),
-                          right: AppTheme.getSmallPadding(screenSize),
+                      child: FutureBuilder<List<StudentDetails>>(
+                        future: _buildNameSuggestions(
+                          studentProvider: studentProvider,
+                          query: _searchController.text,
                         ),
-                        shrinkWrap: true,
-                        itemCount: suggestions.length,
-                        separatorBuilder: (_, __) => Divider(
-                          height: 1,
-                          color:
-                              // ignore: deprecated_member_use
-                              AppTheme.getBorderColor(context).withOpacity(0.2),
-                        ),
-                        itemBuilder: (context, index) {
-                          final s = suggestions[index];
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
 
-                          // === ESTADO ACTIVO CORRECTO (ventana de vigencia + vínculo) ===
-                          final now = DateTime.now();
-                          final start = s.fechaRegistroLlave ?? s.fechaRegistro;
-                          final end = s.fechaDesactivacionLlave;
-                          final dentroVentana = !now.isBefore(start) &&
-                              (end == null || !now.isAfter(end));
-                          final consideredActive =
-                              s.hasTutores && dentroVentana;
+                          final suggestions = snapshot.data!;
+                          return ListView.separated(
+                            padding: EdgeInsets.only(
+                              top: AppTheme.getSmallPadding(screenSize) * 0.5,
+                              bottom: (viewInsets > 0 ? 6 : 0),
+                              left: AppTheme.getSmallPadding(screenSize),
+                              right: AppTheme.getSmallPadding(screenSize),
+                            ),
+                            shrinkWrap: true,
+                            itemCount: suggestions.length,
+                            separatorBuilder: (_, __) => Divider(
+                              height: 1,
+                              color: AppTheme.getBorderColor(context)
+                                  .withOpacity(0.2),
+                            ),
+                            itemBuilder: (context, index) {
+                              final s = suggestions[index];
 
-                          return InkWell(
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              _openStudentProfile(s);
-                            },
-                            child: Padding(
-                              // Menor padding para bajar la altura
-                              padding: EdgeInsets.symmetric(
-                                vertical:
-                                    AppTheme.getSmallPadding(screenSize) * 0.5,
-                                horizontal:
-                                    AppTheme.getSmallPadding(screenSize),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  // SIN ÍCONO para compactar
+                              // === ESTADO ACTIVO CORRECTO (ventana de vigencia + vínculo) ===
+                              final now = DateTime.now();
+                              final start =
+                                  s.fechaRegistroLlave ?? s.fechaRegistro;
+                              final end = s.fechaDesactivacionLlave;
+                              final dentroVentana = !now.isBefore(start) &&
+                                  (end == null || !now.isAfter(end));
+                              final consideredActive =
+                                  s.hasTutores && dentroVentana;
 
-                                  // Contenido principal (2 líneas compactas con elipsis)
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          s.nombre,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style:
-                                              AppTheme.getBodyMedium(screenSize)
-                                                  .copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            color: AppTheme.getTextPrimaryColor(
-                                                context),
-                                          ),
-                                        ),
-                                        SizedBox(height: 2),
-                                        Text(
-                                          '${s.nivelEducativo} • ${s.grupo}',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: AppTheme.getCaptionSmall(
-                                                  screenSize)
-                                              .copyWith(
-                                            color:
-                                                AppTheme.getTextSecondaryColor(
-                                                    context),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                              return InkWell(
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  _removeSuggestionsOverlay();
+                                  _openStudentProfile(s);
+                                },
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    vertical:
+                                        AppTheme.getSmallPadding(screenSize) *
+                                            0.5,
+                                    horizontal:
+                                        AppTheme.getSmallPadding(screenSize),
                                   ),
-
-                                  SizedBox(
-                                    width: AppTheme.getSmallPadding(screenSize),
-                                  ),
-
-                                  // Estado muy compacto: punto + texto pequeño
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
                                     children: [
-                                      Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: BoxDecoration(
-                                          color: consideredActive
-                                              ? AppTheme.successColor
-                                              : AppTheme.errorColor,
-                                          shape: BoxShape.circle,
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              s.nombre,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: AppTheme.getBodyMedium(
+                                                      screenSize)
+                                                  .copyWith(
+                                                fontWeight: FontWeight.w600,
+                                                color: AppTheme
+                                                    .getTextPrimaryColor(
+                                                        context),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              '${s.nivelEducativo} • ${s.grupo}',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: AppTheme.getCaptionSmall(
+                                                      screenSize)
+                                                  .copyWith(
+                                                color: AppTheme
+                                                    .getTextSecondaryColor(
+                                                        context),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        consideredActive
-                                            ? AppLocalizations.of(context)
-                                                .active
-                                            : AppLocalizations.of(context)
-                                                .inactive,
-                                        style:
-                                            AppTheme.getCaptionSmall(screenSize)
+                                      SizedBox(
+                                          width: AppTheme.getSmallPadding(
+                                              screenSize)),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Container(
+                                            width: 8,
+                                            height: 8,
+                                            decoration: BoxDecoration(
+                                              color: consideredActive
+                                                  ? AppTheme.successColor
+                                                  : AppTheme.errorColor,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            consideredActive
+                                                ? AppLocalizations.of(context)
+                                                    .active
+                                                : AppLocalizations.of(context)
+                                                    .inactive,
+                                            style: AppTheme.getCaptionSmall(
+                                                    screenSize)
                                                 .copyWith(
-                                          color: consideredActive
-                                              ? AppTheme.successColor
-                                              : AppTheme.errorColor,
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                              color: consideredActive
+                                                  ? AppTheme.successColor
+                                                  : AppTheme.errorColor,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
-                                ],
-                              ),
-                            ),
+                                ),
+                              );
+                            },
                           );
                         },
                       ),

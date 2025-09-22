@@ -1,6 +1,7 @@
 // lib/views/home/home_view.dart
 import 'package:alertaescolar/components/headers/home_header.dart';
 import 'package:alertaescolar/components/navigation/custom_bottom_navigation_bar.dart';
+import 'package:alertaescolar/services/fcm_service.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:alertaescolar/components/notifications/notification_detail_modal.dart';
@@ -14,6 +15,7 @@ import 'package:alertaescolar/views/user/students/students_view.dart';
 import 'package:flutter/material.dart';
 import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
 import '../../../app/app_theme.dart';
 import '../../../managers/user_provider.dart';
@@ -153,8 +155,7 @@ class _HomeViewState extends State<HomeView> {
         return;
       }
 
-      // Cargas iniciales
-      // Asegurar contexto de usuario para estudiantes
+      // === 1) Cargas iniciales ===
       studentProvider.switchToUserContext(currentUser.id);
 
       await Future.wait([
@@ -162,22 +163,40 @@ class _HomeViewState extends State<HomeView> {
         studentProvider.loadStudentsForUser(userId: currentUser.id),
       ]);
 
-      // Realtime: notificaciones
       await notificationProvider.startRealtimeForCurrentUser();
-
-      // Realtime: estudiantes (API explícita existente en tu StudentProvider)
       await studentProvider.startRealtimeForTutor(currentUser.id);
 
-      // Realtime: horario (si existe el método en ScheduleProvider)
       try {
         final sch = scheduleProvider as dynamic;
         await (sch.startRealtimeForTutor?.call(currentUser.id) ??
             Future.value());
-      } catch (_) {
-        // noop
-      }
+      } catch (_) {/* noop */}
+
+      // === 2) Verificación de token FCM ===
+      await _verifyAndEnsureFCMToken(currentUser.id);
     } finally {
       _isInitLoading = false;
+    }
+  }
+
+  /// Verifica si existe token en mobile_tokens, si no, lo registra
+  Future<void> _verifyAndEnsureFCMToken(String userId) async {
+    try {
+      final supabase = Supabase.instance.client;
+
+      final tokens = await supabase
+          .from('mobile_tokens')
+          .select('id')
+          .eq('id_usuario', userId);
+
+      if (tokens.isEmpty) {
+        debugPrint("FCM: No token found for user $userId, forcing re-init...");
+        await FCMService().initializeFCM();
+      } else {
+        debugPrint("FCM: Token(s) already registered for user $userId");
+      }
+    } catch (e) {
+      debugPrint("FCM: Error verifying token: $e");
     }
   }
 

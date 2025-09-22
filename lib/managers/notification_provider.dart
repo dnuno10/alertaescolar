@@ -38,7 +38,11 @@ class NotificationProvider extends ChangeNotifier {
   bool get hasNotifications => _notifications.isNotEmpty;
 
   /// Carga notificaciones para los hijos del usuario autenticado (tutor).
-  Future<void> loadNotifications({int limit = 300}) async {
+  Future<void> loadNotifications({
+    int limit = 50,
+    int page = 0,
+    bool append = false,
+  }) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -59,56 +63,67 @@ class NotificationProvider extends ChangeNotifier {
           .toSet();
 
       if (_childrenIds.isEmpty) {
-        _notifications = [];
+        if (!append) _notifications = [];
         _isLoading = false;
         notifyListeners();
         return;
       }
 
-      // 2) Notificaciones de esos alumnos (filtros ANTES de order/limit)
+      // 2) Notificaciones de esos alumnos (filtros ANTES de order/limit/range)
       var query = _supabase.from('notificaciones').select(r'''
-  id,
-  id_alumno,
-  id_admin,
-  titulo,
-  mensaje,
-  estado,
-  fecha_registro,
-  tipo_notificacion,
-  tipo_comunicado,
-  prioridad_comunicado,
-  destinatarios_comunicado,
-  alumnos:id_alumno (
-    nombre,
-    matricula,
-    id_grupo,
-    id_turno,
-    grupos:id_grupo (
-      grupo,
-      nivel_educativo
-    ),
-    turnos:id_turno (
-      turno
-    )
-  )
-''');
+      id,
+      id_alumno,
+      id_admin,
+      titulo,
+      mensaje,
+      estado,
+      fecha_registro,
+      tipo_notificacion,
+      tipo_comunicado,
+      prioridad_comunicado,
+      destinatarios_comunicado,
+      alumnos:id_alumno (
+        nombre,
+        matricula,
+        id_grupo,
+        id_turno,
+        grupos:id_grupo (
+          grupo,
+          nivel_educativo
+        ),
+        turnos:id_turno (
+          turno
+        )
+      )
+    ''');
 
       query = query.inFilter('id_alumno', _childrenIds.toList());
 
+      final start = page * limit;
+      final end = start + limit - 1;
+
       List rows;
       try {
-        rows =
-            await query.order('fecha_registro', ascending: false).limit(limit);
+        rows = await query
+            .order('fecha_registro', ascending: false)
+            .range(start, end);
       } catch (_) {
-        rows = await query.limit(limit);
+        rows = await query.range(start, end);
       }
 
-      _notifications = _mapNotificationsFromDb(rows);
+      final newNotifications = _mapNotificationsFromDb(rows);
+
+      if (append) {
+        _notifications.addAll(newNotifications);
+      } else {
+        _notifications = newNotifications;
+      }
+
       _notifications.sort((a, b) => b.fechaHora.compareTo(a.fechaHora));
     } catch (e) {
       debugPrint('Error loading notifications: $e');
       _error = e.toString();
-      _notifications = [];
+      if (!append) _notifications = [];
     } finally {
       _isLoading = false;
       _lastUpdateTime = DateTime.now();

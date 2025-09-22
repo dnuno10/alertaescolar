@@ -190,23 +190,25 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
     }
   }
 
-  List<StudentDetails> _buildNameSuggestions({
+  Future<List<StudentDetails>> _buildNameSuggestions({
     required StudentProvider studentProvider,
     required String query,
     int limit = 8,
-  }) {
+  }) async {
     final q = query.trim().toLowerCase();
     if (q.isEmpty) return const [];
 
-    // Base filtrada por selects actuales (igual que Selectable/Directory)
-    final base = studentProvider.getFilteredBy(
+    final base = await studentProvider.getFilteredBy(
+      // ✅ ahora esperamos
+      escuelaId: Provider.of<UserProvider>(context, listen: false)
+          .currentUser
+          ?.escuelaId,
       grupo: _selectedGrupoNombre,
       nivelEducativo: _selectedNivelEducativo,
-      status: 'all', // en calendario no filtramos por estado
+      status: 'all',
       turno: _selectedTurnoNombre,
     );
 
-    // Orden: startsWith -> contains
     final starts = <StudentDetails>[];
     final contains = <StudentDetails>[];
     for (final s in base) {
@@ -217,11 +219,12 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
         contains.add(s);
       }
     }
+
     final combined = [...starts, ...contains];
     return combined.length > limit ? combined.sublist(0, limit) : combined;
   }
 
-  void _updateSuggestionsOverlay() {
+  _updateSuggestionsOverlay() {
     if (!mounted) return;
 
     if (!_searchFocusNode.hasFocus || _searchController.text.trim().isEmpty) {
@@ -231,16 +234,6 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
 
     final studentProvider =
         Provider.of<StudentProvider>(context, listen: false);
-
-    final suggestions = _buildNameSuggestions(
-      studentProvider: studentProvider,
-      query: _searchController.text,
-    );
-
-    if (suggestions.isEmpty) {
-      _removeSuggestionsOverlay();
-      return;
-    }
 
     final overlay = Overlay.of(context);
     _suggestionsOverlay?.remove();
@@ -277,125 +270,100 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                             _searchFieldWidth > 0 ? _searchFieldWidth : 240,
                         maxHeight: maxHeight,
                       ),
-                      child: ListView.separated(
-                        padding: EdgeInsets.only(
-                          top: AppTheme.getSmallPadding(screenSize),
-                          bottom: (viewInsets > 0 ? 8 : 0),
-                          left: AppTheme.getSmallPadding(screenSize),
-                          right: AppTheme.getSmallPadding(screenSize),
+                      child: FutureBuilder<List<StudentDetails>>(
+                        future: _buildNameSuggestions(
+                          studentProvider: studentProvider,
+                          query: _searchController.text,
                         ),
-                        shrinkWrap: true,
-                        itemCount: suggestions.length,
-                        separatorBuilder: (_, __) => Divider(
-                          height: 1,
-                          color:
-                              // ignore: deprecated_member_use
-                              AppTheme.getBorderColor(context).withOpacity(0.2),
-                        ),
-                        itemBuilder: (context, index) {
-                          final s = suggestions[index];
-                          final consideredActive =
-                              (s.hasTutores && s.llaveActiva);
-
-                          return InkWell(
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              // Igual que en Selectable: rellenamos el buscador y filtramos
-                              _searchController.text = s.nombre;
-                              _searchController.selection =
-                                  TextSelection.fromPosition(
-                                TextPosition(offset: s.nombre.length),
-                              );
-                              _filterNotifications();
-                              _removeSuggestionsOverlay();
-                              FocusScope.of(context).unfocus();
-                            },
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(
-                                vertical: AppTheme.getSmallPadding(screenSize),
-                                horizontal:
-                                    AppTheme.getSmallPadding(screenSize),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.person_outline_rounded,
-                                      color: AppTheme.accentBlue),
-                                  SizedBox(
-                                      width:
-                                          AppTheme.getSmallPadding(screenSize)),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          s.nombre,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style:
-                                              AppTheme.getBodyMedium(screenSize)
-                                                  .copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            color: AppTheme.getTextPrimaryColor(
-                                                context),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          '${s.nivelEducativo} • ${s.grupo}',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: AppTheme.getCaptionSmall(
-                                                  screenSize)
-                                              .copyWith(
-                                            color:
-                                                AppTheme.getTextSecondaryColor(
-                                                    context),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  SizedBox(
-                                      width:
-                                          AppTheme.getSmallPadding(screenSize)),
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal:
-                                          AppTheme.getSmallPadding(screenSize),
-                                      vertical:
-                                          AppTheme.getSmallPadding(screenSize) *
-                                              0.4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: consideredActive
-                                          ? AppTheme.successColor
-                                              // ignore: deprecated_member_use
-                                              .withOpacity(0.12)
-                                          : AppTheme.errorColor
-                                              // ignore: deprecated_member_use
-                                              .withOpacity(0.12),
-                                      borderRadius: BorderRadius.circular(
-                                          AppTheme.getSmallRadius(screenSize)),
-                                    ),
-                                    child: Text(
-                                      consideredActive
-                                          ? AppLocalizations.of(context).active
-                                          : AppLocalizations.of(context)
-                                              .inactive,
-                                      style:
-                                          AppTheme.getCaptionSmall(screenSize)
-                                              .copyWith(
-                                        color: consideredActive
-                                            ? AppTheme.successColor
-                                            : AppTheme.errorColor,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          final suggestions = snapshot.data!;
+                          return ListView.separated(
+                            padding: EdgeInsets.only(
+                              top: AppTheme.getSmallPadding(screenSize),
+                              bottom: (viewInsets > 0 ? 8 : 0),
+                              left: AppTheme.getSmallPadding(screenSize),
+                              right: AppTheme.getSmallPadding(screenSize),
                             ),
+                            shrinkWrap: true,
+                            itemCount: suggestions.length,
+                            separatorBuilder: (_, __) => Divider(
+                              height: 1,
+                              color: AppTheme.getBorderColor(context)
+                                  .withOpacity(0.2),
+                            ),
+                            itemBuilder: (context, index) {
+                              final s = suggestions[index];
+                              final consideredActive =
+                                  (s.hasTutores && s.llaveActiva);
+
+                              return InkWell(
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  _searchController.text = s.nombre;
+                                  _searchController.selection =
+                                      TextSelection.fromPosition(
+                                    TextPosition(offset: s.nombre.length),
+                                  );
+                                  _filterNotifications();
+                                  _removeSuggestionsOverlay();
+                                  FocusScope.of(context).unfocus();
+                                },
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    vertical:
+                                        AppTheme.getSmallPadding(screenSize),
+                                    horizontal:
+                                        AppTheme.getSmallPadding(screenSize),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.person_outline_rounded,
+                                          color: AppTheme.accentBlue),
+                                      SizedBox(
+                                          width: AppTheme.getSmallPadding(
+                                              screenSize)),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              s.nombre,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: AppTheme.getBodyMedium(
+                                                      screenSize)
+                                                  .copyWith(
+                                                fontWeight: FontWeight.w600,
+                                                color: AppTheme
+                                                    .getTextPrimaryColor(
+                                                        context),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              '${s.nivelEducativo} • ${s.grupo}',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: AppTheme.getCaptionSmall(
+                                                      screenSize)
+                                                  .copyWith(
+                                                color: AppTheme
+                                                    .getTextSecondaryColor(
+                                                        context),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
                           );
                         },
                       ),

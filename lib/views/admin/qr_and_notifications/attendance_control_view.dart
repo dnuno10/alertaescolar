@@ -153,6 +153,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
     _observedEscuelaId = escuelaId;
   }
 
+  //?!? - No deberiamos de hardcodear 2 turnos
   // ----------------- Carga turnos -----------------
   Future<void> _loadTurnosAndConfigure() async {
     if (!mounted) return;

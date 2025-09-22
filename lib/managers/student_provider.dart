@@ -790,52 +790,47 @@ class StudentProvider with ChangeNotifier {
     return startOk && endOk;
   }
 
-  List<StudentDetails> getFilteredBy({
+  Future<List<StudentDetails>> getFilteredBy({
+    String? escuelaId,
     String? searchQuery,
     String? grupo,
     String? nivelEducativo,
     String? status,
     String? turno,
-    int? limit,
-  }) {
-    final q = (searchQuery ?? '').trim().toLowerCase();
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    var query = _supabase.from('alumnos').select('''
+    id, nombre, matricula, id_grupo, id_turno, id_escuela,
+    grupos(id, grupo, nivel_educativo),
+    turnos(id, turno, hora_inicio, hora_fin),
+    llaves(id, codigo, activo, fecha_registro, fecha_desactivacion, limite_vinculacion),
+    alumno_tutores(id_tutor, fecha_vinculacion)
+  ''');
 
-    final results = _students.where((s) {
-      bool matchesSearch = true;
-      if (q.isNotEmpty) {
-        matchesSearch = s.nombre.toLowerCase().contains(q) ||
-            s.matricula.toLowerCase().contains(q) ||
-            s.id.toLowerCase().contains(q);
-      }
+    if (escuelaId != null) query = query.eq('id_escuela', escuelaId);
 
-      final matchesGrupo =
-          (grupo == null || grupo == 'all') ? true : s.grupo == grupo;
-
-      final matchesNivel = (nivelEducativo == null || nivelEducativo == 'all')
-          ? true
-          : s.nivelEducativo == nivelEducativo;
-
-      bool matchesStatus = true;
-      if (status != null && status != 'all') {
-        final consideredActive = s.hasTutores && _isLlaveVigenteFor(s);
-        matchesStatus = (status == 'active' && consideredActive) ||
-            (status == 'inactive' && !consideredActive);
-      }
-
-      final matchesTurno =
-          (turno == null || turno == 'all') ? true : (s.turno ?? '') == turno;
-
-      return matchesSearch &&
-          matchesGrupo &&
-          matchesNivel &&
-          matchesStatus &&
-          matchesTurno;
-    }).toList();
-
-    if (limit != null && limit > 0 && results.length > limit) {
-      return results.sublist(0, limit);
+    if (grupo != null && grupo != 'all') query = query.eq('id_grupo', grupo);
+    if (nivelEducativo != null && nivelEducativo != 'all') {
+      query = query.eq('grupos.nivel_educativo', nivelEducativo);
     }
-    return results;
+    if (turno != null && turno != 'all') query = query.eq('id_turno', turno);
+
+    if (searchQuery != null && searchQuery.trim().isNotEmpty) {
+      query = query.ilike('nombre', '%$searchQuery%');
+      // podrías extender a matricula también
+    }
+
+    final response =
+        await query.order('nombre').range(offset, offset + limit - 1);
+
+    final students = <StudentDetails>[];
+    for (final item in response) {
+      students.add(await _mapToStudentDetailsWithSeparateContacts(
+        Map<String, dynamic>.from(item as Map),
+      ));
+    }
+    return students;
   }
 
   Future<void> loadStudentById({required String studentId}) async {
@@ -905,14 +900,17 @@ class StudentProvider with ChangeNotifier {
     }
   }
 
-  Future<void> loadStudents({
-    String? escuelaId,
-    String? userId,
-    String? grupoId,
-    String? turnoId,
-  }) async {
+  Future<void> loadStudents(
+      {String? escuelaId,
+      String? userId,
+      String? grupoId,
+      String? turnoId,
+      int limit = 50, // Número de registros por página
+      int offset = 0, // Desde dónde empezar
+      bool append = false // true = acumular, false = reemplazar
+      }) async {
     debugPrint(
-        'loadStudents (ADMIN MODE): escuelaId=$escuelaId userId=$userId');
+        'loadStudents (ADMIN MODE): escuelaId=$escuelaId userId=$userId offset=$offset limit=$limit append=$append');
 
     // Solo skipear si estamos cargando en modo admin para evitar llamadas concurrentes
     if (_isLoading && _currentLoadingMode == 'admin') {
@@ -955,37 +953,37 @@ class StudentProvider with ChangeNotifier {
       await _loadFilteringData(schoolId);
 
       var query = _supabase.from('alumnos').select('''
+      id,
+      nombre,
+      matricula,
+      fecha_registro,
+      id_grupo,
+      id_turno,
+      id_escuela,
+      grupos(
         id,
-        nombre,
-        matricula,
+        grupo,
+        nivel_educativo
+      ),
+      turnos(
+        id,
+        turno,
+        hora_inicio,
+        hora_fin
+      ),
+      llaves(
+        id,
+        codigo,
+        activo,
         fecha_registro,
-        id_grupo,
-        id_turno,
-        id_escuela,
-        grupos(
-          id,
-          grupo,
-          nivel_educativo
-        ),
-        turnos(
-          id,
-          turno,
-          hora_inicio,
-          hora_fin
-        ),
-        llaves(
-          id,
-          codigo,
-          activo,
-          fecha_registro,
-          fecha_desactivacion,
-          limite_vinculacion
-        ),
-        alumno_tutores(
-          id_tutor,
-          fecha_vinculacion
-        )
-      ''');
+        fecha_desactivacion,
+        limite_vinculacion
+      ),
+      alumno_tutores(
+        id_tutor,
+        fecha_vinculacion
+      )
+    ''');
 
       if (schoolId.trim().isEmpty) {
         throw Exception('El id_escuela resuelto está vacío');
@@ -996,8 +994,11 @@ class StudentProvider with ChangeNotifier {
       if (grupoId != null) query = query.eq('id_grupo', grupoId);
       if (turnoId != null) query = query.eq('id_turno', turnoId);
 
-      final response = await query.order('nombre');
-      _students = [];
+      // 👇 Paginación real
+      final response =
+          await query.order('nombre').range(offset, offset + limit - 1);
+
+      if (!append) _students = [];
 
       for (final item in response) {
         final sd = await _mapToStudentDetailsWithSeparateContacts(
@@ -1013,9 +1014,12 @@ class StudentProvider with ChangeNotifier {
       _currentSchoolId = schoolId;
 
       debugPrint(
-          'loadStudents (ADMIN MODE): Loaded ${_students.length} students for school $schoolId');
+          'loadStudents (ADMIN MODE): Loaded ${response.length} students (total now ${_students.length}) for school $schoolId [offset=$offset, limit=$limit, append=$append]');
 
-      _startRealtimeForSchool(schoolId);
+      if (!append) {
+        // Solo iniciar realtime la primera vez (no en scroll infinito)
+        _startRealtimeForSchool(schoolId);
+      }
 
       _setError(null);
     } catch (e) {

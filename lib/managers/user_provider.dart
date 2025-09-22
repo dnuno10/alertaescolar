@@ -394,6 +394,7 @@ class UserProvider extends ChangeNotifier {
       }
     }
 
+    //?!? - Es necesario regresar la escuela por medio de alumno_tutores?
     // 2) Fallback: derivar escuela desde relaciones tutor/alumno (si aplica).
     try {
       final rel = await supabase
