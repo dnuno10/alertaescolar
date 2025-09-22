@@ -790,6 +790,40 @@ class StudentProvider with ChangeNotifier {
     return startOk && endOk;
   }
 
+// Helper para construir la query base SIN paginación aplicada,
+// así podemos reusarla en cada iteración del bucle.
+  PostgrestTransformBuilder _buildAlumnosQuery({
+    required SupabaseClient supabase,
+    String? escuelaId,
+    String? searchQuery,
+    String? grupo,
+    String? nivelEducativo,
+    String? turno,
+  }) {
+    var q = supabase.from('alumnos').select('''
+    id, nombre, matricula, id_grupo, id_turno, id_escuela,
+    grupos(id, grupo, nivel_educativo),
+    turnos(id, turno, hora_inicio, hora_fin),
+    llaves(id, codigo, activo, fecha_registro, fecha_desactivacion, limite_vinculacion),
+    alumno_tutores(id_tutor, fecha_vinculacion)
+  ''');
+
+    if (escuelaId != null) q = q.eq('id_escuela', escuelaId);
+    if (grupo != null && grupo != 'all') q = q.eq('id_grupo', grupo);
+    if (nivelEducativo != null && nivelEducativo != 'all') {
+      q = q.eq('grupos.nivel_educativo', nivelEducativo);
+    }
+    if (turno != null && turno != 'all') q = q.eq('id_turno', turno);
+
+    if (searchQuery != null && searchQuery.trim().isNotEmpty) {
+      final term = '%${searchQuery.trim()}%';
+      // Busca por nombre o matrícula
+      q = q.or('nombre.ilike.$term,matricula.ilike.$term');
+    }
+
+    return q;
+  }
+
   Future<List<StudentDetails>> getFilteredBy({
     String? escuelaId,
     String? searchQuery,
@@ -799,37 +833,59 @@ class StudentProvider with ChangeNotifier {
     String? turno,
     int limit = 50,
     int offset = 0,
+    bool fetchAll = false,
+    int pageSize = 500,
   }) async {
-    var query = _supabase.from('alumnos').select('''
-    id, nombre, matricula, id_grupo, id_turno, id_escuela,
-    grupos(id, grupo, nivel_educativo),
-    turnos(id, turno, hora_inicio, hora_fin),
-    llaves(id, codigo, activo, fecha_registro, fecha_desactivacion, limite_vinculacion),
-    alumno_tutores(id_tutor, fecha_vinculacion)
-  ''');
-
-    if (escuelaId != null) query = query.eq('id_escuela', escuelaId);
-
-    if (grupo != null && grupo != 'all') query = query.eq('id_grupo', grupo);
-    if (nivelEducativo != null && nivelEducativo != 'all') {
-      query = query.eq('grupos.nivel_educativo', nivelEducativo);
-    }
-    if (turno != null && turno != 'all') query = query.eq('id_turno', turno);
-
-    if (searchQuery != null && searchQuery.trim().isNotEmpty) {
-      query = query.ilike('nombre', '%$searchQuery%');
-      // podrías extender a matricula también
-    }
-
-    final response =
-        await query.order('nombre').range(offset, offset + limit - 1);
-
     final students = <StudentDetails>[];
-    for (final item in response) {
-      students.add(await _mapToStudentDetailsWithSeparateContacts(
-        Map<String, dynamic>.from(item as Map),
-      ));
+
+    if (!fetchAll) {
+      final page = await _buildAlumnosQuery(
+        supabase: _supabase,
+        escuelaId: escuelaId,
+        searchQuery: searchQuery,
+        grupo: grupo,
+        nivelEducativo: nivelEducativo,
+        turno: turno,
+      )
+          .order('nombre', ascending: true)
+          .order('id', ascending: true)
+          .range(offset, offset + limit - 1);
+
+      for (final item in page) {
+        students.add(await _mapToStudentDetailsWithSeparateContacts(
+          Map<String, dynamic>.from(item as Map),
+        ));
+      }
+      return students;
     }
+
+    // 🔄 fetchAll = true → bucle paginado
+    int off = 0; // aseguramos int
+    while (true) {
+      final page = await _buildAlumnosQuery(
+        supabase: _supabase,
+        escuelaId: escuelaId,
+        searchQuery: searchQuery,
+        grupo: grupo,
+        nivelEducativo: nivelEducativo,
+        turno: turno,
+      )
+          .order('nombre', ascending: true)
+          .order('id', ascending: true)
+          .range(off, off + pageSize - 1);
+
+      if (page.isEmpty) break;
+
+      for (final item in page) {
+        students.add(await _mapToStudentDetailsWithSeparateContacts(
+          Map<String, dynamic>.from(item as Map),
+        ));
+      }
+
+      if (page.length < pageSize) break;
+      off += (page.length as int);
+    }
+
     return students;
   }
 
@@ -900,25 +956,25 @@ class StudentProvider with ChangeNotifier {
     }
   }
 
-  Future<void> loadStudents(
-      {String? escuelaId,
-      String? userId,
-      String? grupoId,
-      String? turnoId,
-      int limit = 50, // Número de registros por página
-      int offset = 0, // Desde dónde empezar
-      bool append = false // true = acumular, false = reemplazar
-      }) async {
+  Future<void> loadStudents({
+    String? escuelaId,
+    String? userId,
+    String? grupoId,
+    String? turnoId,
+    int limit = 50,
+    int offset = 0,
+    bool append = false,
+    bool loadAll = false,
+    int pageSize = 500,
+  }) async {
     debugPrint(
-        'loadStudents (ADMIN MODE): escuelaId=$escuelaId userId=$userId offset=$offset limit=$limit append=$append');
+        'loadStudents (ADMIN MODE): escuelaId=$escuelaId userId=$userId offset=$offset limit=$limit append=$append loadAll=$loadAll');
 
-    // Solo skipear si estamos cargando en modo admin para evitar llamadas concurrentes
     if (_isLoading && _currentLoadingMode == 'admin') {
       debugPrint('loadStudents: skipping (already loading admin data)');
       return;
     }
 
-    // Cambiar a contexto de admin y limpiar datos user si es necesario
     if (escuelaId != null) {
       switchToAdminContext(escuelaId);
     }
@@ -939,94 +995,81 @@ class StudentProvider with ChangeNotifier {
         } else {
           debugPrint('loadStudents: escuela resuelta por TUTOR ($schoolId)');
         }
-
         if (schoolId == null) {
           throw Exception('No se encontró escuela asociada al usuario');
         }
       }
 
-      if (schoolId == null) {
+      if (schoolId == null || schoolId.trim().isEmpty) {
         throw Exception(
-            'Se requiere escuelaId o userId para cargar estudiantes');
+            'Se requiere escuelaId o userId (id_escuela resuelto está vacío)');
       }
 
       await _loadFilteringData(schoolId);
 
-      var query = _supabase.from('alumnos').select('''
-      id,
-      nombre,
-      matricula,
-      fecha_registro,
-      id_grupo,
-      id_turno,
-      id_escuela,
-      grupos(
-        id,
-        grupo,
-        nivel_educativo
-      ),
-      turnos(
-        id,
-        turno,
-        hora_inicio,
-        hora_fin
-      ),
-      llaves(
-        id,
-        codigo,
-        activo,
-        fecha_registro,
-        fecha_desactivacion,
-        limite_vinculacion
-      ),
-      alumno_tutores(
-        id_tutor,
-        fecha_vinculacion
-      )
-    ''');
-
-      if (schoolId.trim().isEmpty) {
-        throw Exception('El id_escuela resuelto está vacío');
-      }
-
-      query = query.eq('id_escuela', schoolId);
-
-      if (grupoId != null) query = query.eq('id_grupo', grupoId);
-      if (turnoId != null) query = query.eq('id_turno', turnoId);
-
-      // 👇 Paginación real
-      final response =
-          await query.order('nombre').range(offset, offset + limit - 1);
-
       if (!append) _students = [];
 
-      for (final item in response) {
-        final sd = await _mapToStudentDetailsWithSeparateContacts(
-          Map<String, dynamic>.from(item as Map),
-        );
-        _students.add(sd);
+      if (!loadAll) {
+        final page = await _buildAlumnosQuery(
+          supabase: _supabase,
+          escuelaId: schoolId,
+          grupo: grupoId,
+          turno: turnoId,
+        )
+            .order('nombre', ascending: true)
+            .order('id', ascending: true)
+            .range(offset, offset + limit - 1);
+
+        for (final item in page) {
+          final sd = await _mapToStudentDetailsWithSeparateContacts(
+            Map<String, dynamic>.from(item as Map),
+          );
+          _students.add(sd);
+        }
+      } else {
+        int off = 0; // 👈 corregido
+        while (true) {
+          final page = await _buildAlumnosQuery(
+            supabase: _supabase,
+            escuelaId: schoolId,
+            grupo: grupoId,
+            turno: turnoId,
+          )
+              .order('nombre', ascending: true)
+              .order('id', ascending: true)
+              .range(off, off + pageSize - 1);
+
+          if (page.isEmpty) break;
+
+          for (final item in page) {
+            final sd = await _mapToStudentDetailsWithSeparateContacts(
+              Map<String, dynamic>.from(item as Map),
+            );
+            _students.add(sd);
+          }
+
+          if (page.length < pageSize) break;
+          off += (page.length as int); // 👈 siempre int
+        }
       }
 
-      _filteredStudents = List.from(_students);
-
-      // Ordenar: primero activos, después inactivos
+      _filteredStudents = List.of(_students);
       _sortStudentsByActiveStatus(_filteredStudents);
       _currentSchoolId = schoolId;
 
-      debugPrint(
-          'loadStudents (ADMIN MODE): Loaded ${response.length} students (total now ${_students.length}) for school $schoolId [offset=$offset, limit=$limit, append=$append]');
-
       if (!append) {
-        // Solo iniciar realtime la primera vez (no en scroll infinito)
         _startRealtimeForSchool(schoolId);
       }
 
       _setError(null);
+      debugPrint(
+          'loadStudents: total ahora ${_students.length} (school=$schoolId)');
     } catch (e) {
       _setError('Error al cargar estudiantes: $e');
       debugPrint('loadStudents error: $e');
     } finally {
       _setLoading(false);
+      notifyListeners();
     }
   }
 
@@ -1885,9 +1928,7 @@ class StudentProvider with ChangeNotifier {
 
       final updateResult = await _supabase
           .from('llaves')
-          .update({
-            'limite_vinculacion': newLimit,
-          })
+          .update({'limite_vinculacion': newLimit, 'activo': true})
           .eq('id', keyId)
           .select('id, limite_vinculacion, activo')
           .maybeSingle();

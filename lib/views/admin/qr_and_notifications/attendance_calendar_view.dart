@@ -100,7 +100,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
 
     try {
       // StudentProvider trae niveles/grupos/turnos (y su orden) igual que en las otras vistas
-      await studentProvider.loadStudents(escuelaId: escuelaId);
+      await studentProvider.loadStudents(escuelaId: escuelaId, loadAll: true);
 
       // Notificaciones de asistencia
       await _loadNotifications(escuelaId);

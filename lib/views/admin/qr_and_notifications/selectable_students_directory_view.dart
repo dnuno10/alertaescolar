@@ -124,7 +124,8 @@ class _SelectableStudentsDirectoryViewState
         throw Exception('No se encontró escuela asociada al usuario');
       }
 
-      await studentProvider.loadStudents(escuelaId: escuelaId, userId: userId);
+      await studentProvider.loadStudents(
+          escuelaId: escuelaId, userId: userId, loadAll: true);
 
       if (mounted) _filterStudents();
     } catch (e) {

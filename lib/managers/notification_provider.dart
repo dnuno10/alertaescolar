@@ -38,10 +38,9 @@ class NotificationProvider extends ChangeNotifier {
   bool get hasNotifications => _notifications.isNotEmpty;
 
   /// Carga notificaciones para los hijos del usuario autenticado (tutor).
+  /// Carga todas las notificaciones de los hijos del usuario autenticado (tutor).
   Future<void> loadNotifications({
-    int limit = 50,
-    int page = 0,
-    bool append = false,
+    int pageSize = 200,
   }) async {
     _isLoading = true;
     _error = null;
@@ -63,14 +62,14 @@ class NotificationProvider extends ChangeNotifier {
           .toSet();
 
       if (_childrenIds.isEmpty) {
-        if (!append) _notifications = [];
+        _notifications = [];
         _isLoading = false;
         notifyListeners();
         return;
       }
 
-      // 2) Notificaciones de esos alumnos (filtros ANTES de order/limit/range)
-      var query = _supabase.from('notificaciones').select(r'''
+      // 2) Query base de notificaciones
+      var baseQuery = _supabase.from('notificaciones').select(r'''
       id,
       id_alumno,
       id_admin,
@@ -97,33 +96,41 @@ class NotificationProvider extends ChangeNotifier {
       )
     ''');
 
-      query = query.inFilter('id_alumno', _childrenIds.toList());
+      baseQuery = baseQuery.inFilter('id_alumno', _childrenIds.toList());
 
-      final start = page * limit;
-      final end = start + limit - 1;
+      // 🔄 Paginación en bucle para traer TODO
+      final allNotifications = <Notificacion>[];
+      int off = 0;
 
-      List rows;
-      try {
-        rows = await query
-            .order('fecha_registro', ascending: false)
-            .range(start, end);
-      } catch (_) {
-        rows = await query.range(start, end);
+      while (true) {
+        final start = off;
+        final end = off + pageSize - 1;
+
+        List rows;
+        try {
+          rows = await baseQuery
+              .order('fecha_registro', ascending: false)
+              .range(start, end);
+        } catch (_) {
+          rows = await baseQuery.range(start, end);
+        }
+
+        if (rows.isEmpty) break;
+
+        allNotifications.addAll(_mapNotificationsFromDb(rows));
+
+        if (rows.length < pageSize) break;
+        off += rows.length.toInt(); // 👈 aseguramos int
       }
 
-      final newNotifications = _mapNotificationsFromDb(rows);
+      _notifications = allNotifications;
 
-      if (append) {
-        _notifications.addAll(newNotifications);
-      } else {
-        _notifications = newNotifications;
-      }
-
+      // Ordenar: más recientes primero
       _notifications.sort((a, b) => b.fechaHora.compareTo(a.fechaHora));
     } catch (e) {
       debugPrint('Error loading notifications: $e');
       _error = e.toString();
-      if (!append) _notifications = [];
+      _notifications = [];
     } finally {
       _isLoading = false;
       _lastUpdateTime = DateTime.now();

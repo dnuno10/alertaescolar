@@ -111,7 +111,7 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
       }
 
       // Carga alumnos + catálogos (niveles, grupos, turnos) desde BD
-      await studentProvider.loadStudents(escuelaId: escuelaId);
+      await studentProvider.loadStudents(escuelaId: escuelaId, loadAll: true);
 
       if (mounted) _filterStudents();
     } catch (e) {
@@ -141,7 +141,7 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
         return;
       }
 
-      await studentProvider.loadStudents(escuelaId: escuelaUuid);
+      await studentProvider.loadStudents(escuelaId: escuelaUuid, loadAll: true);
       if (mounted) _filterStudents();
     } catch (e) {
       debugPrint('Error in _loadStudents: $e');

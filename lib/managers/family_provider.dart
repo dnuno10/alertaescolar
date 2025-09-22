@@ -42,6 +42,7 @@ class FamilyProvider extends ChangeNotifier {
             .whereType<Map<String, dynamic>>()
             .map(_mapDatabaseToModel));
     } on PostgrestException catch (e) {
+      // ?!? es necesario tener este control de error?
       // 42P01 = undefined_table
       if (e.code == '42P01' ||
           e.message.contains(

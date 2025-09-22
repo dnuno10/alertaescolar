@@ -7,7 +7,6 @@ import 'package:alertaescolar/components/admin/notifications/priority_selector.d
 import 'package:alertaescolar/components/admin/notifications/message_content_form.dart';
 import 'package:alertaescolar/components/buttons/custom_outline_button.dart';
 import 'package:alertaescolar/components/headers/nav_header.dart';
-import 'package:alertaescolar/components/hints/pull_to_refresh_hint.dart';
 import 'package:alertaescolar/components/buttons/solid_button.dart';
 import 'package:alertaescolar/models/notification_draft.dart';
 import 'package:flutter/material.dart';
@@ -156,7 +155,7 @@ class _NotificationSendViewState extends State<NotificationSendView>
       await Future.wait([
         groupProvider.loadGroups(escuelaId: escuelaId),
         turnoProvider.loadTurnos(escuelaId: escuelaId),
-        studentProvider.loadStudents(escuelaId: escuelaId),
+        studentProvider.loadStudents(escuelaId: escuelaId, loadAll: true),
       ]);
     } catch (e) {
       debugPrint('Error loading initial data: $e');
