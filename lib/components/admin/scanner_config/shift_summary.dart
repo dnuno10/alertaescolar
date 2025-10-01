@@ -10,6 +10,7 @@ class ShiftSummary extends StatelessWidget {
   final TimeOfDay startTime;
   final TimeOfDay endTime;
   final int tolerance; // minutos
+  final bool aplicarTolerancia; // Si FALSE, no se aplica tolerancia
   final Size screenSize;
 
   const ShiftSummary({
@@ -20,6 +21,7 @@ class ShiftSummary extends StatelessWidget {
     required this.startTime,
     required this.endTime,
     required this.tolerance,
+    required this.aplicarTolerancia,
     required this.screenSize,
   });
 
@@ -132,26 +134,59 @@ class ShiftSummary extends StatelessWidget {
           SizedBox(height: padM),
 
           // ===== Estado: Presente / Tarde (columna full-width) =====
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              StatusCard(
-                title: l10n.present,
-                time: presentWindowText,
-                color: AppTheme.successColor,
-                icon: Icons.check_circle_rounded,
-                screenSize: screenSize,
+          if (aplicarTolerancia)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                StatusCard(
+                  title: l10n.present,
+                  time: presentWindowText,
+                  color: AppTheme.successColor,
+                  icon: Icons.check_circle_rounded,
+                  screenSize: screenSize,
+                ),
+                SizedBox(height: padS),
+                StatusCard(
+                  title: l10n.late,
+                  time: lateFromText,
+                  color: AppTheme.warningColor,
+                  icon: Icons.schedule_rounded,
+                  screenSize: screenSize,
+                ),
+              ],
+            )
+          else
+            // Si no se aplica tolerancia, mostrar solo mensaje informativo
+            Container(
+              padding: EdgeInsets.all(padM),
+              decoration: BoxDecoration(
+                color: AppTheme.accentBlue.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(radS),
+                border: Border.all(
+                  color: AppTheme.accentBlue.withOpacity(0.3),
+                  width: 1,
+                ),
               ),
-              SizedBox(height: padS),
-              StatusCard(
-                title: l10n.late,
-                time: lateFromText,
-                color: AppTheme.warningColor,
-                icon: Icons.schedule_rounded,
-                screenSize: screenSize,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline_rounded,
+                    color: AppTheme.accentBlue,
+                    size: screenSize.height * 0.025,
+                  ),
+                  SizedBox(width: padS),
+                  Expanded(
+                    child: Text(
+                      'Tolerancia desactivada: Todas las entradas se registran como a tiempo',
+                      style: AppTheme.getBodyMedium(screenSize).copyWith(
+                        color: AppTheme.accentBlue,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
 
           SizedBox(height: padS),
 

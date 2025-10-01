@@ -223,7 +223,8 @@ class TurnoProvider extends ChangeNotifier {
     try {
       final resp = await _supabase
           .from('turnos')
-          .select('id, turno, hora_inicio, hora_fin, tolerancia, id_escuela')
+          .select(
+              'id, turno, hora_inicio, hora_fin, tolerancia, id_escuela, fecha_registro, aplicar_tolerancia')
           .eq('id_escuela', escuelaId)
           .order('hora_inicio', ascending: true);
 
@@ -323,6 +324,7 @@ class TurnoProvider extends ChangeNotifier {
               'hora_inicio': formatTimeOfDay(p.start),
               'hora_fin': formatTimeOfDay(p.end),
               'tolerancia': p.tolerancia,
+              'aplicar_tolerancia': p.aplicarTolerancia,
             })
             .eq('id', p.id)
             .select()
@@ -470,10 +472,12 @@ class TurnoPatch {
   final TimeOfDay start;
   final TimeOfDay end;
   final int tolerancia;
+  final bool aplicarTolerancia;
   TurnoPatch({
     required this.id,
     required this.start,
     required this.end,
     required this.tolerancia,
+    required this.aplicarTolerancia,
   });
 }

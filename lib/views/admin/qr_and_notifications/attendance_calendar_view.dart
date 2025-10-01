@@ -45,10 +45,16 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
   String _selectedTurnoNombre = 'all';
   String _selectedAccess = 'all'; // entrada | salida | retraso
 
+  // Filtro de tiempo (mutuamente excluyente con calendario)
+  String _timeFilter = 'calendar'; // calendar | 7days | 14days
+
   // Datos
   List<Map<String, dynamic>> _notifications = [];
   List<Map<String, dynamic>> _filteredNotifications = [];
   String? _error;
+
+  // Cache del escuelaId para evitar queries repetidas y asegurar consistencia
+  String? _cachedEscuelaId;
 
   @override
   void initState() {
@@ -91,18 +97,37 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
     final studentProvider =
         Provider.of<StudentProvider>(context, listen: false);
 
-    final escuelaId = userProvider.currentUser?.escuelaId;
-    if (escuelaId == null) return;
-
-    LoadingDialog.show(context, message: 'Cargando datos de asistencia...');
-
-    setState(() => _error = null);
-
     try {
+      // Obtener escuelaId de manera eficiente (con cache)
+      String? escuelaId = _cachedEscuelaId;
+
+      if (escuelaId == null || escuelaId.isEmpty) {
+        escuelaId = userProvider.currentUser?.escuelaId;
+
+        // Si aún no está, intentar desde ensureEscuelaIdLoaded
+        if (escuelaId == null || escuelaId.isEmpty) {
+          escuelaId = await userProvider.ensureEscuelaIdLoaded();
+        }
+
+        // Guardar en cache para evitar queries repetidas
+        if (escuelaId != null && escuelaId.isNotEmpty) {
+          _cachedEscuelaId = escuelaId;
+        }
+      }
+
+      if (escuelaId == null || escuelaId.isEmpty) {
+        setState(() =>
+            _error = 'No se pudo identificar la escuela del administrador');
+        return;
+      }
+
+      LoadingDialog.show(context, message: 'Cargando datos de asistencia...');
+      setState(() => _error = null);
+
       // StudentProvider trae niveles/grupos/turnos (y su orden) igual que en las otras vistas
       await studentProvider.loadStudents(escuelaId: escuelaId, loadAll: true);
 
-      // Notificaciones de asistencia
+      // Notificaciones de asistencia - FILTRADAS POR ESCUELA
       await _loadNotifications(escuelaId);
 
       // Filtros iniciales + overlay
@@ -119,6 +144,8 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
   Future<void> _loadNotifications(String escuelaId) async {
     try {
       final supabase = Supabase.instance.client;
+
+      debugPrint('🔧 Loading notifications for escuela: $escuelaId');
 
       final response = await supabase
           .from('notificaciones')
@@ -152,14 +179,28 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
           .inFilter('tipo_notificacion', ['entrada', 'salida', 'retraso'])
           .order('fecha_registro', ascending: false);
 
+      // Validación adicional: asegurar que TODOS los registros sean de la escuela correcta
+      final validatedNotifications = (response as List).where((n) {
+        final alumnoEscuelaId = n['alumnos']?['id_escuela']?.toString() ?? '';
+        final isValid = alumnoEscuelaId == escuelaId;
+
+        if (!isValid) {
+          debugPrint(
+              '⚠️ Filtered out notification ${n['id']} - alumno escuela: $alumnoEscuelaId != $escuelaId');
+        }
+
+        return isValid;
+      }).toList();
+
       setState(() {
-        _notifications = List<Map<String, dynamic>>.from(response);
+        _notifications =
+            List<Map<String, dynamic>>.from(validatedNotifications);
       });
 
       debugPrint(
-          'Loaded ${_notifications.length} notifications for $escuelaId');
+          '✅ Loaded ${_notifications.length} notifications for escuela $escuelaId (${response.length - _notifications.length} filtered out)');
     } catch (e) {
-      debugPrint('Error loading notifications: $e');
+      debugPrint('❌ Error loading notifications: $e');
       throw Exception('Error al cargar notificaciones: $e');
     }
   }
@@ -198,11 +239,14 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
     final q = query.trim().toLowerCase();
     if (q.isEmpty) return const [];
 
+    // Usar el escuelaId cacheado para garantizar consistencia
+    final escuelaId = _cachedEscuelaId;
+    if (escuelaId == null || escuelaId.isEmpty) {
+      return const [];
+    }
+
     final base = await studentProvider.getFilteredBy(
-      // ✅ ahora esperamos
-      escuelaId: Provider.of<UserProvider>(context, listen: false)
-          .currentUser
-          ?.escuelaId,
+      escuelaId: escuelaId,
       grupo: _selectedGrupoNombre,
       nivelEducativo: _selectedNivelEducativo,
       status: 'all',
@@ -296,8 +340,6 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                             ),
                             itemBuilder: (context, index) {
                               final s = suggestions[index];
-                              final consideredActive =
-                                  (s.hasTutores && s.llaveActiva);
 
                               return InkWell(
                                 onTap: () {
@@ -427,15 +469,38 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
       }).toList();
     }
 
-    // Día seleccionado
-    filtered = filtered.where((n) {
-      // 🔧 FIX: Usar TimeFormat.parseSupabaseDateTime para manejar timestamptz
-      final fechaRegistro =
-          TimeFormat.parseSupabaseDateTime(n['fecha_registro']);
-      return fechaRegistro.year == selectedDate.year &&
-          fechaRegistro.month == selectedDate.month &&
-          fechaRegistro.day == selectedDate.day;
-    }).toList();
+    // Filtro de tiempo (mutuamente excluyente)
+    final now = DateTime.now();
+    switch (_timeFilter) {
+      case 'calendar':
+        // Día seleccionado específico
+        filtered = filtered.where((n) {
+          final fechaRegistro =
+              TimeFormat.parseSupabaseDateTime(n['fecha_registro']);
+          return fechaRegistro.year == selectedDate.year &&
+              fechaRegistro.month == selectedDate.month &&
+              fechaRegistro.day == selectedDate.day;
+        }).toList();
+        break;
+      case '7days':
+        // Últimos 7 días
+        filtered = filtered.where((n) {
+          final fechaRegistro =
+              TimeFormat.parseSupabaseDateTime(n['fecha_registro']);
+          final difference = now.difference(fechaRegistro).inDays;
+          return difference >= 0 && difference <= 7;
+        }).toList();
+        break;
+      case '14days':
+        // Últimos 14 días
+        filtered = filtered.where((n) {
+          final fechaRegistro =
+              TimeFormat.parseSupabaseDateTime(n['fecha_registro']);
+          final difference = now.difference(fechaRegistro).inDays;
+          return difference >= 0 && difference <= 14;
+        }).toList();
+        break;
+    }
 
     setState(() => _filteredNotifications = filtered);
   }
@@ -532,6 +597,8 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                     _selectedNivelEducativo = 'all';
                     _selectedTurnoNombre = 'all';
                     _selectedAccess = 'all';
+                    _timeFilter = 'calendar';
+                    selectedDate = DateTime.now();
                     _searchController.clear();
                   });
                   _filterNotifications();
@@ -693,7 +760,159 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
     );
   }
 
+  Widget _buildTimeFilterSelector(BuildContext context, Size screenSize) {
+    return Container(
+      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius:
+            BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
+        border: Border.all(
+          color: AppTheme.getBorderColor(context).withOpacity(0.3),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.getShadowColor(context),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.calendar_month_rounded,
+                color: AppTheme.accentPurple,
+                size: screenSize.height * 0.025,
+              ),
+              SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+              Text(
+                'Rango de Tiempo',
+                style: AppTheme.getBodyLarge(screenSize).copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.getTextPrimaryColor(context),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+          Row(
+            children: [
+              Expanded(
+                child: _buildTimeFilterChip(
+                  context: context,
+                  screenSize: screenSize,
+                  label: 'Últimos 7 días',
+                  value: '7days',
+                  icon: Icons.calendar_view_week_rounded,
+                ),
+              ),
+              SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+              Expanded(
+                child: _buildTimeFilterChip(
+                  context: context,
+                  screenSize: screenSize,
+                  label: 'Últimos 14 días',
+                  value: '14days',
+                  icon: Icons.calendar_view_month_rounded,
+                ),
+              ),
+              SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+              Expanded(
+                child: _buildTimeFilterChip(
+                  context: context,
+                  screenSize: screenSize,
+                  label: 'Calendario Fecha',
+                  value: 'calendar',
+                  icon: Icons.calendar_today_rounded,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimeFilterChip({
+    required BuildContext context,
+    required Size screenSize,
+    required String label,
+    required String value,
+    required IconData icon,
+  }) {
+    final isSelected = _timeFilter == value;
+    final baseColor = AppTheme.accentPurple;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          setState(() {
+            _timeFilter = value;
+          });
+          _filterNotifications();
+        },
+        borderRadius:
+            BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: EdgeInsets.symmetric(
+            vertical: AppTheme.getSmallPadding(screenSize),
+            horizontal: AppTheme.getSmallPadding(screenSize) * 0.6,
+          ),
+          decoration: BoxDecoration(
+            color:
+                isSelected ? baseColor : AppTheme.getBackgroundColor(context),
+            borderRadius:
+                BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
+            border: Border.all(
+              color: isSelected
+                  ? baseColor
+                  : AppTheme.getBorderColor(context).withOpacity(0.3),
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                color: isSelected
+                    ? Colors.white
+                    : AppTheme.getTextSecondaryColor(context),
+                size: screenSize.height * 0.025,
+              ),
+              SizedBox(height: AppTheme.getSmallPadding(screenSize) * 0.4),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: AppTheme.getCaptionSmall(screenSize).copyWith(
+                  color: isSelected
+                      ? Colors.white
+                      : AppTheme.getTextSecondaryColor(context),
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildDateSelector(BuildContext context, Size screenSize) {
+    // Solo mostrar si el filtro es "calendar"
+    if (_timeFilter != 'calendar') {
+      return const SizedBox.shrink();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -730,6 +949,8 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
               setState(() {
                 selectedDate = picked;
                 focusedDay = picked;
+                _timeFilter =
+                    'calendar'; // Cambiar automáticamente a modo calendario
               });
               _filterNotifications();
             }
@@ -801,7 +1022,30 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
   }
 
   Widget _buildDateDetails(BuildContext context, Size screenSize) {
-    final notificationsForDate = _getNotificationsForDate(selectedDate);
+    // Para calendar, usamos la fecha seleccionada específica
+    // Para 7days y 14days, mostramos todas las filtradas
+    final notificationsToShow = _timeFilter == 'calendar'
+        ? _getNotificationsForDate(selectedDate)
+        : _filteredNotifications;
+
+    // Título dinámico según el filtro
+    String headerTitle;
+    IconData headerIcon;
+    switch (_timeFilter) {
+      case '7days':
+        headerTitle = 'Registros de los últimos 7 días';
+        headerIcon = Icons.calendar_view_week_rounded;
+        break;
+      case '14days':
+        headerTitle = 'Registros de los últimos 14 días';
+        headerIcon = Icons.calendar_view_month_rounded;
+        break;
+      case 'calendar':
+      default:
+        headerTitle =
+            'Registros del ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}';
+        headerIcon = Icons.calendar_today_rounded;
+    }
 
     return Container(
       width: double.infinity,
@@ -825,28 +1069,51 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // Header con contador
           Row(
             children: [
               Icon(
-                Icons.calendar_today_rounded,
+                headerIcon,
                 color: AppTheme.accentPurple,
                 size: screenSize.height * 0.025,
               ),
               SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-              Text(
-                'Registros del ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
-                style: AppTheme.getBodyLarge(screenSize).copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.getTextPrimaryColor(context),
+              Expanded(
+                child: Text(
+                  headerTitle,
+                  style: AppTheme.getBodyLarge(screenSize).copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.getTextPrimaryColor(context),
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              if (notificationsToShow.isNotEmpty)
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppTheme.getSmallPadding(screenSize),
+                    vertical: AppTheme.getSmallPadding(screenSize) * 0.5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentPurple.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(
+                        AppTheme.getSmallRadius(screenSize)),
+                  ),
+                  child: Text(
+                    '${notificationsToShow.length}',
+                    style: AppTheme.getCaption(screenSize).copyWith(
+                      color: AppTheme.accentPurple,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
             ],
           ),
 
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-          if (notificationsForDate.isEmpty)
+          if (notificationsToShow.isEmpty)
             Center(
               child: Padding(
                 padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
@@ -859,7 +1126,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                     ),
                     SizedBox(height: AppTheme.getSmallPadding(screenSize)),
                     Text(
-                      'No hay registros para esta fecha',
+                      'No hay registros para este período',
                       style: AppTheme.getBodyMedium(screenSize).copyWith(
                         color: AppTheme.getTextSecondaryColor(context),
                       ),
@@ -869,7 +1136,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
               ),
             )
           else
-            ...notificationsForDate.map((n) {
+            ...notificationsToShow.map((n) {
               return _buildNotificationCard(context, screenSize, n);
             }),
         ],
@@ -1262,7 +1529,12 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                                 context, screenSize, studentProvider),
                             SizedBox(
                                 height: AppTheme.getLargePadding(screenSize)),
-                            _buildDateSelector(context, screenSize),
+                            _buildTimeFilterSelector(context, screenSize),
+                            if (_timeFilter == 'calendar') ...[
+                              SizedBox(
+                                  height: AppTheme.getLargePadding(screenSize)),
+                              _buildDateSelector(context, screenSize),
+                            ],
                             SizedBox(
                                 height: AppTheme.getLargePadding(screenSize)),
                             _buildDateDetails(context, screenSize),

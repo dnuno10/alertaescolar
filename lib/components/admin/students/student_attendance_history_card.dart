@@ -163,27 +163,6 @@ class _StudentAttendanceHistoryCardState
                   ],
                 ),
               ),
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal:
-                      AppTheme.getSmallPadding(widget.screenSize) * 0.75,
-                  vertical: AppTheme.getSmallPadding(widget.screenSize) * 0.4,
-                ),
-                decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
-                  color: AppTheme.successColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getSmallRadius(widget.screenSize)),
-                ),
-                child: Text(
-                  '${stats['rate']}% ${l10n.attendance}',
-                  style: AppTheme.getCaption(widget.screenSize).copyWith(
-                    color: AppTheme.successColor,
-                    fontWeight: FontWeight.w600,
-                    fontSize: widget.screenSize.height * 0.014,
-                  ),
-                ),
-              ),
             ],
           ),
 
@@ -355,7 +334,10 @@ class _StudentAttendanceHistoryCardState
   Widget _buildRecentRecord(
       BuildContext context, Map<String, dynamic> notification) {
     final tipoNotificacion = notification['tipo_notificacion'] ?? '';
-    final fechaRegistro = DateTime.parse(notification['fecha_registro']);
+
+    // 🔧 FIX: Usar TimeFormat.parseSupabaseDateTime para manejar timestamptz correctamente
+    final fechaRegistro =
+        TimeFormat.parseSupabaseDateTime(notification['fecha_registro']);
     final titulo = notification['titulo'] ?? '';
 
     Color typeColor;
@@ -385,6 +367,9 @@ class _StudentAttendanceHistoryCardState
         typeIcon = Icons.notifications_rounded;
         typeText = tipoNotificacion;
     }
+
+    // 🔧 FIX: Usar TimeFormat.formatDateTimeToAmPm para formato correcto con timezone local
+    final horaAmPm = TimeFormat.formatDateTimeToAmPm(fechaRegistro);
 
     return Container(
       margin:
@@ -460,8 +445,7 @@ class _StudentAttendanceHistoryCardState
                 ),
               ),
               Text(
-                TimeFormat.format24to12(
-                    '${fechaRegistro.hour.toString().padLeft(2, '0')}:${fechaRegistro.minute.toString().padLeft(2, '0')}'),
+                horaAmPm, // 🔧 FIX: Usar la hora formateada con AM/PM y timezone correcto
                 style: AppTheme.getCaptionSmall(widget.screenSize).copyWith(
                   color: AppTheme.getTextSecondaryColor(context),
                 ),

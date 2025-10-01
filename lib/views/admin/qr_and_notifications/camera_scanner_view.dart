@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:alertaescolar/managers/user_provider.dart';
+import 'package:alertaescolar/managers/turno_provider.dart';
 import 'package:alertaescolar/models/usuario.dart';
 import 'package:alertaescolar/services/scanner_service.dart';
 import 'package:flutter/material.dart';
@@ -293,28 +294,34 @@ class _CameraScannerViewState extends State<CameraScannerView>
                   screenSize: screenSize,
                 ),
 
-                // Etiqueta de modo de acceso (centro)
+                // Etiqueta de modo de acceso (centro) - anchura determinada por texto
                 Expanded(
-                  child: Align(
-                    alignment: Alignment.center,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppTheme.getMediumPadding(screenSize),
-                        vertical: AppTheme.getSmallPadding(screenSize),
-                      ),
-                      decoration: BoxDecoration(
-                        color: _getAccessTypeColor().withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
-                          width: 1,
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      left: AppTheme.getMediumPadding(screenSize),
+                    ),
+                    child: Center(
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppTheme.getMediumPadding(screenSize),
+                          vertical: AppTheme.getSmallPadding(screenSize),
                         ),
-                      ),
-                      child: Text(
-                        _getAccessTypeText(),
-                        style: AppTheme.getCaption(screenSize).copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
+                        decoration: BoxDecoration(
+                          color: _getAccessTypeColor().withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          _getAccessTypeText(),
+                          style: AppTheme.getBodyMedium(screenSize).copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.2,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
                       ),
                     ),
@@ -763,6 +770,22 @@ class _CameraScannerViewState extends State<CameraScannerView>
     final isDefaultEntry = widget.isDefaultEntryConfig ?? true;
     final isExtracurricular = widget.isExtracurricular;
 
+    // Para modo automático de entrada, verificar si se enviarían retrasos
+    if (accessType == ScannerAccessType.automatic && isDefaultEntry) {
+      try {
+        final turnoProvider =
+            Provider.of<TurnoProvider>(context, listen: false);
+        final accessPhase = turnoProvider.resolveAccessPhase();
+
+        if (accessPhase.type == ScannerAccessType.entry &&
+            accessPhase.turno != null &&
+            accessPhase.turno!.aplicarTolerancia &&
+            !accessPhase.withinTolerance) {
+          return 'Registrando Retrasos';
+        }
+      } catch (_) {}
+    }
+
     switch (accessType) {
       case ScannerAccessType.automatic:
         return isDefaultEntry ? 'Entrada Automática' : 'Salida Automática';
@@ -776,6 +799,27 @@ class _CameraScannerViewState extends State<CameraScannerView>
   Color _getAccessTypeColor() {
     final accessType = widget.accessType ?? ScannerAccessType.automatic;
     final isDefaultEntry = widget.isDefaultEntryConfig ?? true;
+
+    // Para modo automático de entrada, verificar si se enviarían retrasos
+    if (accessType == ScannerAccessType.automatic && isDefaultEntry) {
+      try {
+        final turnoProvider =
+            Provider.of<TurnoProvider>(context, listen: false);
+        final accessPhase = turnoProvider.resolveAccessPhase();
+
+        // Si es entrada y hay tolerancia activada, verificar si ya pasó la tolerancia
+        if (accessPhase.type == ScannerAccessType.entry &&
+            accessPhase.turno != null &&
+            accessPhase.turno!.aplicarTolerancia) {
+          // Si está fuera de tolerancia (retraso), mostrar color amarillo
+          if (!accessPhase.withinTolerance) {
+            return AppTheme.warningColor; // Amarillo para retrasos
+          }
+        }
+      } catch (_) {
+        // Si hay error, usar color por defecto
+      }
+    }
 
     switch (accessType) {
       case ScannerAccessType.automatic:

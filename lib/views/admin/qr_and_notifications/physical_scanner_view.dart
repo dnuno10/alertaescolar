@@ -4,6 +4,7 @@ import 'dart:math' as math;
 
 import 'package:alertaescolar/components/headers/nav_header.dart';
 import 'package:alertaescolar/managers/user_provider.dart';
+import 'package:alertaescolar/managers/turno_provider.dart';
 import 'package:alertaescolar/models/usuario.dart';
 import 'package:alertaescolar/services/scanner_service.dart';
 import 'package:flutter/material.dart';
@@ -83,6 +84,22 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
     final isExtracurricular = widget.isExtracurricular;
     final l10n = AppLocalizations.of(context);
 
+    // Para modo automático de entrada, verificar si se enviarían retrasos
+    if (accessType == ScannerAccessType.automatic && isDefaultEntry) {
+      try {
+        final turnoProvider =
+            Provider.of<TurnoProvider>(context, listen: false);
+        final accessPhase = turnoProvider.resolveAccessPhase();
+
+        if (accessPhase.type == ScannerAccessType.entry &&
+            accessPhase.turno != null &&
+            accessPhase.turno!.aplicarTolerancia &&
+            !accessPhase.withinTolerance) {
+          return 'Registrando Retrasos';
+        }
+      } catch (_) {}
+    }
+
     switch (accessType) {
       case ScannerAccessType.automatic:
         return isDefaultEntry ? l10n.automaticEntry : l10n.automaticExit;
@@ -96,6 +113,27 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
   Color _getAccessTypeColor() {
     final accessType = widget.accessType ?? ScannerAccessType.automatic;
     final isDefaultEntry = widget.isDefaultEntryConfig ?? true;
+
+    // Para modo automático de entrada, verificar si se enviarían retrasos
+    if (accessType == ScannerAccessType.automatic && isDefaultEntry) {
+      try {
+        final turnoProvider =
+            Provider.of<TurnoProvider>(context, listen: false);
+        final accessPhase = turnoProvider.resolveAccessPhase();
+
+        // Si es entrada y hay tolerancia activada, verificar si ya pasó la tolerancia
+        if (accessPhase.type == ScannerAccessType.entry &&
+            accessPhase.turno != null &&
+            accessPhase.turno!.aplicarTolerancia) {
+          // Si está fuera de tolerancia (retraso), mostrar color amarillo
+          if (!accessPhase.withinTolerance) {
+            return AppTheme.warningColor; // Amarillo para retrasos
+          }
+        }
+      } catch (_) {
+        // Si hay error, usar color por defecto
+      }
+    }
 
     switch (accessType) {
       case ScannerAccessType.automatic:
@@ -347,28 +385,31 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
                 padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
                 child: Column(
                   children: [
-                    // Indicador de modo (minimal)
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppTheme.getMediumPadding(screenSize),
-                        vertical: AppTheme.getSmallPadding(screenSize) * 0.8,
-                      ),
-                      decoration: BoxDecoration(
-                        // ignore: deprecated_member_use
-                        color: _getAccessTypeColor().withOpacity(0.07),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          // ignore: deprecated_member_use
-                          color: _getAccessTypeColor().withOpacity(0.18),
-                          width: 1,
+                    // Indicador de modo (minimal) - anchura determinada por texto
+                    Center(
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppTheme.getMediumPadding(screenSize),
+                          vertical: AppTheme.getSmallPadding(screenSize) * 0.8,
                         ),
-                      ),
-                      child: Text(
-                        _getAccessTypeText(),
-                        style: AppTheme.getBodyMedium(screenSize).copyWith(
-                          color: _getAccessTypeColor(),
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.2,
+                        decoration: BoxDecoration(
+                          // ignore: deprecated_member_use
+                          color: _getAccessTypeColor().withOpacity(0.07),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            // ignore: deprecated_member_use
+                            color: _getAccessTypeColor().withOpacity(0.18),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          _getAccessTypeText(),
+                          style: AppTheme.getBodyMedium(screenSize).copyWith(
+                            color: _getAccessTypeColor(),
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.2,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
                       ),
                     ),

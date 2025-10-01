@@ -297,9 +297,10 @@ class _NotificationsViewViewState extends State<NotificationsView>
 
   bool _isToday(DateTime date) {
     final now = DateTime.now();
-    return date.year == now.year &&
-        date.month == now.month &&
-        date.day == now.day;
+    final localDate = date.toLocal();
+    return localDate.year == now.year &&
+        localDate.month == now.month &&
+        localDate.day == now.day;
   }
 
   // ---------- Tap sin delay: abre YA y marca en background ----------

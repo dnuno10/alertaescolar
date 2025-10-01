@@ -41,6 +41,9 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
       'all'; // 'all' | 'active' | 'inactive' (hasTutores && llaveActiva)
   String _selectedTurnoNombre = 'all'; // turnos.turno
 
+  // Cache del escuelaId para evitar queries repetidas
+  String? _cachedEscuelaId;
+
   @override
   void initState() {
     super.initState();
@@ -95,15 +98,23 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
     final studentProvider =
         Provider.of<StudentProvider>(context, listen: false);
 
-    final String? userId = userProvider.currentUser?.id;
-    String? escuelaId = userProvider.currentUser?.escuelaId;
-
     try {
-      // Resolver SOLO por ADMIN si no viene en el usuario
-      if ((escuelaId == null || escuelaId.isEmpty) &&
-          userId != null &&
-          userId.isNotEmpty) {
-        escuelaId = await studentProvider.getAdminEscuelaUuidByUserId(userId);
+      // Obtener escuelaId de manera eficiente
+      String? escuelaId = _cachedEscuelaId;
+
+      // Si no está en cache, obtenerlo
+      if (escuelaId == null || escuelaId.isEmpty) {
+        escuelaId = userProvider.currentUser?.escuelaId;
+
+        // Si aún no está, intentar desde ensureEscuelaIdLoaded (más rápido que getAdminEscuelaUuidByUserId)
+        if (escuelaId == null || escuelaId.isEmpty) {
+          escuelaId = await userProvider.ensureEscuelaIdLoaded();
+        }
+
+        // Guardar en cache
+        if (escuelaId != null && escuelaId.isNotEmpty) {
+          _cachedEscuelaId = escuelaId;
+        }
       }
 
       if (escuelaId == null || escuelaId.trim().isEmpty) {
@@ -127,14 +138,9 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
 
     try {
-      String? escuelaUuid = userProvider.currentUser?.escuelaId;
-      final String? userId = userProvider.currentUser?.id;
-
-      if ((escuelaUuid == null || escuelaUuid.isEmpty) &&
-          userId != null &&
-          userId.isNotEmpty) {
-        escuelaUuid = await studentProvider.getAdminEscuelaUuidByUserId(userId);
-      }
+      // Usar el escuelaId en cache o del userProvider
+      String? escuelaUuid =
+          _cachedEscuelaId ?? userProvider.currentUser?.escuelaId;
 
       if (escuelaUuid == null || escuelaUuid.isEmpty) {
         debugPrint('No se pudo resolver el UUID de la escuela del admin.');
@@ -179,10 +185,15 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
     final q = query.trim().toLowerCase();
     if (q.isEmpty) return const [];
 
+    // Usar el escuelaId cacheado para evitar queries adicionales
+    final escuelaId = _cachedEscuelaId;
+
+    if (escuelaId == null || escuelaId.isEmpty) {
+      return const [];
+    }
+
     final base = await studentProvider.getFilteredBy(
-      escuelaId: Provider.of<UserProvider>(context, listen: false)
-          .currentUser
-          ?.escuelaId,
+      escuelaId: escuelaId,
       grupo: _selectedGrupoNombre,
       nivelEducativo: _selectedNivelEducativo,
       status: _selectedEstado,
@@ -529,15 +540,6 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                                 color: AppTheme.getCardColor(context),
                                 borderRadius: BorderRadius.circular(
                                     AppTheme.getLargeRadius(screenSize)),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppTheme.getShadowColor(context)
-                                        // ignore: deprecated_member_use
-                                        .withOpacity(0.1),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,

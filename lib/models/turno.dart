@@ -8,6 +8,8 @@ class Turno {
   final DateTime fechaRegistro; // fecha_registro
   final String idEscuela; // id_escuela
   final int tolerancia; // minutos
+  final bool
+      aplicarTolerancia; // Si FALSE, no se considera tolerancia (sin retrasos)
 
   const Turno({
     required this.id,
@@ -17,6 +19,8 @@ class Turno {
     required this.fechaRegistro,
     required this.idEscuela,
     this.tolerancia = 15,
+    this.aplicarTolerancia =
+        true, // Por defecto TRUE para mantener comportamiento actual
   });
 
   factory Turno.fromJson(Map<String, dynamic> json) {
@@ -57,6 +61,7 @@ class Turno {
       tolerancia: (json['tolerancia'] is num)
           ? (json['tolerancia'] as num).toInt()
           : 15,
+      aplicarTolerancia: (json['aplicar_tolerancia'] ?? false) == true,
     );
   }
 
@@ -69,6 +74,7 @@ class Turno {
       'fecha_registro': fechaRegistro.toIso8601String(),
       'id_escuela': idEscuela,
       'tolerancia': tolerancia,
+      'aplicar_tolerancia': aplicarTolerancia,
     };
   }
 
@@ -80,6 +86,7 @@ class Turno {
     DateTime? fechaRegistro,
     String? idEscuela,
     int? tolerancia,
+    bool? aplicarTolerancia,
   }) {
     return Turno(
       id: id ?? this.id,
@@ -89,6 +96,7 @@ class Turno {
       fechaRegistro: fechaRegistro ?? this.fechaRegistro,
       idEscuela: idEscuela ?? this.idEscuela,
       tolerancia: tolerancia ?? this.tolerancia,
+      aplicarTolerancia: aplicarTolerancia ?? this.aplicarTolerancia,
     );
   }
 
@@ -99,7 +107,7 @@ class Turno {
 
   @override
   String toString() {
-    return 'Turno(id: $id, turno: $turno, horario: $horarioCompleto, tolerancia: $tolerancia)';
+    return 'Turno(id: $id, turno: $turno, horario: $horarioCompleto, tolerancia: $tolerancia, aplicarTolerancia: $aplicarTolerancia)';
   }
 
   @override

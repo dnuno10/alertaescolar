@@ -20,8 +20,9 @@ class AttendanceRecordItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    // Handle new notification format
-    final fechaRegistro = DateTime.parse(record['fecha_registro']);
+    // 🔧 FIX: Usar TimeFormat.parseSupabaseDateTime para manejar timestamptz correctamente
+    final fechaRegistro =
+        TimeFormat.parseSupabaseDateTime(record['fecha_registro']);
     final tipoNotificacion = record['tipo_notificacion'] as String;
     final titulo = record['titulo'] as String? ?? '';
     final mensaje = record['mensaje'] as String? ?? '';
@@ -29,6 +30,9 @@ class AttendanceRecordItem extends StatelessWidget {
     final statusColor = _getStatusColor(tipoNotificacion);
     final statusIcon = _getStatusIcon(tipoNotificacion);
     final statusText = _getStatusText(context, tipoNotificacion);
+
+    // 🔧 FIX: Usar TimeFormat.formatDateTimeToAmPm para formato correcto con timezone local
+    final horaAmPm = TimeFormat.formatDateTimeToAmPm(fechaRegistro);
 
     return Container(
       margin: EdgeInsets.only(
@@ -78,8 +82,7 @@ class AttendanceRecordItem extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          TimeFormat.format24to12(
-                              '${fechaRegistro.hour.toString().padLeft(2, '0')}:${fechaRegistro.minute.toString().padLeft(2, '0')}'),
+                          horaAmPm,
                           style: AppTheme.getCaptionSmall(screenSize).copyWith(
                             color: AppTheme.getTextSecondaryColor(context),
                             fontWeight: FontWeight.w500,

@@ -46,7 +46,6 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
   }
 
   ({DateTime startUtc, DateTime endUtc}) _todayUtcRangeFromLocal() {
-    // 🔧 FIX: Usar TimeFormat.getDayUtcRangeFromLocal para manejar timezone correctamente
     return TimeFormat.getDayUtcRangeFromLocal();
   }
 
@@ -127,7 +126,7 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
 
     if (_escuelaIdInUse == null || _escuelaIdInUse!.isEmpty) {
       debugPrint(
-          '🔄 AdminStatsCard: No escuelaId, skipping realtime subscription');
+          'AdminStatsCard: No escuelaId, skipping realtime subscription');
       return;
     }
 
@@ -143,8 +142,8 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
         schema: 'public',
         table: 'notificaciones',
         callback: (payload) {
-          debugPrint('🔄 AdminStatsCard: INSERT detected');
-          debugPrint('🔄 Stats payload: ${payload.newRecord}');
+          debugPrint('AdminStatsCard: INSERT detected');
+          debugPrint('Stats payload: ${payload.newRecord}');
 
           final record = payload.newRecord;
           final tipoNotif = record['tipo_notificacion']?.toString();
@@ -160,12 +159,11 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
               if (notifTime.isAfter(todayRange.startUtc) &&
                   notifTime.isBefore(todayRange.endUtc)) {
                 debugPrint(
-                    '🔄 AdminStatsCard: Today notification detected, updating stats');
+                    'AdminStatsCard: Today notification detected, updating stats');
                 _triggerStatsReload();
               }
             } catch (e) {
-              debugPrint(
-                  '🔄 AdminStatsCard: Error parsing notification date: $e');
+              debugPrint('AdminStatsCard: Error parsing notification date: $e');
               // Actualizar de todas formas por seguridad
               _triggerStatsReload();
             }
@@ -177,7 +175,7 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
         schema: 'public',
         table: 'notificaciones',
         callback: (payload) {
-          debugPrint('🔄 AdminStatsCard: UPDATE detected');
+          debugPrint('AdminStatsCard: UPDATE detected');
           final record = payload.newRecord;
           final tipoNotif = record['tipo_notificacion']?.toString();
           if (['entrada', 'salida', 'retraso'].contains(tipoNotif)) {
@@ -190,21 +188,21 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
         schema: 'public',
         table: 'notificaciones',
         callback: (payload) {
-          debugPrint('🔄 AdminStatsCard: DELETE detected');
+          debugPrint('AdminStatsCard: DELETE detected');
           _triggerStatsReload();
         },
       )
       ..subscribe((status, [ref]) {
         debugPrint(
-            '🔄 AdminStatsCard: Subscription status: $status for escuela: $_escuelaIdInUse');
+            'AdminStatsCard: Subscription status: $status for escuela: $_escuelaIdInUse');
         if (status == 'SUBSCRIBED') {
           debugPrint(
-              '🔄 AdminStatsCard: Successfully subscribed to realtime stats updates');
+              'AdminStatsCard: Successfully subscribed to realtime stats updates');
         }
       });
 
     debugPrint(
-        '🔄 AdminStatsCard: Realtime subscription configured for escuela: $_escuelaIdInUse');
+        'AdminStatsCard: Realtime subscription configured for escuela: $_escuelaIdInUse');
   }
 
   void _triggerStatsReload() {
@@ -229,21 +227,22 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
         return;
       }
 
-      // 🔧 FIX: Usar TimeFormat.getDayUtcRangeFromLocal para cálculos correctos
+      //FIX: Usar TimeFormat.getDayUtcRangeFromLocal para cálculos correctos
       final todayRange = _todayUtcRangeFromLocal();
       debugPrint(
-          '🔧 AdminStatsCard: Loading stats for UTC range: ${todayRange.startUtc} - ${todayRange.endUtc}');
+          'AdminStatsCard: Loading stats for UTC range: ${todayRange.startUtc} - ${todayRange.endUtc}');
 
       // Query para obtener estadísticas del día
       final response = await _supabase
           .from('notificaciones')
-          .select('tipo_notificacion')
+          .select('tipo_notificacion, alumnos!inner(id_escuela)')
+          .eq('alumnos.id_escuela', escuelaId)
           .gte('fecha_registro', todayRange.startUtc.toIso8601String())
           .lt('fecha_registro', todayRange.endUtc.toIso8601String())
           .inFilter('tipo_notificacion', ['entrada', 'salida', 'retraso']);
 
       debugPrint(
-          '🔧 AdminStatsCard: Raw query result: ${response.length} notifications');
+          'AdminStatsCard: Raw query result: ${response.length} notifications');
 
       // Contar por tipo
       int totalScanned = 0;

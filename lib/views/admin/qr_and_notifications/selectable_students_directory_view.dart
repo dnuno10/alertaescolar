@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:alertaescolar/components/headers/nav_header.dart';
-import 'package:alertaescolar/components/hints/pull_to_refresh_hint.dart';
 import 'package:alertaescolar/components/textfield/custom_input_field.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
 import 'package:alertaescolar/managers/student_provider.dart';
@@ -52,6 +51,9 @@ class _SelectableStudentsDirectoryViewState
   String _selectedEstado =
       'all'; // 'all' | 'active' | 'inactive' (active = alumno_tutores + llave.activo)
   String _selectedTurnoNombre = 'all'; // turnos.turno
+
+  // Cache del escuelaId para evitar queries repetidas y asegurar consistencia
+  String? _cachedEscuelaId;
 
   @override
   void initState() {
@@ -109,27 +111,37 @@ class _SelectableStudentsDirectoryViewState
     final studentProvider =
         Provider.of<StudentProvider>(context, listen: false);
 
-    final userId = userProvider.currentUser?.id;
-    String? escuelaId =
-        userProvider.currentUser?.escuelaId ?? widget.arguments?['escuelaId'];
-
     try {
-      escuelaId ??=
-          await studentProvider.getAdminEscuelaUuidByUserId(userId ?? '');
+      // Obtener escuelaId de manera eficiente (con cache)
+      String? escuelaId = _cachedEscuelaId;
 
-      debugPrint(
-          'Resolved escuelaId for selectable directory: $escuelaId (userId=$userId)');
+      if (escuelaId == null || escuelaId.isEmpty) {
+        // Primero intentar desde argumentos o usuario actual
+        escuelaId = widget.arguments?['escuelaId'] as String? ??
+            userProvider.currentUser?.escuelaId;
 
-      if (escuelaId == null) {
+        // Si aún no está, intentar desde ensureEscuelaIdLoaded (más rápido)
+        if (escuelaId == null || escuelaId.isEmpty) {
+          escuelaId = await userProvider.ensureEscuelaIdLoaded();
+        }
+
+        // Guardar en cache para evitar queries repetidas
+        if (escuelaId != null && escuelaId.isNotEmpty) {
+          _cachedEscuelaId = escuelaId;
+        }
+      }
+
+      debugPrint('✅ Resolved escuelaId for selectable directory: $escuelaId');
+
+      if (escuelaId == null || escuelaId.isEmpty) {
         throw Exception('No se encontró escuela asociada al usuario');
       }
 
-      await studentProvider.loadStudents(
-          escuelaId: escuelaId, userId: userId, loadAll: true);
+      await studentProvider.loadStudents(escuelaId: escuelaId, loadAll: true);
 
       if (mounted) _filterStudents();
     } catch (e) {
-      debugPrint('Error loading initial data: $e');
+      debugPrint('❌ Error loading initial data: $e');
     }
   }
 
@@ -162,11 +174,15 @@ class _SelectableStudentsDirectoryViewState
     final q = query.trim().toLowerCase();
     if (q.isEmpty) return const [];
 
+    // Usar el escuelaId cacheado para garantizar consistencia
+    final escuelaId = _cachedEscuelaId;
+    if (escuelaId == null || escuelaId.isEmpty) {
+      return const [];
+    }
+
     // Base filtrada por selects (ahora await porque devuelve Future)
     final base = await studentProvider.getFilteredBy(
-      escuelaId: Provider.of<UserProvider>(context, listen: false)
-          .currentUser
-          ?.escuelaId,
+      escuelaId: escuelaId,
       grupo: _selectedGrupoNombre,
       nivelEducativo: _selectedNivelEducativo,
       status: _selectedEstado,
@@ -429,6 +445,73 @@ class _SelectableStudentsDirectoryViewState
     return Consumer2<ThemeProvider, StudentProvider>(
       builder: (context, themeProvider, studentProvider, child) {
         final filteredStudents = studentProvider.filteredStudents;
+
+        // Loading state
+        if (studentProvider.isLoading && studentProvider.students.isEmpty) {
+          return Scaffold(
+            backgroundColor: AppTheme.getBackgroundColor(context),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: AppTheme.accentBlue),
+                  SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+                  Text(
+                    'Cargando estudiantes...',
+                    style: AppTheme.getBodyMedium(screenSize).copyWith(
+                      color: AppTheme.getTextSecondaryColor(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Error state
+        if (studentProvider.error != null && studentProvider.students.isEmpty) {
+          return Scaffold(
+            backgroundColor: AppTheme.getBackgroundColor(context),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline,
+                      size: 64, color: AppTheme.errorColor),
+                  SizedBox(height: AppTheme.getMediumPadding(screenSize)),
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                        horizontal: AppTheme.getLargePadding(screenSize)),
+                    child: Text(
+                      studentProvider.error!,
+                      style: AppTheme.getBodyMedium(screenSize),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  SizedBox(height: AppTheme.getLargePadding(screenSize)),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.accentBlue,
+                      minimumSize: Size(screenSize.width * 0.5, 44),
+                    ),
+                    onPressed: () {
+                      HapticFeedback.mediumImpact();
+                      _loadInitialData();
+                    },
+                    icon: const Icon(Icons.refresh, color: Colors.white),
+                    label: Text(
+                      l10n.retry,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
 
         // *** Estos 3 combos vienen 100% de BD ***
         final availableNiveles = [
@@ -711,6 +794,58 @@ class _SelectableStudentsDirectoryViewState
                                 SizedBox(
                                     height:
                                         AppTheme.getLargePadding(screenSize)),
+
+                                // Loading indicator cuando se está recargando
+                                if (studentProvider.isLoading)
+                                  Padding(
+                                    padding: EdgeInsets.only(
+                                      bottom:
+                                          AppTheme.getMediumPadding(screenSize),
+                                    ),
+                                    child: Center(
+                                      child: Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: AppTheme.getMediumPadding(
+                                              screenSize),
+                                          vertical: AppTheme.getSmallPadding(
+                                              screenSize),
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.accentBlue
+                                              .withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(
+                                              AppTheme.getLargeRadius(
+                                                  screenSize)),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            SizedBox(
+                                              width: 18,
+                                              height: 18,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2.5,
+                                                color: AppTheme.accentBlue,
+                                              ),
+                                            ),
+                                            SizedBox(
+                                                width: AppTheme.getSmallPadding(
+                                                    screenSize)),
+                                            Text(
+                                              'Actualizando estudiantes...',
+                                              style: AppTheme.getBodyMedium(
+                                                      screenSize)
+                                                  .copyWith(
+                                                color: AppTheme.accentBlue,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+
                                 Text(
                                   'Estudiantes Disponibles',
                                   style: AppTheme.getSubtitle1(screenSize)

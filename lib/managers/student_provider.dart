@@ -801,11 +801,15 @@ class StudentProvider with ChangeNotifier {
     String? turno,
   }) {
     var q = supabase.from('alumnos').select('''
-    id, nombre, matricula, id_grupo, id_turno, id_escuela,
+    id, nombre, matricula, id_grupo, id_turno, id_escuela, fecha_registro,
     grupos(id, grupo, nivel_educativo),
     turnos(id, turno, hora_inicio, hora_fin),
     llaves(id, codigo, activo, fecha_registro, fecha_desactivacion, limite_vinculacion),
-    alumno_tutores(id_tutor, fecha_vinculacion)
+    alumno_tutores(
+      id_tutor, 
+      fecha_vinculacion,
+      usuarios(id, nombre, apellido, email)
+    )
   ''');
 
     if (escuelaId != null) q = q.eq('id_escuela', escuelaId);
@@ -1082,7 +1086,7 @@ class StudentProvider with ChangeNotifier {
     final grupo = data['grupos'] as Map?;
     final turno = data['turnos'] as Map?;
     final llaves = data['llaves'] as List?;
-    final tutoresBasic = data['alumno_tutores'] as List?;
+    final tutoresData = data['alumno_tutores'] as List?;
 
     Map<String, dynamic>? latestKey;
     if (llaves != null && llaves.isNotEmpty) {
@@ -1102,52 +1106,27 @@ class StudentProvider with ChangeNotifier {
       }
     }
 
+    // Procesar tutores (ahora vienen con datos de usuarios incluidos)
     final tutorsList = <TutorInfo>[];
-    final familyContacts = <Json>[];
 
-    if (tutoresBasic != null && tutoresBasic.isNotEmpty) {
-      for (final tb in tutoresBasic) {
+    if (tutoresData != null && tutoresData.isNotEmpty) {
+      for (final tb in tutoresData) {
         final tutorId = tb['id_tutor']?.toString();
         final fechaVinc = _parseDate(tb['fecha_vinculacion']) ?? DateTime.now();
         if (tutorId == null) continue;
 
-        try {
-          final tutorResp = await _supabase
-              .from('usuarios')
-              .select('id, nombre, apellido, email')
-              .eq('id', tutorId)
-              .maybeSingle();
+        final usuario = tb['usuarios'] as Map<String, dynamic>?;
 
-          if (tutorResp != null) {
-            tutorsList.add(TutorInfo(
-              id: tutorResp['id'].toString(),
-              nombre: (tutorResp['nombre'] ?? '').toString(),
-              apellido: (tutorResp['apellido'] ?? '').toString(),
-              email: (tutorResp['email'] ?? '').toString(),
-              telefono: null,
-              fechaVinculacion: fechaVinc,
-            ));
-
-            try {
-              final contactsResp = await _supabase
-                  .from('contactos_familiares')
-                  .select(
-                      'id, id_usuario, nombre, parentesco, telefono, email, fecha_registro')
-                  .eq('id_usuario', tutorId);
-              familyContacts.addAll(List<Json>.from(
-                  contactsResp.map((e) => Map<String, dynamic>.from(e))));
-            } catch (_) {}
-          } else {
-            tutorsList.add(TutorInfo(
-              id: tutorId,
-              nombre: '',
-              apellido: '',
-              email: '',
-              telefono: null,
-              fechaVinculacion: fechaVinc,
-            ));
-          }
-        } catch (_) {
+        if (usuario != null) {
+          tutorsList.add(TutorInfo(
+            id: usuario['id'].toString(),
+            nombre: (usuario['nombre'] ?? '').toString(),
+            apellido: (usuario['apellido'] ?? '').toString(),
+            email: (usuario['email'] ?? '').toString(),
+            telefono: null,
+            fechaVinculacion: fechaVinc,
+          ));
+        } else {
           tutorsList.add(TutorInfo(
             id: tutorId,
             nombre: '',
@@ -1192,7 +1171,7 @@ class StudentProvider with ChangeNotifier {
           ? (latestKey?['limite_vinculacion'] as num).toInt()
           : null,
       tutores: tutorsList,
-      familyContacts: familyContacts,
+      familyContacts: const [], // Sin contactos en listado masivo (solo en detalle)
     );
   }
 

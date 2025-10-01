@@ -446,6 +446,7 @@ class ScannerService {
     int tolerancia = turno['tolerancia'] is int
         ? turno['tolerancia']
         : (int.tryParse('${turno['tolerancia'] ?? '0'}') ?? 15);
+    bool aplicarTolerancia = (turno['aplicar_tolerancia'] ?? false) == true;
 
     // Si estamos en modo automático Y tenemos TurnoProvider, usar el turno activo del sistema
     if (actualAccess == ScannerAccessType.entry &&
@@ -460,10 +461,11 @@ class ScannerService {
           // Usar el turno activo del sistema en lugar del turno del alumno
           turnoInicioStr = accessPhase.turno!.horaInicio;
           tolerancia = accessPhase.turno!.tolerancia;
+          aplicarTolerancia = accessPhase.turno!.aplicarTolerancia;
           debugPrint(
               '🔧 TURNO FIX: Using system turno "${accessPhase.turno!.turno}" instead of student turno');
           debugPrint(
-              '🔧 TURNO FIX: System turno time: $turnoInicioStr, tolerance: $tolerancia min');
+              '🔧 TURNO FIX: System turno time: $turnoInicioStr, tolerance: $tolerancia min, aplicarTolerancia: $aplicarTolerancia');
         }
       } catch (e) {
         debugPrint(
@@ -473,6 +475,7 @@ class ScannerService {
 
     debugPrint('turnoInicioStr: $turnoInicioStr');
     debugPrint('tolerancia: $tolerancia');
+    debugPrint('aplicarTolerancia: $aplicarTolerancia');
 
     // REGLA FUNDAMENTAL: SOLO AUTOMÁTICO puede generar retraso
     // Entradas fijas (normales y extracurriculares) y salidas NUNCA son tarde
@@ -482,6 +485,7 @@ class ScannerService {
     debugPrint('🕐 LATENESS CHECK: actualAccess=$actualAccess');
     debugPrint('🕐 LATENESS CHECK: accessType=$accessType');
     debugPrint('🕐 LATENESS CHECK: isFixedAccess=$isFixedAccess');
+    debugPrint('🕐 LATENESS CHECK: aplicarTolerancia=$aplicarTolerancia');
 
     if (actualAccess == ScannerAccessType.entry &&
         !isFixedAccess &&
@@ -490,45 +494,56 @@ class ScannerService {
         turnoInicioStr.isNotEmpty) {
       debugPrint(
           '🕐 AUTOMATIC ENTRY MODE: Checking for lateness using system turno...');
-      try {
-        final parts = turnoInicioStr.split(':');
-        if (parts.length >= 2) {
-          final hour = int.parse(parts[0]);
-          final minute = int.parse(parts[1]);
 
-          final turnoDt = DateTime(
-            currentTime.year,
-            currentTime.month,
-            currentTime.day,
-            hour,
-            minute,
-          );
+      // ✅ NUEVA LÓGICA: Solo verificar retraso si aplicarTolerancia es TRUE
+      if (!aplicarTolerancia) {
+        // Si aplicarTolerancia es FALSE, siempre es entrada a tiempo (sin retraso)
+        isLate = false;
+        message = 'Llegada registrada (tolerancia desactivada)';
+        debugPrint(
+            '⚙️ TOLERANCIA DESACTIVADA: No se aplica verificación de retraso');
+      } else {
+        // Lógica normal de tolerancia (si aplicarTolerancia es TRUE)
+        try {
+          final parts = turnoInicioStr.split(':');
+          if (parts.length >= 2) {
+            final hour = int.parse(parts[0]);
+            final minute = int.parse(parts[1]);
 
-          final lateThreshold = turnoDt.add(Duration(minutes: tolerancia));
+            final turnoDt = DateTime(
+              currentTime.year,
+              currentTime.month,
+              currentTime.day,
+              hour,
+              minute,
+            );
 
-          debugPrint('🔧 SYSTEM TURNO: turnoDt: $turnoDt');
-          debugPrint('🔧 SYSTEM TURNO: lateThreshold: $lateThreshold');
-          debugPrint('🔧 SYSTEM TURNO: tolerancia: $tolerancia min');
-          debugPrint(
-              'currentTime.isAfter(lateThreshold): ${currentTime.isAfter(lateThreshold)}');
+            final lateThreshold = turnoDt.add(Duration(minutes: tolerancia));
 
-          if (currentTime.isAfter(lateThreshold)) {
-            isLate = true;
-            message = 'Llegada tardía (tolerancia: $tolerancia min)';
+            debugPrint('🔧 SYSTEM TURNO: turnoDt: $turnoDt');
+            debugPrint('🔧 SYSTEM TURNO: lateThreshold: $lateThreshold');
+            debugPrint('🔧 SYSTEM TURNO: tolerancia: $tolerancia min');
             debugPrint(
-                'MARKED AS LATE: currentTime ($currentTime) > lateThreshold ($lateThreshold)');
+                'currentTime.isAfter(lateThreshold): ${currentTime.isAfter(lateThreshold)}');
+
+            if (currentTime.isAfter(lateThreshold)) {
+              isLate = true;
+              message = 'Llegada tardía (tolerancia: $tolerancia min)';
+              debugPrint(
+                  'MARKED AS LATE: currentTime ($currentTime) > lateThreshold ($lateThreshold)');
+            } else {
+              message = 'Llegada a tiempo';
+              debugPrint(
+                  'ON TIME: currentTime ($currentTime) <= lateThreshold ($lateThreshold)');
+            }
           } else {
-            message = 'Llegada a tiempo';
-            debugPrint(
-                'ON TIME: currentTime ($currentTime) <= lateThreshold ($lateThreshold)');
+            message = 'Llegada registrada';
+            debugPrint('Invalid time format, no lateness check');
           }
-        } else {
+        } catch (e) {
+          debugPrint('Error parsing turno time: $e');
           message = 'Llegada registrada';
-          debugPrint('Invalid time format, no lateness check');
         }
-      } catch (e) {
-        debugPrint('Error parsing turno time: $e');
-        message = 'Llegada registrada';
       }
     } else {
       // Para SALIDA, ENTRADA FIJA, o ENTRADA EXTRACURRICULAR - NUNCA tarde

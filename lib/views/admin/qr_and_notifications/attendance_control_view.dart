@@ -63,10 +63,13 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
   @override
   void initState() {
     super.initState();
+    _startAccessTypeTimer();
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
       // Suscripción a cambios de UserProvider (escuelaId)
       final up = Provider.of<UserProvider>(context, listen: false);
-      _observedEscuelaId = up.currentUser?.escuelaId;
 
       _userListener = () {
         final newId = up.currentUser?.escuelaId;
@@ -77,12 +80,19 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
       };
       up.addListener(_userListener!);
 
-      await _bootstrapUserAndSchool();
+      // Obtener escuelaId una sola vez
+      String? escuelaId = up.currentUser?.escuelaId;
+
+      // Si no hay escuelaId en memoria, intentar obtenerla
+      if (escuelaId == null || escuelaId.isEmpty) {
+        escuelaId = await up.ensureEscuelaIdLoaded();
+      }
+
+      _observedEscuelaId = escuelaId;
+
       if (!mounted) return;
       await _loadTurnosAndConfigure();
     });
-
-    _startAccessTypeTimer();
   }
 
   /// Helper para mostrar snackbars con control de uno activo a la vez
@@ -130,28 +140,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
     });
   }
 
-  // ----------------- Bootstrap usuario/escuela -----------------
-  Future<void> _bootstrapUserAndSchool() async {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-
-    // Si no hay usuario cargado, intenta cargarlo sin diálogo
-    if (userProvider.currentUser == null) {
-      await userProvider.loadCurrentUser(context, showDialog: false);
-    }
-
-    // Asegurar escuelaId
-    String? escuelaId = userProvider.currentUser?.escuelaId;
-    escuelaId ??= await userProvider.ensureEscuelaIdLoaded();
-
-    // Reintento suave si siguiera nulo
-    if ((escuelaId == null || escuelaId.isEmpty) && mounted) {
-      await userProvider.loadCurrentUser(context, showDialog: false);
-      escuelaId = userProvider.currentUser?.escuelaId ??
-          await userProvider.ensureEscuelaIdLoaded();
-    }
-
-    _observedEscuelaId = escuelaId;
-  }
+  // ELIMINADO: Ya no se usa _bootstrapUserAndSchool, se simplificó en initState
 
   //?!? - No deberiamos de hardcodear 2 turnos
   // ----------------- Carga turnos -----------------
@@ -163,11 +152,10 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
     });
 
     try {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
       final turnoProvider = Provider.of<TurnoProvider>(context, listen: false);
 
-      String? escuelaId = userProvider.currentUser?.escuelaId;
-      escuelaId ??= await userProvider.ensureEscuelaIdLoaded();
+      // Usar el escuelaId ya almacenado en memoria
+      final escuelaId = _observedEscuelaId;
 
       if (escuelaId == null || escuelaId.trim().isEmpty) {
         setState(() {
@@ -469,6 +457,7 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
           borderRadius: BorderRadius.circular(radiusL),
           // ignore: deprecated_member_use
           splashColor: color.withOpacity(0.10),
+
           // ignore: deprecated_member_use
           highlightColor: color.withOpacity(0.06),
           child: AnimatedContainer(
@@ -705,11 +694,11 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
         return;
       }
 
-      String? escuelaId;
-      try {
-        escuelaId = await userProvider.ensureEscuelaIdOrThrow();
-      } catch (_) {
-        await userProvider.ensureEscuelaIdLoaded();
+      // Usar el escuelaId ya almacenado en memoria para evitar queries adicionales
+      String? escuelaId = _observedEscuelaId;
+
+      // Solo si no está en memoria, intentar obtenerla
+      if (escuelaId == null || escuelaId.isEmpty) {
         escuelaId = userProvider.currentUser?.escuelaId;
       }
 

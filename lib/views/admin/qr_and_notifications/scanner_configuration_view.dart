@@ -118,12 +118,14 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
           final end = turnoProvider.parseTimeString(t.horaFin) ??
               const TimeOfDay(hour: 13, minute: 0);
           final tol = t.tolerancia;
+          final aplicar = t.aplicarTolerancia;
           return _TurnoForm(
             id: t.id,
             nombre: t.turno,
             start: start,
             end: end,
             tolerancia: tol,
+            aplicarTolerancia: aplicar,
           );
         }))
         // Ordenar por hora de inicio (más temprano primero)
@@ -421,6 +423,71 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
                   title:
                       AppLocalizations.of(context).adjustTolerance, // opcional
                 ),
+
+                SizedBox(height: AppTheme.getMediumPadding(size)),
+
+                // Toggle para aplicar tolerancia
+                Container(
+                  padding: EdgeInsets.all(AppTheme.getMediumPadding(size)),
+                  decoration: BoxDecoration(
+                    color: f.aplicarTolerancia
+                        ? AppTheme.successColor.withOpacity(0.08)
+                        : AppTheme.getTextSecondaryColor(context)
+                            .withOpacity(0.05),
+                    borderRadius:
+                        BorderRadius.circular(AppTheme.getMediumRadius(size)),
+                    border: Border.all(
+                      color: f.aplicarTolerancia
+                          ? AppTheme.successColor.withOpacity(0.3)
+                          : AppTheme.getBorderColor(context),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        f.aplicarTolerancia
+                            ? Icons.schedule_rounded
+                            : Icons.block_rounded,
+                        color: f.aplicarTolerancia
+                            ? AppTheme.successColor
+                            : AppTheme.getTextSecondaryColor(context),
+                        size: size.height * 0.025,
+                      ),
+                      SizedBox(width: AppTheme.getSmallPadding(size)),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Aplicar tolerancia para retrasos',
+                              style: AppTheme.getBodyMedium(size).copyWith(
+                                color: AppTheme.getTextPrimaryColor(context),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            SizedBox(
+                                height: AppTheme.getSmallPadding(size) * 0.3),
+                            Text(
+                              f.aplicarTolerancia
+                                  ? 'Se consideran retrasos después de ${f.tolerancia} minutos'
+                                  : 'No se registran retrasos (solo entradas a tiempo)',
+                              style: AppTheme.getCaptionSmall(size).copyWith(
+                                color: AppTheme.getTextSecondaryColor(context),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: f.aplicarTolerancia,
+                        onChanged: (val) =>
+                            setState(() => f.aplicarTolerancia = val),
+                        activeColor: AppTheme.successColor,
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           );
@@ -442,6 +509,7 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
             startTime: f.start,
             endTime: f.end,
             tolerance: f.tolerancia,
+            aplicarTolerancia: f.aplicarTolerancia,
             screenSize: size,
           ),
         );
@@ -501,6 +569,7 @@ class _ScannerConfigurationViewState extends State<ScannerConfigurationView>
                 start: f.start,
                 end: f.end,
                 tolerancia: f.tolerancia,
+                aplicarTolerancia: f.aplicarTolerancia,
               ))
           .toList();
 
@@ -792,12 +861,14 @@ class _TurnoForm {
   TimeOfDay start;
   TimeOfDay end;
   int tolerancia;
+  bool aplicarTolerancia;
   _TurnoForm({
     required this.id,
     required this.nombre,
     required this.start,
     required this.end,
     required this.tolerancia,
+    required this.aplicarTolerancia,
   });
 }
 
