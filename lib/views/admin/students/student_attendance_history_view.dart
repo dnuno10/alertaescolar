@@ -9,7 +9,6 @@ import '../../../components/admin/students/empty_records_state.dart';
 import '../../../components/admin/students/attendance_record_item.dart';
 import '../../../components/admin/students/student_info_card.dart';
 import '../../../components/admin/students/records_header.dart';
-import '../../../utils/time_format.dart';
 
 class StudentAttendanceHistoryView extends StatefulWidget {
   final StudentDetails student;
@@ -39,8 +38,8 @@ class _StudentAttendanceHistoryViewState
   @override
   void initState() {
     super.initState();
-    // Mostrar TODOS los registros por defecto (sin filtro de fecha)
-    _selectedDate = null;
+    // Selecciona automáticamente HOY
+    _selectedDate = _dateOnly(DateTime.now());
     _loadAttendanceData();
   }
 
@@ -93,9 +92,7 @@ class _StudentAttendanceHistoryViewState
     setState(() {
       _filteredRecords = _allRecords.where((record) {
         final tipoNotificacion = record['tipo_notificacion'] as String;
-        // 🔧 FIX: Usar TimeFormat.parseSupabaseDateTime para manejar timestamptz correctamente
-        final fechaRegistro =
-            TimeFormat.parseSupabaseDateTime(record['fecha_registro']);
+        final fechaRegistro = DateTime.parse(record['fecha_registro']);
 
         // Filtro por tipo
         final matchesStatus =
