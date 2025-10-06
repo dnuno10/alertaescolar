@@ -1,7 +1,11 @@
 // attendance_control_header.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../managers/turno_provider.dart';
+import '../../../services/scanner_service.dart';
 import 'action_button.dart';
 
 // Define enum for access types
@@ -18,7 +22,7 @@ enum AccessType {
   extracurricular_exit, // Salida extracurricular
 }
 
-class AttendanceControlHeader extends StatelessWidget {
+class AttendanceControlHeader extends StatefulWidget {
   final bool isScanning;
   final Size screenSize;
   final VoidCallback onConfigurationTap;
@@ -40,12 +44,69 @@ class AttendanceControlHeader extends StatelessWidget {
   });
 
   @override
+  State<AttendanceControlHeader> createState() =>
+      _AttendanceControlHeaderState();
+}
+
+class _AttendanceControlHeaderState extends State<AttendanceControlHeader> {
+  // 🔄 AUTO-UPDATE: Timer para actualizar el desplegable automáticamente
+  Timer? _accessTypeUpdateTimer;
+  bool _currentIsDefaultEntryConfig = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIsDefaultEntryConfig = widget.isDefaultEntryConfig;
+    _startAccessTypeUpdateTimer();
+  }
+
+  @override
+  void dispose() {
+    _accessTypeUpdateTimer?.cancel();
+    super.dispose();
+  }
+
+  // ========================
+  // AUTO-UPDATE: Timer para actualizar el desplegable
+  // ========================
+  void _startAccessTypeUpdateTimer() {
+    _accessTypeUpdateTimer?.cancel();
+    _accessTypeUpdateTimer =
+        Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      // 🔄 AUTO-UPDATE: Verificar cambio de fase cada 5 segundos
+      try {
+        final turnoProvider =
+            Provider.of<TurnoProvider>(context, listen: false);
+        final currentPhase = turnoProvider.resolveAccessPhase();
+        final newIsDefaultEntryConfig =
+            (currentPhase.type == ScannerAccessType.entry);
+
+        // Solo actualizar si hay un cambio real
+        if (_currentIsDefaultEntryConfig != newIsDefaultEntryConfig) {
+          setState(() {
+            _currentIsDefaultEntryConfig = newIsDefaultEntryConfig;
+            debugPrint(
+                '🔄 HEADER: Cambio de fase detectado inmediatamente - isDefaultEntryConfig: $_currentIsDefaultEntryConfig');
+          });
+        }
+      } catch (e) {
+        debugPrint('🔄 HEADER: Error verificando cambio de fase: $e');
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final padS = AppTheme.getSmallPadding(screenSize);
-    final padM = AppTheme.getMediumPadding(screenSize);
-    final padL = AppTheme.getLargePadding(screenSize);
-    final radiusM = AppTheme.getMediumRadius(screenSize);
+    final padS = AppTheme.getSmallPadding(widget.screenSize);
+    final padM = AppTheme.getMediumPadding(widget.screenSize);
+    final padL = AppTheme.getLargePadding(widget.screenSize);
+    final radiusM = AppTheme.getMediumRadius(widget.screenSize);
 
     return Container(
       width: double.infinity,
@@ -72,7 +133,7 @@ class AttendanceControlHeader extends StatelessWidget {
           // Encabezado
           Text(
             l10n.attendanceControl,
-            style: AppTheme.getH1(screenSize).copyWith(
+            style: AppTheme.getH1(widget.screenSize).copyWith(
               color: AppTheme.getTextPrimaryColor(context),
               fontWeight: FontWeight.w700,
               height: 1.1,
@@ -83,7 +144,7 @@ class AttendanceControlHeader extends StatelessWidget {
           // Descripción
           Text(
             l10n.scanQRToRegisterAttendance,
-            style: AppTheme.getBodyMedium(screenSize).copyWith(
+            style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
               color: AppTheme.getTextSecondaryColor(context),
               height: 1.35,
             ),
@@ -102,16 +163,16 @@ class AttendanceControlHeader extends StatelessWidget {
               ActionButton(
                 color: AppTheme.accentBlue,
                 icon: Icons.settings_rounded,
-                onTap: onConfigurationTap,
-                screenSize: screenSize,
+                onTap: widget.onConfigurationTap,
+                screenSize: widget.screenSize,
               ),
               SizedBox(width: padM),
               Expanded(
                 child: ActionButton(
                   color: AppTheme.accentOrange,
                   icon: Icons.notifications_rounded,
-                  onTap: onNotificationTap,
-                  screenSize: screenSize,
+                  onTap: widget.onNotificationTap,
+                  screenSize: widget.screenSize,
                   label: l10n.sendNotification,
                 ),
               ),
@@ -133,15 +194,15 @@ class AttendanceControlHeader extends StatelessWidget {
     final surface = AppTheme.getSurfaceColor(context);
 
     return PopupMenuButton<AccessType>(
-      enabled: !isScanning,
+      enabled: !widget.isScanning,
       onSelected: (v) {
-        if (!isScanning) onAccessTypeChanged(v);
+        if (!widget.isScanning) widget.onAccessTypeChanged(v);
       },
       // ❌ Sin sombras
       elevation: 0,
       // Menú con bordes suaves, sin sombras, full width “cardless”
       position: PopupMenuPosition.under,
-      offset: Offset(0, AppTheme.getMediumPadding(screenSize)),
+      offset: Offset(0, AppTheme.getMediumPadding(widget.screenSize)),
       color: surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(radiusM),
@@ -150,17 +211,17 @@ class AttendanceControlHeader extends StatelessWidget {
       constraints: BoxConstraints(
         minWidth: width - (padM * 2),
         maxWidth: width - (padM * 2),
-        maxHeight: screenSize.height * 0.42,
+        maxHeight: widget.screenSize.height * 0.42,
       ),
       itemBuilder: (BuildContext context) {
         return AccessType.values.map((value) {
-          final bool isSelected = value == selectedAccessType;
+          final bool isSelected = value == widget.selectedAccessType;
           return PopupMenuItem<AccessType>(
             value: value,
             padding: EdgeInsets.symmetric(horizontal: padM, vertical: padS),
             height: 56,
             child: _AccessOptionTile(
-              screenSize: screenSize,
+              screenSize: widget.screenSize,
               title: _titleFor(value),
               subtitle: _subtitleFor(value),
               leading: _iconFor(value, context),
@@ -185,7 +246,7 @@ class AttendanceControlHeader extends StatelessWidget {
           children: [
             Expanded(
               child: _AccessCurrentChip(
-                screenSize: screenSize,
+                screenSize: widget.screenSize,
                 title: _currentTitle(),
                 leading: _currentIcon(context),
               ),
@@ -193,7 +254,7 @@ class AttendanceControlHeader extends StatelessWidget {
             Icon(
               Icons.keyboard_arrow_down_rounded,
               color: AppTheme.getTextSecondaryColor(context),
-              size: screenSize.shortestSide * 0.035,
+              size: widget.screenSize.shortestSide * 0.035,
             ),
           ],
         ),
@@ -204,9 +265,11 @@ class AttendanceControlHeader extends StatelessWidget {
   // ——— Helpers para presentar texto/iconos coherentes y minimalistas ———
 
   String _currentTitle() {
-    switch (selectedAccessType) {
+    switch (widget.selectedAccessType) {
       case AccessType.default_config:
-        return isDefaultEntryConfig ? 'Auto • Entrada' : 'Auto • Salida';
+        return _currentIsDefaultEntryConfig
+            ? 'Auto • Entrada'
+            : 'Auto • Salida';
       case AccessType.fixed_entry:
         return 'Entrada fija';
       case AccessType.fixed_exit:
@@ -219,35 +282,35 @@ class AttendanceControlHeader extends StatelessWidget {
   }
 
   Widget _currentIcon(BuildContext context) {
-    switch (selectedAccessType) {
+    switch (widget.selectedAccessType) {
       case AccessType.default_config:
         return Icon(
           Icons.smart_toy_outlined,
-          size: screenSize.shortestSide * 0.045,
+          size: widget.screenSize.shortestSide * 0.045,
           color: AppTheme.accentBlue,
         );
       case AccessType.fixed_entry:
         return Icon(
           Icons.login_rounded,
-          size: screenSize.shortestSide * 0.045,
+          size: widget.screenSize.shortestSide * 0.045,
           color: AppTheme.accentBlue,
         );
       case AccessType.fixed_exit:
         return Icon(
           Icons.logout_rounded,
-          size: screenSize.shortestSide * 0.045,
+          size: widget.screenSize.shortestSide * 0.045,
           color: AppTheme.accentYellow,
         );
       case AccessType.extracurricular_entry:
         return Icon(
           Icons.login_rounded,
-          size: screenSize.shortestSide * 0.045,
+          size: widget.screenSize.shortestSide * 0.045,
           color: AppTheme.accentOrange,
         );
       case AccessType.extracurricular_exit:
         return Icon(
           Icons.logout_rounded,
-          size: screenSize.shortestSide * 0.045,
+          size: widget.screenSize.shortestSide * 0.045,
           color: AppTheme.accentPurple,
         );
     }
@@ -256,7 +319,7 @@ class AttendanceControlHeader extends StatelessWidget {
   String _titleFor(AccessType v) {
     switch (v) {
       case AccessType.default_config:
-        return isDefaultEntryConfig
+        return _currentIsDefaultEntryConfig
             ? 'Automático • Entrada'
             : 'Automático • Salida';
       case AccessType.fixed_entry:
@@ -286,7 +349,7 @@ class AttendanceControlHeader extends StatelessWidget {
   }
 
   Widget _iconFor(AccessType v, BuildContext context) {
-    final size = screenSize.shortestSide * 0.04;
+    final size = widget.screenSize.shortestSide * 0.04;
     switch (v) {
       case AccessType.default_config:
         return Icon(Icons.smart_toy_outlined,

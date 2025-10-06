@@ -51,6 +51,9 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
   DateTime? _lastKeyAt;
   Timer? _commitTimer;
 
+  // 🔄 AUTO-UPDATE: Timer para actualizar tipo de acceso automáticamente
+  Timer? _accessTypeUpdateTimer;
+
   @override
   void initState() {
     super.initState();
@@ -66,13 +69,81 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
         await context.read<UserProvider>().ensureEscuelaIdLoaded();
       } catch (_) {}
     });
+
+    // 🔄 AUTO-UPDATE: Iniciar timer para actualizar tipo de acceso cada minuto
+    _startAccessTypeUpdateTimer();
   }
 
   @override
   void dispose() {
     _commitTimer?.cancel();
+    _accessTypeUpdateTimer?.cancel();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  // ========================
+  // AUTO-UPDATE: Timer para actualizar tipo de acceso
+  // ========================
+  void _startAccessTypeUpdateTimer() {
+    _accessTypeUpdateTimer?.cancel();
+    _scheduleNextPhaseUpdate();
+  }
+
+  void _scheduleNextPhaseUpdate() {
+    try {
+      final turnoProvider = Provider.of<TurnoProvider>(context, listen: false);
+      final now = DateTime.now();
+      final currentPhase = turnoProvider.resolveAccessPhase(now: now);
+
+      // Calcular el próximo cambio de fase
+      DateTime? nextChange;
+
+      if (currentPhase.type == ScannerAccessType.entry &&
+          currentPhase.windowEnd != null) {
+        // Si estamos en entrada, el próximo cambio es cuando termine la ventana de entrada
+        nextChange = currentPhase.windowEnd!;
+      } else if (currentPhase.type == ScannerAccessType.exit &&
+          currentPhase.windowEnd != null) {
+        // Si estamos en salida, el próximo cambio es cuando inicie el siguiente turno
+        nextChange = currentPhase.windowEnd!;
+      }
+
+      if (nextChange != null && nextChange.isAfter(now)) {
+        final duration = nextChange.difference(now);
+
+        debugPrint(
+            '🔄 AUTO-UPDATE: Próximo cambio de fase programado para ${nextChange.toString()} (en ${duration.inSeconds}s)');
+
+        _accessTypeUpdateTimer = Timer(duration, () {
+          if (!mounted) return;
+
+          // Actualizar la UI inmediatamente
+          setState(() {
+            debugPrint(
+                '🔄 AUTO-UPDATE: Cambio de fase ejecutado automáticamente');
+          });
+
+          // Programar el siguiente cambio
+          _scheduleNextPhaseUpdate();
+        });
+      } else {
+        // Si no hay próximo cambio claro, usar un timer de 30 segundos como fallback
+        _accessTypeUpdateTimer = Timer(const Duration(seconds: 30), () {
+          if (!mounted) return;
+          setState(() {});
+          _scheduleNextPhaseUpdate();
+        });
+      }
+    } catch (e) {
+      debugPrint('🔄 AUTO-UPDATE: Error programando próximo cambio: $e');
+      // Fallback a timer de 1 minuto si hay error
+      _accessTypeUpdateTimer = Timer(const Duration(minutes: 1), () {
+        if (!mounted) return;
+        setState(() {});
+        _scheduleNextPhaseUpdate();
+      });
+    }
   }
 
   // ========================
@@ -84,29 +155,51 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
     final isExtracurricular = widget.isExtracurricular;
     final l10n = AppLocalizations.of(context);
 
-    // Para modo automático de entrada, verificar si se enviarían retrasos
-    if (accessType == ScannerAccessType.automatic && isDefaultEntry) {
+    // 🔄 AUTO-UPDATE: Para modo automático, usar el tipo de acceso actual del sistema
+    if (accessType == ScannerAccessType.automatic) {
       try {
-        final turnoProvider =
-            Provider.of<TurnoProvider>(context, listen: false);
+        // 🔧 FIX: Usar listen: true para que se actualice cuando cambie el TurnoProvider
+        final turnoProvider = Provider.of<TurnoProvider>(context, listen: true);
         final accessPhase = turnoProvider.resolveAccessPhase();
 
-        if (accessPhase.type == ScannerAccessType.entry &&
+        // Determinar el tipo de acceso actual basado en la fase del sistema
+        final currentAccessType = accessPhase.type;
+
+        // Para entrada, verificar si se enviarían retrasos
+        if (currentAccessType == ScannerAccessType.entry &&
             accessPhase.turno != null &&
             accessPhase.turno!.aplicarTolerancia &&
             !accessPhase.withinTolerance) {
           return 'Registrando Retrasos';
         }
-      } catch (_) {}
+
+        // Mostrar el tipo de acceso actual del sistema
+        switch (currentAccessType) {
+          case ScannerAccessType.entry:
+            return isExtracurricular
+                ? 'Entrada extracurricular'
+                : l10n.automaticEntry;
+          case ScannerAccessType.exit:
+            return isExtracurricular
+                ? 'Salida extracurricular'
+                : l10n.automaticExit;
+          case ScannerAccessType.automatic:
+            return isDefaultEntry ? l10n.automaticEntry : l10n.automaticExit;
+        }
+      } catch (_) {
+        // Fallback al comportamiento original si hay error
+        return isDefaultEntry ? l10n.automaticEntry : l10n.automaticExit;
+      }
     }
 
+    // Para tipos fijos, mantener comportamiento original
     switch (accessType) {
-      case ScannerAccessType.automatic:
-        return isDefaultEntry ? l10n.automaticEntry : l10n.automaticExit;
       case ScannerAccessType.entry:
         return isExtracurricular ? 'Entrada extracurricular' : 'Entrada';
       case ScannerAccessType.exit:
         return isExtracurricular ? 'Salida extracurricular' : 'Salida';
+      case ScannerAccessType.automatic:
+        return isDefaultEntry ? l10n.automaticEntry : l10n.automaticExit;
     }
   }
 
@@ -114,34 +207,47 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
     final accessType = widget.accessType ?? ScannerAccessType.automatic;
     final isDefaultEntry = widget.isDefaultEntryConfig ?? true;
 
-    // Para modo automático de entrada, verificar si se enviarían retrasos
-    if (accessType == ScannerAccessType.automatic && isDefaultEntry) {
+    // 🔄 AUTO-UPDATE: Para modo automático, usar el color basado en el tipo de acceso actual del sistema
+    if (accessType == ScannerAccessType.automatic) {
       try {
-        final turnoProvider =
-            Provider.of<TurnoProvider>(context, listen: false);
+        // 🔧 FIX: Usar listen: true para que se actualice cuando cambie el TurnoProvider
+        final turnoProvider = Provider.of<TurnoProvider>(context, listen: true);
         final accessPhase = turnoProvider.resolveAccessPhase();
 
-        // Si es entrada y hay tolerancia activada, verificar si ya pasó la tolerancia
-        if (accessPhase.type == ScannerAccessType.entry &&
+        // Determinar el color basado en el tipo de acceso actual del sistema
+        final currentAccessType = accessPhase.type;
+
+        // Para entrada, verificar si se enviarían retrasos
+        if (currentAccessType == ScannerAccessType.entry &&
             accessPhase.turno != null &&
-            accessPhase.turno!.aplicarTolerancia) {
-          // Si está fuera de tolerancia (retraso), mostrar color amarillo
-          if (!accessPhase.withinTolerance) {
-            return AppTheme.warningColor; // Amarillo para retrasos
-          }
+            accessPhase.turno!.aplicarTolerancia &&
+            !accessPhase.withinTolerance) {
+          return AppTheme.warningColor; // Amarillo para retrasos
+        }
+
+        // Mostrar el color basado en el tipo de acceso actual del sistema
+        switch (currentAccessType) {
+          case ScannerAccessType.entry:
+            return Colors.green;
+          case ScannerAccessType.exit:
+            return Colors.red;
+          case ScannerAccessType.automatic:
+            return isDefaultEntry ? Colors.green : Colors.red;
         }
       } catch (_) {
-        // Si hay error, usar color por defecto
+        // Fallback al comportamiento original si hay error
+        return isDefaultEntry ? Colors.green : Colors.red;
       }
     }
 
+    // Para tipos fijos, mantener comportamiento original
     switch (accessType) {
-      case ScannerAccessType.automatic:
-        return isDefaultEntry ? Colors.green : Colors.red;
       case ScannerAccessType.entry:
         return Colors.green;
       case ScannerAccessType.exit:
         return Colors.red;
+      case ScannerAccessType.automatic:
+        return isDefaultEntry ? Colors.green : Colors.red;
     }
   }
 
@@ -306,7 +412,34 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
 
       final returnDetailed = !_showResultInProcessing; // si headless => true
 
-      // 4) Navegar a ProcessingView con parámetros completos
+      // 4) Determinar el tipo de acceso actual del sistema para el procesamiento
+      ScannerAccessType currentAccessType =
+          widget.accessType ?? ScannerAccessType.automatic;
+      bool currentIsDefaultEntryConfig = widget.isDefaultEntryConfig ?? true;
+
+      // 🔧 FIX: Para modo automático, usar el tipo de acceso actual del sistema
+      if (currentAccessType == ScannerAccessType.automatic) {
+        try {
+          final turnoProvider =
+              Provider.of<TurnoProvider>(context, listen: false);
+          final accessPhase = turnoProvider.resolveAccessPhase();
+          currentAccessType = accessPhase.type;
+
+          // Determinar isDefaultEntryConfig basado en el tipo actual
+          currentIsDefaultEntryConfig =
+              (accessPhase.type == ScannerAccessType.entry);
+
+          debugPrint(
+              '🔧 PROCESSING: Tipo de acceso actual del sistema: ${accessPhase.type.name}');
+          debugPrint(
+              '🔧 PROCESSING: isDefaultEntryConfig: $currentIsDefaultEntryConfig');
+        } catch (e) {
+          debugPrint(
+              '🔧 PROCESSING: Error obteniendo fase actual, usando configuración original: $e');
+        }
+      }
+
+      // 5) Navegar a ProcessingView con parámetros completos
       // ignore: use_build_context_synchronously
       final result = await Navigator.of(context).push(
         MaterialPageRoute(
@@ -314,8 +447,8 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
             scannedCode: code,
             adminId: admin.id,
             escuelaId: escuelaId,
-            accessType: widget.accessType ?? ScannerAccessType.automatic,
-            isDefaultEntryConfig: widget.isDefaultEntryConfig ?? true,
+            accessType: currentAccessType,
+            isDefaultEntryConfig: currentIsDefaultEntryConfig,
             isExtracurricular: widget.isExtracurricular,
             displayMode: displayMode,
             returnDetailedResult: returnDetailed,
@@ -325,7 +458,7 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
 
       if (!mounted) return;
 
-      // 5) Manejo de retorno
+      // 6) Manejo de retorno
       if (_showResultInProcessing) {
         if (result == true ||
             (result is ProcessingOutcome && result.success == true)) {
