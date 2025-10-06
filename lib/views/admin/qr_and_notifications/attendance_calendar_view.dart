@@ -144,51 +144,62 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
   Future<void> _loadNotifications(String escuelaId) async {
     try {
       final supabase = Supabase.instance.client;
-
       debugPrint('🔧 Loading notifications for escuela: $escuelaId');
 
-      final response = await supabase
-          .from('notificaciones')
-          .select(r'''
-            id,
-            id_alumno,
-            id_admin,
-            titulo,
-            mensaje,
-            estado,
-            fecha_registro,
-            tipo_notificacion,
-            alumnos!inner(
+      // --- PAGINACIÓN EFICIENTE ---
+      const int pageSize = 1000;
+      int from = 0;
+      int to = pageSize - 1;
+      List<Map<String, dynamic>> all = [];
+      while (true) {
+        final response = await supabase
+            .from('notificaciones')
+            .select(r'''
               id,
-              nombre,
-              matricula,
+              id_alumno,
+              id_admin,
+              titulo,
+              mensaje,
+              estado,
               fecha_registro,
-              id_grupo,
-              id_turno,
-              id_escuela,
-              grupos!inner(
-                grupo,
-                nivel_educativo
-              ),
-              turnos!inner(
-                turno
+              tipo_notificacion,
+              alumnos!inner(
+                id,
+                nombre,
+                matricula,
+                fecha_registro,
+                id_grupo,
+                id_turno,
+                id_escuela,
+                grupos!inner(
+                  grupo,
+                  nivel_educativo
+                ),
+                turnos!inner(
+                  turno
+                )
               )
-            )
-          ''')
-          .eq('alumnos.id_escuela', escuelaId)
-          .inFilter('tipo_notificacion', ['entrada', 'salida', 'retraso'])
-          .order('fecha_registro', ascending: false);
+            ''')
+            .eq('alumnos.id_escuela', escuelaId)
+            .inFilter('tipo_notificacion', ['entrada', 'salida', 'retraso'])
+            .order('fecha_registro', ascending: false)
+            .range(from, to);
+        final List<Map<String, dynamic>> page =
+            List<Map<String, dynamic>>.from(response);
+        all.addAll(page);
+        if (page.length < pageSize) break; // Última página
+        from += pageSize;
+        to += pageSize;
+      }
 
       // Validación adicional: asegurar que TODOS los registros sean de la escuela correcta
-      final validatedNotifications = (response as List).where((n) {
+      final validatedNotifications = all.where((n) {
         final alumnoEscuelaId = n['alumnos']?['id_escuela']?.toString() ?? '';
         final isValid = alumnoEscuelaId == escuelaId;
-
         if (!isValid) {
           debugPrint(
               '⚠️ Filtered out notification ${n['id']} - alumno escuela: $alumnoEscuelaId != $escuelaId');
         }
-
         return isValid;
       }).toList();
 
@@ -198,7 +209,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
       });
 
       debugPrint(
-          '✅ Loaded ${_notifications.length} notifications for escuela $escuelaId (${response.length - _notifications.length} filtered out)');
+          '✅ Loaded ${_notifications.length} notifications for escuela $escuelaId');
     } catch (e) {
       debugPrint('❌ Error loading notifications: $e');
       throw Exception('Error al cargar notificaciones: $e');

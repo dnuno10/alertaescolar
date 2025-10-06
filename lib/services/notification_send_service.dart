@@ -322,76 +322,89 @@ class NotificationSendService {
   /// que tienen llaves activas dentro de la ventana de vigencia,
   /// y que han realizado el pago correspondiente (pagado = true)
   Future<List<String>> _filterActiveStudents(List<String> studentIds) async {
+    // Divide la lista en lotes pequeños para evitar URLs largas
+    const int batchSize = 200;
     try {
       if (studentIds.isEmpty) return [];
 
-      // Primero verificar que tengan tutores registrados
-      final tutorRows = await _sb
-          .from('alumno_tutores')
-          .select('id_alumno')
-          .inFilter('id_alumno', studentIds);
-
+      // 1. Verificar tutores registrados
       final studentsWithTutors = <String>{};
-      for (final r in tutorRows) {
-        final v = (r['id_alumno'] ?? '').toString();
-        if (v.isNotEmpty) studentsWithTutors.add(v);
-      }
-
-      if (studentsWithTutors.isEmpty) return [];
-
-      // Verificar que han pagado (pagado = true)
-      final paidStudentRows = await _sb
-          .from('alumnos')
-          .select('id')
-          .inFilter('id', studentsWithTutors.toList())
-          .eq('pagado', true);
-
-      final paidStudents = <String>{};
-      for (final r in paidStudentRows) {
-        final v = (r['id'] ?? '').toString();
-        if (v.isNotEmpty) paidStudents.add(v);
-      }
-
-      if (paidStudents.isEmpty) return [];
-
-      // Ahora verificar las llaves activas y dentro de ventana de vigencia
-      final llaveRows = await _sb.from('llaves').select('''
-            id_alumno,
-            activo,
-            fecha_registro,
-            fecha_desactivacion,
-            alumnos!inner(
-              id,
-              fecha_registro
-            )
-          ''').inFilter('id_alumno', paidStudents.toList()).eq('activo', true);
-
-      final activeStudents = <String>{};
-      for (final r in llaveRows) {
-        final studentId = (r['id_alumno'] ?? '').toString();
-        if (studentId.isEmpty) continue;
-
-        // Verificar ventana de vigencia (misma lógica que selectable_students_directory_view)
-        final fechaRegistroLlave = r['fecha_registro'] as String?;
-        final fechaDesactivacionLlave = r['fecha_desactivacion'] as String?;
-        final alumnoData = r['alumnos'] as Map<String, dynamic>;
-        final fechaRegistroAlumno = alumnoData['fecha_registro'] as String;
-
-        // Usar fecha_registro de llave si existe, sino la del alumno
-        final startStr = fechaRegistroLlave ?? fechaRegistroAlumno;
-        final start = DateTime.parse(startStr);
-        final end = fechaDesactivacionLlave != null
-            ? DateTime.parse(fechaDesactivacionLlave)
-            : null;
-
-        final dentroVentana = !DateTime.now().isBefore(start) &&
-            (end == null || !DateTime.now().isAfter(end));
-
-        if (dentroVentana) {
-          activeStudents.add(studentId);
+      for (var i = 0; i < studentIds.length; i += batchSize) {
+        final batch = studentIds.sublist(
+            i,
+            i + batchSize > studentIds.length
+                ? studentIds.length
+                : i + batchSize);
+        final tutorRows = await _sb
+            .from('alumno_tutores')
+            .select('id_alumno')
+            .inFilter('id_alumno', batch);
+        for (final r in tutorRows) {
+          final v = (r['id_alumno'] ?? '').toString();
+          if (v.isNotEmpty) studentsWithTutors.add(v);
         }
       }
+      if (studentsWithTutors.isEmpty) return [];
 
+      // 2. Verificar que han pagado (pagado = true)
+      final paidStudents = <String>{};
+      final studentsWithTutorsList = studentsWithTutors.toList();
+      for (var i = 0; i < studentsWithTutorsList.length; i += batchSize) {
+        final batch = studentsWithTutorsList.sublist(
+            i,
+            i + batchSize > studentsWithTutorsList.length
+                ? studentsWithTutorsList.length
+                : i + batchSize);
+        final paidStudentRows = await _sb
+            .from('alumnos')
+            .select('id')
+            .inFilter('id', batch)
+            .eq('pagado', true);
+        for (final r in paidStudentRows) {
+          final v = (r['id'] ?? '').toString();
+          if (v.isNotEmpty) paidStudents.add(v);
+        }
+      }
+      if (paidStudents.isEmpty) return [];
+
+      // 3. Verificar llaves activas y vigencia
+      final activeStudents = <String>{};
+      final paidStudentsList = paidStudents.toList();
+      for (var i = 0; i < paidStudentsList.length; i += batchSize) {
+        final batch = paidStudentsList.sublist(
+            i,
+            i + batchSize > paidStudentsList.length
+                ? paidStudentsList.length
+                : i + batchSize);
+        final llaveRows = await _sb.from('llaves').select('''
+              id_alumno,
+              activo,
+              fecha_registro,
+              fecha_desactivacion,
+              alumnos!inner(
+                id,
+                fecha_registro
+              )
+            ''').inFilter('id_alumno', batch).eq('activo', true);
+        for (final r in llaveRows) {
+          final studentId = (r['id_alumno'] ?? '').toString();
+          if (studentId.isEmpty) continue;
+          final fechaRegistroLlave = r['fecha_registro'] as String?;
+          final fechaDesactivacionLlave = r['fecha_desactivacion'] as String?;
+          final alumnoData = r['alumnos'] as Map<String, dynamic>;
+          final fechaRegistroAlumno = alumnoData['fecha_registro'] as String;
+          final startStr = fechaRegistroLlave ?? fechaRegistroAlumno;
+          final start = DateTime.parse(startStr);
+          final end = fechaDesactivacionLlave != null
+              ? DateTime.parse(fechaDesactivacionLlave)
+              : null;
+          final dentroVentana = !DateTime.now().isBefore(start) &&
+              (end == null || !DateTime.now().isAfter(end));
+          if (dentroVentana) {
+            activeStudents.add(studentId);
+          }
+        }
+      }
       return activeStudents.toList();
     } catch (e) {
       debugPrint('_filterActiveStudents error: $e');
@@ -402,16 +415,23 @@ class NotificationSendService {
   /// alumno_tutores: id_alumno -> id_tutor (puede haber múltiples)
   Future<List<String>> _getTutorIdsFromStudents(List<String> studentIds) async {
     if (studentIds.isEmpty) return [];
+    const int batchSize = 200;
     try {
-      final rows = await _sb
-          .from('alumno_tutores')
-          .select('id_tutor')
-          .inFilter('id_alumno', studentIds);
-
       final ids = <String>{};
-      for (final r in rows) {
-        final v = (r['id_tutor'] ?? '').toString();
-        if (v.isNotEmpty) ids.add(v);
+      for (var i = 0; i < studentIds.length; i += batchSize) {
+        final batch = studentIds.sublist(
+            i,
+            i + batchSize > studentIds.length
+                ? studentIds.length
+                : i + batchSize);
+        final rows = await _sb
+            .from('alumno_tutores')
+            .select('id_tutor')
+            .inFilter('id_alumno', batch);
+        for (final r in rows) {
+          final v = (r['id_tutor'] ?? '').toString();
+          if (v.isNotEmpty) ids.add(v);
+        }
       }
       return ids.toList();
     } catch (e) {
@@ -423,16 +443,20 @@ class NotificationSendService {
   /// mobile_tokens: id_usuario -> token (1..n por usuario)
   Future<List<String>> _getTokensFromUserIds(List<String> userIds) async {
     if (userIds.isEmpty) return [];
+    const int batchSize = 200;
     try {
-      final rows = await _sb
-          .from('mobile_tokens')
-          .select('token, id_usuario')
-          .inFilter('id_usuario', userIds);
-
       final tokens = <String>{};
-      for (final r in rows) {
-        final t = (r['token'] ?? '').toString().trim();
-        if (t.isNotEmpty) tokens.add(t);
+      for (var i = 0; i < userIds.length; i += batchSize) {
+        final batch = userIds.sublist(
+            i, i + batchSize > userIds.length ? userIds.length : i + batchSize);
+        final rows = await _sb
+            .from('mobile_tokens')
+            .select('token, id_usuario')
+            .inFilter('id_usuario', batch);
+        for (final r in rows) {
+          final t = (r['token'] ?? '').toString().trim();
+          if (t.isNotEmpty) tokens.add(t);
+        }
       }
       return tokens.toList();
     } catch (e) {
