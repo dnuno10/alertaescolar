@@ -213,8 +213,10 @@ class ScannerService {
       };
     }
 
-    debugPrint('ProcessScannedCode: Step 2 - Getting turno data');
-    final turnoData = await _getStudentTurno(turnoValue, escuelaIdAlumno);
+    debugPrint('ProcessScannedCode: Step 2 - Resolving turno data');
+    final embeddedTurno = _turnoFromStudentData(studentData, escuelaIdAlumno);
+    final turnoData =
+        embeddedTurno ?? await _getStudentTurno(turnoValue, escuelaIdAlumno);
 
     if (turnoData == null) {
       debugPrint('ProcessScannedCode: Turno data not found');
@@ -335,9 +337,16 @@ class ScannerService {
           pagado,
           grupos!inner(
             grupo,
-            nivel_educativo
+            nivel_educativo,
+            id_escuela
           ),
-          turnos(turno)
+          turnos(
+            turno,
+            hora_inicio,
+            tolerancia,
+            aplicar_tolerancia,
+            id_escuela
+          )
         ''').eq('matricula', m).maybeSingle();
 
       if (response == null) return null;
@@ -402,6 +411,24 @@ class ScannerService {
       debugPrint('Error getting turno: $e');
       return null;
     }
+  }
+
+  Map<String, dynamic>? _turnoFromStudentData(
+    Map<String, dynamic> studentData,
+    String escuelaId,
+  ) {
+    final rawTurno = studentData['turnos'];
+    if (rawTurno is! Map<String, dynamic>) return null;
+
+    final turnoSchoolId = rawTurno['id_escuela']?.toString();
+    if (turnoSchoolId != null &&
+        turnoSchoolId.isNotEmpty &&
+        turnoSchoolId != escuelaId) {
+      return null;
+    }
+
+    if (rawTurno['hora_inicio'] == null) return null;
+    return rawTurno;
   }
 
   Map<String, dynamic> _validateAccessTime({
@@ -636,55 +663,16 @@ class ScannerService {
         return {'success': false, 'error': 'Escuela del estudiante no válida'};
       }
 
-      debugPrint(
-          '_createNotification: Getting admin info for adminId=$adminId');
-      final adminInfo = await _getAdminUserInfo(adminId);
-      if (adminInfo == null) {
-        debugPrint('_createNotification: Admin not found');
+      final schoolFromContext = escuelaIdContext.trim();
+      if (schoolFromContext.isNotEmpty &&
+          schoolFromContext != studentSchoolId) {
         return {
           'success': false,
-          'error': 'Usuario administrador no encontrado'
+          'error': 'La escuela de la sesión no coincide con la del alumno'
         };
       }
-      final String tipoUsuario =
-          (adminInfo['tipo']?.toString() ?? '').toLowerCase();
-      final String? adminSchoolId = adminInfo['id_escuela']?.toString();
-      debugPrint(
-          '_createNotification: Admin info → tipoUsuario=$tipoUsuario, adminSchoolId=$adminSchoolId');
 
-      if (tipoUsuario == 'administrador') {
-        if (adminSchoolId == null || adminSchoolId.isEmpty) {
-          return {
-            'success': false,
-            'error': 'El administrador no tiene escuela asignada'
-          };
-        }
-        if (adminSchoolId != studentSchoolId) {
-          return {
-            'success': false,
-            'error':
-                'La escuela del alumno no coincide con la del administrador'
-          };
-        }
-        if (escuelaIdContext.trim().isNotEmpty &&
-            adminSchoolId != escuelaIdContext.trim()) {
-          return {
-            'success': false,
-            'error':
-                'La escuela de la sesión no coincide con la del administrador'
-          };
-        }
-      } else {
-        if (escuelaIdContext.trim().isNotEmpty &&
-            escuelaIdContext.trim() != studentSchoolId) {
-          return {
-            'success': false,
-            'error': 'El alumno pertenece a otra escuela (contexto)'
-          };
-        }
-      }
-
-      debugPrint('_createNotification: Validating student key and tutor');
+      debugPrint('_createNotification: Validating student access');
       final validationResult = await _validateStudentKeyAndTutor(studentId);
       if (validationResult['isValid'] != true) {
         debugPrint(
@@ -692,24 +680,6 @@ class ScannerService {
         return {'success': false, 'error': validationResult['error']};
       }
       debugPrint('_createNotification: Student key/tutor validation passed');
-
-      final String? groupId = studentData['id_grupo']?.toString();
-      if (groupId != null && groupId.isNotEmpty) {
-        final gval = await _validateStudentGroupConsistency(
-            studentId, studentSchoolId, groupId);
-        if (gval['isValid'] != true) {
-          return {'success': false, 'error': gval['error']};
-        }
-      }
-
-      final String? turnoId = studentData['id_turno']?.toString();
-      if (turnoId != null && turnoId.isNotEmpty) {
-        final tval =
-            await _validateTurnoSchoolConsistency(turnoId, studentSchoolId);
-        if (tval['isValid'] != true) {
-          return {'success': false, 'error': tval['error']};
-        }
-      }
 
       final ScannerAccessType acType =
           accessInfo['accessType'] as ScannerAccessType;
@@ -726,39 +696,6 @@ class ScannerService {
           _buildTitle(studentName, acType, isLate, isExtracurricular);
       final String mensaje =
           _buildMessage(studentName, acType, isLate, hora, motivoSufijo);
-
-      // NUEVO: Check de duplicados más estricto con ventana más amplia
-      final duplicateWindow =
-          timestamp.subtract(const Duration(seconds: 90)); // 90 segundos
-
-      final existingNotifications = await _supabase
-          .from('notificaciones')
-          .select('id, fecha_registro, tipo_notificacion')
-          .eq('id_alumno', studentId)
-          .eq('tipo_notificacion', notifType.name)
-          .gte('fecha_registro', duplicateWindow.toUtc().toIso8601String())
-          .order('fecha_registro', ascending: false);
-
-      if (existingNotifications.isNotEmpty) {
-        final latest = existingNotifications.first;
-        final existingTime = DateTime.parse(latest['fecha_registro']);
-        final timeDiff = timestamp.difference(existingTime).inSeconds;
-
-        if (timeDiff < 60) {
-          debugPrint(
-              '_createNotification: Found duplicate within ${timeDiff}s');
-          return {
-            'success': false,
-            'error': 'Este alumno ya fue escaneado hace menos de 1 minuto.',
-            'duplicateIgnored': true,
-            'notification': {
-              'id': latest['id'],
-              'tipo': latest['tipo_notificacion'],
-              'fecha': latest['fecha_registro'],
-            },
-          };
-        }
-      }
 
       debugPrint(
           'NOTIF BUILD → accessType=${acType.name} isLate=$isLate title="$titulo" body="$mensaje"');
@@ -787,7 +724,8 @@ class ScannerService {
         mensaje: mensaje,
         notificationId: notificationId,
         notifType: notifType,
-        adminSchoolId: adminSchoolId,
+        adminSchoolId:
+            schoolFromContext.isNotEmpty ? schoolFromContext : studentSchoolId,
         studentSchoolId: studentSchoolId,
         acType: acType,
         isLate: isLate,
@@ -937,81 +875,25 @@ class ScannerService {
 
   /// === Helpers de validación ===
 
-  /// Obtiene info del usuario y resuelve id_escuela de forma compatible con el esquema:
-  /// - Si es ADMIN: admin_access_list por email (activo=true, más reciente)
-  /// - Si NO es admin: primer alumno vinculado (alumno_tutores → alumnos.id_escuela)
-  Future<Map<String, dynamic>?> _getAdminUserInfo(String adminId) async {
-    try {
-      // 1) Leer usuario base (¡OJO! usuarios NO tiene id_escuela)
-      final userRow = await _supabase
-          .from('usuarios')
-          .select('id, email, tipo, tipo_administrador')
-          .eq('id', adminId)
-          .maybeSingle();
-
-      if (userRow == null) {
-        debugPrint('Admin user not found with ID: $adminId');
-        return null;
-      }
-
-      final String email =
-          (userRow['email']?.toString() ?? '').trim().toLowerCase();
-      final String tipo =
-          (userRow['tipo']?.toString() ?? '').trim().toLowerCase();
-
-      String? escuelaId;
-
-      if (tipo == 'administrador' || tipo == 'admin') {
-        // 2) Resolver escuela por admin_access_list
-        final adminAccess = await _supabase
-            .from('admin_access_list')
-            .select('id_escuela')
-            .eq('email', email)
-            .eq('activo', true)
-            .order('created_at', ascending: false)
-            .limit(1)
-            .maybeSingle();
-
-        escuelaId = adminAccess?['id_escuela']?.toString();
-      } else {
-        // 3) Si no es admin: deducir por vínculo tutor→alumno
-        try {
-          final resp = await _supabase.from('alumno_tutores').select('''
-            alumnos!inner(
-              id_escuela
-            )
-          ''').eq('id_tutor', adminId).limit(1);
-
-          if (resp.isNotEmpty) {
-            final alumno = resp[0]['alumnos'] as Map<String, dynamic>?;
-            escuelaId = alumno?['id_escuela']?.toString();
-          }
-        } catch (_) {}
-      }
-
-      return {
-        'id': userRow['id'],
-        'email': email,
-        'tipo': userRow['tipo'],
-        'tipo_administrador': userRow['tipo_administrador'],
-        // devolvemos id_escuela normalizado (puede ser null si no se resuelve)
-        'id_escuela': escuelaId,
-      };
-    } catch (e) {
-      debugPrint('Error getting admin user info: $e');
-      return null;
-    }
-  }
-
   Future<Map<String, dynamic>> _validateStudentKeyAndTutor(
       String studentId) async {
     try {
-      // Tutor registrado - un alumno puede tener múltiples tutores
-      final tutorResponse = await _supabase
-          .from('alumno_tutores')
-          .select('id')
-          .eq('id_alumno', studentId)
-          .limit(1); // Solo necesitamos saber si existe al menos uno
+      final checks = await Future.wait([
+        _supabase
+            .from('alumno_tutores')
+            .select('id')
+            .eq('id_alumno', studentId)
+            .limit(1),
+        _supabase
+            .from('llaves')
+            .select('id, fecha_registro, fecha_desactivacion, activo')
+            .eq('id_alumno', studentId)
+            .eq('activo', true)
+            .maybeSingle(),
+      ]);
+
+      final tutorResponse = checks[0] as List<dynamic>;
+      final keyResponse = checks[1] as Map<String, dynamic>?;
 
       if (tutorResponse.isEmpty) {
         return {
@@ -1020,15 +902,7 @@ class ScannerService {
         };
       }
 
-      // Llave activa vigente
       final now = DateTime.now();
-      final keyResponse = await _supabase
-          .from('llaves')
-          .select('id, fecha_registro, fecha_desactivacion, activo')
-          .eq('id_alumno', studentId)
-          .eq('activo', true)
-          .maybeSingle();
-
       if (keyResponse == null) {
         return {
           'isValid': false,
@@ -1099,66 +973,6 @@ class ScannerService {
       debugPrint('recent by fecha_registro failed: $e');
     }
     return null;
-  }
-
-  Future<Map<String, dynamic>> _validateStudentGroupConsistency(
-      String studentId, String studentSchoolId, String groupId) async {
-    try {
-      final response = await _supabase
-          .from('grupos')
-          .select('id_escuela')
-          .eq('id', groupId)
-          .maybeSingle();
-      if (response == null) {
-        return {
-          'isValid': false,
-          'error': 'El grupo del estudiante no existe en el sistema'
-        };
-      }
-      if ((response['id_escuela']?.toString() ?? '') != studentSchoolId) {
-        return {
-          'isValid': false,
-          'error': 'El grupo del estudiante no pertenece a la escuela correcta',
-        };
-      }
-      return {'isValid': true};
-    } catch (e) {
-      debugPrint('Error validating student group consistency: $e');
-      return {
-        'isValid': false,
-        'error': 'Error interno al validar grupo del estudiante: $e'
-      };
-    }
-  }
-
-  Future<Map<String, dynamic>> _validateTurnoSchoolConsistency(
-      String turnoId, String studentSchoolId) async {
-    try {
-      final response = await _supabase
-          .from('turnos')
-          .select('id_escuela')
-          .eq('id', turnoId)
-          .maybeSingle();
-      if (response == null) {
-        return {
-          'isValid': false,
-          'error': 'El turno del estudiante no existe en el sistema'
-        };
-      }
-      if ((response['id_escuela']?.toString() ?? '') != studentSchoolId) {
-        return {
-          'isValid': false,
-          'error': 'El turno del estudiante no pertenece a la escuela correcta',
-        };
-      }
-      return {'isValid': true};
-    } catch (e) {
-      debugPrint('Error validating turno school consistency: $e');
-      return {
-        'isValid': false,
-        'error': 'Error interno al validar turno del estudiante: $e'
-      };
-    }
   }
 
   /// Método público para limpiar cache de turnos si es necesario

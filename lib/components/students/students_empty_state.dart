@@ -28,12 +28,6 @@ class StudentsEmptyState extends StatelessWidget {
           Container(
             width: screenSize.width * 0.2,
             height: screenSize.width * 0.2,
-            decoration: BoxDecoration(
-              // ignore: deprecated_member_use
-              color: AppTheme.getBorderColor(context).withOpacity(0.5),
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-            ),
             child: Icon(
               Icons.school_rounded,
               color: AppTheme.getTextSecondaryColor(context),

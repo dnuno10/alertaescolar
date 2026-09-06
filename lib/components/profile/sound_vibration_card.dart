@@ -39,13 +39,11 @@ class SoundVibrationCard extends StatelessWidget {
         color: AppTheme.getCardColor(context),
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(
+          color: AppTheme.getBorderColor(context),
+          width: 1,
+        ),
+        boxShadow: const [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

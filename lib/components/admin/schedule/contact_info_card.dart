@@ -12,7 +12,7 @@ class ContactInfoCard extends StatelessWidget {
     required this.screenSize,
   });
 
-  static const String _email = 'contacto@alertaescolar.mx';
+  static const String _email = 'alertaescolar.team@gmail.com';
   static const String _phoneDisplay = '+52-664-529-0620';
   static const String _phoneTel = '+526645290620'; // para tel: URI
 

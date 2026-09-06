@@ -80,27 +80,12 @@ class StudentSelector extends StatelessWidget {
                     : AppTheme.getBorderColor(context),
                 width: 1,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.getShadowColor(context),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              boxShadow: const [],
             ),
             child: Row(
               children: [
                 Container(
                   padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
-                  decoration: BoxDecoration(
-                    color: (selectedStudent != null
-                            ? AppTheme.accentOrange
-                            : AppTheme.getBorderColor(context))
-                        // ignore: deprecated_member_use
-                        .withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(
-                        AppTheme.getSmallRadius(screenSize)),
-                  ),
                   child: Icon(
                     selectedStudent != null
                         ? Icons.person_rounded
@@ -178,15 +163,6 @@ class StudentSelector extends StatelessWidget {
                 Container(
                   padding: EdgeInsets.all(
                       AppTheme.getSmallPadding(screenSize) * 0.6),
-                  decoration: BoxDecoration(
-                    color: selectedStudent != null
-                        // ignore: deprecated_member_use
-                        ? AppTheme.accentOrange.withOpacity(0.15)
-                        // ignore: deprecated_member_use
-                        : AppTheme.getBorderColor(context).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(
-                        AppTheme.getSmallRadius(screenSize)),
-                  ),
                   child: Icon(
                     selectedStudent != null
                         ? Icons.check_circle_rounded

@@ -22,14 +22,7 @@ class IntroOptionsComponent extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 20,
-            spreadRadius: -5,
-            offset: const Offset(0, -8),
-          ),
-        ],
+        boxShadow: const [],
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(AppTheme.getLargeRadius(size) * 1.5),
           topRight: Radius.circular(AppTheme.getLargeRadius(size) * 1.5),

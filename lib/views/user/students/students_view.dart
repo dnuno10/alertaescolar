@@ -166,13 +166,7 @@ class _StudentsViewState extends State<StudentsView> {
                       borderRadius: BorderRadius.circular(
                         AppTheme.getLargeRadius(screenSize),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.getShadowColor(context),
-                          blurRadius: 15,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
+                      boxShadow: const [],
                     ),
                     child: ElevatedButton.icon(
                       onPressed: _goToAdd,

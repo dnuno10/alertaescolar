@@ -54,13 +54,9 @@ class AttendanceRecordItem extends StatelessWidget {
               Container(
                 width: screenSize.height * 0.04,
                 height: screenSize.height * 0.04,
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  shape: BoxShape.circle,
-                ),
                 child: Icon(
                   statusIcon,
-                  color: Colors.white,
+                  color: statusColor,
                   size: screenSize.height * 0.02,
                 ),
               ),

@@ -501,15 +501,6 @@ class _AttendanceControlViewState extends State<AttendanceControlView> {
                           width: screenSize.shortestSide * 0.10,
                           height: screenSize.shortestSide * 0.10,
                           alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            // ignore: deprecated_member_use
-                            color: color.withOpacity(0.10),
-                            borderRadius: BorderRadius.circular(padS),
-                            border: Border.all(
-                                // ignore: deprecated_member_use
-                                color: color.withOpacity(0.35),
-                                width: 1),
-                          ),
                           child: Icon(
                             secondaryIcon,
                             color: color,

@@ -72,12 +72,6 @@ class SettingsTile extends StatelessWidget {
                   Container(
                     width: screenSize.width * 0.1,
                     height: screenSize.width * 0.1,
-                    decoration: BoxDecoration(
-                      // ignore: deprecated_member_use
-                      color: AppTheme.accentPurple.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(
-                          AppTheme.getSmallRadius(screenSize)),
-                    ),
                     child: Icon(
                       icon,
                       color: AppTheme.accentPurple,

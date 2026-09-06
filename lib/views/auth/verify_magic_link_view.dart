@@ -197,8 +197,8 @@ class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
       child: Row(
         children: [
           Material(
-            color: AppTheme.getCardColor(context),
-            elevation: 2,
+            color: Colors.transparent,
+            elevation: 0,
             shape: const CircleBorder(),
             child: IconButton(
               onPressed: () => Navigator.pop(context),
@@ -245,14 +245,7 @@ class _VerifyMagicLinkViewState extends State<VerifyMagicLinkView>
           topLeft: Radius.circular(AppTheme.getLargeRadius(size) * 1.5),
           topRight: Radius.circular(AppTheme.getLargeRadius(size) * 1.5),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 20,
-            spreadRadius: -5,
-            offset: const Offset(0, -8),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Column(
         children: [

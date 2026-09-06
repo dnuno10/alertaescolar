@@ -28,26 +28,10 @@ class StepIndicator extends StatelessWidget {
           duration: const Duration(milliseconds: 300),
           width: screenSize.height * 0.045,
           height: screenSize.height * 0.045,
-          decoration: BoxDecoration(
-            color: isCompleted
-                ? AppTheme.successColor
-                : isActive
-                    ? AppTheme.accentBlue
-                    : AppTheme.getBackgroundColor(context),
-            border: Border.all(
-              color: isCompleted
-                  ? AppTheme.successColor
-                  : isActive
-                      ? AppTheme.accentBlue
-                      : AppTheme.getBorderColor(context),
-              width: 2,
-            ),
-            borderRadius: BorderRadius.circular(screenSize.height * 0.025),
-          ),
           child: Icon(
             isCompleted ? Icons.check_rounded : icon,
             color: isCompleted || isActive
-                ? Colors.white
+                ? AppTheme.accentPurple
                 : AppTheme.getTextSecondaryColor(context),
             size: screenSize.height * 0.02,
           ),

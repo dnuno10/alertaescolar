@@ -49,15 +49,6 @@ class RecipientOption extends StatelessWidget {
         children: [
           Container(
             padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.8),
-            decoration: BoxDecoration(
-              color: isSelected
-                  // ignore: deprecated_member_use
-                  ? AppTheme.accentOrange.withOpacity(0.2)
-                  // ignore: deprecated_member_use
-                  : AppTheme.getBorderColor(context).withOpacity(0.1),
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-            ),
             child: Icon(
               icon,
               color: isSelected

@@ -231,7 +231,7 @@ class _StudentConfirmationViewState extends State<StudentConfirmationView> {
   Future<void> _emailSupport() async {
     final uri = Uri(
       scheme: 'mailto',
-      path: 'contacto@alertaescolar.mx',
+      path: 'alertaescolar.team@gmail.com',
       queryParameters: {
         'subject': 'Soporte - Datos de alumno no coinciden',
         'body':
@@ -387,11 +387,6 @@ class _StudentSection extends StatelessWidget {
                 Container(
                   padding: EdgeInsets.all(
                       AppTheme.getSmallPadding(screenSize) * 0.8),
-                  decoration: BoxDecoration(
-                    // ignore: deprecated_member_use
-                    color: AppTheme.accentBlue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
                   child: Icon(
                     Icons.person_rounded,
                     color: AppTheme.accentBlue,
@@ -488,11 +483,6 @@ class _StudentInfoRow extends StatelessWidget {
         children: [
           Container(
             padding: EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              // ignore: deprecated_member_use
-              color: AppTheme.getTextSecondaryColor(context).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
             child: Icon(
               icon,
               size: 18,

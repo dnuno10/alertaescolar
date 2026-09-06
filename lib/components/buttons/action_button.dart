@@ -32,27 +32,16 @@ class ActionButton extends StatelessWidget {
           borderRadius:
               BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
           border: Border.all(color: AppTheme.getBorderColor(context)),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.getShadowColor(context),
-              blurRadius: screenSize.height * 0.015,
-              offset: Offset(0, screenSize.height * 0.005),
-            ),
-          ],
+          boxShadow: const [],
         ),
         child: Column(
           children: [
             Container(
               width: screenSize.height * 0.07,
               height: screenSize.height * 0.07,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius:
-                    BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-              ),
               child: Icon(
                 icon,
-                color: Colors.white,
+                color: color,
                 size: screenSize.height * 0.035,
               ),
             ),

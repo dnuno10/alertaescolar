@@ -34,13 +34,7 @@ class SectionContainer extends StatelessWidget {
             borderRadius:
                 BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
             border: Border.all(color: AppTheme.getBorderColor(context)),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.getShadowColor(context),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            boxShadow: const [],
           ),
           child: child,
         ),

@@ -81,18 +81,7 @@ class NotificationCard extends StatelessWidget {
             color: isUnread ? statusColor : AppTheme.getBorderColor(context),
             width: isUnread ? 2 : 1,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: isUnread
-                  // ignore: deprecated_member_use
-                  ? statusColor.withOpacity(0.12)
-                  : AppTheme.getShadowColor(context),
-              blurRadius: isUnread
-                  ? screenSize.height * 0.015
-                  : screenSize.height * 0.01,
-              offset: Offset(0, screenSize.height * 0.004),
-            ),
-          ],
+          boxShadow: const [],
         ),
         child: Padding(
           padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -105,14 +94,9 @@ class NotificationCard extends StatelessWidget {
                   Container(
                     width: screenSize.height * 0.05,
                     height: screenSize.height * 0.05,
-                    decoration: BoxDecoration(
-                      color: statusColor,
-                      borderRadius: BorderRadius.circular(
-                          AppTheme.getSmallRadius(screenSize)),
-                    ),
                     child: Icon(
                       icon,
-                      color: Colors.white,
+                      color: statusColor,
                       size: screenSize.height * 0.025,
                     ),
                   ),

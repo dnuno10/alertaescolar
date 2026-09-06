@@ -74,13 +74,6 @@ class LogoutButton extends StatelessWidget {
                     Container(
                       padding: EdgeInsets.all(
                           AppTheme.getSmallPadding(screenSize) * 0.5),
-                      decoration: BoxDecoration(
-                        // ignore: deprecated_member_use
-                        color: AppTheme.errorColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(
-                          AppTheme.getSmallRadius(screenSize),
-                        ),
-                      ),
                       child: Icon(
                         Icons.logout_outlined,
                         size: screenSize.width * 0.05,

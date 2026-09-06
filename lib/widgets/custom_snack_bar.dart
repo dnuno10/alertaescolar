@@ -74,7 +74,7 @@ class CustomSnackBar {
         backgroundColor: bgColor,
         duration: duration,
         behavior: SnackBarBehavior.floating,
-        elevation: 6,
+        elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
         action: (actionLabel != null && onAction != null)

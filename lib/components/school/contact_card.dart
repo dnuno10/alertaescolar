@@ -43,17 +43,6 @@ class ContactCard extends StatelessWidget {
               Container(
                 padding:
                     EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.7),
-                decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
-                  color: AppTheme.successColor.withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getSmallRadius(screenSize)),
-                  border: Border.all(
-                    // ignore: deprecated_member_use
-                    color: AppTheme.successColor.withOpacity(0.28),
-                    width: 1,
-                  ),
-                ),
                 child: Icon(icon,
                     size: screenSize.height * 0.020,
                     color: AppTheme.successColor),

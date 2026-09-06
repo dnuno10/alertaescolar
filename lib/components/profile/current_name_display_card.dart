@@ -22,25 +22,17 @@ class CurrentNameDisplayCard extends StatelessWidget {
         color: AppTheme.getCardColor(context),
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(
+          color: AppTheme.getBorderColor(context),
+          width: 1,
+        ),
+        boxShadow: const [],
       ),
       child: Row(
         children: [
           Container(
             width: screenSize.width * 0.1,
             height: screenSize.width * 0.1,
-            decoration: BoxDecoration(
-              // ignore: deprecated_member_use
-              color: AppTheme.accentBlue.withOpacity(0.1),
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-            ),
             child: Icon(
               Icons.badge_outlined,
               color: AppTheme.accentBlue,

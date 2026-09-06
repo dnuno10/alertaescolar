@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'package:alertaescolar/components/headers/nav_header.dart';
-import 'package:alertaescolar/components/loading_dialog.dart';
 import 'package:alertaescolar/components/textfield/custom_input_field.dart';
 import 'package:alertaescolar/l10n/app_localizations.dart';
 import 'package:alertaescolar/managers/student_provider.dart';
@@ -26,6 +24,9 @@ class AttendanceCalendarView extends StatefulWidget {
 }
 
 class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
+  static const int _attendancePageSize = 1000;
+  static const int _attendanceMaxRecords = 5000;
+
   DateTime selectedDate = DateTime.now();
   DateTime focusedDay = DateTime.now();
 
@@ -46,15 +47,17 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
   String _selectedAccess = 'all'; // entrada | salida | retraso
 
   // Filtro de tiempo (mutuamente excluyente con calendario)
-  String _timeFilter = 'calendar'; // calendar | 7days | 14days
+  String _timeFilter = '7days'; // calendar | 7days | 14days
 
   // Datos
   List<Map<String, dynamic>> _notifications = [];
   List<Map<String, dynamic>> _filteredNotifications = [];
   String? _error;
+  bool _isLoading = true;
 
   // Cache del escuelaId para evitar queries repetidas y asegurar consistencia
   String? _cachedEscuelaId;
+  String? _loadedRangeKey;
 
   @override
   void initState() {
@@ -87,11 +90,11 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
   }
 
   Future<void> _onRefresh() async {
-    await _loadInitialData();
+    await _loadInitialData(forceNotifications: true);
   }
 
   // ========================= Carga de datos =========================
-  Future<void> _loadInitialData() async {
+  Future<void> _loadInitialData({bool forceNotifications = false}) async {
     if (!mounted) return;
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final studentProvider =
@@ -121,14 +124,24 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
         return;
       }
 
-      LoadingDialog.show(context, message: 'Cargando datos de asistencia...');
-      setState(() => _error = null);
+      setState(() {
+        _error = null;
+        _isLoading = true;
+      });
 
-      // StudentProvider trae niveles/grupos/turnos (y su orden) igual que en las otras vistas
-      await studentProvider.loadStudents(escuelaId: escuelaId, loadAll: true);
+      final shouldLoadStudents = studentProvider.students.isEmpty ||
+          studentProvider.availableGrupos.isEmpty ||
+          studentProvider.availableTurnos.isEmpty;
 
-      // Notificaciones de asistencia - FILTRADAS POR ESCUELA
-      await _loadNotifications(escuelaId);
+      await Future.wait([
+        if (shouldLoadStudents)
+          studentProvider.loadStudents(
+            escuelaId: escuelaId,
+            loadAll: false,
+            limit: 80,
+          ),
+        _loadNotifications(escuelaId, force: forceNotifications),
+      ]);
 
       // Filtros iniciales + overlay
       _filterNotifications();
@@ -137,24 +150,26 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
       debugPrint('Error loading initial data: $e');
       setState(() => _error = e.toString());
     } finally {
-      if (mounted) LoadingDialog.hide(context);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _loadNotifications(String escuelaId) async {
+  Future<void> _loadNotifications(String escuelaId,
+      {bool force = false}) async {
     try {
       final supabase = Supabase.instance.client;
-      debugPrint('🔧 Loading notifications for escuela: $escuelaId');
+      final range = _currentQueryRange();
+      final rangeKey =
+          '${_timeFilter}_${range.startUtc.toIso8601String()}_${range.endUtc.toIso8601String()}';
 
-      // --- PAGINACIÓN EFICIENTE ---
-      const int pageSize = 1000;
-      int from = 0;
-      int to = pageSize - 1;
-      List<Map<String, dynamic>> all = [];
-      while (true) {
-        final response = await supabase
-            .from('notificaciones')
-            .select(r'''
+      if (!force && _loadedRangeKey == rangeKey && _notifications.isNotEmpty) {
+        return;
+      }
+
+      debugPrint(
+          '🔧 Loading notifications for escuela: $escuelaId range: $rangeKey');
+
+      final selectColumns = r'''
               id,
               id_alumno,
               id_admin,
@@ -179,17 +194,33 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                   turno
                 )
               )
-            ''')
+            ''';
+
+      final all = <Map<String, dynamic>>[];
+
+      for (var from = 0;
+          from < _attendanceMaxRecords;
+          from += _attendancePageSize) {
+        final to = (from + _attendancePageSize - 1)
+            .clamp(0, _attendanceMaxRecords - 1);
+
+        final response = await supabase
+            .from('notificaciones')
+            .select(selectColumns)
             .eq('alumnos.id_escuela', escuelaId)
             .inFilter('tipo_notificacion', ['entrada', 'salida', 'retraso'])
+            .gte('fecha_registro', range.startUtc.toIso8601String())
+            .lt('fecha_registro', range.endUtc.toIso8601String())
             .order('fecha_registro', ascending: false)
             .range(from, to);
-        final List<Map<String, dynamic>> page =
-            List<Map<String, dynamic>>.from(response);
+
+        final page = List<Map<String, dynamic>>.from(response);
         all.addAll(page);
-        if (page.length < pageSize) break; // Última página
-        from += pageSize;
-        to += pageSize;
+
+        if (page.length < _attendancePageSize ||
+            all.length >= _attendanceMaxRecords) {
+          break;
+        }
       }
 
       // Validación adicional: asegurar que TODOS los registros sean de la escuela correcta
@@ -203,9 +234,12 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
         return isValid;
       }).toList();
 
+      await _primeAdminNames(validatedNotifications);
+
       setState(() {
         _notifications =
             List<Map<String, dynamic>>.from(validatedNotifications);
+        _loadedRangeKey = rangeKey;
       });
 
       debugPrint(
@@ -213,6 +247,45 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
     } catch (e) {
       debugPrint('❌ Error loading notifications: $e');
       throw Exception('Error al cargar notificaciones: $e');
+    }
+  }
+
+  ({DateTime startUtc, DateTime endUtc}) _currentQueryRange() {
+    final now = DateTime.now();
+    switch (_timeFilter) {
+      case '7days':
+        return (
+          startUtc: now.subtract(const Duration(days: 7)).toUtc(),
+          endUtc: now.add(const Duration(days: 1)).toUtc(),
+        );
+      case '14days':
+        return (
+          startUtc: now.subtract(const Duration(days: 14)).toUtc(),
+          endUtc: now.add(const Duration(days: 1)).toUtc(),
+        );
+      case 'calendar':
+      default:
+        return TimeFormat.getDayUtcRangeFromLocal(selectedDate);
+    }
+  }
+
+  Future<void> _reloadNotificationsForCurrentRange() async {
+    final escuelaId = _cachedEscuelaId;
+    if (escuelaId == null || escuelaId.isEmpty) return;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      await _loadNotifications(escuelaId);
+      _filterNotifications();
+    } catch (e) {
+      debugPrint('Error reloading attendance range: $e');
+      if (mounted) setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -311,7 +384,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                   showWhenUnlinked: false,
                   offset: Offset(0, yOffset.toDouble()),
                   child: Material(
-                    elevation: 8,
+                    elevation: 0,
                     color: AppTheme.getCardColor(context),
                     borderRadius: BorderRadius.circular(
                         AppTheme.getMediumRadius(screenSize)),
@@ -545,6 +618,34 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
   }
 
   // ========================= UI =========================
+  Widget _buildBackHeader(BuildContext context, Size screenSize) {
+    return SizedBox(
+      height: screenSize.height * 0.052,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: IconButton(
+          tooltip: 'Regresar',
+          padding: EdgeInsets.zero,
+          constraints: BoxConstraints(
+            minWidth: screenSize.height * 0.044,
+            minHeight: screenSize.height * 0.044,
+          ),
+          icon: Icon(
+            Icons.arrow_back_ios_new,
+            color: AppTheme.accentPurple,
+            size: screenSize.width * 0.055,
+          ),
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            _removeSuggestionsOverlay();
+            FocusScope.of(context).unfocus();
+            Navigator.maybePop(context);
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildFiltersSection(
     BuildContext context,
     Size screenSize,
@@ -572,13 +673,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
           // ignore: deprecated_member_use
           color: AppTheme.getBorderColor(context).withOpacity(0.3),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -612,7 +707,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                     selectedDate = DateTime.now();
                     _searchController.clear();
                   });
-                  _filterNotifications();
+                  _reloadNotificationsForCurrentRange();
                   _removeSuggestionsOverlay();
                 },
                 child: Text(
@@ -781,13 +876,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
         border: Border.all(
           color: AppTheme.getBorderColor(context).withOpacity(0.3),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -866,7 +955,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
           setState(() {
             _timeFilter = value;
           });
-          _filterNotifications();
+          _reloadNotificationsForCurrentRange();
         },
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
@@ -963,7 +1052,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                 _timeFilter =
                     'calendar'; // Cambiar automáticamente a modo calendario
               });
-              _filterNotifications();
+              _reloadNotificationsForCurrentRange();
             }
           },
           child: Container(
@@ -997,12 +1086,6 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                       Container(
                         padding: EdgeInsets.all(
                             AppTheme.getSmallPadding(screenSize) * 0.6),
-                        decoration: BoxDecoration(
-                          // ignore: deprecated_member_use
-                          color: AppTheme.accentPurple.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(
-                              AppTheme.getSmallRadius(screenSize)),
-                        ),
                         child: Icon(
                           Icons.calendar_today_rounded,
                           color: AppTheme.accentPurple,
@@ -1069,13 +1152,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
           // ignore: deprecated_member_use
           color: AppTheme.getBorderColor(context).withOpacity(0.3),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1124,7 +1201,14 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
 
           SizedBox(height: AppTheme.getMediumPadding(screenSize)),
 
-          if (notificationsToShow.isEmpty)
+          if (_isLoading)
+            Center(
+              child: Padding(
+                padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
+                child: const CircularProgressIndicator(),
+              ),
+            )
+          else if (notificationsToShow.isEmpty)
             Center(
               child: Padding(
                 padding: EdgeInsets.all(AppTheme.getLargePadding(screenSize)),
@@ -1156,6 +1240,42 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
   }
 
   final Map<String, String> _adminNameCache = {};
+
+  Future<void> _primeAdminNames(
+      List<Map<String, dynamic>> notifications) async {
+    final missingIds = notifications
+        .map((n) => (n['id_admin'] ?? '').toString().trim())
+        .where((id) => id.isNotEmpty && !_adminNameCache.containsKey(id))
+        .toSet()
+        .toList();
+
+    if (missingIds.isEmpty) return;
+
+    try {
+      final rows = await Supabase.instance.client
+          .from('usuarios')
+          .select('id, nombre, apellido')
+          .inFilter('id', missingIds);
+
+      for (final raw in rows as List) {
+        final row = Map<String, dynamic>.from(raw as Map);
+        final id = row['id']?.toString();
+        if (id == null || id.isEmpty) continue;
+        final nombre = (row['nombre'] ?? '').toString().trim();
+        final apellido = (row['apellido'] ?? '').toString().trim();
+        final full = ('$nombre $apellido').trim();
+        _adminNameCache[id] = full.isEmpty ? '—' : full;
+      }
+
+      for (final id in missingIds) {
+        _adminNameCache.putIfAbsent(id, () => '—');
+      }
+    } catch (_) {
+      for (final id in missingIds) {
+        _adminNameCache.putIfAbsent(id, () => '—');
+      }
+    }
+  }
 
   Future<String> _getAdminFullName(String? adminId) async {
     final id = (adminId ?? '').trim();
@@ -1470,16 +1590,11 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     final screenSize = MediaQuery.of(context).size;
 
     return Consumer2<ThemeProvider, StudentProvider>(
       builder: (context, themeProvider, studentProvider, child) {
         if (_error != null && _notifications.isEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            LoadingDialog.hide(context);
-          });
-
           return Scaffold(
             backgroundColor: AppTheme.getBackgroundColor(context),
             body: Center(
@@ -1527,8 +1642,11 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                 child: CustomScrollView(
                   physics: const BouncingScrollPhysics(),
                   slivers: [
-                    NavHeader(
-                        title: l10n.attendanceCalendar, isSliverAppBar: false),
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: MediaQuery.paddingOf(context).top,
+                      ),
+                    ),
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: EdgeInsets.all(
@@ -1536,6 +1654,9 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            _buildBackHeader(context, screenSize),
+                            SizedBox(
+                                height: AppTheme.getSmallPadding(screenSize)),
                             _buildFiltersSection(
                                 context, screenSize, studentProvider),
                             SizedBox(

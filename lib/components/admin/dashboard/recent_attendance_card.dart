@@ -433,13 +433,6 @@ class _AttendanceItem extends StatelessWidget {
           Container(
             width: screenSize.width * 0.12,
             height: screenSize.width * 0.12,
-            decoration: BoxDecoration(
-              // ignore: deprecated_member_use
-              color: statusColor.withOpacity(0.14),
-              borderRadius: BorderRadius.circular(
-                AppTheme.getSmallRadius(screenSize),
-              ),
-            ),
             child: Icon(
               statusIcon,
               color: statusColor,

@@ -43,7 +43,7 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
   bool _busy = false; // evita reentradas mientras navegamos
 
   // Switch: revisión del alumno (ProcessingView full vs headless)
-  bool _showResultInProcessing = true;
+  bool _showResultInProcessing = false;
 
   // Buffer de entrada
   final FocusNode _focusNode = FocusNode();
@@ -405,23 +405,16 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
         escuelaId = cached;
       }
 
-      // 3) Elegir modo según el switch
-      final displayMode = _showResultInProcessing
-          ? ProcessingDisplayMode.full
-          : ProcessingDisplayMode.headless;
-
-      final returnDetailed = !_showResultInProcessing; // si headless => true
-
-      // 4) Determinar el tipo de acceso actual del sistema para el procesamiento
+      // 3) Determinar el tipo de acceso actual del sistema para el procesamiento
       ScannerAccessType currentAccessType =
           widget.accessType ?? ScannerAccessType.automatic;
       bool currentIsDefaultEntryConfig = widget.isDefaultEntryConfig ?? true;
+      TurnoProvider? turnoProvider;
 
       // 🔧 FIX: Para modo automático, usar el tipo de acceso actual del sistema
       if (currentAccessType == ScannerAccessType.automatic) {
         try {
-          final turnoProvider =
-              Provider.of<TurnoProvider>(context, listen: false);
+          turnoProvider = Provider.of<TurnoProvider>(context, listen: false);
           final accessPhase = turnoProvider.resolveAccessPhase();
           currentAccessType = accessPhase.type;
 
@@ -439,7 +432,31 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
         }
       }
 
-      // 5) Navegar a ProcessingView con parámetros completos
+      if (!_showResultInProcessing) {
+        turnoProvider ??= Provider.of<TurnoProvider>(context, listen: false);
+        final result = await ScannerService().processScannedCode(
+          scannedCode: code,
+          adminId: admin.id,
+          escuelaIdFromContext: escuelaId,
+          accessType: currentAccessType,
+          isDefaultEntryConfig: currentIsDefaultEntryConfig,
+          isExtracurricular: widget.isExtracurricular,
+          turnoProvider: turnoProvider,
+        );
+
+        if (!mounted) return;
+        final success = result['success'] == true;
+        final msg = success
+            ? (result['access']?['message']?.toString() ??
+                'Notificación enviada correctamente.')
+            : (result['error']?.toString() ??
+                'No se pudo registrar el escaneo.');
+        _showSnackBar(msg, isError: !success);
+        if (success) widget.onCodeScanned(code);
+        return;
+      }
+
+      // 4) Navegar a ProcessingView con parámetros completos
       // ignore: use_build_context_synchronously
       final result = await Navigator.of(context).push(
         MaterialPageRoute(
@@ -450,8 +467,8 @@ class _PhysicalScannerViewState extends State<PhysicalScannerView>
             accessType: currentAccessType,
             isDefaultEntryConfig: currentIsDefaultEntryConfig,
             isExtracurricular: widget.isExtracurricular,
-            displayMode: displayMode,
-            returnDetailedResult: returnDetailed,
+            displayMode: ProcessingDisplayMode.full,
+            returnDetailedResult: false,
           ),
         ),
       );

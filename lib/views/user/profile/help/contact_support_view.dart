@@ -11,7 +11,7 @@ class ContactSupportView extends StatelessWidget {
   static const _instagramUser = 'alertaescolar.app';
   static const _whatsNumberIntl = '526645290620';
   static const _whatsDisplay = '+52 664 529 0620';
-  static const _email = 'contacto@alertaescolar.mx';
+  static const _email = 'alertaescolar.team@gmail.com';
 
   @override
   Widget build(BuildContext context) {
@@ -31,8 +31,8 @@ class ContactSupportView extends StatelessWidget {
         ),
         backgroundColor: AppTheme.getSurfaceColor(context),
         foregroundColor: AppTheme.getTextPrimaryColor(context),
-        elevation: 1,
-        shadowColor: AppTheme.getShadowColor(context),
+        elevation: 0,
+        shadowColor: Colors.transparent,
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),
@@ -44,68 +44,37 @@ class ContactSupportView extends StatelessWidget {
         padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
         children: [
           // Header con descripción
-          Container(
+          Padding(
             padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppTheme.accentPurple.withOpacity(0.1),
-                  AppTheme.accentPurple.withOpacity(0.05),
-                ],
-              ),
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-              border: Border.all(
-                color: AppTheme.accentPurple.withOpacity(0.2),
-                width: 1,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding:
-                          EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
-                      decoration: BoxDecoration(
-                        color: AppTheme.accentPurple.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(
-                            AppTheme.getSmallRadius(screenSize)),
+                Icon(
+                  Icons.support_agent,
+                  color: AppTheme.accentPurple,
+                  size: screenSize.width * 0.07,
+                ),
+                SizedBox(width: AppTheme.getMediumPadding(screenSize)),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '¿Necesitas ayuda?',
+                        style: AppTheme.getSubtitle1(screenSize).copyWith(
+                          color: AppTheme.getTextPrimaryColor(context),
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                      child: Icon(
-                        Icons.support_agent,
-                        color: AppTheme.accentPurple,
-                        size: screenSize.width * 0.07,
+                      SizedBox(
+                          height: AppTheme.getSmallPadding(screenSize) * 0.3),
+                      Text(
+                        'Contacta con nuestro equipo de soporte',
+                        style: AppTheme.getCaption(screenSize).copyWith(
+                          color: AppTheme.getTextSecondaryColor(context),
+                        ),
                       ),
-                    ),
-                    SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '¿Necesitas ayuda?',
-                            style: AppTheme.getSubtitle1(screenSize).copyWith(
-                              color: AppTheme.getTextPrimaryColor(context),
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          SizedBox(
-                              height:
-                                  AppTheme.getSmallPadding(screenSize) * 0.3),
-                          Text(
-                            'Contacta con nuestro equipo de soporte',
-                            style: AppTheme.getCaption(screenSize).copyWith(
-                              color: AppTheme.getTextSecondaryColor(context),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -306,13 +275,6 @@ class _ChannelCard extends StatelessWidget {
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
         border: Border.all(color: AppTheme.getBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
       child: Column(
@@ -320,20 +282,10 @@ class _ChannelCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                padding:
-                    EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.8),
-                decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
-                  color: AppTheme.accentPurple.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getSmallRadius(screenSize)),
-                ),
-                child: Icon(
-                  icon,
-                  color: AppTheme.accentPurple,
-                  size: screenSize.width * 0.06,
-                ),
+              Icon(
+                icon,
+                color: AppTheme.accentPurple,
+                size: screenSize.width * 0.06,
               ),
               SizedBox(width: AppTheme.getMediumPadding(screenSize)),
               Expanded(

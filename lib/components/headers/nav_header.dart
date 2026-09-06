@@ -34,13 +34,7 @@ class NavHeader extends StatelessWidget {
           title: Container(
             decoration: BoxDecoration(
               color: AppTheme.getSurfaceColor(context),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.getShadowColor(context),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              boxShadow: const [],
             ),
             child: Padding(
               padding: EdgeInsets.symmetric(
@@ -129,12 +123,6 @@ class NavHeader extends StatelessWidget {
           child: Container(
             width: screenSize.width * 0.1,
             height: screenSize.width * 0.1,
-            decoration: BoxDecoration(
-              color: AppTheme.accentPurple.withOpacity(0.0),
-              borderRadius: BorderRadius.circular(
-                AppTheme.getSmallRadius(screenSize),
-              ),
-            ),
             child: IconButton(
               tooltip: 'Regresar',
               icon: Icon(
@@ -158,7 +146,7 @@ class NavHeader extends StatelessWidget {
             style: AppTheme.getH2(screenSize).copyWith(
               color: AppTheme.getTextPrimaryColor(context),
               fontWeight: FontWeight.w600,
-              letterSpacing: -0.3,
+              letterSpacing: 0,
             ),
           ),
         ),

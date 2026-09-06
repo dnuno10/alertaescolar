@@ -25,13 +25,7 @@ class StudentCard extends StatelessWidget {
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
         border: Border.all(color: AppTheme.getBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Material(
         color: Colors.transparent,
@@ -55,7 +49,8 @@ class StudentCard extends StatelessWidget {
                         style: AppTheme.getSubtitle1(screenSize).copyWith(
                           color: AppTheme.getTextPrimaryColor(context),
                         ),
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                        softWrap: true,
                       ),
                       SizedBox(height: screenSize.height * 0.005),
                       Text(
@@ -92,11 +87,6 @@ class StudentCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppTheme.getTextSecondaryColor(context),
-                  size: screenSize.width * 0.06,
                 ),
               ],
             ),

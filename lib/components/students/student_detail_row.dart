@@ -41,12 +41,6 @@ class StudentDetailRow extends StatelessWidget {
           width: screenSize.width * 0.1,
           height: screenSize.width * 0.1,
           constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-          decoration: BoxDecoration(
-            // ignore: deprecated_member_use
-            color: iconColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(
-                AppTheme.getSmallRadius(screenSize) * 0.8),
-          ),
           child: Icon(
             icon,
             size: screenSize.width * 0.05,

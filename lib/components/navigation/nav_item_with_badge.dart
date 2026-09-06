@@ -56,18 +56,11 @@ class NavItemWithBadge extends StatelessWidget {
                 children: [
                   Container(
                     padding: EdgeInsets.all(screenSize.height * 0.006),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppTheme.accentPurple
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(
-                          AppTheme.getSmallRadius(screenSize) * 0.8),
-                    ),
                     child: Icon(
                       icon,
                       size: screenSize.height * 0.025,
                       color: isSelected
-                          ? Colors.white
+                          ? AppTheme.accentPurple
                           : AppTheme.getTextSecondaryColor(context),
                     ),
                   ),

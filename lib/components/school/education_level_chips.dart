@@ -36,12 +36,6 @@ class EducationLevelChips extends StatelessWidget {
               Container(
                 padding:
                     EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.7),
-                decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
-                  color: AppTheme.accentPurple.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getSmallRadius(screenSize)),
-                ),
                 child: Icon(
                   Icons.school_rounded,
                   size: screenSize.height * 0.02,
@@ -72,14 +66,7 @@ class EducationLevelChips extends StatelessWidget {
                   color: AppTheme.accentPurple,
                   borderRadius: BorderRadius.circular(
                       AppTheme.getLargeRadius(screenSize)),
-                  boxShadow: [
-                    BoxShadow(
-                      // ignore: deprecated_member_use
-                      color: AppTheme.accentPurple.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+                  boxShadow: const [],
                 ),
                 child: Text(
                   level,

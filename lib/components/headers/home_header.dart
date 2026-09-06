@@ -18,8 +18,6 @@ class HomeHeader extends StatelessWidget {
     final innerPad = AppTheme.getMediumPadding(screenSize);
     final smallPad = AppTheme.getSmallPadding(screenSize);
     final avatarSide = screenSize.height * 0.065;
-    final borderW = screenSize.width * 0.0025;
-    final radius = AppTheme.getLargeRadius(screenSize);
 
     return SliverToBoxAdapter(
       child: Column(
@@ -57,26 +55,16 @@ class HomeHeader extends StatelessWidget {
 
           SizedBox(height: smallPad), // Espacio entre banner y header
 
-          // Contenedor principal del header con bordes redondeados y margen
-          Container(
-            margin: EdgeInsets.symmetric(
+          Padding(
+            padding: EdgeInsets.symmetric(
               horizontal: outerPad * 0.5, // margen lateral
               vertical: smallPad * 0.6, // margen superior/inferior
             ),
-            decoration: BoxDecoration(
-              color: AppTheme.getCardColor(context),
-              borderRadius:
-                  BorderRadius.circular(radius), // redondeado completo
-              border: Border.all(
-                color: AppTheme.getDividerColor(context),
-                width: borderW,
-              ),
-            ),
             child: Padding(
               padding: EdgeInsets.fromLTRB(
-                outerPad,
+                innerPad * 0.5,
                 innerPad,
-                outerPad,
+                innerPad * 0.5,
                 innerPad,
               ),
               child: Consumer<UserProvider>(

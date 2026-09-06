@@ -85,12 +85,6 @@ class MessageContentForm extends StatelessWidget {
                         AppTheme.getSmallPadding(screenSize) * 0.8),
                     padding: EdgeInsets.all(
                         AppTheme.getSmallPadding(screenSize) * 0.6),
-                    decoration: BoxDecoration(
-                      // ignore: deprecated_member_use
-                      color: AppTheme.accentBlue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(
-                          AppTheme.getSmallRadius(screenSize)),
-                    ),
                     child: Icon(Icons.title_rounded,
                         color: AppTheme.accentBlue,
                         size: screenSize.height * 0.022),
@@ -234,13 +228,7 @@ class _CounterPill extends StatelessWidget {
                 // ignore: deprecated_member_use
                 .withOpacity(0.65), // <- translúcido
             borderRadius: BorderRadius.circular(radius),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.getShadowColor(context),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            boxShadow: const [],
           ),
           child: Text(
             text,

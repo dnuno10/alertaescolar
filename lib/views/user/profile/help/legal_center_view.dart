@@ -25,8 +25,8 @@ class LegalCenterView extends StatelessWidget {
           ),
           backgroundColor: AppTheme.getSurfaceColor(context),
           foregroundColor: AppTheme.getTextPrimaryColor(context),
-          elevation: 1,
-          shadowColor: AppTheme.getShadowColor(context),
+          elevation: 0,
+          shadowColor: Colors.transparent,
           leading: IconButton(
             tooltip: 'Volver',
             onPressed: () {
@@ -153,72 +153,6 @@ class _PrivacyContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Título
-          Container(
-            padding: EdgeInsets.all(AppTheme.getMediumPadding(size)),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppTheme.accentPurple.withOpacity(0.1),
-                  AppTheme.accentPurple.withOpacity(0.05),
-                ],
-              ),
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getMediumRadius(size)),
-              border: Border.all(
-                color: AppTheme.accentPurple.withOpacity(0.2),
-                width: 1,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(AppTheme.getSmallPadding(size)),
-                      decoration: BoxDecoration(
-                        color: AppTheme.accentPurple.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(
-                            AppTheme.getSmallRadius(size)),
-                      ),
-                      child: Icon(
-                        Icons.privacy_tip_outlined,
-                        color: AppTheme.accentPurple,
-                        size: size.width * 0.07,
-                      ),
-                    ),
-                    SizedBox(width: AppTheme.getMediumPadding(size)),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Tu privacidad es importante',
-                            style: AppTheme.getH2(size).copyWith(
-                              color: AppTheme.getTextPrimaryColor(context),
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          SizedBox(
-                              height: AppTheme.getSmallPadding(size) * 0.5),
-                          Text(
-                            'Protegemos tus datos personales',
-                            style: AppTheme.getCaption(size).copyWith(
-                              color: AppTheme.getTextSecondaryColor(context),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: AppTheme.getSmallPadding(size)),
           // Meta
           Padding(
             padding: EdgeInsets.symmetric(
@@ -357,7 +291,7 @@ class _PrivacyContent extends StatelessWidget {
                 ),
                 SizedBox(height: AppTheme.getSmallPadding(size) * 0.8),
                 Text(
-                  'Si tienes dudas sobre esta política o deseas ejercer tus derechos, escríbenos a contacto@alertaescolar.mx.',
+                  'Si tienes dudas sobre esta política o deseas ejercer tus derechos, escríbenos a alertaescolar.team@gmail.com.',
                   style: AppTheme.getBodyMedium(size).copyWith(
                     color: AppTheme.getTextSecondaryColor(context),
                     height: 1.5,
@@ -461,72 +395,6 @@ class _TermsContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Título
-          Container(
-            padding: EdgeInsets.all(AppTheme.getMediumPadding(size)),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppTheme.accentPurple.withOpacity(0.1),
-                  AppTheme.accentPurple.withOpacity(0.05),
-                ],
-              ),
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getMediumRadius(size)),
-              border: Border.all(
-                color: AppTheme.accentPurple.withOpacity(0.2),
-                width: 1,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(AppTheme.getSmallPadding(size)),
-                      decoration: BoxDecoration(
-                        color: AppTheme.accentPurple.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(
-                            AppTheme.getSmallRadius(size)),
-                      ),
-                      child: Icon(
-                        Icons.gavel_outlined,
-                        color: AppTheme.accentPurple,
-                        size: size.width * 0.07,
-                      ),
-                    ),
-                    SizedBox(width: AppTheme.getMediumPadding(size)),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Bienvenido/a a Alerta Escolar',
-                            style: AppTheme.getH2(size).copyWith(
-                              color: AppTheme.getTextPrimaryColor(context),
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          SizedBox(
-                              height: AppTheme.getSmallPadding(size) * 0.5),
-                          Text(
-                            'Condiciones de uso y servicio',
-                            style: AppTheme.getCaption(size).copyWith(
-                              color: AppTheme.getTextSecondaryColor(context),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: AppTheme.getSmallPadding(size)),
           // Meta
           Padding(
             padding: EdgeInsets.symmetric(
@@ -665,7 +533,7 @@ class _TermsContent extends StatelessWidget {
                 ),
                 SizedBox(height: AppTheme.getSmallPadding(size) * 0.8),
                 Text(
-                  'Para dudas legales o soporte, escríbenos a contacto@alertaescolar.mx.',
+                  'Para dudas legales o soporte, escríbenos a alertaescolar.team@gmail.com.',
                   style: AppTheme.getBodyMedium(size).copyWith(
                     color: AppTheme.getTextSecondaryColor(context),
                     height: 1.5,

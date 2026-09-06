@@ -237,7 +237,7 @@ class _SelectableStudentsDirectoryViewState
                   showWhenUnlinked: false,
                   offset: Offset(0, yOffset.toDouble()),
                   child: Material(
-                    elevation: 8,
+                    elevation: 0,
                     color: AppTheme.getCardColor(context),
                     borderRadius: BorderRadius.circular(
                         AppTheme.getMediumRadius(screenSize)),
@@ -551,15 +551,7 @@ class _SelectableStudentsDirectoryViewState
                             color: AppTheme.getCardColor(context),
                             borderRadius: BorderRadius.circular(
                                 AppTheme.getLargeRadius(screenSize)),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.getShadowColor(context)
-                                    // ignore: deprecated_member_use
-                                    .withOpacity(0.1),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                            boxShadow: const [],
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -753,40 +745,30 @@ class _SelectableStudentsDirectoryViewState
                                 SizedBox(
                                     height:
                                         AppTheme.getMediumPadding(screenSize)),
-                                Container(
-                                  padding: EdgeInsets.all(
-                                      AppTheme.getSmallPadding(screenSize)),
-                                  decoration: BoxDecoration(
-                                    // ignore: deprecated_member_use
-                                    color: AppTheme.accentBlue.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(
-                                        AppTheme.getSmallRadius(screenSize)),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.info_outline_rounded,
-                                        color: AppTheme.accentBlue,
-                                        size: screenSize.height * 0.02,
-                                      ),
-                                      SizedBox(
-                                          width: AppTheme.getSmallPadding(
-                                              screenSize)),
-                                      Expanded(
-                                        child: Text(
-                                          'Mostrando ${filteredStudents.length} de ${studentProvider.students.length} estudiantes',
-                                          style: AppTheme.getCaptionSmall(
-                                                  screenSize)
-                                              .copyWith(
-                                            color: AppTheme.accentBlue,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline_rounded,
+                                      color: AppTheme.accentBlue,
+                                      size: screenSize.height * 0.02,
+                                    ),
+                                    SizedBox(
+                                        width: AppTheme.getSmallPadding(
+                                            screenSize)),
+                                    Expanded(
+                                      child: Text(
+                                        'Mostrando ${filteredStudents.length} de ${studentProvider.students.length} estudiantes',
+                                        style:
+                                            AppTheme.getCaptionSmall(screenSize)
+                                                .copyWith(
+                                          color: AppTheme.accentBlue,
+                                          fontWeight: FontWeight.w600,
                                         ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
                               ],
 

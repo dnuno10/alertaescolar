@@ -105,15 +105,6 @@ class PrivacyView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Título
-              Text(
-                'Tu privacidad es importante',
-                style: AppTheme.getH2(size).copyWith(
-                  color: AppTheme.getTextPrimaryColor(context),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              SizedBox(height: AppTheme.getSmallPadding(size)),
               // Meta
               Row(
                 children: [
@@ -248,7 +239,7 @@ class PrivacyView extends StatelessWidget {
                     ),
                     SizedBox(height: AppTheme.getSmallPadding(size) * 0.8),
                     Text(
-                      'Si tienes dudas sobre esta política o deseas ejercer tus derechos, escríbenos a contacto@alertaescolar.mx.',
+                      'Si tienes dudas sobre esta política o deseas ejercer tus derechos, escríbenos a alertaescolar.team@gmail.com.',
                       style: AppTheme.getBodyMedium(size).copyWith(
                         color: AppTheme.getTextSecondaryColor(context),
                         height: 1.5,

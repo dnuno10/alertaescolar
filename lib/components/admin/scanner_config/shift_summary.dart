@@ -84,13 +84,6 @@ class ShiftSummary extends StatelessWidget {
             children: [
               Container(
                 padding: EdgeInsets.all(padXS),
-                decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
-                  color: color.withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(radS),
-                  // ignore: deprecated_member_use
-                  border: Border.all(color: color.withOpacity(0.35), width: 1),
-                ),
                 child: Icon(
                   icon,
                   color: color,

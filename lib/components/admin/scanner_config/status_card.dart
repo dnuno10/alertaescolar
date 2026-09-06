@@ -21,8 +21,6 @@ class StatusCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final padXS = AppTheme.getSmallPadding(screenSize) * 0.7;
     final padS = AppTheme.getSmallPadding(screenSize);
-    final radL = AppTheme.getLargeRadius(screenSize);
-
     return Semantics(
       label: '$title: $time',
       child: Container(
@@ -40,13 +38,6 @@ class StatusCard extends StatelessWidget {
             // Ícono en “pill” sutil (sin sombra)
             Container(
               padding: EdgeInsets.all(padXS),
-              decoration: BoxDecoration(
-                // ignore: deprecated_member_use
-                color: color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(radL),
-                // ignore: deprecated_member_use
-                border: Border.all(color: color.withOpacity(0.25), width: 1),
-              ),
               child: Icon(
                 icon,
                 color: color,

@@ -275,13 +275,7 @@ class _NoSessionCard extends StatelessWidget {
         color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
         border: Border.all(color: AppTheme.getBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -332,13 +326,7 @@ class _HelpVideoCard extends StatelessWidget {
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
         border: Border.all(color: AppTheme.getBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: ListTile(
         contentPadding: EdgeInsets.symmetric(
@@ -347,11 +335,6 @@ class _HelpVideoCard extends StatelessWidget {
         ),
         leading: Container(
           padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
-          decoration: BoxDecoration(
-            color: AppTheme.accentPurple.withOpacity(0.12),
-            borderRadius:
-                BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-          ),
           child: const Icon(Icons.ondemand_video_rounded),
         ),
         title: Text(

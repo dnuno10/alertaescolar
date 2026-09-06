@@ -6,15 +6,15 @@ class AppTheme {
   // =========================
   // BRAND & SEMÁNTICA (COLORES)
   // =========================
-  // Paleta principal: CTA negro, verde institucional, neutros cálidos/fríos.
-  static const Color primaryColor = Color(0xFF0D0D0D); // CTA / acciones clave
-  static const Color primaryColorDark = Color(0xFF111213);
+  // Paleta principal: morado institucional, blanco óptico y bordes ligeros.
+  static const Color primaryColor = Color(0xFF7C3AED);
+  static const Color primaryColorDark = Color(0xFFA78BFA);
   static const Color secondaryColor = Color(0xFF58CC02); // Verde institucional
 
-  static const Color accentPurple = Color(0xFF7C3AED); // Violeta neón
-  static const Color accentYellow = Color(0xFFEAB308); // Amarillo neón
-  static const Color accentBlue = Color(0xFF7C3AED); // Cian brillante
-  static const Color accentOrange = Color(0xFF4361EE); // Naranja vivo
+  static const Color accentPurple = Color(0xFF7C3AED);
+  static const Color accentYellow = Color(0xFFEAB308);
+  static const Color accentBlue = Color(0xFF7C3AED);
+  static const Color accentOrange = Color(0xFF4361EE);
   static const Color accentGold = accentYellow;
 
   // Estados
@@ -24,7 +24,7 @@ class AppTheme {
   static const Color infoColor = Color(0xFF4C9DFF);
 
   // Fondos
-  static const Color backgroundLight = Color(0xFFF7F8FA); // gris muy claro
+  static const Color backgroundLight = Color(0xFFFFFFFF);
   static const Color surfaceLight = Color(0xFFFFFFFF);
   static const Color cardLight = Color(0xFFFFFFFF);
 
@@ -60,7 +60,7 @@ class AppTheme {
   static const Color surfaceColor = surfaceLight;
   static const Color onPrimaryColor = Color(0xFFFFFFFF);
   static const Color onPrimarySecondaryColor = Color(0xFFB3B3B3);
-  static const Color primaryLightColor = Color(0x14000000); // 8% negro
+  static const Color primaryLightColor = Color(0x147C3AED);
 
   static const Color iconColor = textPrimaryLight;
   static const Color inputFillColor = Color(0xFFF2F3F6);
@@ -104,8 +104,8 @@ class AppTheme {
     return value * k;
   }
 
-  /// Tamaños de texto responsivos
-  static double ts(Size s, double px) => scale(s, px);
+  /// Tamaños de texto estables para evitar saltos visuales por viewport.
+  static double ts(Size s, double px) => px;
 
   /// Radios responsivos
   static double r(Size s, double px) => scale(s, px);
@@ -201,7 +201,7 @@ class AppTheme {
   static Color getContainerBackgroundColor(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark
           ? const Color(0xFF202227)
-          : const Color(0xFFF5F6FA);
+          : Colors.white;
 
   static Color getOverlayColor(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark
@@ -219,76 +219,76 @@ class AppTheme {
   // TIPOGRAFÍA DINÁMICA
   // =========================
   // Headers más expresivos; números con Space Grotesk (balances/montos)
-  static TextStyle getH1(Size s) => GoogleFonts.spaceGrotesk(
+  static TextStyle getH1(Size s) => GoogleFonts.inter(
         fontSize: ts(s, 30),
         fontWeight: FontWeight.w800,
-        letterSpacing: -0.2,
+        letterSpacing: 0,
         height: 1.2,
         color: textPrimaryLight,
       );
 
-  static TextStyle getH2(Size s) => GoogleFonts.spaceGrotesk(
+  static TextStyle getH2(Size s) => GoogleFonts.inter(
         fontSize: ts(s, 24),
         fontWeight: FontWeight.w700,
-        letterSpacing: -0.1,
+        letterSpacing: 0,
         height: 1.25,
         color: textPrimaryLight,
       );
 
-  static TextStyle getBodyLarge(Size s) => GoogleFonts.plusJakartaSans(
+  static TextStyle getBodyLarge(Size s) => GoogleFonts.inter(
         fontSize: ts(s, 17),
         fontWeight: FontWeight.w500,
         height: 1.4,
         color: textPrimaryLight,
       );
 
-  static TextStyle getBodyMedium(Size s) => GoogleFonts.plusJakartaSans(
+  static TextStyle getBodyMedium(Size s) => GoogleFonts.inter(
         fontSize: ts(s, 15.5),
         fontWeight: FontWeight.w500,
         height: 1.45,
         color: textPrimaryLight,
       );
 
-  static TextStyle getCaption(Size s) => GoogleFonts.plusJakartaSans(
+  static TextStyle getCaption(Size s) => GoogleFonts.inter(
         fontSize: ts(s, 13.5),
         fontWeight: FontWeight.w500,
         height: 1.35,
         color: textSecondaryLight,
       );
 
-  static TextStyle getCaptionSmall(Size s) => GoogleFonts.plusJakartaSans(
+  static TextStyle getCaptionSmall(Size s) => GoogleFonts.inter(
         fontSize: ts(s, 12.5),
         fontWeight: FontWeight.w500,
         height: 1.3,
         color: textSecondaryLight,
       );
 
-  static TextStyle getSubtitle1(Size s) => GoogleFonts.plusJakartaSans(
+  static TextStyle getSubtitle1(Size s) => GoogleFonts.inter(
         fontSize: ts(s, 16),
         fontWeight: FontWeight.w700,
         height: 1.35,
         color: textPrimaryLight,
       );
 
-  static TextStyle getSubtitle2(Size s) => GoogleFonts.plusJakartaSans(
+  static TextStyle getSubtitle2(Size s) => GoogleFonts.inter(
         fontSize: ts(s, 14),
         fontWeight: FontWeight.w700,
         height: 1.35,
         color: textPrimaryLight,
       );
 
-  static TextStyle getButton(Size s) => GoogleFonts.plusJakartaSans(
+  static TextStyle getButton(Size s) => GoogleFonts.inter(
         fontSize: ts(s, 15),
         fontWeight: FontWeight.w800,
-        letterSpacing: 0.2,
+        letterSpacing: 0,
         height: 1.2,
         color: onPrimaryColor,
       );
 
-  static TextStyle getAppBarTitle(Size s) => GoogleFonts.plusJakartaSans(
+  static TextStyle getAppBarTitle(Size s) => GoogleFonts.inter(
         fontSize: ts(s, 18),
         fontWeight: FontWeight.w700,
-        letterSpacing: 0.1,
+        letterSpacing: 0,
         height: 1.25,
         color: textPrimaryLight,
       );
@@ -310,40 +310,40 @@ class AppTheme {
   // (LEGACY) estáticos – se conservan
   // ignore: provide_deprecation_message
   @deprecated
-  static TextStyle get h1 => GoogleFonts.podkova(
+  static TextStyle get h1 => GoogleFonts.inter(
       fontSize: 32, fontWeight: FontWeight.bold, color: textPrimaryLight);
   // ignore: provide_deprecation_message
   @deprecated
-  static TextStyle get h2 => GoogleFonts.podkova(
+  static TextStyle get h2 => GoogleFonts.inter(
       fontSize: 24, fontWeight: FontWeight.w600, color: textPrimaryLight);
   // ignore: provide_deprecation_message
   @deprecated
-  static TextStyle get bodyLarge => GoogleFonts.poppins(
+  static TextStyle get bodyLarge => GoogleFonts.inter(
       fontSize: 18, fontWeight: FontWeight.w400, color: textPrimaryLight);
   // ignore: provide_deprecation_message
   @deprecated
-  static TextStyle get bodyMedium => GoogleFonts.poppins(
+  static TextStyle get bodyMedium => GoogleFonts.inter(
       fontSize: 16, fontWeight: FontWeight.w400, color: textPrimaryLight);
   // ignore: provide_deprecation_message
   @deprecated
-  static TextStyle get caption => GoogleFonts.poppins(
+  static TextStyle get caption => GoogleFonts.inter(
       fontSize: 14, fontWeight: FontWeight.w300, color: textSecondaryLight);
   // ignore: provide_deprecation_message
   @deprecated
-  static TextStyle get captionSmall => GoogleFonts.poppins(
+  static TextStyle get captionSmall => GoogleFonts.inter(
       fontSize: 13, fontWeight: FontWeight.w300, color: textSecondaryLight);
   // ignore: provide_deprecation_message
   @deprecated
-  static TextStyle get subtitle1 => GoogleFonts.poppins(
+  static TextStyle get subtitle1 => GoogleFonts.inter(
       fontSize: 16, fontWeight: FontWeight.w500, color: textPrimaryLight);
   // ignore: provide_deprecation_message
   @deprecated
-  static TextStyle get subtitle2 => GoogleFonts.poppins(
+  static TextStyle get subtitle2 => GoogleFonts.inter(
       fontSize: 14, fontWeight: FontWeight.w500, color: textPrimaryLight);
   // ignore: provide_deprecation_message
   @deprecated
   static TextStyle get button =>
-      GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600);
+      GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600);
 
   // =========================
   // RADIOS / PADDINGS DINÁMICOS
@@ -359,10 +359,10 @@ class AppTheme {
   // =========================
   // NUMERAL STYLE para montos
   // =========================
-  static TextStyle numericXL(Size s) => GoogleFonts.spaceGrotesk(
+  static TextStyle numericXL(Size s) => GoogleFonts.inter(
         fontSize: ts(s, 34),
         fontWeight: FontWeight.w700,
-        letterSpacing: -0.5,
+        letterSpacing: 0,
         height: 1.1,
         color: getTextPrimaryColorFromSize(s, isDark: false),
       );
@@ -376,8 +376,22 @@ class AppTheme {
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
+    fontFamily: GoogleFonts.inter().fontFamily,
+    splashFactory: NoSplash.splashFactory,
+    highlightColor: Colors.transparent,
+    shadowColor: Colors.transparent,
+    scaffoldBackgroundColor: backgroundLight,
+    canvasColor: backgroundLight,
+    visualDensity: VisualDensity.adaptivePlatformDensity,
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+      },
+    ),
     colorScheme: ColorScheme.fromSeed(
-      seedColor: secondaryColor,
+      seedColor: primaryColor,
       brightness: Brightness.light,
       // ignore: deprecated_member_use
       background: backgroundLight,
@@ -387,49 +401,51 @@ class AppTheme {
       onPrimary: Colors.white,
       secondary: secondaryColor,
       error: errorColor,
+      outline: borderLight,
+      surfaceTint: Colors.transparent,
     ),
 
-    textTheme: GoogleFonts.plusJakartaSansTextTheme().copyWith(
-      displayLarge: GoogleFonts.spaceGrotesk(
+    textTheme: GoogleFonts.interTextTheme().copyWith(
+      displayLarge: GoogleFonts.inter(
           fontSize: 34,
           fontWeight: FontWeight.w700,
-          letterSpacing: -0.5,
+          letterSpacing: 0,
           height: 1.1,
           color: textPrimaryLight),
-      displayMedium: GoogleFonts.plusJakartaSans(
+      displayMedium: GoogleFonts.inter(
           fontSize: 28,
           fontWeight: FontWeight.w800,
-          letterSpacing: -0.2,
+          letterSpacing: 0,
           color: textPrimaryLight),
-      displaySmall: GoogleFonts.plusJakartaSans(
+      displaySmall: GoogleFonts.inter(
           fontSize: 24, fontWeight: FontWeight.w700, color: textPrimaryLight),
-      headlineLarge: GoogleFonts.plusJakartaSans(
+      headlineLarge: GoogleFonts.inter(
           fontSize: 22, fontWeight: FontWeight.w700, color: textPrimaryLight),
-      headlineMedium: GoogleFonts.plusJakartaSans(
+      headlineMedium: GoogleFonts.inter(
           fontSize: 20, fontWeight: FontWeight.w700, color: textPrimaryLight),
-      headlineSmall: GoogleFonts.plusJakartaSans(
+      headlineSmall: GoogleFonts.inter(
           fontSize: 18, fontWeight: FontWeight.w700, color: textPrimaryLight),
-      bodyLarge: GoogleFonts.plusJakartaSans(
+      bodyLarge: GoogleFonts.inter(
           fontSize: 16.5, fontWeight: FontWeight.w500, color: textPrimaryLight),
-      bodyMedium: GoogleFonts.plusJakartaSans(
+      bodyMedium: GoogleFonts.inter(
           fontSize: 15, fontWeight: FontWeight.w500, color: textPrimaryLight),
-      bodySmall: GoogleFonts.plusJakartaSans(
+      bodySmall: GoogleFonts.inter(
           fontSize: 13.5,
           fontWeight: FontWeight.w500,
           color: textSecondaryLight),
-      titleLarge: GoogleFonts.plusJakartaSans(
+      titleLarge: GoogleFonts.inter(
           fontSize: 16, fontWeight: FontWeight.w700, color: textPrimaryLight),
-      titleMedium: GoogleFonts.plusJakartaSans(
+      titleMedium: GoogleFonts.inter(
           fontSize: 14, fontWeight: FontWeight.w700, color: textPrimaryLight),
-      titleSmall: GoogleFonts.plusJakartaSans(
+      titleSmall: GoogleFonts.inter(
           fontSize: 12.5,
           fontWeight: FontWeight.w700,
           color: textSecondaryLight),
-      labelLarge: GoogleFonts.plusJakartaSans(
+      labelLarge: GoogleFonts.inter(
           fontSize: 14, fontWeight: FontWeight.w800, color: textPrimaryLight),
-      labelMedium: GoogleFonts.plusJakartaSans(
+      labelMedium: GoogleFonts.inter(
           fontSize: 12, fontWeight: FontWeight.w700, color: textPrimaryLight),
-      labelSmall: GoogleFonts.plusJakartaSans(
+      labelSmall: GoogleFonts.inter(
           fontSize: 10.5,
           fontWeight: FontWeight.w700,
           color: textSecondaryLight),
@@ -443,7 +459,7 @@ class AppTheme {
       backgroundColor: surfaceLight,
       foregroundColor: textPrimaryLight,
       surfaceTintColor: Colors.transparent,
-      titleTextStyle: GoogleFonts.plusJakartaSans(
+      titleTextStyle: GoogleFonts.inter(
           fontSize: 18, fontWeight: FontWeight.w700, color: textPrimaryLight),
       iconTheme: const IconThemeData(color: textPrimaryLight, size: 24),
       actionsIconTheme: const IconThemeData(color: textPrimaryLight, size: 24),
@@ -453,27 +469,44 @@ class AppTheme {
         statusBarBrightness: Brightness.light,
       ),
     ),
+    dividerTheme: DividerThemeData(
+      color: borderLight.withOpacity(0.65),
+      space: 1,
+      thickness: 0.6,
+    ),
+    iconButtonTheme: IconButtonThemeData(
+      style: IconButton.styleFrom(
+        backgroundColor: Colors.transparent,
+        foregroundColor: textPrimaryLight,
+        elevation: 0,
+        highlightColor: Colors.transparent,
+      ),
+    ),
 
     // Botones
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        textStyle: GoogleFonts.plusJakartaSans(
+        textStyle: GoogleFonts.inter(
             fontSize: 15, fontWeight: FontWeight.w800, height: 1.2),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        textStyle: GoogleFonts.plusJakartaSans(
+        textStyle: GoogleFonts.inter(
             fontSize: 15, fontWeight: FontWeight.w800, height: 1.2),
       ),
     ),
@@ -484,7 +517,7 @@ class AppTheme {
         side: const BorderSide(color: primaryColor, width: 1.5),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        textStyle: GoogleFonts.plusJakartaSans(
+        textStyle: GoogleFonts.inter(
             fontSize: 15, fontWeight: FontWeight.w800, height: 1.2),
       ),
     ),
@@ -493,8 +526,7 @@ class AppTheme {
         foregroundColor: primaryColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        textStyle: GoogleFonts.plusJakartaSans(
-            fontSize: 14, fontWeight: FontWeight.w700),
+        textStyle: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700),
       ),
     ),
 
@@ -523,9 +555,9 @@ class AppTheme {
         borderSide: const BorderSide(color: errorColor, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      labelStyle: GoogleFonts.plusJakartaSans(
+      labelStyle: GoogleFonts.inter(
           fontSize: 14, fontWeight: FontWeight.w700, color: textSecondaryLight),
-      hintStyle: GoogleFonts.plusJakartaSans(
+      hintStyle: GoogleFonts.inter(
           fontSize: 14, fontWeight: FontWeight.w500, color: textSecondaryLight),
     ),
 
@@ -539,10 +571,10 @@ class AppTheme {
       selectedIconTheme: const IconThemeData(size: 24, color: primaryColor),
       unselectedIconTheme:
           const IconThemeData(size: 24, color: textSecondaryLight),
-      selectedLabelStyle: GoogleFonts.plusJakartaSans(
-          fontSize: 12, fontWeight: FontWeight.w800),
-      unselectedLabelStyle: GoogleFonts.plusJakartaSans(
-          fontSize: 12, fontWeight: FontWeight.w700),
+      selectedLabelStyle:
+          GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800),
+      unselectedLabelStyle:
+          GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700),
       showUnselectedLabels: true,
     ),
 
@@ -551,6 +583,10 @@ class AppTheme {
       backgroundColor: primaryColor,
       foregroundColor: Colors.white,
       elevation: 0,
+      focusElevation: 0,
+      hoverElevation: 0,
+      highlightElevation: 0,
+      disabledElevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
     ),
 
@@ -560,9 +596,9 @@ class AppTheme {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       iconColor: textPrimaryLight,
       textColor: textPrimaryLight,
-      titleTextStyle: GoogleFonts.plusJakartaSans(
+      titleTextStyle: GoogleFonts.inter(
           fontSize: 16, fontWeight: FontWeight.w700, color: textPrimaryLight),
-      subtitleTextStyle: GoogleFonts.plusJakartaSans(
+      subtitleTextStyle: GoogleFonts.inter(
           fontSize: 14, fontWeight: FontWeight.w500, color: textSecondaryLight),
     ),
 
@@ -577,9 +613,9 @@ class AppTheme {
       secondarySelectedColor: secondaryColor.withOpacity(0.14),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-      labelStyle: GoogleFonts.plusJakartaSans(
+      labelStyle: GoogleFonts.inter(
           fontSize: 12, fontWeight: FontWeight.w700, color: textPrimaryLight),
-      secondaryLabelStyle: GoogleFonts.plusJakartaSans(
+      secondaryLabelStyle: GoogleFonts.inter(
           fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
       brightness: Brightness.light,
     ),
@@ -604,23 +640,36 @@ class AppTheme {
   static ThemeData darkTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
+    fontFamily: GoogleFonts.inter().fontFamily,
+    splashFactory: NoSplash.splashFactory,
+    highlightColor: Colors.transparent,
+    shadowColor: Colors.transparent,
+    visualDensity: VisualDensity.adaptivePlatformDensity,
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+      },
+    ),
     colorScheme: ColorScheme.fromSeed(
-      seedColor: accentBlue, // azul principal del dark
+      seedColor: primaryColor,
       brightness: Brightness.dark,
       // ignore: deprecated_member_use
       background: backgroundDark,
       surface: surfaceDark,
     ).copyWith(
       // mantenemos tus semánticas
-      primary: accentBlue, // acciones principales en azul
+      primary: primaryColor,
       onPrimary: Colors.white,
       secondary: secondaryColor,
       error: errorColor,
-      outline: borderDark, // bordes azulados
+      outline: borderDark,
+      surfaceTint: Colors.transparent,
     ),
     // Tipografías: igual que ya tienes
-    textTheme: GoogleFonts.plusJakartaSansTextTheme(ThemeData.dark().textTheme)
-        .copyWith(/* ...lo tuyo... */),
+    textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme).copyWith(
+        /* ...lo tuyo... */),
 
     // AppBar: azul marino
     appBarTheme: AppBarTheme(
@@ -630,7 +679,7 @@ class AppTheme {
       backgroundColor: surfaceDark, // 0xFF0F1629
       foregroundColor: textPrimaryDark,
       surfaceTintColor: Colors.transparent,
-      titleTextStyle: GoogleFonts.plusJakartaSans(
+      titleTextStyle: GoogleFonts.inter(
           fontSize: 18, fontWeight: FontWeight.w700, color: textPrimaryDark),
       iconTheme: const IconThemeData(color: textPrimaryDark, size: 24),
       actionsIconTheme: const IconThemeData(color: textPrimaryDark, size: 24),
@@ -640,48 +689,64 @@ class AppTheme {
         statusBarBrightness: Brightness.dark,
       ),
     ),
+    dividerTheme: DividerThemeData(
+      color: borderDark.withOpacity(0.8),
+      space: 1,
+      thickness: 0.6,
+    ),
+    iconButtonTheme: IconButtonThemeData(
+      style: IconButton.styleFrom(
+        backgroundColor: Colors.transparent,
+        foregroundColor: textPrimaryDark,
+        elevation: 0,
+        highlightColor: Colors.transparent,
+      ),
+    ),
 
     // Botones: azul en dark
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         elevation: 0,
-        backgroundColor: const Color(0xFF4361EE),
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        textStyle: GoogleFonts.plusJakartaSans(
+        textStyle: GoogleFonts.inter(
             fontSize: 15, fontWeight: FontWeight.w800, height: 1.2),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         elevation: 0,
-        backgroundColor: const Color(0xFF4361EE),
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        textStyle: GoogleFonts.plusJakartaSans(
+        textStyle: GoogleFonts.inter(
             fontSize: 15, fontWeight: FontWeight.w800, height: 1.2),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         elevation: 0,
-        foregroundColor: const Color(0xFF4361EE),
-        side: const BorderSide(color: Color(0xFF4361EE), width: 1.5),
+        foregroundColor: primaryColor,
+        side: const BorderSide(color: primaryColor, width: 1.5),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        textStyle: GoogleFonts.plusJakartaSans(
+        textStyle: GoogleFonts.inter(
             fontSize: 15, fontWeight: FontWeight.w800, height: 1.2),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: const Color(0xFF4361EE),
+        foregroundColor: primaryColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        textStyle: GoogleFonts.plusJakartaSans(
-            fontSize: 14, fontWeight: FontWeight.w700),
+        textStyle: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700),
       ),
     ),
 
@@ -699,7 +764,7 @@ class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: Color(0xFF4361EE), width: 2),
+        borderSide: const BorderSide(color: primaryColor, width: 2),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
@@ -710,9 +775,9 @@ class AppTheme {
         borderSide: const BorderSide(color: errorColor, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      labelStyle: GoogleFonts.plusJakartaSans(
+      labelStyle: GoogleFonts.inter(
           fontSize: 14, fontWeight: FontWeight.w700, color: textSecondaryDark),
-      hintStyle: GoogleFonts.plusJakartaSans(
+      hintStyle: GoogleFonts.inter(
           fontSize: 14, fontWeight: FontWeight.w500, color: textSecondaryDark),
     ),
 
@@ -721,24 +786,27 @@ class AppTheme {
       type: BottomNavigationBarType.fixed,
       elevation: 0,
       backgroundColor: surfaceDark,
-      selectedItemColor: const Color(0xFF4361EE),
+      selectedItemColor: primaryColor,
       unselectedItemColor: textSecondaryDark,
-      selectedIconTheme:
-          const IconThemeData(size: 24, color: Color(0xFF4361EE)),
+      selectedIconTheme: const IconThemeData(size: 24, color: primaryColor),
       unselectedIconTheme:
           const IconThemeData(size: 24, color: textSecondaryDark),
-      selectedLabelStyle: GoogleFonts.plusJakartaSans(
-          fontSize: 12, fontWeight: FontWeight.w800),
-      unselectedLabelStyle: GoogleFonts.plusJakartaSans(
-          fontSize: 12, fontWeight: FontWeight.w700),
+      selectedLabelStyle:
+          GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800),
+      unselectedLabelStyle:
+          GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700),
       showUnselectedLabels: true,
     ),
 
     // FAB: azul
     floatingActionButtonTheme: FloatingActionButtonThemeData(
-      backgroundColor: const Color(0xFF4361EE),
+      backgroundColor: primaryColor,
       foregroundColor: Colors.white,
       elevation: 0,
+      focusElevation: 0,
+      hoverElevation: 0,
+      highlightElevation: 0,
+      disabledElevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
     ),
 
@@ -748,9 +816,9 @@ class AppTheme {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       iconColor: textPrimaryDark,
       textColor: textPrimaryDark,
-      titleTextStyle: GoogleFonts.plusJakartaSans(
+      titleTextStyle: GoogleFonts.inter(
           fontSize: 16, fontWeight: FontWeight.w700, color: textPrimaryDark),
-      subtitleTextStyle: GoogleFonts.plusJakartaSans(
+      subtitleTextStyle: GoogleFonts.inter(
           fontSize: 14, fontWeight: FontWeight.w500, color: textSecondaryDark),
     ),
 
@@ -760,14 +828,14 @@ class AppTheme {
       deleteIconColor: textSecondaryDark,
       disabledColor: const Color(0xFF192236),
       // ignore: deprecated_member_use
-      selectedColor: const Color(0xFF4361EE).withOpacity(0.22),
+      selectedColor: primaryColor.withOpacity(0.22),
       // ignore: deprecated_member_use
       secondarySelectedColor: secondaryColor.withOpacity(0.22),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-      labelStyle: GoogleFonts.plusJakartaSans(
+      labelStyle: GoogleFonts.inter(
           fontSize: 12, fontWeight: FontWeight.w700, color: textPrimaryDark),
-      secondaryLabelStyle: GoogleFonts.plusJakartaSans(
+      secondaryLabelStyle: GoogleFonts.inter(
           fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
       brightness: Brightness.dark,
     ),

@@ -33,13 +33,7 @@ class ManualInputCard extends StatelessWidget {
         color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(AppTheme.getMediumRadius(size)),
         border: Border.all(color: AppTheme.getBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Form(
         key: formKey,

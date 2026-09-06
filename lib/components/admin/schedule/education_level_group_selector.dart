@@ -37,14 +37,7 @@ class EducationLevelGroupSelector extends StatelessWidget {
         color: AppTheme.getCardColor(context),
         borderRadius:
             BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
-        boxShadow: [
-          BoxShadow(
-            // ignore: deprecated_member_use
-            color: AppTheme.getShadowColor(context).withOpacity(0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: const [],
         border: Border.all(
           // ignore: deprecated_member_use
           color: AppTheme.getBorderColor(context).withOpacity(0.1),

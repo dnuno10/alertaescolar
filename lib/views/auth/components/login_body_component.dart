@@ -101,7 +101,7 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
             ),
             style: IconButton.styleFrom(
               backgroundColor: AppTheme.getCardColor(context),
-              elevation: 2,
+              elevation: 0,
             ),
           ),
           SizedBox(width: AppTheme.getMediumPadding(size)),
@@ -140,14 +140,7 @@ class _LoginBodyComponentState extends State<LoginBodyComponent>
           topLeft: Radius.circular(AppTheme.getLargeRadius(size) * 1.5),
           topRight: Radius.circular(AppTheme.getLargeRadius(size) * 1.5),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 20,
-            spreadRadius: -5,
-            offset: const Offset(0, -8),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Column(
         children: [
@@ -440,14 +433,7 @@ class _GoogleSignInButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(AppTheme.getSmallRadius(size)),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.getShadowColor(context),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-                spreadRadius: -2,
-              ),
-            ],
+            boxShadow: const [],
           ),
           child: Material(
             color: Colors.transparent,
@@ -533,14 +519,7 @@ class _AppleSignInButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.black,
             borderRadius: BorderRadius.circular(AppTheme.getSmallRadius(size)),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.getShadowColor(context),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-                spreadRadius: -2,
-              ),
-            ],
+            boxShadow: const [],
           ),
           child: Material(
             color: Colors.transparent,

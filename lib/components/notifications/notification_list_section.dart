@@ -443,13 +443,6 @@ class _TypeGlyph extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        // ignore: deprecated_member_use
-        color: color.withOpacity(0.12),
-        shape: BoxShape.circle,
-        // ignore: deprecated_member_use
-        border: Border.all(color: color.withOpacity(0.35), width: 1),
-      ),
       alignment: Alignment.center,
       child: Icon(icon, size: inner, color: color),
     );
@@ -473,17 +466,9 @@ class _SoftGlyph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final radius = AppTheme.getLargeRadius(screenSize);
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        // ignore: deprecated_member_use
-        color: color.withOpacity(0.10),
-        borderRadius: BorderRadius.circular(radius),
-        // ignore: deprecated_member_use
-        border: Border.all(color: color.withOpacity(0.26), width: 1),
-      ),
       alignment: Alignment.center,
       child: Icon(icon, color: color, size: iconSize),
     );

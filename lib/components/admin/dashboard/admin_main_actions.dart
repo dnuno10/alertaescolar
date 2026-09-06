@@ -16,12 +16,9 @@ class AdminMainActions extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return Container(
-      padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius:
-            BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppTheme.getSmallPadding(screenSize) * 0.25,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,40 +139,20 @@ class AdminMainActions extends StatelessWidget {
         child: Container(
           padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 1.5),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                // ignore: deprecated_member_use
-                gradient[0].withOpacity(0.08),
-                // ignore: deprecated_member_use
-                gradient[1].withOpacity(0.03),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: AppTheme.getCardColor(context),
             borderRadius:
                 BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
             border: Border.all(
-              // ignore: deprecated_member_use
-              color: gradient[0].withOpacity(0.15),
-              width: 1.2,
+              color: AppTheme.getBorderColor(context),
+              width: 0.8,
             ),
           ),
           child: Row(
             children: [
-              // Icon container
-              Container(
-                padding: EdgeInsets.all(screenSize.height * 0.012),
-                decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
-                  color: gradient[0].withOpacity(0.15),
-                  borderRadius:
-                      BorderRadius.circular(screenSize.height * 0.015),
-                ),
-                child: Icon(
-                  icon,
-                  color: gradient[0],
-                  size: screenSize.height * 0.028,
-                ),
+              Icon(
+                icon,
+                color: gradient[0],
+                size: screenSize.height * 0.03,
               ),
 
               SizedBox(width: AppTheme.getSmallPadding(screenSize) * 1.2),
@@ -193,8 +170,7 @@ class AdminMainActions extends StatelessWidget {
                         color: AppTheme.getTextPrimaryColor(context),
                         fontWeight: FontWeight.w700,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      softWrap: true,
                     ),
 
                     SizedBox(height: screenSize.height * 0.002),
@@ -206,26 +182,16 @@ class AdminMainActions extends StatelessWidget {
                         color: AppTheme.getTextSecondaryColor(context),
                         fontWeight: FontWeight.w500,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      softWrap: true,
                     ),
                   ],
                 ),
               ),
 
-              // Action indicator
-              Container(
-                padding: EdgeInsets.all(screenSize.height * 0.008),
-                decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
-                  color: gradient[0].withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(screenSize.height * 0.01),
-                ),
-                child: Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: screenSize.height * 0.016,
-                  color: gradient[0],
-                ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: screenSize.height * 0.016,
+                color: gradient[0],
               ),
             ],
           ),

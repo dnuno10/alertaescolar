@@ -133,11 +133,6 @@ class _QuickActionTile extends StatelessWidget {
               Container(
                 width: tileHeight * 0.8,
                 height: tileHeight * 0.8,
-                decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
-                  color: accentColor.withOpacity(0.18),
-                  borderRadius: BorderRadius.circular(screenSize.width * 0.04),
-                ),
                 alignment: Alignment.center,
                 child: Icon(
                   leadingIcon,

@@ -27,13 +27,7 @@ class EmptyNotificationsCard extends StatelessWidget {
         border: Border.all(
           color: AppTheme.getBorderColor(context),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: screenSize.height * 0.015,
-            offset: Offset(0, screenSize.height * 0.005),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -41,12 +35,6 @@ class EmptyNotificationsCard extends StatelessWidget {
           Container(
             width: screenSize.height * 0.06,
             height: screenSize.height * 0.06,
-            decoration: BoxDecoration(
-              color: AppTheme.getBorderColor(context),
-              borderRadius: BorderRadius.circular(
-                AppTheme.getSmallRadius(screenSize),
-              ),
-            ),
             child: Icon(
               Icons.notifications_none_rounded,
               color: AppTheme.getTextSecondaryColor(context),

@@ -579,17 +579,6 @@ class _HeaderMinimal extends StatelessWidget {
           if (icon != null) ...[
             Container(
               padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
-              decoration: BoxDecoration(
-                // ignore: deprecated_member_use
-                color: (color ?? AppTheme.accentBlue).withOpacity(0.10),
-                borderRadius:
-                    BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-                border: Border.all(
-                  // ignore: deprecated_member_use
-                  color: (color ?? AppTheme.accentBlue).withOpacity(0.28),
-                  width: 1,
-                ),
-              ),
               child: Icon(
                 icon,
                 color: color ?? AppTheme.accentBlue,

@@ -33,13 +33,7 @@ class ScheduleStudentCard extends StatelessWidget {
           color: AppTheme.getBorderColor(context),
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Row(
         children: [
@@ -50,14 +44,7 @@ class ScheduleStudentCard extends StatelessWidget {
               color: color,
               borderRadius:
                   BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-              boxShadow: [
-                BoxShadow(
-                  // ignore: deprecated_member_use
-                  color: color.withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              boxShadow: const [],
             ),
             child: Center(
               child: Text(

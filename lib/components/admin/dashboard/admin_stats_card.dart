@@ -308,15 +308,7 @@ class _AdminStatsCardState extends State<AdminStatsCard> {
         color: AppTheme.getCardColor(context),
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(widget.screenSize)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            offset:
-                Offset(0, AppTheme.getSmallPadding(widget.screenSize) * 0.5),
-            blurRadius: AppTheme.getSmallPadding(widget.screenSize),
-            spreadRadius: 0,
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -70,16 +70,6 @@ class SwitchOptionCard extends StatelessWidget {
               Container(
                 padding:
                     EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.8),
-                decoration: BoxDecoration(
-                  color: value
-                      // ignore: deprecated_member_use
-                      ? color.withOpacity(0.1)
-                      // ignore: deprecated_member_use
-                      : AppTheme.getBorderColor(context).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(
-                    AppTheme.getSmallRadius(screenSize),
-                  ),
-                ),
                 child: Icon(
                   icon,
                   color:

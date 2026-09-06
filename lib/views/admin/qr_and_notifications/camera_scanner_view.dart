@@ -29,7 +29,7 @@ class CameraScannerView extends StatefulWidget {
     this.accessType,
     this.isDefaultEntryConfig,
     this.isExtracurricular = false,
-    this.initialShowResultInProcessing = true,
+    this.initialShowResultInProcessing = false,
   });
 
   @override
@@ -52,7 +52,7 @@ class _CameraScannerViewState extends State<CameraScannerView>
   // Animaciones UI
   late final AnimationController _accessTypeAnimationController;
 
-  bool _showResultInProcessing = true;
+  bool _showResultInProcessing = false;
 
   // 🔄 AUTO-UPDATE: Timer para actualizar tipo de acceso automáticamente
   Timer? _accessTypeUpdateTimer;
@@ -509,13 +509,7 @@ class _CameraScannerViewState extends State<CameraScannerView>
                             decoration: BoxDecoration(
                               color: AppTheme.accentBlue.withOpacity(0.8),
                               borderRadius: BorderRadius.circular(0.75),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppTheme.accentBlue.withOpacity(0.4),
-                                  blurRadius: 4,
-                                  spreadRadius: 0.5,
-                                ),
-                              ],
+                              boxShadow: const [],
                             ),
                           ),
                         );
@@ -600,11 +594,6 @@ class _CameraScannerViewState extends State<CameraScannerView>
     return Container(
       width: 48,
       height: 48,
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.7),
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
-      ),
       child: IconButton(
         icon: Icon(icon, color: Colors.white, size: 24),
         onPressed: onPressed,
@@ -744,23 +733,16 @@ class _CameraScannerViewState extends State<CameraScannerView>
         escuelaId = cached;
       }
 
-      // 3) Elegir modo según el switch
-      final displayMode = _showResultInProcessing
-          ? ProcessingDisplayMode.full
-          : ProcessingDisplayMode.headless;
-
-      final returnDetailed = !_showResultInProcessing; // si headless => true
-
-      // 4) Determinar el tipo de acceso actual del sistema para el procesamiento
+      // 3) Determinar el tipo de acceso actual del sistema para el procesamiento
       ScannerAccessType currentAccessType =
           widget.accessType ?? ScannerAccessType.automatic;
       bool currentIsDefaultEntryConfig = widget.isDefaultEntryConfig ?? true;
+      TurnoProvider? turnoProvider;
 
       // 🔧 FIX: Para modo automático, usar el tipo de acceso actual del sistema
       if (currentAccessType == ScannerAccessType.automatic) {
         try {
-          final turnoProvider =
-              Provider.of<TurnoProvider>(context, listen: false);
+          turnoProvider = Provider.of<TurnoProvider>(context, listen: false);
           final accessPhase = turnoProvider.resolveAccessPhase();
           currentAccessType = accessPhase.type;
 
@@ -778,7 +760,31 @@ class _CameraScannerViewState extends State<CameraScannerView>
         }
       }
 
-      // 5) Navegar a ProcessingView con parámetros completos
+      if (!_showResultInProcessing) {
+        turnoProvider ??= Provider.of<TurnoProvider>(context, listen: false);
+        final result = await ScannerService().processScannedCode(
+          scannedCode: code,
+          adminId: admin.id,
+          escuelaIdFromContext: escuelaId,
+          accessType: currentAccessType,
+          isDefaultEntryConfig: currentIsDefaultEntryConfig,
+          isExtracurricular: widget.isExtracurricular,
+          turnoProvider: turnoProvider,
+        );
+
+        if (!mounted) return;
+        final success = result['success'] == true;
+        final msg = success
+            ? (result['access']?['message']?.toString() ??
+                'Notificación enviada correctamente.')
+            : (result['error']?.toString() ??
+                'No se pudo registrar el escaneo.');
+        _showFeedbackMessage(msg, success: success);
+        if (success) widget.onCodeScanned(code);
+        return;
+      }
+
+      // 4) Navegar a ProcessingView con parámetros completos
       final result = await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => ProcessingView(
@@ -788,8 +794,8 @@ class _CameraScannerViewState extends State<CameraScannerView>
             accessType: currentAccessType,
             isDefaultEntryConfig: currentIsDefaultEntryConfig,
             isExtracurricular: widget.isExtracurricular,
-            displayMode: displayMode,
-            returnDetailedResult: returnDetailed,
+            displayMode: ProcessingDisplayMode.full,
+            returnDetailedResult: false,
           ),
         ),
       );

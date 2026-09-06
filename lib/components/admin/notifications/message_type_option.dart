@@ -55,15 +55,6 @@ class MessageTypeOption extends StatelessWidget {
             Container(
               padding:
                   EdgeInsets.all(AppTheme.getMediumPadding(screenSize) * 0.8),
-              decoration: BoxDecoration(
-                color: isSelected
-                    // ignore: deprecated_member_use
-                    ? color.withOpacity(0.15)
-                    // ignore: deprecated_member_use
-                    : AppTheme.getBorderColor(context).withOpacity(0.1),
-                borderRadius:
-                    BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-              ),
               child: Icon(
                 icon,
                 color: isSelected
@@ -99,9 +90,8 @@ class MessageTypeOption extends StatelessWidget {
             if (isSelected)
               Container(
                 padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
                 child: Icon(Icons.check_rounded,
-                    color: Colors.white, size: screenSize.height * 0.018),
+                    color: color, size: screenSize.height * 0.018),
               ),
           ],
         ),

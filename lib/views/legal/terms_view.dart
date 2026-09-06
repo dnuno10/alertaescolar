@@ -105,15 +105,6 @@ class TermsView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Título
-              Text(
-                'Bienvenido/a a Alerta Escolar',
-                style: AppTheme.getH2(size).copyWith(
-                  color: AppTheme.getTextPrimaryColor(context),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              SizedBox(height: AppTheme.getSmallPadding(size)),
               // Meta
               Row(
                 children: [
@@ -248,7 +239,7 @@ class TermsView extends StatelessWidget {
                     ),
                     SizedBox(height: AppTheme.getSmallPadding(size) * 0.8),
                     Text(
-                      'Para dudas legales o soporte, escríbenos a contacto@alertaescolar.mx.',
+                      'Para dudas legales o soporte, escríbenos a alertaescolar.team@gmail.com.',
                       style: AppTheme.getBodyMedium(size).copyWith(
                         color: AppTheme.getTextSecondaryColor(context),
                         height: 1.5,

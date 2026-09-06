@@ -37,13 +37,7 @@ class ModernTimeSelector extends StatelessWidget {
               BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
           // ignore: deprecated_member_use
           border: Border.all(color: color.withOpacity(0.3)),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.getShadowColor(context),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          boxShadow: const [],
         ),
         child: Column(
           children: [
@@ -195,13 +189,7 @@ class _ModernTimePickerDialogState extends State<ModernTimePickerDialog>
             borderRadius: BorderRadius.vertical(
               top: Radius.circular(AppTheme.getLargeRadius(screenSize)),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.getShadowColor(context),
-                blurRadius: screenSize.height * 0.02,
-                offset: Offset(0, -screenSize.height * 0.005),
-              ),
-            ],
+            boxShadow: const [],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,

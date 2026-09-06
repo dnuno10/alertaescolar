@@ -33,6 +33,7 @@ class StudentActionButtons extends StatefulWidget {
 class _StudentActionButtonsState extends State<StudentActionButtons> {
   final ScreenshotController _shot = ScreenshotController();
   bool _isWorking = false;
+  static const Size _credentialExportSize = Size(430, 820);
 
   @override
   Widget build(BuildContext context) {
@@ -87,22 +88,26 @@ class _StudentActionButtonsState extends State<StudentActionButtons> {
       final bytes = await _shot
           .captureFromWidget(
             MediaQuery(
-              data: mq,
+              data: mq.copyWith(size: _credentialExportSize),
               child: Theme(
                 data: theme,
                 child: Directionality(
                   textDirection: Directionality.of(context),
-                  child: RepaintBoundary(
-                    child: Material(
-                      color: Colors.transparent,
-                      child: Center(
-                        child: Localizations.override(
-                          context: context,
-                          locale: locale,
-                          child: DigitalCredentialCard(
-                            student: safe,
-                            screenSize: widget.screenSize,
-                            schoolName: safeSchool,
+                  child: SizedBox(
+                    width: _credentialExportSize.width,
+                    height: _credentialExportSize.height,
+                    child: RepaintBoundary(
+                      child: Material(
+                        color: Colors.transparent,
+                        child: Center(
+                          child: Localizations.override(
+                            context: context,
+                            locale: locale,
+                            child: DigitalCredentialCard(
+                              student: safe,
+                              screenSize: _credentialExportSize,
+                              schoolName: safeSchool,
+                            ),
                           ),
                         ),
                       ),

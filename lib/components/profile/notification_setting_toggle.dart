@@ -27,12 +27,6 @@ class NotificationSettingToggle extends StatelessWidget {
         Container(
           width: screenSize.width * 0.12,
           height: screenSize.width * 0.12,
-          decoration: BoxDecoration(
-            // ignore: deprecated_member_use
-            color: AppTheme.accentPurple.withOpacity(0.1),
-            borderRadius:
-                BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-          ),
           child: Icon(
             icon,
             color: AppTheme.accentPurple,

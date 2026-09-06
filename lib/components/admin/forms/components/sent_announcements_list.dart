@@ -150,13 +150,7 @@ class _AnnouncementItem extends StatelessWidget {
           color: AppTheme.getBorderColor(context),
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: screenSize.height * 0.008,
-            offset: Offset(0, screenSize.height * 0.002),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

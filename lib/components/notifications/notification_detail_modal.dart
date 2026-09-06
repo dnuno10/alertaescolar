@@ -130,15 +130,9 @@ class _NotificationDetailModalState extends State<NotificationDetailModal> {
               Container(
                 width: widget.screenSize.height * 0.06,
                 height: widget.screenSize.height * 0.06,
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  borderRadius: BorderRadius.circular(
-                    AppTheme.getSmallRadius(widget.screenSize),
-                  ),
-                ),
                 child: Icon(
                   icon,
-                  color: Colors.white,
+                  color: statusColor,
                   size: widget.screenSize.height * 0.035,
                 ),
               ),

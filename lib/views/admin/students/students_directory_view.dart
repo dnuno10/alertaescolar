@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:alertaescolar/components/admin/directory/directory_header.dart';
 import 'package:alertaescolar/components/textfield/custom_input_field.dart';
 import 'package:flutter/services.dart';
 import 'package:alertaescolar/providers/theme_provider.dart';
@@ -248,7 +247,7 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                   showWhenUnlinked: false,
                   offset: Offset(0, yOffset.toDouble()),
                   child: Material(
-                    elevation: 8,
+                    elevation: 0,
                     color: AppTheme.getCardColor(context),
                     borderRadius: BorderRadius.circular(
                         AppTheme.getMediumRadius(screenSize)),
@@ -519,11 +518,10 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                 child: CustomScrollView(
                   physics: const BouncingScrollPhysics(),
                   slivers: [
-                    DirectoryHeader(
-                      title: l10n.studentsDirectory,
-                      subtitle: l10n.manageAndSearchStudents,
-                      isSliverAppBar:
-                          true, // o false según el estilo que quieras
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: MediaQuery.paddingOf(context).top,
+                      ),
                     ),
                     SliverToBoxAdapter(
                       child: Padding(
@@ -737,40 +735,28 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                                     SizedBox(
                                         height: AppTheme.getMediumPadding(
                                             screenSize)),
-                                    Container(
-                                      padding: EdgeInsets.all(
-                                          AppTheme.getSmallPadding(screenSize)),
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.accentBlue
-                                            // ignore: deprecated_member_use
-                                            .withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(
-                                            AppTheme.getSmallRadius(
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.info_outline_rounded,
+                                          color: AppTheme.accentBlue,
+                                          size: screenSize.height * 0.02,
+                                        ),
+                                        SizedBox(
+                                            width: AppTheme.getSmallPadding(
                                                 screenSize)),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.info_outline_rounded,
-                                            color: AppTheme.accentBlue,
-                                            size: screenSize.height * 0.02,
-                                          ),
-                                          SizedBox(
-                                              width: AppTheme.getSmallPadding(
-                                                  screenSize)),
-                                          Expanded(
-                                            child: Text(
-                                              'Mostrando ${allStudents.length} de ${studentProvider.students.length} estudiantes',
-                                              style: AppTheme.getCaptionSmall(
-                                                      screenSize)
-                                                  .copyWith(
-                                                color: AppTheme.accentBlue,
-                                                fontWeight: FontWeight.w600,
-                                              ),
+                                        Expanded(
+                                          child: Text(
+                                            'Mostrando ${allStudents.length} de ${studentProvider.students.length} estudiantes',
+                                            style: AppTheme.getCaptionSmall(
+                                                    screenSize)
+                                                .copyWith(
+                                              color: AppTheme.accentBlue,
+                                              fontWeight: FontWeight.w600,
                                             ),
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ],
@@ -907,45 +893,26 @@ class _StudentsDirectoryViewState extends State<StudentsDirectoryView> {
                                           SizedBox(
                                               width: AppTheme.getSmallPadding(
                                                   screenSize)),
-                                          Text(
-                                            'Estudiantes Registrados',
-                                            style: AppTheme.getSubtitle1(
-                                                    screenSize)
-                                                .copyWith(
-                                              color:
-                                                  AppTheme.getTextPrimaryColor(
-                                                      context),
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                          const Spacer(),
-                                          Container(
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal:
-                                                  AppTheme.getSmallPadding(
-                                                      screenSize),
-                                              vertical:
-                                                  AppTheme.getSmallPadding(
-                                                          screenSize) *
-                                                      0.5,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: AppTheme.accentPurple
-                                                  // ignore: deprecated_member_use
-                                                  .withOpacity(0.1),
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                      AppTheme.getSmallRadius(
-                                                          screenSize)),
-                                            ),
+                                          Expanded(
                                             child: Text(
-                                              '${allStudents.length}',
-                                              style: AppTheme.getCaption(
+                                              'Estudiantes Registrados',
+                                              style: AppTheme.getSubtitle1(
                                                       screenSize)
                                                   .copyWith(
-                                                color: AppTheme.accentPurple,
+                                                color: AppTheme
+                                                    .getTextPrimaryColor(
+                                                        context),
                                                 fontWeight: FontWeight.w700,
                                               ),
+                                            ),
+                                          ),
+                                          Text(
+                                            '${allStudents.length}',
+                                            style:
+                                                AppTheme.getCaption(screenSize)
+                                                    .copyWith(
+                                              color: AppTheme.accentPurple,
+                                              fontWeight: FontWeight.w700,
                                             ),
                                           ),
                                         ],

@@ -4,7 +4,6 @@ import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:provider/provider.dart';
 
 import 'package:alertaescolar/app/app_theme.dart';
-import 'package:alertaescolar/components/headers/nav_header.dart';
 import 'package:alertaescolar/components/buttons/solid_button.dart';
 import 'package:alertaescolar/components/loading_dialog.dart';
 import 'package:alertaescolar/components/students/student_academic_info_card.dart';
@@ -158,10 +157,7 @@ class _StudentDetailViewState extends State<StudentDetailView> {
             parent: BouncingScrollPhysics(),
           ),
           slivers: [
-            NavHeader(
-              title: widget.student.nombre,
-              isSliverAppBar: false,
-            ),
+            _buildStudentHeader(context, screenSize),
             SliverToBoxAdapter(
               child: _isLoading
                   ? const SizedBox.shrink()
@@ -169,6 +165,82 @@ class _StudentDetailViewState extends State<StudentDetailView> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStudentHeader(BuildContext context, Size screenSize) {
+    return SliverToBoxAdapter(
+      child: Column(
+        children: [
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: AppTheme.getSmallPadding(screenSize),
+                horizontal: AppTheme.getMediumPadding(screenSize),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.arrow_downward_rounded,
+                    size: screenSize.height * 0.022,
+                    color: AppTheme.getTextSecondaryColor(context),
+                  ),
+                  SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+                  Flexible(
+                    child: Text(
+                      'Desliza hacia abajo para actualizar',
+                      style: AppTheme.getCaption(screenSize).copyWith(
+                        color: AppTheme.getTextSecondaryColor(context),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              AppTheme.getMediumPadding(screenSize),
+              AppTheme.getSmallPadding(screenSize),
+              AppTheme.getMediumPadding(screenSize),
+              AppTheme.getMediumPadding(screenSize),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                IconButton(
+                  tooltip: 'Regresar',
+                  icon: Icon(
+                    Icons.arrow_back_ios_new,
+                    color: AppTheme.accentPurple,
+                    size: screenSize.width * 0.055,
+                  ),
+                  onPressed: () {
+                    FocusScope.of(context).unfocus();
+                    Navigator.maybePop(context);
+                  },
+                ),
+                SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+                Expanded(
+                  child: Text(
+                    widget.student.nombre,
+                    maxLines: 2,
+                    softWrap: true,
+                    style: AppTheme.getH2(screenSize).copyWith(
+                      color: AppTheme.getTextPrimaryColor(context),
+                      fontWeight: FontWeight.w700,
+                      height: 1.1,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

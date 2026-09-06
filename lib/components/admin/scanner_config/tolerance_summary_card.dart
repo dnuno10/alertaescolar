@@ -30,12 +30,6 @@ class ToleranceSummaryCard extends StatelessWidget {
         children: [
           Container(
             padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.8),
-            decoration: BoxDecoration(
-              // ignore: deprecated_member_use
-              color: AppTheme.warningColor.withOpacity(0.2),
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-            ),
             child: Icon(
               Icons.schedule_rounded,
               color: AppTheme.warningColor,

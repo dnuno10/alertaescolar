@@ -153,12 +153,6 @@ class _QRScannerViewState extends State<QRScannerView>
                 children: [
                   // Cerrar
                   Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(
-                        AppTheme.getSmallRadius(screenSize),
-                      ),
-                    ),
                     child: IconButton(
                       tooltip: 'Cerrar',
                       onPressed: () {
@@ -174,12 +168,6 @@ class _QRScannerViewState extends State<QRScannerView>
 
                   // Flash
                   Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(
-                        AppTheme.getSmallRadius(screenSize),
-                      ),
-                    ),
                     child: IconButton(
                       tooltip: flashOn ? 'Apagar flash' : 'Encender flash',
                       onPressed: () {
@@ -296,13 +284,7 @@ class _QRScannerViewState extends State<QRScannerView>
                           decoration: BoxDecoration(
                             color: AppTheme.accentBlue.withOpacity(0.8),
                             borderRadius: BorderRadius.circular(0.75),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.accentBlue.withOpacity(0.4),
-                                blurRadius: 4,
-                                spreadRadius: 0.5,
-                              ),
-                            ],
+                            boxShadow: const [],
                           ),
                         ),
                       );

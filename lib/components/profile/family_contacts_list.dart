@@ -33,13 +33,7 @@ class FamilyContactsList extends StatelessWidget {
         color: AppTheme.getCardColor(context),
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: familyContacts.isEmpty
           ? FamilyEmptyState(screenSize: screenSize)

@@ -104,14 +104,7 @@ class _StudentAttendanceHistoryCardState
         borderRadius:
             BorderRadius.circular(AppTheme.getLargeRadius(widget.screenSize)),
         border: Border.all(color: AppTheme.getBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            // ignore: deprecated_member_use
-            color: AppTheme.getShadowColor(context).withOpacity(0.1),
-            blurRadius: widget.screenSize.height * 0.02,
-            offset: Offset(0, widget.screenSize.height * 0.008),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -122,18 +115,6 @@ class _StudentAttendanceHistoryCardState
               Container(
                 padding: EdgeInsets.all(
                     AppTheme.getSmallPadding(widget.screenSize) * 0.6),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      // ignore: deprecated_member_use
-                      AppTheme.successColor.withOpacity(0.1),
-                      // ignore: deprecated_member_use
-                      AppTheme.successColor.withOpacity(0.05),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getSmallRadius(widget.screenSize)),
-                ),
                 child: Icon(
                   Icons.timeline_rounded,
                   color: AppTheme.successColor,
@@ -391,12 +372,6 @@ class _StudentAttendanceHistoryCardState
           Container(
             padding: EdgeInsets.all(
                 AppTheme.getSmallPadding(widget.screenSize) * 0.6),
-            decoration: BoxDecoration(
-              // ignore: deprecated_member_use
-              color: typeColor.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(
-                  AppTheme.getSmallRadius(widget.screenSize)),
-            ),
             child: Icon(
               typeIcon,
               color: typeColor,

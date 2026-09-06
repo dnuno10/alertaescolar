@@ -26,13 +26,7 @@ class QuickToleranceSelector extends StatelessWidget {
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
         border: Border.all(color: AppTheme.getBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,16 +76,7 @@ class QuickToleranceSelector extends StatelessWidget {
                             : AppTheme.getBorderColor(context),
                         width: isSelected ? 2 : 1,
                       ),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                // ignore: deprecated_member_use
-                                color: AppTheme.warningColor.withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ]
-                          : [],
+                      boxShadow: const [],
                     ),
                     child: Column(
                       children: [

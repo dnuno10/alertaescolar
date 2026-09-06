@@ -26,12 +26,6 @@ class QRScanOptionCard extends StatelessWidget {
           Container(
             width: size.width,
             height: size.width * 0.2,
-            decoration: BoxDecoration(
-              // ignore: deprecated_member_use
-              color: AppTheme.accentPurple.withOpacity(0.1),
-              borderRadius:
-                  BorderRadius.circular(AppTheme.getMediumRadius(size)),
-            ),
             child: Icon(
               Icons.qr_code_scanner_rounded,
               color: AppTheme.accentPurple,
@@ -87,13 +81,7 @@ class QRScanOptionCard extends StatelessWidget {
         color: AppTheme.getCardColor(context),
         borderRadius: borderRadius,
         border: Border.all(color: AppTheme.getBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Material(
         color: Colors.transparent,

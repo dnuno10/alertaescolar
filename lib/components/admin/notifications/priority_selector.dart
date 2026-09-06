@@ -127,11 +127,6 @@ class PrioritySelector extends StatelessWidget {
                           maxWidth: 40,
                           maxHeight: 40,
                         ),
-                        decoration: BoxDecoration(
-                          // ignore: deprecated_member_use
-                          color: color.withOpacity(isSelected ? 0.2 : 0.1),
-                          shape: BoxShape.circle,
-                        ),
                         child: Icon(
                           Icons.priority_high_rounded,
                           color: color,

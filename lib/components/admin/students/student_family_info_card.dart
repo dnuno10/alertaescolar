@@ -156,13 +156,7 @@ class _StudentFamilyInfoCardState extends State<StudentFamilyInfoCard> {
           color: AppTheme.getBorderColor(context),
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: widget.screenSize.height * 0.015,
-            offset: Offset(0, widget.screenSize.height * 0.005),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,12 +167,6 @@ class _StudentFamilyInfoCardState extends State<StudentFamilyInfoCard> {
               Container(
                 padding: EdgeInsets.all(
                     AppTheme.getSmallPadding(widget.screenSize) * 0.5),
-                decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
-                  color: AppTheme.accentPurple.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getSmallRadius(widget.screenSize)),
-                ),
                 child: Icon(
                   Icons.family_restroom_rounded,
                   color: AppTheme.accentPurple,

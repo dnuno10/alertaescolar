@@ -11,7 +11,6 @@ import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:provider/provider.dart';
 import '../../../managers/notification_provider.dart';
 import '../../../app/app_theme.dart';
-import '../../../l10n/app_localizations.dart';
 import '../../../models/models.dart';
 
 class NotificationsView extends StatefulWidget {
@@ -62,12 +61,7 @@ class _NotificationsViewViewState extends State<NotificationsView>
             parent: BouncingScrollPhysics(),
           ),
           slivers: [
-            NotificationHeader(
-              screenSize: screenSize,
-              getFilteredCount: (notifications) =>
-                  _getFilteredNotifications(notifications).length,
-              getFilterLabel: _getFilterLabel,
-            ),
+            NotificationHeader(screenSize: screenSize),
             SliverToBoxAdapter(
               child: EnhancedFilterSection(
                 screenSize: screenSize,
@@ -143,17 +137,6 @@ class _NotificationsViewViewState extends State<NotificationsView>
   }
 
   // ---------- Helpers ----------
-  String _getFilterLabel(AppLocalizations l10n) {
-    switch (_currentFilter) {
-      case 'access_alerts':
-        return l10n.accessRecordsAndAlerts;
-      case 'communications':
-        return l10n.announcements;
-      default:
-        return l10n.notifications;
-    }
-  }
-
   List<dynamic> _getFilteredNotifications(List<dynamic> notifications) {
     List<dynamic> filtered = notifications;
 

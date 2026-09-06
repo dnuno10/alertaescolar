@@ -23,8 +23,8 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace "com.unosoft.alertaescolar_mb"
 
-    // Usa tus valores actuales (compatibles con Flutter)
-    compileSdk 35
+    // Requerido por Google Play para updates desde agosto 2026.
+    compileSdk 36
     ndkVersion flutter.ndkVersion
 
     defaultConfig {
@@ -32,7 +32,7 @@ android {
     applicationId "com.unosoft.alertaescolar_mb"
 
         minSdk 23
-        targetSdk 35
+        targetSdk 36
 
         // Toma versión de Flutter (pubspec.yaml)
         versionCode flutter.versionCode

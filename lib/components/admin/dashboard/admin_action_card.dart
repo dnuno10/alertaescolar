@@ -57,12 +57,6 @@ class AdminActionCard extends StatelessWidget {
                   Container(
                     padding: EdgeInsets.all(
                         AppTheme.getMediumPadding(screenSize) * 0.8),
-                    decoration: BoxDecoration(
-                      // ignore: deprecated_member_use
-                      color: color.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(
-                          AppTheme.getMediumRadius(screenSize)),
-                    ),
                     child: Icon(
                       icon,
                       color: color,
@@ -73,12 +67,6 @@ class AdminActionCard extends StatelessWidget {
                   Container(
                     padding: EdgeInsets.all(
                         AppTheme.getSmallPadding(screenSize) * 0.6),
-                    decoration: BoxDecoration(
-                      // ignore: deprecated_member_use
-                      color: color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(
-                          AppTheme.getSmallRadius(screenSize)),
-                    ),
                     child: Icon(
                       Icons.arrow_forward_ios_rounded,
                       color: color,

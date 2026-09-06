@@ -18,12 +18,6 @@ class ScheduleHeader extends StatelessWidget {
       children: [
         Container(
           padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.8),
-          decoration: BoxDecoration(
-            // ignore: deprecated_member_use
-            color: AppTheme.accentBlue.withOpacity(0.1),
-            borderRadius:
-                BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-          ),
           child: Icon(
             Icons.schedule_rounded,
             color: AppTheme.accentBlue,

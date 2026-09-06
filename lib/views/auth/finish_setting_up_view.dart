@@ -117,7 +117,7 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
             ),
             style: IconButton.styleFrom(
               backgroundColor: AppTheme.getCardColor(context),
-              elevation: 2,
+              elevation: 0,
             ),
           ),
           SizedBox(width: AppTheme.getMediumPadding(size)),
@@ -156,14 +156,7 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
           topLeft: Radius.circular(AppTheme.getLargeRadius(size) * 1.5),
           topRight: Radius.circular(AppTheme.getLargeRadius(size) * 1.5),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 20,
-            spreadRadius: -5,
-            offset: const Offset(0, -8),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Column(
         children: [
@@ -384,16 +377,11 @@ class _FinishSettingUpViewState extends State<FinishSettingUpView>
                 Container(
                   width: 36,
                   height: 36,
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppTheme.accentPurple
-                        // ignore: deprecated_member_use
-                        : AppTheme.accentPurple.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
                   child: Icon(
                     icon,
-                    color: isSelected ? Colors.white : AppTheme.accentPurple,
+                    color: isSelected
+                        ? AppTheme.accentPurple
+                        : AppTheme.accentPurple,
                     size: 20,
                   ),
                 ),

@@ -45,11 +45,6 @@ class AboutAppDialog extends StatelessWidget {
               children: [
                 Container(
                   padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentPurple.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(
-                        AppTheme.getSmallRadius(screenSize)),
-                  ),
                   child: Icon(
                     Icons.school,
                     color: AppTheme.accentPurple,

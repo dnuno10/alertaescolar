@@ -18,13 +18,7 @@ class PersonalDataInfoCard extends StatelessWidget {
         color: AppTheme.getSurfaceColor(context),
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Column(children: children),
     );

@@ -24,14 +24,13 @@ class AdminBottomNavigation extends StatelessWidget {
         color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.vertical(
             top: Radius.circular(AppTheme.getLargeRadius(screenSize))),
-        boxShadow: [
-          BoxShadow(
-            // ignore: deprecated_member_use
-            color: AppTheme.getShadowColor(context).withOpacity(0.06),
-            blurRadius: screenSize.height * 0.02,
-            offset: Offset(0, -screenSize.height * 0.008),
+        border: Border(
+          top: BorderSide(
+            color: AppTheme.getBorderColor(context),
+            width: 1,
           ),
-        ],
+        ),
+        boxShadow: const [],
       ),
       child: SafeArea(
         child: Container(

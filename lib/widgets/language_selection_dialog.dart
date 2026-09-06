@@ -28,14 +28,7 @@ class LanguageSelectionDialog extends StatelessWidget {
               color: AppTheme.getSurfaceColor(context),
               borderRadius:
                   BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.getShadowColor(context),
-                  blurRadius: screenSize.width * 0.06,
-                  offset: Offset(0, screenSize.height * 0.01),
-                  spreadRadius: 0,
-                ),
-              ],
+              boxShadow: const [],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -49,14 +42,6 @@ class LanguageSelectionDialog extends StatelessWidget {
                       Container(
                         width: screenSize.width * 0.12,
                         height: screenSize.width * 0.12,
-                        decoration: BoxDecoration(
-                          color: AppTheme.getTextPrimaryColor(context)
-                              // ignore: deprecated_member_use
-                              .withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(
-                            AppTheme.getSmallRadius(screenSize),
-                          ),
-                        ),
                         child: Icon(
                           Icons.language,
                           color: AppTheme.getTextPrimaryColor(context),

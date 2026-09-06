@@ -285,7 +285,6 @@ class _RecentNotificationsSectionState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Título y botón
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -295,19 +294,16 @@ class _RecentNotificationsSectionState
                 style: AppTheme.getH2(widget.screenSize).copyWith(
                   color: AppTheme.getTextPrimaryColor(context),
                 ),
-                overflow: TextOverflow.ellipsis,
               ),
             ),
             SizedBox(width: AppTheme.getSmallPadding(widget.screenSize)),
-
-            // Badge "Ver todo" optimizado: solo escucha unreadCount
             Selector<NotificationProvider, int>(
               selector: (_, p) => p.unreadCount,
               builder: (context, unreadCount, _) {
                 final showBadge = unreadCount > 0;
 
-                return GestureDetector(
-                  onTap: () async {
+                return TextButton(
+                  onPressed: () async {
                     HapticFeedback.mediumImpact();
                     if (showBadge) {
                       await context
@@ -316,69 +312,14 @@ class _RecentNotificationsSectionState
                     }
                     widget.onTapSeeAll();
                   },
-                  child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppTheme.getSmallPadding(widget.screenSize),
-                      vertical:
-                          AppTheme.getSmallPadding(widget.screenSize) * 0.5,
+                  child: Text(
+                    showBadge
+                        ? '$unreadCount ${l10n.newNotifications}'
+                        : l10n.viewAll,
+                    style: AppTheme.getBodyMedium(widget.screenSize).copyWith(
+                      color: AppTheme.accentPurple,
+                      fontWeight: FontWeight.w600,
                     ),
-                    decoration: BoxDecoration(
-                      color: showBadge
-                          ? AppTheme.warningColor
-                          // ignore: deprecated_member_use
-                          : AppTheme.accentPurple.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(
-                        showBadge
-                            ? AppTheme.getMediumRadius(widget.screenSize)
-                            : AppTheme.getSmallRadius(widget.screenSize),
-                      ),
-                      boxShadow: showBadge
-                          ? [
-                              BoxShadow(
-                                // ignore: deprecated_member_use
-                                color: AppTheme.warningColor.withOpacity(0.25),
-                                blurRadius: widget.screenSize.height * 0.008,
-                                offset:
-                                    Offset(0, widget.screenSize.height * 0.003),
-                              )
-                            ]
-                          : [],
-                    ),
-                    child: showBadge
-                        ? Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: widget.screenSize.height * 0.008,
-                                height: widget.screenSize.height * 0.008,
-                                decoration: BoxDecoration(
-                                  color: AppTheme.getBackgroundColor(context),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              SizedBox(
-                                width: AppTheme.getSmallPadding(
-                                        widget.screenSize) *
-                                    0.5,
-                              ),
-                              Text(
-                                '$unreadCount ${l10n.newNotifications}',
-                                style: AppTheme.getCaption(widget.screenSize)
-                                    .copyWith(
-                                  color: AppTheme.getBackgroundColor(context),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          )
-                        : Text(
-                            l10n.viewAll,
-                            style:
-                                AppTheme.getCaption(widget.screenSize).copyWith(
-                              color: AppTheme.accentPurple,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
                   ),
                 );
               },

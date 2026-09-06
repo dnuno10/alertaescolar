@@ -28,18 +28,6 @@ class NoInternetScreen extends StatelessWidget {
                 Container(
                   width: screenSize.width * 0.3,
                   height: screenSize.width * 0.3,
-                  decoration: BoxDecoration(
-                    color: AppTheme.getCardColor(context),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.getShadowColor(context),
-                        blurRadius: 20,
-                        spreadRadius: -5,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
                   child: Icon(
                     Icons.wifi_off_rounded,
                     size: screenSize.width * 0.15,

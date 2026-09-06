@@ -21,8 +21,8 @@ class PersonalDataInfoTile extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            flex: 2,
+          Flexible(
+            flex: 3,
             child: Text(
               label,
               style: AppTheme.getBodyMedium(screenSize).copyWith(
@@ -32,22 +32,18 @@ class PersonalDataInfoTile extends StatelessWidget {
             ),
           ),
           SizedBox(width: AppTheme.getSmallPadding(screenSize)),
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppTheme.getSmallPadding(screenSize) * 0.75,
-              vertical: AppTheme.getSmallPadding(screenSize) * 0.25,
-            ),
-            decoration: BoxDecoration(
-              // ignore: deprecated_member_use
-              color: AppTheme.accentPurple.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(
-                  AppTheme.getSmallRadius(screenSize) * 0.5),
-            ),
-            child: Text(
-              value,
-              style: AppTheme.getCaptionSmall(screenSize).copyWith(
-                color: AppTheme.accentPurple,
-                fontWeight: FontWeight.w600,
+          Expanded(
+            flex: 5,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                value,
+                textAlign: TextAlign.right,
+                softWrap: true,
+                style: AppTheme.getCaptionSmall(screenSize).copyWith(
+                  color: AppTheme.accentPurple,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),

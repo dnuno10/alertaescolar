@@ -6,7 +6,6 @@ import '../../../app/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../managers/student_provider.dart';
-import '../../../components/headers/nav_header.dart';
 import '../../../components/students/student_profile_card.dart';
 import '../../../components/students/student_academic_info_card.dart';
 import '../../../components/students/student_key_info_card.dart';
@@ -126,7 +125,7 @@ class _StudentProfileAdminViewState extends State<StudentProfileAdminView> {
               child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
-                  NavHeader(title: titleText),
+                  _StudentPlainHeader(title: titleText, screenSize: screenSize),
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.all(padM),
@@ -148,7 +147,7 @@ class _StudentProfileAdminViewState extends State<StudentProfileAdminView> {
               child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
-                  NavHeader(title: titleText),
+                  _StudentPlainHeader(title: titleText, screenSize: screenSize),
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.all(padM),
@@ -180,10 +179,7 @@ class _StudentProfileAdminViewState extends State<StudentProfileAdminView> {
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
-                NavHeader(
-                  title: titleText,
-                  isSliverAppBar: false,
-                ),
+                _StudentPlainHeader(title: titleText, screenSize: screenSize),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.all(padM),
@@ -225,6 +221,63 @@ class _StudentProfileAdminViewState extends State<StudentProfileAdminView> {
           ),
         );
       },
+    );
+  }
+}
+
+class _StudentPlainHeader extends StatelessWidget {
+  final String title;
+  final Size screenSize;
+
+  const _StudentPlainHeader({
+    required this.title,
+    required this.screenSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverToBoxAdapter(
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppTheme.getMediumPadding(screenSize),
+            AppTheme.getMediumPadding(screenSize),
+            AppTheme.getMediumPadding(screenSize),
+            AppTheme.getSmallPadding(screenSize),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              IconButton(
+                tooltip: 'Regresar',
+                icon: Icon(
+                  Icons.arrow_back_ios_new,
+                  color: AppTheme.accentPurple,
+                  size: screenSize.width * 0.055,
+                ),
+                onPressed: () {
+                  FocusScope.of(context).unfocus();
+                  Navigator.maybePop(context);
+                },
+              ),
+              SizedBox(width: AppTheme.getSmallPadding(screenSize)),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 2,
+                  softWrap: true,
+                  style: AppTheme.getH2(screenSize).copyWith(
+                    color: AppTheme.getTextPrimaryColor(context),
+                    fontWeight: FontWeight.w700,
+                    height: 1.1,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

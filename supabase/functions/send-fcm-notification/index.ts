@@ -6,6 +6,12 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const ACCESS_TOKEN_SAFETY_SECONDS = 300
+const MAX_CONCURRENT_SENDS = 20
+
+let cachedAccessToken: string | null = null
+let cachedAccessTokenExpiresAt = 0
+
 serve(async (req) => {
     // Handle CORS preflight requests
     if (req.method === 'OPTIONS') {
@@ -26,7 +32,7 @@ serve(async (req) => {
         }
 
         // Firebase Admin SDK configuration
-        const serviceAccount = {
+        const fallbackServiceAccount = {
             "type": "service_account",
             "project_id": "alerta-escolar-1e870",
             "private_key_id": "7c00fddcd5ddeef216e1875a56998cb4976beff2",
@@ -38,6 +44,24 @@ serve(async (req) => {
             "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
             "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-kymho%40alerta-escolar-1e870.iam.gserviceaccount.com",
             "universe_domain": "googleapis.com"
+        }
+
+        const serviceAccount = getFirebaseServiceAccount(fallbackServiceAccount)
+
+        const uniqueTokens = [...new Set(
+            tokens
+                .map((token) => String(token).trim())
+                .filter((token) => token.length > 0)
+        )]
+
+        if (uniqueTokens.length === 0) {
+            return new Response(
+                JSON.stringify({ error: 'No valid tokens provided' }),
+                {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                }
+            )
         }
 
         // Get access token for FCM
@@ -53,16 +77,25 @@ serve(async (req) => {
             )
         }
 
-        // Send notifications to all tokens
-        const results = []
-        for (const token of tokens) {
-            try {
-                const result = await sendNotificationToToken(accessToken, token, title, body, data)
-                results.push({ token: token.substring(0, 20) + '...', success: result.success, error: result.error })
-            } catch (error) {
-                results.push({ token: token.substring(0, 20) + '...', success: false, error: error.message })
+        const results = await mapWithConcurrency(
+            uniqueTokens,
+            MAX_CONCURRENT_SENDS,
+            async (token) => {
+                try {
+                    const result = await sendNotificationToToken(
+                        accessToken,
+                        serviceAccount.project_id,
+                        token,
+                        title,
+                        body,
+                        data
+                    )
+                    return { token: token.substring(0, 20) + '...', success: result.success, error: result.error }
+                } catch (error) {
+                    return { token: token.substring(0, 20) + '...', success: false, error: error.message }
+                }
             }
-        }
+        )
 
         const successCount = results.filter(r => r.success).length
         const failureCount = results.filter(r => !r.success).length
@@ -70,7 +103,9 @@ serve(async (req) => {
         return new Response(
             JSON.stringify({
                 success: true,
-                totalTokens: tokens.length,
+                totalTokens: uniqueTokens.length,
+                requestedTokens: tokens.length,
+                duplicateTokens: tokens.length - uniqueTokens.length,
                 successCount,
                 failureCount,
                 results
@@ -93,9 +128,27 @@ serve(async (req) => {
     }
 })
 
+function getFirebaseServiceAccount(fallbackServiceAccount: any): any {
+    const serviceAccountJson = Deno.env.get('FIREBASE_SERVICE_ACCOUNT_JSON')
+    if (!serviceAccountJson) {
+        return fallbackServiceAccount
+    }
+
+    try {
+        return JSON.parse(serviceAccountJson)
+    } catch (error) {
+        console.error('Invalid FIREBASE_SERVICE_ACCOUNT_JSON secret:', error)
+        return fallbackServiceAccount
+    }
+}
+
 async function getAccessToken(serviceAccount: any): Promise<string | null> {
     try {
         const now = Math.floor(Date.now() / 1000)
+        if (cachedAccessToken && cachedAccessTokenExpiresAt - ACCESS_TOKEN_SAFETY_SECONDS > now) {
+            return cachedAccessToken
+        }
+
         const exp = now + 3600 // 1 hour
 
         // Create JWT header and payload
@@ -108,9 +161,9 @@ async function getAccessToken(serviceAccount: any): Promise<string | null> {
             exp: exp
         }
 
-        // Create JWT (simplified version for Edge Functions)
-        const headerB64 = btoa(JSON.stringify(header))
-        const payloadB64 = btoa(JSON.stringify(payload))
+        // OAuth JWTs must use base64url encoding, not regular base64.
+        const headerB64 = base64UrlEncode(JSON.stringify(header))
+        const payloadB64 = base64UrlEncode(JSON.stringify(payload))
         const message = `${headerB64}.${payloadB64}`
 
         // Import the private key
@@ -132,7 +185,7 @@ async function getAccessToken(serviceAccount: any): Promise<string | null> {
             new TextEncoder().encode(message)
         )
 
-        const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
+        const signatureB64 = base64UrlEncode(signature)
         const jwt = `${message}.${signatureB64}`
 
         // Exchange JWT for access token
@@ -149,7 +202,9 @@ async function getAccessToken(serviceAccount: any): Promise<string | null> {
 
         if (response.ok) {
             const data = await response.json()
-            return data.access_token
+            cachedAccessToken = data.access_token
+            cachedAccessTokenExpiresAt = now + Number(data.expires_in ?? 3600)
+            return cachedAccessToken
         } else {
             console.error('Failed to get access token:', await response.text())
             return null
@@ -158,6 +213,22 @@ async function getAccessToken(serviceAccount: any): Promise<string | null> {
         console.error('Error getting access token:', error)
         return null
     }
+}
+
+function base64UrlEncode(value: string | ArrayBuffer): string {
+    const bytes = typeof value === 'string'
+        ? new TextEncoder().encode(value)
+        : new Uint8Array(value)
+
+    let binary = ''
+    for (const byte of bytes) {
+        binary += String.fromCharCode(byte)
+    }
+
+    return btoa(binary)
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/g, '')
 }
 
 function pemToBinary(pem: string): ArrayBuffer {
@@ -176,8 +247,32 @@ function pemToBinary(pem: string): ArrayBuffer {
     return bytes.buffer
 }
 
+async function mapWithConcurrency<T, R>(
+    items: T[],
+    concurrency: number,
+    mapper: (item: T) => Promise<R>,
+): Promise<R[]> {
+    const results = new Array<R>(items.length)
+    let nextIndex = 0
+
+    const workers = Array.from(
+        { length: Math.min(concurrency, items.length) },
+        async () => {
+            while (nextIndex < items.length) {
+                const currentIndex = nextIndex
+                nextIndex += 1
+                results[currentIndex] = await mapper(items[currentIndex])
+            }
+        },
+    )
+
+    await Promise.all(workers)
+    return results
+}
+
 async function sendNotificationToToken(
     accessToken: string,
+    projectId: string,
     token: string,
     title: string,
     body: string,
@@ -215,7 +310,7 @@ async function sendNotificationToToken(
         }
 
         const response = await fetch(
-            'https://fcm.googleapis.com/v1/projects/alerta-escolar-1e870/messages:send',
+            `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
             {
                 method: 'POST',
                 headers: {
@@ -235,4 +330,4 @@ async function sendNotificationToToken(
     } catch (error) {
         return { success: false, error: error.message }
     }
-} 
+}

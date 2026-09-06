@@ -119,13 +119,7 @@ class _StudentAttendanceHistoryViewState
         borderRadius:
             BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
         border: Border.all(color: AppTheme.getBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,12 +244,6 @@ class _StudentAttendanceHistoryViewState
                       Container(
                         padding: EdgeInsets.all(
                             AppTheme.getSmallPadding(screenSize) * 0.6),
-                        decoration: BoxDecoration(
-                          // ignore: deprecated_member_use
-                          color: AppTheme.accentPurple.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(
-                              AppTheme.getSmallRadius(screenSize)),
-                        ),
                         child: Icon(
                           Icons.calendar_today_rounded,
                           color: AppTheme.accentPurple,

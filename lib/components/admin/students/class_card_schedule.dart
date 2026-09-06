@@ -588,11 +588,6 @@ class _DetailRow extends StatelessWidget {
       children: [
         Container(
           padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            // ignore: deprecated_member_use
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
           child: Icon(
             icon,
             size: 20,

@@ -28,13 +28,7 @@ class ThemeSelectionDialog extends StatelessWidget {
               color: AppTheme.getSurfaceColor(context),
               borderRadius:
                   BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.getShadowColor(context),
-                  blurRadius: screenSize.height * 0.02,
-                  offset: Offset(0, screenSize.height * 0.008),
-                ),
-              ],
+              boxShadow: const [],
             ),
             child: Padding(
               padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
@@ -48,13 +42,6 @@ class ThemeSelectionDialog extends StatelessWidget {
                       Container(
                         padding: EdgeInsets.all(
                           AppTheme.getSmallPadding(screenSize) * 0.8,
-                        ),
-                        decoration: BoxDecoration(
-                          // ignore: deprecated_member_use
-                          color: AppTheme.accentPurple.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(
-                            AppTheme.getSmallRadius(screenSize),
-                          ),
                         ),
                         child: Icon(
                           Icons.palette_rounded,
@@ -200,17 +187,6 @@ class _ThemeOption extends StatelessWidget {
               Container(
                 padding: EdgeInsets.all(
                   AppTheme.getSmallPadding(screenSize) * 0.7,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      // ignore: deprecated_member_use
-                      ? AppTheme.accentPurple.withOpacity(0.15)
-                      : AppTheme.getTextSecondaryColor(context)
-                          // ignore: deprecated_member_use
-                          .withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(
-                    AppTheme.getSmallRadius(screenSize),
-                  ),
                 ),
                 child: Icon(
                   icon,

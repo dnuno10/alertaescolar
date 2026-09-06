@@ -69,32 +69,9 @@ class ClassCard extends StatelessWidget {
                             Container(
                               width: screenSize.width * 0.14,
                               height: screenSize.width * 0.14,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    // ignore: deprecated_member_use
-                                    cardColor.withOpacity(0.8),
-                                    // ignore: deprecated_member_use
-                                    cardColor.withOpacity(0.6),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                borderRadius: BorderRadius.circular(
-                                  AppTheme.getMediumRadius(screenSize),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    // ignore: deprecated_member_use
-                                    color: cardColor.withOpacity(0.3),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
                               child: Icon(
                                 _getSubjectIcon(subjectName),
-                                color: Colors.white,
+                                color: AppTheme.accentPurple,
                                 size: screenSize.width * 0.07,
                               ),
                             ),

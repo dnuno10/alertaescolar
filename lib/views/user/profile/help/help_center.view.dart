@@ -52,8 +52,8 @@ class _HelpCenterViewState extends State<HelpCenterView> {
         ),
         backgroundColor: AppTheme.getSurfaceColor(context),
         foregroundColor: AppTheme.getTextPrimaryColor(context),
-        elevation: 1,
-        shadowColor: AppTheme.getShadowColor(context),
+        elevation: 0,
+        shadowColor: Colors.transparent,
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),
@@ -80,75 +80,44 @@ class _HelpCenterViewState extends State<HelpCenterView> {
 
           return Column(
             children: [
-              // Header con información del centro de ayuda
-              Container(
-                margin: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-                padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppTheme.accentPurple.withOpacity(0.1),
-                      AppTheme.accentPurple.withOpacity(0.05),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getMediumRadius(screenSize)),
-                  border: Border.all(
-                    color: AppTheme.accentPurple.withOpacity(0.2),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding:
-                          EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
-                      decoration: BoxDecoration(
-                        color: AppTheme.accentPurple.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(
-                            AppTheme.getSmallRadius(screenSize)),
-                      ),
-                      child: Icon(
-                        isAdmin
-                            ? Icons.admin_panel_settings
-                            : Icons.help_outline,
+              if (!isAdmin)
+                Padding(
+                  padding:
+                      EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.help_outline,
                         color: AppTheme.accentPurple,
                         size: screenSize.width * 0.07,
                       ),
-                    ),
-                    SizedBox(width: AppTheme.getMediumPadding(screenSize)),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            isAdmin
-                                ? 'Guía de Administración'
-                                : '¿Cómo podemos ayudarte?',
-                            style: AppTheme.getSubtitle1(screenSize).copyWith(
-                              color: AppTheme.getTextPrimaryColor(context),
-                              fontWeight: FontWeight.w700,
+                      SizedBox(width: AppTheme.getMediumPadding(screenSize)),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '¿Cómo podemos ayudarte?',
+                              style: AppTheme.getSubtitle1(screenSize).copyWith(
+                                color: AppTheme.getTextPrimaryColor(context),
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
-                          ),
-                          SizedBox(
-                              height:
-                                  AppTheme.getSmallPadding(screenSize) * 0.3),
-                          Text(
-                            isAdmin
-                                ? 'Herramientas y funciones administrativas'
-                                : 'Encuentra respuestas a tus preguntas',
-                            style: AppTheme.getCaption(screenSize).copyWith(
-                              color: AppTheme.getTextSecondaryColor(context),
+                            SizedBox(
+                                height:
+                                    AppTheme.getSmallPadding(screenSize) * 0.3),
+                            Text(
+                              'Encuentra respuestas a tus preguntas',
+                              style: AppTheme.getCaption(screenSize).copyWith(
+                                color: AppTheme.getTextSecondaryColor(context),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
 
               // Buscador (filtra VIDEOS y FAQ)
               Padding(
@@ -288,13 +257,7 @@ class _SearchField extends StatelessWidget {
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
         border: Border.all(color: AppTheme.getBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: TextField(
         controller: controller,
@@ -380,13 +343,7 @@ class _VideoTile extends StatelessWidget {
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
         border: Border.all(color: AppTheme.getBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: ListTile(
         contentPadding: EdgeInsets.symmetric(
@@ -395,11 +352,6 @@ class _VideoTile extends StatelessWidget {
         ),
         leading: Container(
           padding: EdgeInsets.all(AppTheme.getSmallPadding(screenSize)),
-          decoration: BoxDecoration(
-            color: AppTheme.accentPurple.withOpacity(0.12),
-            borderRadius:
-                BorderRadius.circular(AppTheme.getSmallRadius(screenSize)),
-          ),
           child: Icon(Icons.play_circle_fill,
               color: AppTheme.accentPurple, size: screenSize.width * 0.07),
         ),
@@ -447,13 +399,7 @@ class _FaqTile extends StatelessWidget {
         borderRadius:
             BorderRadius.circular(AppTheme.getMediumRadius(screenSize)),
         border: Border.all(color: AppTheme.getBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -547,11 +493,6 @@ class _EmptyState extends StatelessWidget {
           children: [
             Container(
               padding: EdgeInsets.all(AppTheme.getMediumPadding(screenSize)),
-              decoration: BoxDecoration(
-                color: AppTheme.accentPurple.withOpacity(0.1),
-                borderRadius:
-                    BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
-              ),
               child: Icon(
                 Icons.search_off,
                 size: screenSize.width * 0.12,

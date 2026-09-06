@@ -28,7 +28,6 @@ class StudentsOverviewSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Título y botón "ver todos"
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -54,7 +53,6 @@ class StudentsOverviewSection extends StatelessWidget {
           ],
         ),
         SizedBox(height: AppTheme.getMediumPadding(screenSize)),
-
         Consumer<StudentProvider>(
           builder: (context, provider, child) {
             // 1) Loading
@@ -66,13 +64,11 @@ class StudentsOverviewSection extends StatelessWidget {
                   color: AppTheme.getCardColor(context),
                   borderRadius: BorderRadius.circular(
                       AppTheme.getLargeRadius(screenSize)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.getShadowColor(context),
-                      blurRadius: screenSize.height * 0.015,
-                      offset: Offset(0, screenSize.height * 0.005),
-                    ),
-                  ],
+                  border: Border.all(
+                    color: AppTheme.getBorderColor(context),
+                    width: 1,
+                  ),
+                  boxShadow: const [],
                 ),
                 child: Center(
                   child: Padding(
@@ -96,13 +92,11 @@ class StudentsOverviewSection extends StatelessWidget {
                   color: AppTheme.getCardColor(context),
                   borderRadius: BorderRadius.circular(
                       AppTheme.getLargeRadius(screenSize)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.getShadowColor(context),
-                      blurRadius: screenSize.height * 0.015,
-                      offset: Offset(0, screenSize.height * 0.005),
-                    ),
-                  ],
+                  border: Border.all(
+                    color: AppTheme.getBorderColor(context),
+                    width: 1,
+                  ),
+                  boxShadow: const [],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,13 +166,11 @@ class StudentsOverviewSection extends StatelessWidget {
                 color: AppTheme.getCardColor(context),
                 borderRadius:
                     BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.getShadowColor(context),
-                    blurRadius: screenSize.height * 0.015,
-                    offset: Offset(0, screenSize.height * 0.005),
-                  ),
-                ],
+                border: Border.all(
+                  color: AppTheme.getBorderColor(context),
+                  width: 1,
+                ),
+                boxShadow: const [],
               ),
               child: Column(
                 children: visible.asMap().entries.map((entry) {
@@ -276,14 +268,7 @@ class StudentListItem extends StatelessWidget {
               borderRadius: BorderRadius.circular(
                 AppTheme.getSmallRadius(screenSize),
               ),
-              boxShadow: [
-                BoxShadow(
-                  // ignore: deprecated_member_use
-                  color: color.withOpacity(0.2),
-                  blurRadius: screenSize.height * 0.008,
-                  offset: Offset(0, screenSize.height * 0.003),
-                ),
-              ],
+              boxShadow: const [],
             ),
             child: Center(
               child: Text(
@@ -292,7 +277,7 @@ class StudentListItem extends StatelessWidget {
                     : '?',
                 style: AppTheme.getH2(screenSize).copyWith(
                   color: Colors.white,
-                  letterSpacing: -0.2,
+                  letterSpacing: 0,
                 ),
               ),
             ),
@@ -308,7 +293,8 @@ class StudentListItem extends StatelessWidget {
                     color: AppTheme.getTextPrimaryColor(context),
                     fontWeight: FontWeight.w600,
                   ),
-                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                  softWrap: true,
                 ),
                 SizedBox(height: screenSize.height * 0.005),
                 Row(
@@ -360,11 +346,6 @@ class StudentListItem extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-          Icon(
-            Icons.chevron_right_rounded,
-            color: AppTheme.getTextSecondaryColor(context),
-            size: screenSize.height * 0.023,
           ),
         ],
       ),

@@ -26,13 +26,7 @@ class SectionCard extends StatelessWidget {
         borderRadius:
             BorderRadius.circular(AppTheme.getLargeRadius(screenSize)),
         border: Border.all(color: AppTheme.getBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: screenSize.height * 0.015,
-            offset: Offset(0, screenSize.height * 0.005),
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -42,12 +36,6 @@ class SectionCard extends StatelessWidget {
               Container(
                 padding:
                     EdgeInsets.all(AppTheme.getSmallPadding(screenSize) * 0.5),
-                decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.getSmallRadius(screenSize)),
-                ),
                 child: Icon(
                   icon,
                   color: color,

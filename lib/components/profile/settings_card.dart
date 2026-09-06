@@ -17,13 +17,11 @@ class SettingsCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: radius,
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getShadowColor(context),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(
+          color: AppTheme.getBorderColor(context),
+          width: 1,
+        ),
+        boxShadow: const [],
       ),
       child: Material(
         color: AppTheme.getSurfaceColor(context),
